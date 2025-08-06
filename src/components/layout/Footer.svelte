@@ -36,9 +36,11 @@
           <Logo className="w-8 h-8" />
           <div>
             <div class="text-lg font-display font-bold text-smoke-50">
-              Hypnose Stammtisch
+              Hypnose Stammtisch.de
             </div>
-            <div class="text-sm text-accent-400">Deep Dive. Safe Play.</div>
+            <div class="text-sm text-accent-400">
+              Dive Deep. Play Safe. Trance with fun!
+            </div>
           </div>
         </div>
         <p class="text-smoke-300 text-sm leading-relaxed">

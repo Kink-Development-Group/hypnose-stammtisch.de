@@ -271,9 +271,7 @@
           Moderatoren-System
         </h3>
         <ul class="space-y-1 text-smoke-300 text-sm">
-          <li>• Geschulte Moderatoren bei allen Events</li>
           <li>• Klare Ansprechpartner für Probleme</li>
-          <li>• Diskrete Meldestelle für Beschwerden</li>
           <li>• Nachbetreuung bei Vorfällen</li>
         </ul>
       </div>
@@ -356,6 +354,9 @@
           <p><strong>Nummer gegen Kummer:</strong> 116 111</p>
           <p>
             <strong>Hilfetelefon Gewalt gegen Frauen:</strong> 08000 116 016
+          </p>
+          <p>
+            <strong>Kassenärztlicher Notdienst:</strong> 116 117
           </p>
         </div>
       </div>
