@@ -30,7 +30,7 @@
       </a>
       <a href="#faq" class="btn btn-outline text-center"> ❓ Häufige Fragen </a>
       <a href="#educational" class="btn btn-outline text-center">
-        📚 Lernmaterialien
+        📚 Lern- & Wissensquellen
       </a>
       <a href="#contact-help" class="btn btn-outline text-center">
         📞 Hilfe & Kontakt
@@ -275,96 +275,608 @@
       id="educational-heading"
       class="text-3xl font-display font-semibold text-smoke-50 mb-8"
     >
-      📚 Lernmaterialien
+      📚 Lern- & Wissensquellen
     </h2>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div class="card">
-        <div class="text-3xl mb-4" aria-hidden="true">📖</div>
-        <h3 class="text-lg font-semibold text-smoke-50 mb-2">
-          Grundlagen der Hypnose
-        </h3>
-        <p class="text-smoke-300 text-sm mb-4">
-          Einführung in die Geschichte, Theorie und grundlegenden Techniken der
-          Hypnose.
-        </p>
-        <a href="/resources/basics" use:link class="btn btn-outline text-sm">
-          Weiterlesen
-        </a>
+    <div class="mb-8 p-6 bg-charcoal-800 rounded-lg border border-charcoal-600">
+      <p class="text-smoke-300 mb-4">
+        Diese Sammlung an Ressourcen zum Lernen und Auseinandersetzen mit dem
+        Thema Hypnose/Kinky Hypnose wurde und wird vom Team des Hamburger
+        Hypnose-Munches zusammengetragen und kuratiert.
+      </p>
+      <p class="text-smoke-300 mb-4">
+        Wir arbeiten ständig an der Verbesserung und freuen uns immer über
+        weitere Quellen!
+      </p>
+      <p class="text-smoke-400 text-sm">
+        Weitere Quellen können immer an <a
+          href="mailto:support@hypnose-stammtisch.de"
+          class="text-accent hover:text-accent-light transition-colors"
+          >support@hypnose-stammtisch.de</a
+        > eingeschickt werden!
+      </p>
+    </div>
+
+    <!-- German Resources -->
+    <div class="mb-12">
+      <h3
+        class="text-2xl font-display font-semibold text-smoke-50 mb-6 flex items-center"
+      >
+        🇩🇪 Deutsche Ressourcen
+      </h3>
+
+      <!-- Podcasts & Websites -->
+      <div class="mb-8">
+        <h4 class="text-xl font-semibold text-smoke-50 mb-4">
+          🎧 Podcasts & Websites
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Die HypnoNerds!
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Ein fantastischer Podcast zum Thema erotische Hypnose!
+            </p>
+            <a
+              href="https://hypnonerds.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Website besuchen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              HypnoKink.de
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Erotische Hypnose mit Undine de Rivière! Audios und lesenswerte
+              Newsletter!
+            </p>
+            <a
+              href="https://hypnokink.de/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Website besuchen
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="text-3xl mb-4" aria-hidden="true">🧠</div>
-        <h3 class="text-lg font-semibold text-smoke-50 mb-2">
-          Psychologie & Neurowissenschaft
-        </h3>
-        <p class="text-smoke-300 text-sm mb-4">
-          Wissenschaftliche Grundlagen: Wie Hypnose im Gehirn funktioniert.
-        </p>
-        <a href="/resources/science" use:link class="btn btn-outline text-sm">
-          Weiterlesen
-        </a>
+      <!-- Video Tutorials -->
+      <div class="mb-8">
+        <h4 class="text-xl font-semibold text-smoke-50 mb-4">
+          🎥 Video-Tutorials
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Handdrop Induktion
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Blitzhypnose lernen: Die Hand Drop Induktion
+            </p>
+            <a
+              href="https://www.youtube.com/watch?v=fevtmp-huAk"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Video ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Raketenstart Induktion
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Hypnose lernen: Raketenstart Blitzhypnose Tutorial
+            </p>
+            <a
+              href="https://www.youtube.com/watch?v=YGByd3EnDYs"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Video ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Arm Pull Induktion
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Blitzhypnose: Arm Pull Induktion
+            </p>
+            <a
+              href="https://www.youtube.com/watch?v=wQ-YBlZlYi8"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Video ansehen
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="text-3xl mb-4" aria-hidden="true">🎯</div>
-        <h3 class="text-lg font-semibold text-smoke-50 mb-2">
-          Praktische Techniken
-        </h3>
-        <p class="text-smoke-300 text-sm mb-4">
-          Schritt-für-Schritt-Anleitungen für grundlegende Hypnose-Techniken.
-        </p>
-        <a
-          href="/resources/techniques"
-          use:link
-          class="btn btn-outline text-sm"
-        >
-          Weiterlesen
-        </a>
+      <!-- German Books -->
+      <div class="mb-8">
+        <h4 class="text-xl font-semibold text-smoke-50 mb-4">
+          📖 Buchempfehlungen
+        </h4>
+        <div class="space-y-4">
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Der Hypnosebaukasten
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Eine Ansammlung von Induktionen, Vertiefungen und Ausleitungen.
+              Eher für therapeutischen Gebrauch, aber mit vielen nützlichen
+              Tricks.
+            </p>
+            <a
+              href="https://www.amazon.de/gp/product/B00BMYVYS0/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Bei Amazon ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Der Hypnotherapeutische Werkzeugkasten
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Christian Schwegler - Umfassende Sammlung therapeutischer
+              Techniken
+            </p>
+            <a
+              href="https://www.amazon.de/Hypnotherapeutische-Werkzeugkasten-Techniken-Induktionen-Interventionen/dp/3033048072/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Bei Amazon ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Das große Handbuch der Hypnose
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Meinhold - Grundlegendes Werk zu Hypnose und Selbsthypnose
+            </p>
+            <a
+              href="https://www.amazon.de/Das-gro%C3%9Fe-Handbuch-Hypnose-Selbsthypnose/dp/3945695384/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Bei Amazon ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Was in Hypnose möglich ist
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Karl F. Stadler - Einblicke in die Möglichkeiten der Hypnose
+            </p>
+            <a
+              href="https://www.amazon.de/Hypnose-Was-m%C3%B6glich-Karl-Stadler/dp/3929626969/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Bei Amazon ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              101 Dinge, die ich gern gewusst hätte...
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Dabney M. Erwin - Praktische Tipps für den Einstieg in die Hypnose
+            </p>
+            <a
+              href="https://www.amazon.de/Dinge-gewusst-anfing-Hypnose-arbeiten/dp/3896707868/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Bei Amazon ansehen
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="text-3xl mb-4" aria-hidden="true">⚖️</div>
-        <h3 class="text-lg font-semibold text-smoke-50 mb-2">
-          Ethik & Einverständnis
-        </h3>
-        <p class="text-smoke-300 text-sm mb-4">
-          Wichtige ethische Überlegungen und Best Practices für
-          einverständnis-zentrierte Praxis.
-        </p>
-        <a href="/resources/ethics" use:link class="btn btn-outline text-sm">
-          Weiterlesen
-        </a>
+      <!-- Other German Sources -->
+      <div class="mb-8">
+        <h4 class="text-xl font-semibold text-smoke-50 mb-4">
+          🎭 Weitere Quellen
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Christo Showhypnose
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              YouTube-Kanal für Showhypnose mit interessanten Ideen
+            </p>
+            <a
+              href="https://www.youtube.com/@ChristoShowhypnose"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              YouTube besuchen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              BDSM Podcast "Not Vanilla"
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Hypnose-Folgen und Entspannungshypnose zum Ausprobieren
+            </p>
+            <div class="space-y-2 mt-3">
+              <a
+                href="https://open.spotify.com/episode/1Jou5b9WskwfmAkmYhMTmg"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn btn-outline text-xs block"
+              >
+                Hypnose Folge 1
+              </a>
+              <a
+                href="https://open.spotify.com/episode/3xEAZuNlo4oLJGnbG0H2Bh"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn btn-outline text-xs block"
+              >
+                Hypnose Folge 2
+              </a>
+              <a
+                href="https://open.spotify.com/episode/0ZVGAN99eO44VNIxXkjewr"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn btn-outline text-xs block"
+              >
+                Entspannungshypnose
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- English Resources -->
+    <div class="mb-12">
+      <h3
+        class="text-2xl font-display font-semibold text-smoke-50 mb-6 flex items-center"
+      >
+        🇺🇸 English Resources
+      </h3>
+
+      <!-- Tools & Interactive -->
+      <div class="mb-8">
+        <h4 class="text-xl font-semibold text-smoke-50 mb-4">
+          🛠️ Tools & Interactive
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Hypnose Präferenzen Liste
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Umfassende Liste für Präferenzen zum Thema Hypnose
+            </p>
+            <a
+              href="https://kink.hypnose-stammtisch.de/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Liste öffnen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Fernsteuerbares Metronom
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Für Online-Spiele und Hypnose-Sessions
+            </p>
+            <a
+              href="https://foobar.institute/hypno/metro/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Metronom öffnen
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="text-3xl mb-4" aria-hidden="true">📚</div>
-        <h3 class="text-lg font-semibold text-smoke-50 mb-2">
-          Empfohlene Literatur
-        </h3>
-        <p class="text-smoke-300 text-sm mb-4">
-          Kuratierte Liste von Büchern, Studien und Online-Ressourcen.
-        </p>
-        <a
-          href="/resources/reading-list"
-          use:link
-          class="btn btn-outline text-sm"
-        >
-          Zur Liste
-        </a>
+      <!-- Video Tutorials English -->
+      <div class="mb-8">
+        <h4 class="text-xl font-semibold text-smoke-50 mb-4">
+          🎥 Video Tutorials
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Body Language
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Reading minds through body language - TEDx Talk
+            </p>
+            <a
+              href="https://www.youtube.com/watch?v=W3P3rT0j2gQ"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Video ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Dave Elman Induktion
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Mike Mandel demonstriert die Elman Induktion
+            </p>
+            <a
+              href="https://www.youtube.com/watch?v=W5rXsq3ZL9o"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Video ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Hand Drop Induction
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Kostenlose Hypnose Induktions-Schulung
+            </p>
+            <a
+              href="https://www.youtube.com/watch?v=mPgifhbFG_Y"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Video ansehen
+            </a>
+          </div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="text-3xl mb-4" aria-hidden="true">🎥</div>
-        <h3 class="text-lg font-semibold text-smoke-50 mb-2">
-          Video-Tutorials
-        </h3>
-        <p class="text-smoke-300 text-sm mb-4">
-          Lehrvideos und Aufzeichnungen vergangener Workshops (nur für
-          Mitglieder).
-        </p>
-        <a href="/resources/videos" use:link class="btn btn-outline text-sm">
-          Ansehen
+      <!-- Learning Cards -->
+      <div class="mb-8">
+        <div class="card">
+          <h4 class="text-xl font-semibold text-smoke-50 mb-4">
+            🃏 Lernkarten
+          </h4>
+          <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+            Mike Mandel Hypnotic Language Cards
+          </h5>
+          <p class="text-smoke-300 text-sm mb-3">
+            Professionelle Lernkarten für hypnotische Sprache
+          </p>
+          <a
+            href="https://mikemandelhypnosis.com/hypnotic-language-cards-3/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-outline text-sm"
+          >
+            Mehr erfahren
+          </a>
+        </div>
+      </div>
+
+      <!-- English Books -->
+      <div class="mb-8">
+        <h4 class="text-xl font-semibold text-smoke-50 mb-4">
+          📖 Book Recommendations
+        </h4>
+        <div class="space-y-4">
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">Mind Play</h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              DER Klassiker der Hypnosebücher. Einfacher Englischstil, perfekt
+              für Einsteiger.
+            </p>
+            <a
+              href="https://www.amazon.de/gp/product/1975987373/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Bei Amazon ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Mind Play Study Guide
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Zweiter Teil von Mind Play, mehr für Personen die anderen etwas
+              beibringen wollen.
+            </p>
+            <a
+              href="https://www.amazon.de/gp/product/1512230278/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Bei Amazon ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              The Brainwashing Book
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Hypnotic, Erotic Behaviorism and Beyond - Für Fortgeschrittene
+            </p>
+            <a
+              href="https://www.amazon.de/gp/product/B08162XL65/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Bei Amazon ansehen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Hypnotebook
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              A Practical Beginner's Guide to Hypnosis - Neutraler Einstieg
+            </p>
+            <a
+              href="https://www.amazon.de/-/en/Hypnotebook-Practical-Beginners-Guide-Hypnosis/dp/9464687983"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Bei Amazon ansehen
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- YouTube Channels -->
+      <div class="mb-8">
+        <h4 class="text-xl font-semibold text-smoke-50 mb-4">
+          📺 YouTube Channels
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Feel Good Hypnosis
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Hochwertige Hypnose-Inhalte
+            </p>
+            <a
+              href="https://www.youtube.com/@feelgoodhypnosis"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Kanal besuchen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Mike Mandel Hypnosis
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Professionelle Hypnose-Techniken
+            </p>
+            <a
+              href="https://www.youtube.com/@MikeMandelHypnosis"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Kanal besuchen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Secret Subject
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Interessante Hypnose-Perspektiven
+            </p>
+            <a
+              href="https://www.youtube.com/@TheSecretSubject"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Kanal besuchen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Hypno Hedonist
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">Kreative Hypnose-Ansätze</p>
+            <a
+              href="https://www.youtube.com/@HypnoHedonist"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Kanal besuchen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Karl Smith Hypnosis
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              UK Hypnosis Academy - How to Hypnotize
+            </p>
+            <a
+              href="https://www.youtube.com/@thehypnotist"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Kanal besuchen
+            </a>
+          </div>
+          <div class="card">
+            <h5 class="text-lg font-semibold text-smoke-50 mb-2">
+              Anthony Galie
+            </h5>
+            <p class="text-smoke-300 text-sm mb-3">
+              Showhypnose - wunderbare Ideen für Unfug
+            </p>
+            <a
+              href="https://www.youtube.com/@AnthonyGalie"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="btn btn-outline text-sm"
+            >
+              Kanal besuchen
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div
+      class="text-center bg-charcoal-800 rounded-lg p-6 border border-charcoal-600"
+    >
+      <h3 class="text-xl font-display font-semibold text-smoke-50 mb-4">
+        🚀 Bereit zum Lernen?
+      </h3>
+      <p class="text-smoke-300 mb-6">
+        Mit diesen Ressourcen kannst du dein Wissen über Hypnose systematisch
+        erweitern. Teile gerne deine eigenen Entdeckungen mit der Community!
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="/events" use:link class="btn btn-primary"> Events besuchen </a>
+        <a href="mailto:support@hypnose-stammtisch.de" class="btn btn-outline">
+          Ressource vorschlagen
         </a>
       </div>
     </div>

@@ -8,6 +8,7 @@
   import Events from "./pages/Events.svelte";
   import Home from "./pages/Home.svelte";
   import Imprint from "./pages/Imprint.svelte";
+  import LearningResources from "./pages/LearningResources.svelte";
   import NotFound from "./pages/NotFound.svelte";
   import Privacy from "./pages/Privacy.svelte";
   import Resources from "./pages/Resources.svelte";
@@ -26,6 +27,7 @@
     "/events/:id": Events, // Will show event modal
     "/about": About,
     "/resources": Resources,
+    "/learning-resources": LearningResources,
     "/code-of-conduct": CodeOfConduct,
     "/contact": Contact,
     "/privacy": Privacy,
