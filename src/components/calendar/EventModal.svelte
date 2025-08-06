@@ -4,14 +4,12 @@
   import DOMPurify from "dompurify";
   import ICAL from "ical.js";
   import { marked } from "marked";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
   import {
     closeEventModal,
     selectedEvent,
     showEventModal,
   } from "../../stores/calendar";
-
-  const dispatch = createEventDispatcher();
 
   let modalElement: HTMLElement;
   let previousFocus: HTMLElement | null = null;
@@ -52,7 +50,7 @@
 
   // Process markdown description
   $: processedDescription = event
-    ? DOMPurify.sanitize(marked(event.description || ""))
+    ? DOMPurify.sanitize(marked.parse(event.description || "") as string)
     : "";
 
   // Handle modal open/close

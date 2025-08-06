@@ -14,6 +14,7 @@
     showEventModal,
   } from "../stores/calendar";
   import { addNotification } from "../stores/ui";
+  import { transformApiEvents } from "../utils/eventTransform";
 
   let searchTerm = "";
 
@@ -25,8 +26,10 @@
       // In a real app, this would be an API call
       const response = await fetch("/api/events");
       if (response.ok) {
-        const eventsData = await response.json();
-        events.set(eventsData);
+        const result = await response.json();
+        const apiEvents = result.success ? result.data : [];
+        const transformedEvents = transformApiEvents(apiEvents);
+        events.set(transformedEvents);
       } else {
         throw new Error("Failed to load events");
       }

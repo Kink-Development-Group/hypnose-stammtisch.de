@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import {
     clearFilters,
     eventFilters,
@@ -7,8 +6,6 @@
   } from "../../stores/calendar";
 
   export let searchTerm: string = "";
-
-  const dispatch = createEventDispatcher();
 
   // Available tags (in a real app, these would come from the API)
   const availableTags = [

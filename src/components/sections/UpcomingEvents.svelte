@@ -5,8 +5,9 @@
 
   let upcomingEvents: any[] = [];
 
-  // Subscribe to events store
-  $: upcomingEvents = $events.slice(0, 6); // Show max 6 upcoming events
+  // Subscribe to events store with proper null checking
+  $: upcomingEvents =
+    $events && Array.isArray($events) ? $events.slice(0, 6) : [];
 </script>
 
 <div class="space-y-8">

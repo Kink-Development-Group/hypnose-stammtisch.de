@@ -212,17 +212,18 @@
   </footer>
 </button>
 
-<style>
+<style type="text/css">
   .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
   /* Hover effects */
   button:hover .text-accent-400 {
-    @apply text-accent-300;
+    color: rgb(var(--accent-300) / 1);
   }
 
   /* Focus styles are handled by Tailwind classes */

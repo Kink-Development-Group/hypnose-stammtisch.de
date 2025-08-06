@@ -17,6 +17,7 @@
   import Header from "./components/layout/Header.svelte";
   // Import stores
   import { selectedEvent, showEventModal } from "./stores/calendar";
+  import { transformApiEvent } from "./utils/eventTransform";
 
   // Define routes
   const routes = {
@@ -48,9 +49,15 @@
             }
             return response.json();
           })
-          .then((eventData) => {
-            selectedEvent.set(eventData);
-            showEventModal.set(true);
+          .then((result) => {
+            const apiEvent = result.success ? result.data : null;
+            if (apiEvent) {
+              const transformedEvent = transformApiEvent(apiEvent);
+              selectedEvent.set(transformedEvent);
+              showEventModal.set(true);
+            } else {
+              throw new Error("Event data not found");
+            }
           })
           .catch((error) => {
             console.error("Failed to load event:", error);

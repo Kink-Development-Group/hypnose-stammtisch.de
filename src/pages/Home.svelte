@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { link } from "svelte-spa-router";
-  import Hero from "../components/sections/Hero.svelte";
-  import UpcomingEvents from "../components/sections/UpcomingEvents.svelte";
   import ConsentSafety from "../components/sections/ConsentSafety.svelte";
+  import Hero from "../components/sections/Hero.svelte";
   import IntroGuide from "../components/sections/IntroGuide.svelte";
-
+  import UpcomingEvents from "../components/sections/UpcomingEvents.svelte";
   // Import stores
   import { events, isLoading } from "../stores/calendar";
   import { addNotification } from "../stores/ui";
+  import { transformApiEvents } from "../utils/eventTransform";
 
   // Load upcoming events
   onMount(async () => {
@@ -18,8 +18,10 @@
       // In a real app, this would be an API call
       const response = await fetch("/api/events?limit=6&upcoming=true");
       if (response.ok) {
-        const eventsData = await response.json();
-        events.set(eventsData);
+        const result = await response.json();
+        const apiEvents = result.success ? result.data : [];
+        const transformedEvents = transformApiEvents(apiEvents);
+        events.set(transformedEvents);
       } else {
         throw new Error("Failed to load events");
       }
