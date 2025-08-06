@@ -34,6 +34,7 @@ use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Controllers\EventsController;
 use HypnoseStammtisch\Controllers\ContactController;
 use HypnoseStammtisch\Controllers\CalendarController;
+use HypnoseStammtisch\Controllers\FormController;
 use HypnoseStammtisch\Utils\Response;
 
 // Load configuration
@@ -88,6 +89,10 @@ function route(string $method, array $segments): void
         switch ($resource) {
             case 'events':
                 handleEventsRoutes($method, $action, $id);
+                break;
+
+            case 'forms':
+                handleFormRoutes($method, $action);
                 break;
 
             case 'contact':
@@ -158,18 +163,27 @@ function handleEventsRoutes(string $method, ?string $action, ?string $id): void
         } elseif ($action === 'meta') {
             // GET /events/meta
             $controller->meta();
+        } elseif (is_numeric($action) && $id === 'ics') {
+            // GET /events/{id}/ics
+            $controller->downloadICS((int)$action);
         } elseif (is_numeric($action) || !is_numeric($action)) {
             // GET /events/{id} or GET /events/{slug}
             $controller->show($action);
         } else {
-            Response::error('Invalid events endpoint', 404);
+            Response::json(['success' => false, 'error' => 'Invalid events endpoint'], 404);
         }
     } elseif ($method === 'POST') {
         if (!$action) {
             // POST /events (future admin feature)
             $controller->store();
+        } elseif ($action === 'validate-rrule') {
+            // POST /events/validate-rrule
+            $controller->validateRRule();
+        } elseif ($action === 'preview-recurring') {
+            // POST /events/preview-recurring
+            $controller->previewRecurring();
         } else {
-            Response::error('Invalid events endpoint', 404);
+            Response::json(['success' => false, 'error' => 'Invalid events endpoint'], 404);
         }
     } elseif ($method === 'PUT') {
         if (is_numeric($action)) {
@@ -200,6 +214,31 @@ function handleContactRoutes(string $method, ?string $action): void
         $controller->submit();
     } else {
         Response::error('Invalid contact endpoint', 404);
+    }
+}
+
+// Handle form routes
+function handleFormRoutes(string $method, ?string $action): void
+{
+    $controller = new FormController();
+
+    if ($method === 'POST') {
+        switch ($action) {
+            case 'submit-event':
+                // POST /forms/submit-event
+                $controller->submitEvent();
+                break;
+
+            case 'contact':
+                // POST /forms/contact
+                $controller->submitContact();
+                break;
+
+            default:
+                Response::json(['success' => false, 'error' => 'Invalid form endpoint'], 404);
+        }
+    } else {
+        Response::json(['success' => false, 'error' => 'Method not allowed'], 405);
     }
 }
 

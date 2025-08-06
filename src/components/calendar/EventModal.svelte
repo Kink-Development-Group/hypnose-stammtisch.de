@@ -5,11 +5,7 @@
   import ICAL from "ical.js";
   import { marked } from "marked";
   import { onMount } from "svelte";
-  import {
-    closeEventModal,
-    selectedEvent,
-    showEventModal,
-  } from "../../stores/calendar";
+  import { selectedEvent, showEventModal } from "../../stores/calendar";
 
   let modalElement: HTMLElement;
   let previousFocus: HTMLElement | null = null;
@@ -75,7 +71,7 @@
   };
 
   const closeModal = () => {
-    closeEventModal();
+    closeModal();
 
     // Restore focus
     if (previousFocus) {
@@ -134,45 +130,73 @@
     }
   };
 
-  // Generate ICS file for single event
-  const downloadICS = () => {
+  // Download ICS file for single event
+  const downloadICS = async () => {
     if (!event) return;
 
     try {
-      const comp = new ICAL.Component(["vcalendar", [], []]);
-      comp.updatePropertyWithValue("version", "2.0");
-      comp.updatePropertyWithValue(
-        "prodid",
-        "-//Hypnose Stammtisch//Event//EN",
-      );
+      // Use backend endpoint for ICS generation
+      const response = await fetch(`/api/events/${event.id}/ics`);
 
-      const vevent = new ICAL.Component("vevent");
-      const icalEvent = new ICAL.Event(vevent);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      icalEvent.summary = event.title;
-      icalEvent.description = event.description;
-      icalEvent.location = locationText;
-      icalEvent.startDate = ICAL.Time.fromJSDate(event.startDate, false);
-      icalEvent.endDate = ICAL.Time.fromJSDate(event.endDate, false);
-      icalEvent.uid = `event-${event.id}@hypnose-stammtisch.de`;
-
-      comp.addSubcomponent(vevent);
-
-      const icsData = comp.toString();
-      const blob = new Blob([icsData], { type: "text/calendar" });
-      const url = URL.createObjectURL(blob);
-
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${event.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.ics`;
+      a.download = `event-${event.id}.ics`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Error generating ICS file:", error);
-      alert("Fehler beim Generieren der Kalenderdatei");
+      console.error("Error downloading ICS file:", error);
+
+      // Fallback to client-side generation
+      try {
+        const icsContent = generateClientSideICS();
+        const blob = new Blob([icsContent], {
+          type: "text/calendar;charset=utf-8",
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `event-${event.id}.ics`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch (fallbackError) {
+        console.error("Fallback ICS generation failed:", fallbackError);
+        alert(
+          "Fehler beim Erstellen der Kalenderdatei. Bitte versuchen Sie es später erneut.",
+        );
+      }
     }
+  };
+
+  // Client-side ICS generation as fallback
+  const generateClientSideICS = (): string => {
+    if (!event) throw new Error("No event data");
+
+    const comp = new ICAL.Component(["vcalendar", [], []]);
+    comp.updatePropertyWithValue("version", "2.0");
+    comp.updatePropertyWithValue("prodid", "-//Hypnose Stammtisch//Event//EN");
+
+    const vevent = new ICAL.Component("vevent");
+    const icalEvent = new ICAL.Event(vevent);
+
+    icalEvent.summary = event.title;
+    icalEvent.description = event.description;
+    icalEvent.location = locationText;
+    icalEvent.startDate = ICAL.Time.fromJSDate(event.startDate, false);
+    icalEvent.endDate = ICAL.Time.fromJSDate(event.endDate, false);
+    icalEvent.uid = `event-${event.id}@hypnose-stammtisch.de`;
+
+    comp.addSubcomponent(vevent);
+    return comp.toString();
   };
 
   // Copy event link
@@ -231,18 +255,24 @@
             </h2>
             <div class="flex flex-wrap gap-2">
               {#each event.tags as tag}
-                <span class="badge badge-primary">
+                <span
+                  class="px-2 py-1 text-xs font-medium bg-primary-600 text-smoke-50 rounded-full"
+                >
                   {tag}
                 </span>
               {/each}
               {#if event.beginnerFriendly}
-                <span class="badge badge-consent"> ✨ Anfängerfreundlich </span>
+                <span
+                  class="px-2 py-1 text-xs font-medium bg-consent text-charcoal-900 rounded-full"
+                >
+                  ✨ Anfängerfreundlich
+                </span>
               {/if}
             </div>
           </div>
 
           <button
-            class="btn btn-ghost p-2"
+            class="p-2 text-smoke-400 hover:text-smoke-200 hover:bg-charcoal-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400"
             on:click={closeModal}
             aria-label="Modal schließen"
           >
@@ -264,7 +294,7 @@
         </header>
 
         <!-- Modal body -->
-        <div class="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+        <div class="flex-1 p-6 space-y-6 overflow-y-auto modal-container">
           <!-- Event details -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Date and time -->
@@ -408,15 +438,24 @@
 
         <!-- Modal footer -->
         <footer
-          class="flex flex-col sm:flex-row gap-3 p-6 border-t border-charcoal-700"
+          class="flex-shrink-0 flex flex-col sm:flex-row gap-3 p-6 border-t border-charcoal-700"
         >
-          <button class="btn btn-primary flex-1" on:click={downloadICS}>
+          <button
+            class="flex-1 px-6 py-3 bg-accent-600 hover:bg-accent-700 text-charcoal-900 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-800"
+            on:click={downloadICS}
+          >
             📅 Kalendereintrag herunterladen
           </button>
-          <button class="btn btn-outline flex-1" on:click={copyEventLink}>
+          <button
+            class="flex-1 px-6 py-3 border border-accent-600 text-accent-400 hover:bg-accent-600 hover:text-charcoal-900 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-800"
+            on:click={copyEventLink}
+          >
             🔗 Link kopieren
           </button>
-          <button class="btn btn-ghost" on:click={closeModal}>
+          <button
+            class="px-6 py-3 text-smoke-400 hover:text-smoke-200 hover:bg-charcoal-700 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-800"
+            on:click={closeModal}
+          >
             Schließen
           </button>
         </footer>
@@ -424,3 +463,39 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* Additional styles for better accessibility */
+  .modal-container {
+    scrollbar-width: thin;
+    scrollbar-color: theme("colors.charcoal.600") theme("colors.charcoal.800");
+  }
+
+  /* Webkit scrollbar styling */
+  .modal-container::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .modal-container::-webkit-scrollbar-track {
+    background: theme("colors.charcoal.800");
+  }
+
+  .modal-container::-webkit-scrollbar-thumb {
+    background: theme("colors.charcoal.600");
+    border-radius: 4px;
+  }
+
+  .modal-container::-webkit-scrollbar-thumb:hover {
+    background: theme("colors.charcoal.500");
+  }
+
+  /* Focus styles for better accessibility */
+  .modal-container:focus {
+    outline: none;
+  }
+
+  /* Ensure modal is above everything */
+  [role="dialog"] {
+    z-index: 100;
+  }
+</style>

@@ -417,4 +417,163 @@ class Event
 
         return $result !== false;
     }
+
+    /**
+     * Get all events including recurring instances for a date range
+     */
+    public static function getExpandedEvents(Carbon $startDate, Carbon $endDate, array $filters = []): array
+    {
+        // First get all base events
+        $baseEvents = self::getAllPublished($filters);
+        $expandedEvents = [];
+
+        foreach ($baseEvents as $event) {
+            if ($event->isRecurring && !empty($event->rrule)) {
+                // Expand recurring event
+                try {
+                    $eventArray = $event->toArray();
+                    $instances = \HypnoseStammtisch\Utils\RRuleProcessor::expandRecurringEvent(
+                        $eventArray,
+                        $startDate,
+                        $endDate,
+                        []
+                    );
+
+                    // Convert back to Event objects
+                    foreach ($instances as $instance) {
+                        $expandedEvents[] = self::fromArray($instance);
+                    }
+                } catch (\Exception $e) {
+                    error_log("Error expanding recurring event {$event->id}: " . $e->getMessage());
+                    // Fall back to base event
+                    $eventStart = Carbon::parse($event->startDatetime);
+                    if ($eventStart->between($startDate, $endDate)) {
+                        $expandedEvents[] = $event;
+                    }
+                }
+            } else {
+                // Check if single event falls in date range
+                $eventStart = Carbon::parse($event->startDatetime);
+                if ($eventStart->between($startDate, $endDate)) {
+                    $expandedEvents[] = $event;
+                }
+            }
+        }
+
+        // Sort by start date
+        usort($expandedEvents, function($a, $b) {
+            return strtotime($a->startDatetime) - strtotime($b->startDatetime);
+        });
+
+        return $expandedEvents;
+    }
+
+    /**
+     * Create recurring event with RRULE
+     */
+    public static function createRecurring(array $data): self
+    {
+        // Validate RRULE if provided
+        if (!empty($data['rrule'])) {
+            $errors = \HypnoseStammtisch\Utils\RRuleProcessor::validateRRule($data['rrule']);
+            if (!empty($errors)) {
+                throw new \InvalidArgumentException('Invalid RRULE: ' . implode(', ', $errors));
+            }
+        }
+
+        $data['is_recurring'] = true;
+        $event = self::fromArray($data);
+        $event->save();
+        return $event;
+    }
+
+    /**
+     * Add exception date to recurring event
+     */
+    public function addExceptionDate(string $date): bool
+    {
+        if (!$this->isRecurring) {
+            throw new \InvalidArgumentException('Cannot add exception date to non-recurring event');
+        }
+
+        try {
+            $exdates = $this->getExceptionDates();
+            if (!in_array($date, $exdates)) {
+                $exdates[] = $date;
+                sort($exdates);
+
+                return $this->updateExceptionDates($exdates);
+            }
+            return true;
+        } catch (\Exception $e) {
+            error_log("Error adding exception date: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Remove exception date from recurring event
+     */
+    public function removeExceptionDate(string $date): bool
+    {
+        if (!$this->isRecurring) {
+            throw new \InvalidArgumentException('Cannot remove exception date from non-recurring event');
+        }
+
+        try {
+            $exdates = $this->getExceptionDates();
+            $index = array_search($date, $exdates);
+
+            if ($index !== false) {
+                unset($exdates[$index]);
+                $exdates = array_values($exdates);
+
+                return $this->updateExceptionDates($exdates);
+            }
+            return true;
+        } catch (\Exception $e) {
+            error_log("Error removing exception date: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get exception dates for recurring event
+     */
+    public function getExceptionDates(): array
+    {
+        if (!$this->isRecurring) {
+            return [];
+        }
+
+        try {
+            $sql = "SELECT exdates_utc FROM event_series WHERE id = (SELECT series_id FROM events WHERE id = ?)";
+            $result = Database::fetchOne($sql, [$this->id]);
+
+            if ($result && !empty($result['exdates_utc'])) {
+                $exdates = json_decode($result['exdates_utc'], true);
+                return is_array($exdates) ? $exdates : [];
+            }
+
+            return [];
+        } catch (\Exception $e) {
+            error_log("Error getting exception dates: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Update exception dates for recurring event
+     */
+    private function updateExceptionDates(array $exdates): bool
+    {
+        try {
+            $sql = "UPDATE event_series SET exdates_utc = ? WHERE id = (SELECT series_id FROM events WHERE id = ?)";
+            $result = Database::execute($sql, [json_encode($exdates), $this->id]);
+            return $result !== false;
+        } catch (\Exception $e) {
+            error_log("Error updating exception dates: " . $e->getMessage());
+            return false;
+        }
+    }
 }

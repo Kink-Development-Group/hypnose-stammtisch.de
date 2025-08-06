@@ -7,6 +7,8 @@ namespace HypnoseStammtisch\Controllers;
 use HypnoseStammtisch\Models\Event;
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Utils\Response;
+use HypnoseStammtisch\Utils\ICSGenerator;
+use HypnoseStammtisch\Utils\RRuleProcessor;
 use HypnoseStammtisch\Config\Config;
 use Carbon\Carbon;
 
@@ -25,30 +27,25 @@ class CalendarController
         try {
             // Validate token if provided
             if ($token && !$this->validateFeedToken($token)) {
-                Response::error('Invalid calendar feed token', 403);
+                Response::json(['success' => false, 'error' => 'Invalid calendar feed token'], 403);
                 return;
             }
 
-            // Get events
-            $events = Event::getAllPublished([
-                'from_date' => date('Y-m-d', strtotime('-1 month')),
-                'to_date' => date('Y-m-d', strtotime('+1 year'))
-            ]);
+            // Get events with expansion for recurring events
+            $events = $this->getExpandedEventsForFeed();
 
-            // Generate ICS content
-            $icsContent = $this->generateIcsContent($events);
+            // Generate ICS content using the new ICSGenerator
+            $filename = $token ? 'private-calendar.ics' : 'public-calendar.ics';
+            ICSGenerator::outputCalendarFeed($events, $filename);
 
             // Update token access tracking
             if ($token) {
                 $this->updateTokenAccess($token);
             }
 
-            // Send ICS response
-            Response::ics($icsContent, 'hypnose-stammtisch.ics');
-
         } catch (\Exception $e) {
             error_log("Calendar feed error: " . $e->getMessage());
-            Response::error('Failed to generate calendar feed', 500);
+            Response::json(['success' => false, 'error' => 'Failed to generate calendar feed'], 500);
         }
     }
 
@@ -401,5 +398,62 @@ class CalendarController
         $filename = preg_replace('/-+/', '-', $filename);
 
         return trim($filename, '-');
+    }
+
+    /**
+     * Get expanded events for calendar feed including recurring instances
+     */
+    private function getExpandedEventsForFeed(): array
+    {
+        // Get base events for the next year
+        $baseEvents = Event::getAllPublished([
+            'from_date' => date('Y-m-d', strtotime('-1 month')),
+            'to_date' => date('Y-m-d', strtotime('+1 year'))
+        ]);
+
+        $expandedEvents = [];
+        $startDate = Carbon::now()->subMonth();
+        $endDate = Carbon::now()->addYear();
+
+        foreach ($baseEvents as $event) {
+            $eventArray = $this->eventToArray($event);
+
+            if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
+                // Expand recurring event
+                try {
+                    $instances = RRuleProcessor::expandRecurringEvent(
+                        $eventArray,
+                        $startDate,
+                        $endDate,
+                        json_decode($eventArray['exdates'] ?? '[]', true)
+                    );
+                    $expandedEvents = array_merge($expandedEvents, $instances);
+                } catch (\Exception $e) {
+                    error_log("Error expanding recurring event {$eventArray['id']}: " . $e->getMessage());
+                    // Add the base event if expansion fails
+                    $expandedEvents[] = $eventArray;
+                }
+            } else {
+                // Add single event
+                $expandedEvents[] = $eventArray;
+            }
+        }
+
+        return $expandedEvents;
+    }
+
+    /**
+     * Helper function to convert event to array (handles mock objects)
+     */
+    private function eventToArray($event): array
+    {
+        if (method_exists($event, 'toArray')) {
+            return $event->toArray();
+        } elseif (isset($event->toArray) && is_callable($event->toArray)) {
+            return call_user_func($event->toArray);
+        } else {
+            // Fallback for mock objects
+            return (array) $event;
+        }
     }
 }

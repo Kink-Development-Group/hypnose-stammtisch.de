@@ -96,28 +96,75 @@
     openEventModal(event);
   };
 
-  // Keyboard navigation
+  // Keyboard navigation with better accessibility
   const handleKeydown = (e: KeyboardEvent) => {
-    if (
-      e.target !== calendarGrid &&
-      !calendarGrid?.contains(e.target as Node)
-    ) {
+    const target = e.target as HTMLElement;
+
+    // Only handle keys when focus is on calendar or its children
+    if (!calendarGrid?.contains(target) && target !== calendarGrid) {
       return;
     }
+
+    let handled = false;
 
     switch (e.key) {
       case "ArrowLeft":
         e.preventDefault();
         goToPrevious();
+        handled = true;
         break;
       case "ArrowRight":
         e.preventDefault();
         goToNext();
+        handled = true;
         break;
       case "Home":
         e.preventDefault();
         goToToday();
+        handled = true;
         break;
+      case "PageUp":
+        e.preventDefault();
+        if (view === "month") {
+          currentDate.update((date) =>
+            dayjs(date).subtract(1, "month").toDate(),
+          );
+        } else {
+          currentDate.update((date) =>
+            dayjs(date).subtract(1, "week").toDate(),
+          );
+        }
+        handled = true;
+        break;
+      case "PageDown":
+        e.preventDefault();
+        if (view === "month") {
+          currentDate.update((date) => dayjs(date).add(1, "month").toDate());
+        } else {
+          currentDate.update((date) => dayjs(date).add(1, "week").toDate());
+        }
+        handled = true;
+        break;
+    }
+
+    if (handled) {
+      // Announce navigation to screen readers
+      const announcement =
+        view === "month"
+          ? `Kalenderansicht für ${dayjs($currentDate).format("MMMM YYYY")}`
+          : `Wochenansicht für ${dayjs($currentDate).startOf("week").format("DD.MM.")} bis ${dayjs($currentDate).endOf("week").format("DD.MM.YYYY")}`;
+
+      // Create temporary live region for announcements
+      const liveRegion = document.createElement("div");
+      liveRegion.setAttribute("aria-live", "polite");
+      liveRegion.setAttribute("aria-atomic", "true");
+      liveRegion.className = "sr-only";
+      liveRegion.textContent = announcement;
+      document.body.appendChild(liveRegion);
+
+      setTimeout(() => {
+        document.body.removeChild(liveRegion);
+      }, 1000);
     }
   };
 
@@ -129,23 +176,36 @@
   });
 </script>
 
-<div class="calendar-container">
+<div
+  class="calendar-container"
+  role="application"
+  aria-label="Hypnose Stammtisch Kalender"
+>
   <!-- Calendar header -->
   <header class="flex items-center justify-between mb-6">
     <div>
-      <h2 class="text-2xl font-display font-semibold text-smoke-50">
+      <h2
+        class="text-2xl font-display font-semibold text-smoke-50"
+        id="calendar-title"
+      >
         {view === "month" ? currentMonth : currentWeek}
       </h2>
-      <p class="text-sm text-smoke-400 mt-1">
-        Verwende die Pfeiltasten zur Navigation, Home für heute
+      <p class="text-sm text-smoke-400 mt-1" id="calendar-instructions">
+        Tastaturnavigation: Pfeiltasten für vor/zurück, Bild hoch/runter für
+        Monat/Woche, Pos1 für heute
       </p>
     </div>
 
-    <div class="flex items-center space-x-2">
+    <div
+      class="flex items-center space-x-2"
+      role="toolbar"
+      aria-label="Kalender Navigation"
+    >
       <button
-        class="btn btn-ghost p-2"
+        class="btn btn-ghost p-2 focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-900"
         on:click={goToPrevious}
         aria-label="Vorherige {view === 'month' ? 'Monat' : 'Woche'}"
+        aria-describedby="calendar-instructions"
       >
         <svg
           class="w-5 h-5"
@@ -163,14 +223,20 @@
         </svg>
       </button>
 
-      <button class="btn btn-outline px-4 py-2" on:click={goToToday}>
+      <button
+        class="btn btn-outline px-4 py-2 focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-900"
+        on:click={goToToday}
+        aria-label="Zu heute navigieren"
+        aria-describedby="calendar-instructions"
+      >
         Heute
       </button>
 
       <button
-        class="btn btn-ghost p-2"
+        class="btn btn-ghost p-2 focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-900"
         on:click={goToNext}
         aria-label="Nächste {view === 'month' ? 'Monat' : 'Woche'}"
+        aria-describedby="calendar-instructions"
       >
         <svg
           class="w-5 h-5"
@@ -196,16 +262,20 @@
       bind:this={calendarGrid}
       class="calendar-grid"
       role="grid"
-      aria-label="Kalender für {currentMonth}"
+      aria-labelledby="calendar-title"
+      aria-describedby="calendar-instructions"
       tabindex="0"
     >
       <!-- Day headers -->
       <div class="contents" role="row">
-        {#each ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] as dayName}
+        {#each ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] as dayName, index}
           <div
             class="calendar-day-header p-3 text-center text-sm font-medium text-smoke-400 border-b border-charcoal-700"
             role="columnheader"
+            aria-label={dayName}
+            id="day-header-{index}"
           >
+            >
             {dayName}
           </div>
         {/each}
@@ -305,9 +375,15 @@
   {/if}
 
   <!-- Events summary -->
-  <footer class="mt-6 text-center text-sm text-smoke-400">
-    {events.length} Veranstaltung{events.length !== 1 ? "en" : ""}
-    {view === "month" ? "in diesem Monat" : "in dieser Woche"}
+  <footer
+    class="mt-6 text-center text-sm text-smoke-400"
+    aria-live="polite"
+    aria-atomic="true"
+  >
+    <span id="events-summary">
+      {events.length} Veranstaltung{events.length !== 1 ? "en" : ""}
+      {view === "month" ? "in diesem Monat" : "in dieser Woche"}
+    </span>
   </footer>
 </div>
 
@@ -322,8 +398,38 @@
     outline-offset: -2px;
   }
 
+  .calendar-day:focus-within {
+    outline: 2px solid theme("colors.accent.400");
+    outline-offset: -2px;
+  }
+
+  /* Screen reader only class */
+  :global(.sr-only) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .week-view {
     min-height: 500px;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .calendar-day {
+      border: 2px solid;
+    }
+
+    .calendar-day:focus,
+    .calendar-day:focus-within {
+      outline: 3px solid;
+    }
   }
 
   @media (max-width: 768px) {
