@@ -222,7 +222,7 @@
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
       <a href="/" use:link class="btn btn-primary"> Zur Startseite </a>
       <a href="/contact" use:link class="btn btn-outline"> Hilfe anfordern </a>
-      <button onclick="history.back()" class="btn btn-outline">
+      <button on:click={() => history.back()} class="btn btn-outline">
         Zurück zur vorherigen Seite
       </button>
     </div>

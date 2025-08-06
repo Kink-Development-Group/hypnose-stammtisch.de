@@ -62,10 +62,8 @@
   };
 </script>
 
-<article
-  class="card cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-medium focus-within:ring-2 focus-within:ring-accent-400 focus-within:ring-offset-2 focus-within:ring-offset-charcoal-900"
-  role="button"
-  tabindex="0"
+<button
+  class="card cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-medium focus-within:ring-2 focus-within:ring-accent-400 focus-within:ring-offset-2 focus-within:ring-offset-charcoal-900 w-full text-left"
   aria-label="Event: {event.title}. Klicken für Details."
   on:click={handleClick}
   on:keydown={handleKeydown}
@@ -212,7 +210,7 @@
 
     <span class="text-accent-400" aria-hidden="true"> Details → </span>
   </footer>
-</article>
+</button>
 
 <style>
   .line-clamp-3 {
@@ -223,7 +221,7 @@
   }
 
   /* Hover effects */
-  article:hover .text-accent-400 {
+  button:hover .text-accent-400 {
     @apply text-accent-300;
   }
 

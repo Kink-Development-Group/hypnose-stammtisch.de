@@ -34,11 +34,7 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <header class="bg-charcoal-900 border-b border-charcoal-700 sticky top-0 z-30">
-  <nav
-    class="container mx-auto px-4 py-4"
-    role="navigation"
-    aria-label="Hauptnavigation"
-  >
+  <nav class="container mx-auto px-4 py-4" aria-label="Hauptnavigation">
     <div class="flex items-center justify-between">
       <!-- Logo and Brand -->
       <div class="flex items-center space-x-3">

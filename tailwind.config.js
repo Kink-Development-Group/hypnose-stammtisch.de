@@ -101,6 +101,12 @@ export default {
         18: "4.5rem",
         88: "22rem",
       },
+      boxShadow: {
+        glow: "0 0 20px rgba(65, 242, 192, 0.3)",
+        medium:
+          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+        soft: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+      },
       animation: {
         "fade-in": "fadeIn 0.3s ease-in-out",
         "slide-up": "slideUp 0.3s ease-out",

@@ -60,23 +60,23 @@
   }
 
   // Clear status messages after some time
-  onMount(() => {
-    let timeout: NodeJS.Timeout;
+  let timeout: NodeJS.Timeout;
 
-    const clearMessage = () => {
-      if (formStatus === "success" || formStatus === "error") {
-        timeout = setTimeout(() => {
-          formStatus = "idle";
-          formMessage = "";
-        }, 5000);
-      }
-    };
-
-    $: if (formStatus && formMessage) {
-      clearTimeout(timeout);
-      clearMessage();
+  const clearMessage = () => {
+    if (formStatus === "success" || formStatus === "error") {
+      timeout = setTimeout(() => {
+        formStatus = "idle";
+        formMessage = "";
+      }, 5000);
     }
+  };
 
+  $: if (formStatus && formMessage) {
+    clearTimeout(timeout);
+    clearMessage();
+  }
+
+  onMount(() => {
     return () => clearTimeout(timeout);
   });
 </script>
