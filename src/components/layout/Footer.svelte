@@ -52,14 +52,14 @@
         <h3 class="text-smoke-50 font-semibold mb-4">Community</h3>
         <nav aria-label="Community-Navigation">
           <ul class="space-y-2">
-            {#each footerLinks.community as link}
+            {#each footerLinks.community as linkItem}
               <li>
                 <a
-                  href={link.href}
+                  href={linkItem.href}
                   use:link
                   class="text-smoke-300 hover:text-accent-400 text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal-800 rounded-sm"
                 >
-                  {link.label}
+                  {linkItem.label}
                 </a>
               </li>
             {/each}
@@ -72,14 +72,14 @@
         <h3 class="text-smoke-50 font-semibold mb-4">Rechtliches</h3>
         <nav aria-label="Rechtliche Navigation">
           <ul class="space-y-2">
-            {#each footerLinks.legal as link}
+            {#each footerLinks.legal as linkItem}
               <li>
                 <a
-                  href={link.href}
+                  href={linkItem.href}
                   use:link
                   class="text-smoke-300 hover:text-accent-400 text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal-800 rounded-sm"
                 >
-                  {link.label}
+                  {linkItem.label}
                 </a>
               </li>
             {/each}

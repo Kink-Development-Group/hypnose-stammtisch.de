@@ -60,7 +60,7 @@
   }
 
   // Clear status messages after some time
-  let timeout: NodeJS.Timeout;
+  let timeout: number;
 
   const clearMessage = () => {
     if (formStatus === "success" || formStatus === "error") {

@@ -1,23 +1,20 @@
 <script lang="ts">
-  import router, { link, push } from "svelte-spa-router";
   import { onMount } from "svelte";
-
+  import router, { push } from "svelte-spa-router";
   // Import pages
-  import Home from "./pages/Home.svelte";
-  import Events from "./pages/Events.svelte";
   import About from "./pages/About.svelte";
-  import Resources from "./pages/Resources.svelte";
   import CodeOfConduct from "./pages/CodeOfConduct.svelte";
   import Contact from "./pages/Contact.svelte";
-  import Privacy from "./pages/Privacy.svelte";
+  import Events from "./pages/Events.svelte";
+  import Home from "./pages/Home.svelte";
   import Imprint from "./pages/Imprint.svelte";
   import NotFound from "./pages/NotFound.svelte";
-
+  import Privacy from "./pages/Privacy.svelte";
+  import Resources from "./pages/Resources.svelte";
   // Import components
-  import Header from "./components/layout/Header.svelte";
-  import Footer from "./components/layout/Footer.svelte";
   import EventModal from "./components/calendar/EventModal.svelte";
-
+  import Footer from "./components/layout/Footer.svelte";
+  import Header from "./components/layout/Header.svelte";
   // Import stores
   import { selectedEvent, showEventModal } from "./stores/calendar";
 
@@ -43,9 +40,23 @@
 
       if (eventMatch) {
         const eventId = parseInt(eventMatch[1]);
-        // Load and show event modal
-        showEventModal.set(true);
-        // In a real app, we'd fetch the event data here
+        // Load event data and show modal
+        fetch(`/api/events/${eventId}`)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`Event not found: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((eventData) => {
+            selectedEvent.set(eventData);
+            showEventModal.set(true);
+          })
+          .catch((error) => {
+            console.error("Failed to load event:", error);
+            // Could add a notification here for user feedback
+            push("/events"); // Redirect to events page if event not found
+          });
       }
     };
 
