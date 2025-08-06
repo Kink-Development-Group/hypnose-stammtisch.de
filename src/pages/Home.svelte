@@ -129,12 +129,6 @@
     aria-labelledby="about-platform-heading"
   >
     <div class="container mx-auto px-4">
-      <h2
-        id="about-platform-heading"
-        class="text-3xl md:text-4xl font-display font-bold text-center text-smoke-50 mb-12"
-      >
-        Über unsere Plattform
-      </h2>
       <AboutPlatform />
     </div>
   </section>
