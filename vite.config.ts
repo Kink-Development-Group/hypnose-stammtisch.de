@@ -5,7 +5,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [svelte()],
   build: {
-    outDir: "public",
+    outDir: "dist",
     emptyOutDir: true,
     rollupOptions: {
       output: {
