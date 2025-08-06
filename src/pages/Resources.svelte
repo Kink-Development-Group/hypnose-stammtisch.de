@@ -113,7 +113,10 @@
           <div class="space-y-4 text-sm">
             <div>
               <strong class="text-smoke-50">24/7 Krisenhotline:</strong>
-              <p class="text-smoke-300">0800 111 0 111 (kostenlos)</p>
+              <p class="text-smoke-300">
+                0800 111 0 111 (kostenlose Telefonseelsorge) / 116 117
+                (ärztlicher Bereitschaftsdienst)
+              </p>
             </div>
             <div>
               <strong class="text-smoke-50">Event-Moderator:</strong>
@@ -132,20 +135,16 @@
           </h3>
           <div class="space-y-3 text-sm">
             <div class="flex justify-between items-center">
-              <span class="font-medium text-smoke-50">"Stopp"</span>
+              <span class="font-medium text-smoke-50">"Rot / Mayday"</span>
               <span class="text-smoke-300">Sofortiger Abbruch</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="font-medium text-smoke-50">"Pause"</span>
-              <span class="text-smoke-300">Kurze Unterbrechung</span>
             </div>
             <div class="flex justify-between items-center">
               <span class="font-medium text-smoke-50">"Gelb"</span>
               <span class="text-smoke-300">Vorsicht, Grenze erreicht</span>
             </div>
             <div class="flex justify-between items-center">
-              <span class="font-medium text-smoke-50">"Rot"</span>
-              <span class="text-smoke-300">Sofortiger Stopp</span>
+              <span class="font-medium text-smoke-50">"Grün"</span>
+              <span class="text-smoke-300">Alles in Ordnung</span>
             </div>
           </div>
         </div>
@@ -246,13 +245,15 @@
         </summary>
         <div class="text-smoke-300 space-y-3">
           <p>
-            Die meisten unserer Community-Events sind kostenlos. Für spezielle
-            Workshops oder Events mit externen Trainern kann eine geringe Gebühr
-            anfallen.
+            Einige der Community-Events sind kostenlos. Manche Stammtische sind
+            aufgrund des Veranstaltungsortes dazu genötigt, einen geringen
+            Eintritt zu nehmen. Für spezielle Workshops oder Events mit externen
+            Trainern oder Referenten kann eine Gebühr anfallen.
           </p>
           <p>
             Geld sollte niemals ein Hindernis für die Teilnahme sein.
-            Kontaktiere uns, wenn du finanzielle Unterstützung benötigst.
+            Kontaktiere gerne die Organisatoren, wenn du finanzielle
+            Unterstützung benötigst.
           </p>
         </div>
       </details>

@@ -162,7 +162,7 @@
         <h5 class="font-medium text-smoke-50 mb-2">Ist Hypnose sicher?</h5>
         <p class="text-sm text-smoke-300">
           Bei korrekter Anwendung und in unserer kontrollierten Umgebung ist
-          Hypnose sehr sicher. Unsere Moderatoren sind ausgebildet.
+          Hypnose sehr sicher.
         </p>
       </div>
 

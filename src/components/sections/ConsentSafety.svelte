@@ -30,7 +30,6 @@
       details: [
         "Erfahrene Moderatoren und Sicherheitspersonen",
         "Klare Safeword-Systeme und Notfallprotokolle",
-        "Diskrete Beratung und Beschwerdestelle",
       ],
     },
     {
@@ -84,40 +83,4 @@
       </div>
     </div>
   {/each}
-</div>
-
-<!-- Additional safety resources -->
-<div class="mt-12 bg-charcoal-700 border border-charcoal-600 rounded-lg p-6">
-  <h3 class="text-xl font-semibold text-smoke-50 mb-4 text-center">
-    Deine Sicherheit ist unsere Priorität
-  </h3>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-    <div>
-      <div class="text-2xl mb-2" aria-hidden="true">📞</div>
-      <h4 class="font-semibold text-smoke-50 mb-2">24/7 Hotline</h4>
-      <p class="text-sm text-smoke-300">
-        Anonyme Beratung und Unterstützung bei Problemen
-      </p>
-    </div>
-    <div>
-      <div class="text-2xl mb-2" aria-hidden="true">📧</div>
-      <h4 class="font-semibold text-smoke-50 mb-2">Vertrauensstellung</h4>
-      <p class="text-sm text-smoke-300">
-        Sichere Meldestelle für Feedback und Beschwerden
-      </p>
-    </div>
-    <div>
-      <div class="text-2xl mb-2" aria-hidden="true">📚</div>
-      <h4 class="font-semibold text-smoke-50 mb-2">Ressourcen</h4>
-      <p class="text-sm text-smoke-300">
-        Leitfäden und Materialien für sichere Praxis
-      </p>
-    </div>
-  </div>
-
-  <div class="text-center mt-6">
-    <a href="/code-of-conduct" class="btn btn-outline">
-      Vollständigen Verhaltenskodex lesen
-    </a>
-  </div>
 </div>

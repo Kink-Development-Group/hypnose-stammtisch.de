@@ -4,17 +4,17 @@
   const teamMembers = [
     {
       name: "JohnaSwitch",
-      role: "Leitung Hamburger Hypnose Munch",
+      role: "Leitung 2. Hypnose Stammtisch Hamburg, Teil des Teams der Hypnose Stammtische in Hamburg",
       location: "Hamburg",
       description:
-        "Organisiert den monatlichen Hypnose Munch im Club Catonium und führt Einsteiger-Workshops durch.",
+        "Organisiert den monatlichen 2. Hypnose Stammtisch Hamburg im BaSeMent und führt Einsteiger-Workshops durch. (wenn es passt xD)",
       specialties: [
         "Einsteiger-Betreuung",
         "Event-Organisation",
         "Community-Building",
       ],
       contact: {
-        email: "johna@hypnose-stammtisch.de",
+        email: "info@hypnose-stammtisch.de",
         social: "@JohnaSwitch",
       },
     },
@@ -29,12 +29,7 @@
       "Sicherheit und Vertrauen",
       "Inklusivität und Respekt",
     ],
-    coverage: [
-      "Hamburg und Umgebung",
-      "Rhein-Main-Gebiet (Mainz, Frankfurt)",
-      "Bremen",
-      "Weitere deutsche Städte",
-    ],
+    coverage: ["Deutschsprachiger Raum"],
   };
 </script>
 
