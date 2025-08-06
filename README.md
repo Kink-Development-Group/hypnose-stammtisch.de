@@ -1,6 +1,21 @@
-# 🧘‍♀️ Hypnose Stammtisch Dresden
+# 🧘‍♀️ Hypnose Stammtisch - Event Platform
 
-Eine moderne Full-Stack Webanwendung für den Hypnose Stammtisch Dresden mit Svelte Frontend und PHP API Backend.
+Zentrale Plattform für geprüfte Hypnose-Events im deutschsprachigen Raum. Spezialisiert auf Freizeit- und erotische Hypnose mit Fokus auf Konsens, Professionalität und Sicherheit.
+
+## 🎯 Über die Plattform
+
+Diese Website dient als **zentraler Kalender und Informationsquelle** für die deutschsprachige Hypnose-Community:
+
+- **Zielgruppe**: Erwachsene mit Interesse an Freizeit- und erotischer Hypnose
+- **Geografischer Fokus**: Hamburg, Rhein-Main-Gebiet, Bremen und weitere deutsche Städte
+- **Community**: Vom neugierigen Anfänger bis zum erfahrenen Hypnotiseur/Subject
+- **Werte**: Konsens, Professionalität, Sicherheit
+
+### Bekannte Event-Reihen
+
+- **Hamburger Hypnose Munch** - Monatliche Treffen im Club Catonium
+- **Hypnose-Stammtisch Rhein-Main** - Events in Mainz
+- **Hypno Study Frankfurt** - Deeptalk-Stammtisch für Fortgeschrittene
 
 ## ⚡ Quick Start
 

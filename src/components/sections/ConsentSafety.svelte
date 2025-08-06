@@ -4,11 +4,11 @@
       icon: "🛡️",
       title: "Informiertes Einverständnis",
       description:
-        "Alle Aktivitäten erfordern klare, informierte Zustimmung aller Beteiligten.",
+        "Alle Hypnose-Aktivitäten erfordern klare, informierte Zustimmung aller Beteiligten.",
       details: [
-        "Ausführliche Aufklärung vor jeder Session",
-        "Jederzeit widerrufbare Einverständnis",
-        "Keine Überrumpelung oder Druck",
+        "Ausführliche Absprachen vor jeder Session",
+        "Jederzeit widerrufbares Einverständnis",
+        "Keine Hypnose ohne explizite Zustimmung",
       ],
     },
     {
@@ -17,8 +17,8 @@
       description:
         "Ein respektvoller Umgang miteinander ist die Grundlage unserer Community.",
       details: [
-        "Verwendung korrekter Pronomen",
-        "Respekt vor persönlichen Grenzen",
+        "Verwendung korrekter Pronomen und Namen",
+        "Respekt vor persönlichen Grenzen und Limits",
         "Konstruktive und unterstützende Kommunikation",
       ],
     },
@@ -26,22 +26,22 @@
       icon: "🔒",
       title: "Sichere Umgebung",
       description:
-        "Wir schaffen einen geschützten Raum für Experimente und Lernen.",
+        "Wir schaffen geschützte Räume für Experimente und Lernen in der erotischen Hypnose.",
       details: [
-        "Geschulte Moderatoren bei allen Events",
-        "Klare Sicherheitsprotokolle",
-        "Anonyme Meldestelle für Beschwerden",
+        "Erfahrene Moderatoren und Sicherheitspersonen",
+        "Klare Safeword-Systeme und Notfallprotokolle",
+        "Diskrete Beratung und Beschwerdestelle",
       ],
     },
     {
       icon: "📋",
-      title: "Verhaltenskodex",
+      title: "Community-Standards",
       description:
-        "Unsere Community-Richtlinien gewährleisten ein sicheres Miteinander.",
+        "Professionelle Standards gewährleisten sichere erotische Hypnose-Praktiken.",
       details: [
-        "Null-Toleranz für Belästigung",
-        "Vertraulichkeit persönlicher Informationen",
-        "Professionelle Standards bei allen Aktivitäten",
+        "Null-Toleranz für Belästigung und Grenzüberschreitungen",
+        "Strikte Vertraulichkeit und Diskretion",
+        "Geprüfte Events und verantwortungsvolle Veranstalter",
       ],
     },
   ];

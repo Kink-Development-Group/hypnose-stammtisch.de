@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { link } from "svelte-spa-router";
+  import AboutPlatform from "../components/sections/AboutPlatform.svelte";
   import ConsentSafety from "../components/sections/ConsentSafety.svelte";
+  import EventSeries from "../components/sections/EventSeries.svelte";
   import Hero from "../components/sections/Hero.svelte";
   import IntroGuide from "../components/sections/IntroGuide.svelte";
   import UpcomingEvents from "../components/sections/UpcomingEvents.svelte";
@@ -60,6 +62,9 @@
   <!-- Hero Section -->
   <Hero />
 
+  <!-- Event Series Section -->
+  <EventSeries />
+
   <!-- Upcoming Events Section -->
   <section
     class="py-16 bg-charcoal-800"
@@ -107,6 +112,12 @@
       <IntroGuide />
     </div>
   </section>
+
+  <!-- About Platform Section -->
+  <AboutPlatform />
+
+  <!-- Consent & Safety Section -->
+  <ConsentSafety />
 
   <!-- Call to Action Section -->
   <section class="py-16 bg-primary-900" aria-labelledby="cta-heading">

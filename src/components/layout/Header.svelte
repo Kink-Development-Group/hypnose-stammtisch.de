@@ -5,14 +5,18 @@
 
   const navigation = [
     { href: "/", label: "Home", ariaLabel: "Zur Startseite" },
-    { href: "/events", label: "Events", ariaLabel: "Zu den Veranstaltungen" },
-    { href: "/resources", label: "Ressourcen", ariaLabel: "Zu den Ressourcen" },
+    {
+      href: "/events",
+      label: "Stammtische & Events",
+      ariaLabel: "Zu den Veranstaltungen",
+    },
     { href: "/about", label: "Über uns", ariaLabel: "Zur Über-uns-Seite" },
     {
       href: "/code-of-conduct",
       label: "Verhaltenskodex",
       ariaLabel: "Zum Verhaltenskodex",
     },
+    { href: "/contact", label: "Kontakt", ariaLabel: "Zum Kontakt" },
   ];
 
   const toggleMobileMenu = () => {
@@ -49,10 +53,10 @@
             <div
               class="text-xl md:text-2xl font-display font-bold text-smoke-50"
             >
-              Hypnose Stammtisch
+              Hypnose Stammtisch.de
             </div>
             <div class="text-sm text-accent-400 font-medium">
-              Deep Dive. Safe Play.
+              Dive Deep. Play Safe. Trance with fun!
             </div>
           </div>
         </a>

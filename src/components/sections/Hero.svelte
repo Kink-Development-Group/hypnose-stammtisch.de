@@ -60,10 +60,10 @@
       <span
         class="text-gradient bg-gradient-to-r from-accent-400 to-secondary-400 bg-clip-text text-transparent"
       >
-        Deep Dive.
+        Dive Deep.
       </span>
       <br />
-      <span class="text-smoke-50"> Safe Play. </span>
+      <span class="text-smoke-50"> Play Safe. </span>
     </h1>
 
     <!-- Subtitle -->
@@ -73,9 +73,11 @@
         : 'opacity-0 translate-y-4'}"
       style="animation-delay: 0.3s;"
     >
-      Eine einladende Community für sichere und respektvolle
-      Hypnose-Erfahrungen. Entdecke die faszinierende Welt der Hypnose in einem
-      geschützten Rahmen.
+      Zentrale Plattform für <strong>geprüfte Hypnose-Events</strong> im
+      deutschsprachigen Raum. Spezialisiert auf
+      <strong>Freizeit- und erotische Hypnose</strong>
+      mit Fokus auf
+      <strong>Konsens, Professionalität und Sicherheit</strong>.
     </p>
 
     <!-- CTA Buttons -->
@@ -90,7 +92,7 @@
         use:link
         class="btn btn-primary text-lg px-8 py-4 shadow-glow hover:shadow-glow transform hover:scale-105 transition-all duration-300"
       >
-        Kommende Events
+        Stammtische & Events
       </a>
       <a
         href="/about"

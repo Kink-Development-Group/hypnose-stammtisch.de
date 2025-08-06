@@ -42,8 +42,9 @@
           </div>
         </div>
         <p class="text-smoke-300 text-sm leading-relaxed">
-          Eine community-fokussierte Plattform für sichere und respektvolle
-          Hypnose-Veranstaltungen und Workshops.
+          Zentrale Plattform für geprüfte Hypnose-Events im deutschsprachigen
+          Raum. Freizeit- und erotische Hypnose mit Fokus auf Konsens und
+          Sicherheit.
         </p>
       </div>
 
