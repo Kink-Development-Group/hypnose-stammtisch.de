@@ -1,4 +1,5 @@
 import { writable } from "svelte/store";
+import { adminEventHelpers, adminNotifications } from "./adminData";
 
 export interface AdminUser {
   id: number;
@@ -164,35 +165,129 @@ export class AdminAPI {
     return result;
   }
 
-  // Events API
+  // Enhanced Events API with optimistic updates
   static async getEvents() {
-    return this.request("/events");
+    const result = await this.request("/events");
+    if (result.success) {
+      adminEventHelpers.setEvents(result.data.events || []);
+      adminEventHelpers.setSeries(result.data.series || []);
+    }
+    return result;
   }
 
   static async createEvent(eventData: any) {
-    return this.request("/events", {
-      method: "POST",
-      body: JSON.stringify(eventData),
-    });
+    // Optimistische Aktualisierung: Event sofort zur Liste hinzufügen
+    const tempEvent = {
+      ...eventData,
+      id: Date.now(), // Temporäre ID
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    adminEventHelpers.addEvent(tempEvent);
+    adminNotifications.info("Event wird erstellt...");
+
+    try {
+      const result = await this.request("/events", {
+        method: "POST",
+        body: JSON.stringify(eventData),
+      });
+
+      if (result.success) {
+        // Ersetze das temporäre Event mit den echten Daten
+        adminEventHelpers.removeEvent(tempEvent.id);
+        adminEventHelpers.addEvent(result.data);
+        adminNotifications.success("Event erfolgreich erstellt!");
+      } else {
+        // Entferne das temporäre Event bei Fehler
+        adminEventHelpers.removeEvent(tempEvent.id);
+        adminNotifications.error(
+          result.message || "Fehler beim Erstellen des Events",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      adminEventHelpers.removeEvent(tempEvent.id);
+      adminNotifications.error("Netzwerkfehler beim Erstellen des Events");
+      return { success: false, message: "Network error" };
+    }
   }
 
   static async updateEvent(id: number, eventData: any) {
-    return this.request(`/events/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(eventData),
-    });
+    // Optimistische Aktualisierung
+    const updates = {
+      ...eventData,
+      updated_at: new Date().toISOString(),
+    };
+
+    adminEventHelpers.updateEvent(id, updates);
+    adminNotifications.info("Event wird aktualisiert...");
+
+    try {
+      const result = await this.request(`/events/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(eventData),
+      });
+
+      if (result.success) {
+        // Update mit echten Server-Daten
+        adminEventHelpers.updateEvent(id, result.data);
+        adminNotifications.success("Event erfolgreich aktualisiert!");
+      } else {
+        // Lade Events neu bei Fehler (könnte optimiert werden)
+        this.getEvents();
+        adminNotifications.error(
+          result.message || "Fehler beim Aktualisieren des Events",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      this.getEvents();
+      adminNotifications.error("Netzwerkfehler beim Aktualisieren des Events");
+      return { success: false, message: "Network error" };
+    }
   }
 
   static async deleteEvent(id: number) {
-    return this.request(`/events/${id}`, {
-      method: "DELETE",
-    });
+    // Optimistische Aktualisierung: Event sofort entfernen
+    adminEventHelpers.removeEvent(id);
+    adminNotifications.info("Event wird gelöscht...");
+
+    try {
+      const result = await this.request(`/events/${id}`, {
+        method: "DELETE",
+      });
+
+      if (result.success) {
+        adminNotifications.success("Event erfolgreich gelöscht!");
+      } else {
+        // Lade Events neu bei Fehler
+        this.getEvents();
+        adminNotifications.error(
+          result.message || "Fehler beim Löschen des Events",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      this.getEvents();
+      adminNotifications.error("Netzwerkfehler beim Löschen des Events");
+      return { success: false, message: "Network error" };
+    }
   }
 
-  // Messages API
+  // Enhanced Messages API with optimistic updates
   static async getMessages(params: any = {}) {
     const queryString = new URLSearchParams(params).toString();
-    return this.request(`/messages${queryString ? "?" + queryString : ""}`);
+    const result = await this.request(
+      `/messages${queryString ? "?" + queryString : ""}`,
+    );
+    if (result.success) {
+      adminEventHelpers.setMessages(result.data.messages || []);
+    }
+    return result;
   }
 
   static async getMessage(id: number) {
@@ -200,25 +295,102 @@ export class AdminAPI {
   }
 
   static async updateMessageStatus(id: number, status: string) {
-    return this.request(`/messages/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
+    // Optimistische Aktualisierung
+    adminEventHelpers.updateMessage(id, {
+      status,
+      updated_at: new Date().toISOString(),
     });
+    adminNotifications.info("Status wird aktualisiert...");
+
+    try {
+      const result = await this.request(`/messages/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+
+      if (result.success) {
+        adminNotifications.success("Status erfolgreich aktualisiert!");
+        // Lade Statistiken neu
+        this.getMessageStats();
+      } else {
+        this.getMessages();
+        adminNotifications.error(
+          result.message || "Fehler beim Aktualisieren des Status",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      this.getMessages();
+      adminNotifications.error("Netzwerkfehler beim Aktualisieren des Status");
+      return { success: false, message: "Network error" };
+    }
   }
 
   static async markMessageResponded(id: number) {
-    return this.request(`/messages/${id}/responded`, {
-      method: "PATCH",
+    // Optimistische Aktualisierung
+    adminEventHelpers.updateMessage(id, {
+      response_sent: true,
+      updated_at: new Date().toISOString(),
     });
+    adminNotifications.info("Nachricht wird als beantwortet markiert...");
+
+    try {
+      const result = await this.request(`/messages/${id}/responded`, {
+        method: "PATCH",
+      });
+
+      if (result.success) {
+        adminNotifications.success("Nachricht als beantwortet markiert!");
+      } else {
+        this.getMessages();
+        adminNotifications.error(
+          result.message || "Fehler beim Markieren als beantwortet",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      this.getMessages();
+      adminNotifications.error("Netzwerkfehler beim Markieren als beantwortet");
+      return { success: false, message: "Network error" };
+    }
   }
 
   static async deleteMessage(id: number) {
-    return this.request(`/messages/${id}`, {
-      method: "DELETE",
-    });
+    // Optimistische Aktualisierung
+    adminEventHelpers.removeMessage(id);
+    adminNotifications.info("Nachricht wird gelöscht...");
+
+    try {
+      const result = await this.request(`/messages/${id}`, {
+        method: "DELETE",
+      });
+
+      if (result.success) {
+        adminNotifications.success("Nachricht erfolgreich gelöscht!");
+        // Lade Statistiken neu
+        this.getMessageStats();
+      } else {
+        this.getMessages();
+        adminNotifications.error(
+          result.message || "Fehler beim Löschen der Nachricht",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      this.getMessages();
+      adminNotifications.error("Netzwerkfehler beim Löschen der Nachricht");
+      return { success: false, message: "Network error" };
+    }
   }
 
   static async getMessageStats() {
-    return this.request("/messages/stats");
+    const result = await this.request("/messages/stats");
+    if (result.success) {
+      adminEventHelpers.setStats(result.data);
+    }
+    return result;
   }
 }

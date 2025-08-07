@@ -1,10 +1,15 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import { AdminAPI } from "../../stores/admin";
+  import {
+    adminAutoUpdate,
+    adminEventBus,
+    adminLoading,
+    adminMessages,
+    adminStats,
+  } from "../../stores/adminData";
 
-  let messages: any[] = [];
-  let loading = true;
   let error = "";
   let selectedMessage: any = null;
   let deleteConfirm: any = null;
@@ -14,16 +19,40 @@
     status: "",
     subject: "",
   };
-  let stats: any = {};
+
+  // Reactive subscriptions
+  $: messages = $adminMessages;
+  $: stats = $adminStats;
+  $: loading = $adminLoading;
 
   onMount(async () => {
     await loadMessages();
     await loadStats();
+
+    // Starte Auto-Update
+    adminAutoUpdate.start(30000); // 30 Sekunden
+
+    // Event Bus Listener für automatische Updates
+    const unsubscribeEventBus = adminEventBus.subscribe((event) => {
+      if (event?.data?.autoRefresh || event?.data?.manualRefresh) {
+        loadMessages();
+        loadStats();
+      }
+    });
+
+    return () => {
+      unsubscribeEventBus();
+    };
+  });
+
+  onDestroy(() => {
+    // Stoppe Auto-Update beim Verlassen der Komponente
+    adminAutoUpdate.stop();
   });
 
   async function loadMessages() {
+    adminLoading.set(true);
     try {
-      loading = true;
       const params = {
         page: currentPage,
         limit: 20,
@@ -35,7 +64,6 @@
       const result = await AdminAPI.getMessages(params);
 
       if (result.success) {
-        messages = result.data.messages || [];
         totalPages = result.data.pagination?.pages || 1;
       } else {
         error = result.message || "Fehler beim Laden der Nachrichten";
@@ -43,29 +71,26 @@
     } catch (e) {
       error = "Netzwerkfehler beim Laden der Nachrichten";
     } finally {
-      loading = false;
+      adminLoading.set(false);
     }
   }
 
   async function loadStats() {
     try {
       const result = await AdminAPI.getMessageStats();
-      if (result.success) {
-        stats = result.data;
+      if (!result.success) {
+        console.error("Fehler beim Laden der Statistiken:", result.message);
       }
     } catch (e) {
-      console.error("Failed to load stats:", e);
+      console.error("Netzwerkfehler beim Laden der Statistiken:", e);
     }
   }
 
   async function updateMessageStatus(messageId: number, status: string) {
     try {
       const result = await AdminAPI.updateMessageStatus(messageId, status);
-
-      if (result.success) {
-        await loadMessages();
-        await loadStats();
-      } else {
+      // Optimistische Updates werden automatisch durch AdminAPI gehandhabt
+      if (!result.success) {
         error = result.message || "Fehler beim Aktualisieren des Status";
       }
     } catch (e) {
@@ -76,11 +101,8 @@
   async function markAsResponded(messageId: number) {
     try {
       const result = await AdminAPI.markMessageResponded(messageId);
-
-      if (result.success) {
-        await loadMessages();
-        await loadStats();
-      } else {
+      // Optimistische Updates werden automatisch durch AdminAPI gehandhabt
+      if (!result.success) {
         error = result.message || "Fehler beim Markieren als beantwortet";
       }
     } catch (e) {
@@ -94,8 +116,7 @@
 
       if (result.success) {
         deleteConfirm = null;
-        await loadMessages();
-        await loadStats();
+        // Reset selected message if it was deleted
         if (selectedMessage?.id === messageId) {
           selectedMessage = null;
         }

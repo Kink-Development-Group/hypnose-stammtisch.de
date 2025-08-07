@@ -3,6 +3,8 @@
   import { link, push } from "svelte-spa-router";
   import { adminAuth } from "../../stores/admin";
   import BrandLogo from "../ui/BrandLogo.svelte";
+  import AdminNotifications from "./AdminNotifications.svelte";
+  import AdminStatusBar from "./AdminStatusBar.svelte";
 
   let isAuthenticated = false;
   let currentUser: any = null;
@@ -48,6 +50,9 @@
           </div>
 
           <div class="flex items-center space-x-4">
+            <!-- Admin Status Bar -->
+            <AdminStatusBar />
+
             <span class="text-sm text-gray-600">
               Angemeldet als: <strong>{currentUser?.username}</strong>
             </span>
@@ -123,6 +128,9 @@
         </div>
       </main>
     </div>
+
+    <!-- Admin Notifications -->
+    <AdminNotifications />
   </div>
 {:else}
   <div class="min-h-screen bg-gray-100 flex items-center justify-center">

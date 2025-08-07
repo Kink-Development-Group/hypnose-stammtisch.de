@@ -1,16 +1,25 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import { AdminAPI } from "../../stores/admin";
+  import {
+    adminAutoUpdate,
+    adminEventBus,
+    adminEvents,
+    adminLoading,
+    adminSeries,
+  } from "../../stores/adminData";
 
-  let events: any[] = [];
-  let series: any[] = [];
-  let loading = true;
   let error = "";
   let showCreateModal = false;
   let showEditModal = false;
   let editingItem: any = null;
   let deleteConfirm: any = null;
+
+  // Reactive subscriptions
+  $: events = $adminEvents;
+  $: series = $adminSeries;
+  $: loading = $adminLoading;
 
   let newEvent = {
     event_type: "single",
@@ -43,23 +52,38 @@
 
   onMount(async () => {
     await loadEvents();
+
+    // Starte Auto-Update
+    adminAutoUpdate.start(30000); // 30 Sekunden
+
+    // Event Bus Listener für automatische Updates
+    const unsubscribeEventBus = adminEventBus.subscribe((event) => {
+      if (event?.data?.autoRefresh || event?.data?.manualRefresh) {
+        loadEvents();
+      }
+    });
+
+    return () => {
+      unsubscribeEventBus();
+    };
+  });
+
+  onDestroy(() => {
+    // Stoppe Auto-Update beim Verlassen der Komponente
+    adminAutoUpdate.stop();
   });
 
   async function loadEvents() {
+    adminLoading.set(true);
     try {
-      loading = true;
       const result = await AdminAPI.getEvents();
-
-      if (result.success) {
-        events = result.data.events || [];
-        series = result.data.series || [];
-      } else {
+      if (!result.success) {
         error = result.message || "Fehler beim Laden der Veranstaltungen";
       }
     } catch (e) {
       error = "Netzwerkfehler beim Laden der Veranstaltungen";
     } finally {
-      loading = false;
+      adminLoading.set(false);
     }
   }
 
@@ -129,7 +153,8 @@
       if (result.success) {
         showCreateModal = false;
         showEditModal = false;
-        await loadEvents();
+        resetForm();
+        // Die Store-Updates werden automatisch durch optimistische Updates gehandhabt
       } else {
         error = result.message || "Fehler beim Speichern";
       }
@@ -144,7 +169,7 @@
 
       if (result.success) {
         deleteConfirm = null;
-        await loadEvents();
+        // Die Store-Updates werden automatisch durch optimistische Updates gehandhabt
       } else {
         error = result.message || "Fehler beim Löschen";
       }
