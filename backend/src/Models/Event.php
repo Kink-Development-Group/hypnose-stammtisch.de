@@ -96,7 +96,6 @@ class Event
             $rows = Database::fetchAll($sql, $params);
 
             return array_map([self::class, 'fromArray'], $rows);
-
         } catch (\Exception $e) {
             // Fallback to mock data if database is not available
             error_log("Database error in getAllPublished, using mock data: " . $e->getMessage());
@@ -119,7 +118,6 @@ class Event
             $rows = Database::fetchAll($sql, [$limit]);
 
             return array_map([self::class, 'fromArray'], $rows);
-
         } catch (\Exception $e) {
             error_log("Database error in getUpcoming, using mock data: " . $e->getMessage());
 
@@ -144,7 +142,6 @@ class Event
             $rows = Database::fetchAll($sql, [$limit]);
 
             return array_map([self::class, 'fromArray'], $rows);
-
         } catch (\Exception $e) {
             error_log("Database error in getFeatured, using mock data: " . $e->getMessage());
 
@@ -208,16 +205,37 @@ class Event
         )";
 
         $params = [
-            $this->title, $this->slug, $this->description, $this->content,
-            $this->startDatetime, $this->endDatetime, $this->timezone,
-            $this->isRecurring, $this->rrule, $this->recurrenceEndDate,
-            $this->locationType, $this->locationName, $this->locationAddress,
-            $this->locationUrl, $this->locationInstructions, $this->category,
-            $this->difficultyLevel, $this->maxParticipants, $this->ageRestriction,
-            $this->requirements, $this->safetyNotes, $this->preparationNotes,
-            $this->status, $this->isFeatured, $this->requiresRegistration,
-            $this->registrationDeadline, $this->organizerName, $this->organizerEmail,
-            $this->organizerBio, json_encode($this->tags), $this->metaDescription,
+            $this->title,
+            $this->slug,
+            $this->description,
+            $this->content,
+            $this->startDatetime,
+            $this->endDatetime,
+            $this->timezone,
+            $this->isRecurring,
+            $this->rrule,
+            $this->recurrenceEndDate,
+            $this->locationType,
+            $this->locationName,
+            $this->locationAddress,
+            $this->locationUrl,
+            $this->locationInstructions,
+            $this->category,
+            $this->difficultyLevel,
+            $this->maxParticipants,
+            $this->ageRestriction,
+            $this->requirements,
+            $this->safetyNotes,
+            $this->preparationNotes,
+            $this->status,
+            $this->isFeatured,
+            $this->requiresRegistration,
+            $this->registrationDeadline,
+            $this->organizerName,
+            $this->organizerEmail,
+            $this->organizerBio,
+            json_encode($this->tags),
+            $this->metaDescription,
             $this->imageUrl
         ];
 
@@ -249,17 +267,39 @@ class Event
             WHERE id = ?";
 
         $params = [
-            $this->title, $this->slug, $this->description, $this->content,
-            $this->startDatetime, $this->endDatetime, $this->timezone,
-            $this->isRecurring, $this->rrule, $this->recurrenceEndDate,
-            $this->locationType, $this->locationName, $this->locationAddress,
-            $this->locationUrl, $this->locationInstructions, $this->category,
-            $this->difficultyLevel, $this->maxParticipants, $this->ageRestriction,
-            $this->requirements, $this->safetyNotes, $this->preparationNotes,
-            $this->status, $this->isFeatured, $this->requiresRegistration,
-            $this->registrationDeadline, $this->organizerName, $this->organizerEmail,
-            $this->organizerBio, json_encode($this->tags), $this->metaDescription,
-            $this->imageUrl, $this->id
+            $this->title,
+            $this->slug,
+            $this->description,
+            $this->content,
+            $this->startDatetime,
+            $this->endDatetime,
+            $this->timezone,
+            $this->isRecurring,
+            $this->rrule,
+            $this->recurrenceEndDate,
+            $this->locationType,
+            $this->locationName,
+            $this->locationAddress,
+            $this->locationUrl,
+            $this->locationInstructions,
+            $this->category,
+            $this->difficultyLevel,
+            $this->maxParticipants,
+            $this->ageRestriction,
+            $this->requirements,
+            $this->safetyNotes,
+            $this->preparationNotes,
+            $this->status,
+            $this->isFeatured,
+            $this->requiresRegistration,
+            $this->registrationDeadline,
+            $this->organizerName,
+            $this->organizerEmail,
+            $this->organizerBio,
+            json_encode($this->tags),
+            $this->metaDescription,
+            $this->imageUrl,
+            $this->id
         ];
 
         Database::execute($sql, $params);
@@ -318,7 +358,7 @@ class Event
             organizerName: $data['organizer_name'] ?? '',
             organizerEmail: $data['organizer_email'] ?? '',
             organizerBio: $data['organizer_bio'] ?? '',
-            tags: json_decode($data['tags'] ?? '[]', true),
+            tags: self::parseTags($data['tags'] ?? null),
             metaDescription: $data['meta_description'] ?? '',
             imageUrl: $data['image_url'] ?? '',
             createdAt: $data['created_at'] ?? null,
@@ -461,7 +501,7 @@ class Event
         }
 
         // Sort by start date
-        usort($expandedEvents, function($a, $b) {
+        usort($expandedEvents, function ($a, $b) {
             return strtotime($a->startDatetime) - strtotime($b->startDatetime);
         });
 
@@ -575,5 +615,39 @@ class Event
             error_log("Error updating exception dates: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Parse tags from database value - handles null, string, and double-encoded JSON
+     */
+    private static function parseTags($tags): array
+    {
+        if ($tags === null || $tags === '') {
+            return [];
+        }
+
+        // If it's already an array, return it
+        if (is_array($tags)) {
+            return $tags;
+        }
+
+        // Try to decode JSON
+        $decoded = json_decode($tags, true);
+
+        // If it's a string that looks like JSON, try to decode again (double-encoded case)
+        if (is_string($decoded)) {
+            $doubleDecoded = json_decode($decoded, true);
+            if (is_array($doubleDecoded)) {
+                return $doubleDecoded;
+            }
+        }
+
+        // If we got an array from first decode, return it
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        // Fallback - treat as single tag
+        return [$tags];
     }
 }
