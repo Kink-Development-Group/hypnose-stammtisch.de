@@ -12,6 +12,10 @@
   import NotFound from "./pages/NotFound.svelte";
   import Privacy from "./pages/Privacy.svelte";
   import Resources from "./pages/Resources.svelte";
+  // Import admin pages
+  import AdminEvents from "./pages/admin/AdminEvents.svelte";
+  import AdminLogin from "./pages/admin/AdminLogin.svelte";
+  import AdminMessages from "./pages/admin/AdminMessages.svelte";
   // Import components
   import EventModal from "./components/calendar/EventModal.svelte";
   import Footer from "./components/layout/Footer.svelte";
@@ -22,6 +26,12 @@
 
   // Define routes
   const routes = {
+    // Admin routes - these need to come before the wildcard
+    "/admin": AdminLogin,
+    "/admin/login": AdminLogin,
+    "/admin/events": AdminEvents,
+    "/admin/messages": AdminMessages,
+    // Regular routes
     "/": Home,
     "/events": Events,
     "/events/:id": Events, // Will show event modal
@@ -32,6 +42,7 @@
     "/contact": Contact,
     "/privacy": Privacy,
     "/imprint": Imprint,
+    // Catch-all route must be last
     "*": NotFound,
   };
 

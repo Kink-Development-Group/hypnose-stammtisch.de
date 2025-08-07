@@ -1,4 +1,4 @@
-# Hypnose Stammtisch - Community Kalender
+# Hypnose-Stammtisch.de - Community Kalender
 
 Eine moderne, barrierefreie Webanwendung für die Hypnose-Community mit Kalender-Funktionalität, Event-Management und RRULE-Unterstützung.
 

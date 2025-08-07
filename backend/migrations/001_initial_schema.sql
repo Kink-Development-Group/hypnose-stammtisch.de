@@ -1,12 +1,6 @@
 -- Migration: Create initial database schema for Hypnose Stammtisch
 -- Version: 001
 -- Date: 2025-08-06
--- Create database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS hypnose_stammtisch CHARACTER
-SET
-  utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE hypnose_stammtisch;
 
 -- Events table
 CREATE TABLE

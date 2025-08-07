@@ -9,6 +9,66 @@ namespace HypnoseStammtisch\Utils;
  */
 class Validator
 {
+    private array $data;
+    private array $errors = [];
+
+    public function __construct(array $data)
+    {
+        $this->data = $data;
+    }
+
+    /**
+     * Check if validation passed
+     */
+    public function isValid(): bool
+    {
+        return empty($this->errors);
+    }
+
+    /**
+     * Get validation errors
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
+    }
+
+    /**
+     * Validate required fields
+     */
+    public function required(array $fields): self
+    {
+        foreach ($fields as $field) {
+            if (!isset($this->data[$field]) || !self::isRequired($this->data[$field])) {
+                $this->errors[$field] = "Field '{$field}' is required";
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * Validate email field
+     */
+    public function email(string $field): self
+    {
+        if (isset($this->data[$field]) && !self::isValidEmail($this->data[$field])) {
+            $this->errors[$field] = "Field '{$field}' must be a valid email address";
+        }
+        return $this;
+    }
+
+    /**
+     * Validate length of field
+     */
+    public function length(string $field, int $min, int $max = null): self
+    {
+        if (isset($this->data[$field]) && !self::isValidLength($this->data[$field], $min, $max)) {
+            $maxText = $max ? " and max {$max}" : '';
+            $this->errors[$field] = "Field '{$field}' must be at least {$min}{$maxText} characters";
+        }
+        return $this;
+    }
+
     /**
      * Validate email address
      */
@@ -243,8 +303,15 @@ class Validator
 
         // Check for suspicious keywords
         $spamKeywords = [
-            'viagra', 'casino', 'lottery', 'winner', 'congratulations',
-            'click here', 'free money', 'guaranteed', 'investment'
+            'viagra',
+            'casino',
+            'lottery',
+            'winner',
+            'congratulations',
+            'click here',
+            'free money',
+            'guaranteed',
+            'investment'
         ];
 
         $lowerMessage = strtolower($message);

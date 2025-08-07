@@ -56,7 +56,7 @@
           href="/"
           use:link
           class="flex items-center space-x-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal-900 rounded-md p-1"
-          aria-label="Hypnose Stammtisch - Zur Startseite"
+          aria-label="Hypnose-Stammtisch.de Zur Startseite"
         >
           <Logo className="w-10 h-10 md:w-12 md:h-12" />
           <div class="hidden sm:block">

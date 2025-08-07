@@ -63,6 +63,13 @@ $path = $_SERVER['PATH_INFO'] ?? $_SERVER['REQUEST_URI'] ?? '/';
 // Remove query string from path
 $path = parse_url($path, PHP_URL_PATH);
 
+// Check if this is an admin API request
+if (str_starts_with($path, '/api/admin')) {
+    // Forward to admin API handler
+    require_once __DIR__ . '/admin.php';
+    return;
+}
+
 // Remove /api prefix if present
 $path = preg_replace('#^/api#', '', $path);
 
@@ -106,7 +113,6 @@ function route(string $method, array $segments): void
             default:
                 Response::error('Endpoint not found', 404);
         }
-
     } catch (Exception $e) {
         error_log("API error: " . $e->getMessage());
 

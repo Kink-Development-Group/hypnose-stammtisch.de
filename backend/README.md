@@ -1,4 +1,4 @@
-# Hypnose Stammtisch - Backend Setup Guide
+# Hypnose-Stammtisch.de Backend Setup Guide
 
 ## Entwicklung (Development)
 

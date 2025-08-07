@@ -163,4 +163,46 @@ class Response
 
         self::json($response);
     }
+
+    /**
+     * Send unauthorized response
+     */
+    public static function unauthorized(array $data = []): void
+    {
+        $response = array_merge([
+            'success' => false,
+            'error' => 'Unauthorized',
+            'status_code' => 401
+        ], $data);
+
+        self::json($response, 401);
+    }
+
+    /**
+     * Send forbidden response
+     */
+    public static function forbidden(array $data = []): void
+    {
+        $response = array_merge([
+            'success' => false,
+            'error' => 'Forbidden',
+            'status_code' => 403
+        ], $data);
+
+        self::json($response, 403);
+    }
+
+    /**
+     * Send not found response
+     */
+    public static function notFound(array $data = []): void
+    {
+        $response = array_merge([
+            'success' => false,
+            'error' => 'Not Found',
+            'status_code' => 404
+        ], $data);
+
+        self::json($response, 404);
+    }
 }

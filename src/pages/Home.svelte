@@ -41,14 +41,14 @@
 </script>
 
 <svelte:head>
-  <title>Hypnose Stammtisch - Deep Dive. Safe Play.</title>
+  <title>Hypnose-Stammtisch.de Deep Dive. Safe Play.</title>
   <meta
     name="description"
     content="Community-focused hypnosis events and workshops. Sichere und respektvolle Hypnose-Veranstaltungen in einer einladenden Gemeinschaft."
   />
   <meta
     property="og:title"
-    content="Hypnose Stammtisch - Deep Dive. Safe Play."
+    content="Hypnose-Stammtisch.de - Deep Dive. Safe Play."
   />
   <meta
     property="og:description"
