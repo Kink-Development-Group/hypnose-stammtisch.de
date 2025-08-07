@@ -18,10 +18,17 @@ class AdminAuth
   public static function startSession(): void
   {
     if (session_status() === PHP_SESSION_NONE) {
+      // Set session cookie parameters before starting session
+      session_set_cookie_params([
+        'lifetime' => 3600 * 8, // 8 hours
+        'path' => '/',
+        'domain' => 'localhost',
+        'secure' => false, // Set to false for local development
+        'httponly' => true,
+        'samesite' => 'Lax' // Changed from 'Strict' to 'Lax' for cross-origin
+      ]);
+
       session_start([
-        'cookie_httponly' => true,
-        'cookie_secure' => isset($_SERVER['HTTPS']),
-        'cookie_samesite' => 'Strict',
         'use_strict_mode' => true,
         'cookie_lifetime' => 3600 * 8, // 8 hours
       ]);

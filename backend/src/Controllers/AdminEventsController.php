@@ -208,8 +208,8 @@ class AdminEventsController
         $input['difficulty_level'] ?? 'all',
         $input['max_participants'] ?? null,
         $input['status'] ?? 'draft',
-        $input['is_featured'] ?? false,
-        $input['requires_registration'] ?? true,
+        isset($input['is_featured']) ? (int)$input['is_featured'] : 0,
+        isset($input['requires_registration']) ? (int)$input['requires_registration'] : 1,
         $input['organizer_name'] ?? null,
         $input['organizer_email'] ?? null,
         isset($input['tags']) ? json_encode($input['tags']) : null

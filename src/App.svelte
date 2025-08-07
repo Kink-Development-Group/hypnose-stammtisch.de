@@ -48,6 +48,18 @@
 
   // Handle deep linking to events
   onMount(() => {
+    // Automatic redirect from non-hash URLs to hash URLs for consistency
+    const currentPath = window.location.pathname;
+    if (currentPath !== "/" && !window.location.hash) {
+      // If we're on a non-root path without a hash, redirect to hash version
+      const hashUrl = `/#${currentPath}`;
+      console.log(
+        `Redirecting from ${currentPath} to ${hashUrl} for consistency`,
+      );
+      window.location.replace(hashUrl);
+      return;
+    }
+
     const handleRouteChanged = (event: CustomEvent) => {
       const path = event.detail.location;
       const eventMatch = path.match(/^\/events\/(\d+)$/);
@@ -97,32 +109,7 @@
 
   <!-- Main content area with proper landmarks -->
   <div role="main" class="flex-1">
-    {#await import('svelte-spa-router')}
-      <div class="flex items-center justify-center min-h-[50vh]">
-        <div class="animate-pulse">
-          <div
-            class="w-16 h-16 border-4 border-accent-400 border-t-transparent rounded-full animate-spin"
-          ></div>
-        </div>
-      </div>
-    {:then}
-      <svelte:component this={router} {routes} />
-    {:catch error}
-      <div class="container mx-auto px-4 py-16 text-center">
-        <h1 class="text-3xl font-display font-bold text-boundaries mb-4">
-          Fehler beim Laden der Anwendung
-        </h1>
-        <p class="text-smoke-300 mb-8">
-          {error?.message || "Ein unerwarteter Fehler ist aufgetreten."}
-        </p>
-        <button
-          class="btn btn-primary"
-          on:click={() => window.location.reload()}
-        >
-          Seite neu laden
-        </button>
-      </div>
-    {/await}
+    <svelte:component this={router} {routes} />
   </div>
 
   <Footer />

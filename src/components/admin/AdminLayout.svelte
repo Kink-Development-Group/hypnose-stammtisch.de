@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { push } from "svelte-spa-router";
+  import { link, push } from "svelte-spa-router";
   import { adminAuth } from "../../stores/admin";
 
   let isAuthenticated = false;
   let currentUser: any = null;
+  let currentPath = "";
 
   onMount(async () => {
     // Check authentication status
@@ -16,6 +17,9 @@
 
     isAuthenticated = true;
     currentUser = status.data;
+
+    // Track current path for navigation highlighting
+    currentPath = window.location.hash.substring(1) || window.location.pathname;
   });
 
   async function handleLogout() {
@@ -62,6 +66,7 @@
         <nav class="mt-5 px-2">
           <a
             href="/admin/events"
+            use:link
             class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
             '/admin/events'
               ? 'bg-blue-100 text-blue-700'
@@ -85,6 +90,7 @@
 
           <a
             href="/admin/messages"
+            use:link
             class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
             '/admin/messages'
               ? 'bg-blue-100 text-blue-700'

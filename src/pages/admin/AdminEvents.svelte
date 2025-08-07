@@ -78,7 +78,7 @@
     // Populate form with existing data
     Object.keys(newEvent).forEach((key) => {
       if (editingItem[key] !== undefined) {
-        newEvent[key] = editingItem[key];
+        (newEvent as any)[key] = editingItem[key];
       }
     });
 
@@ -158,7 +158,7 @@
   }
 
   function getStatusBadge(status: string): string {
-    const statusClasses = {
+    const statusClasses: Record<string, string> = {
       draft: "bg-gray-100 text-gray-800",
       published: "bg-green-100 text-green-800",
       cancelled: "bg-red-100 text-red-800",
@@ -362,10 +362,14 @@
           <form on:submit|preventDefault={handleSave} class="space-y-4">
             <!-- Event Type -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                for="event-type"
+                class="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Veranstaltungstyp
               </label>
               <select
+                id="event-type"
                 bind:value={newEvent.event_type}
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
@@ -377,10 +381,14 @@
             <!-- Basic Info -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="event-title"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Titel *
                 </label>
                 <input
+                  id="event-title"
                   type="text"
                   bind:value={newEvent.title}
                   required
@@ -389,10 +397,14 @@
               </div>
 
               <div class="md:col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="event-description"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Beschreibung
                 </label>
                 <textarea
+                  id="event-description"
                   bind:value={newEvent.description}
                   rows="3"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -400,10 +412,14 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="event-category"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Kategorie
                 </label>
                 <select
+                  id="event-category"
                   bind:value={newEvent.category}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
@@ -416,10 +432,14 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="event-difficulty"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Schwierigkeitsgrad
                 </label>
                 <select
+                  id="event-difficulty"
                   bind:value={newEvent.difficulty_level}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
@@ -435,10 +455,14 @@
               <!-- Single Event Fields -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    for="start-datetime"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Startzeit *
                   </label>
                   <input
+                    id="start-datetime"
                     type="datetime-local"
                     bind:value={newEvent.start_datetime}
                     required
@@ -447,10 +471,14 @@
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    for="end-datetime"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Endzeit *
                   </label>
                   <input
+                    id="end-datetime"
                     type="datetime-local"
                     bind:value={newEvent.end_datetime}
                     required
@@ -462,10 +490,14 @@
               <!-- Series Fields -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    for="start-date"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Startdatum *
                   </label>
                   <input
+                    id="start-date"
                     type="date"
                     bind:value={newEvent.start_date}
                     required
@@ -474,10 +506,14 @@
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    for="end-date"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Enddatum
                   </label>
                   <input
+                    id="end-date"
                     type="date"
                     bind:value={newEvent.end_date}
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -485,10 +521,14 @@
                 </div>
 
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    for="rrule"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     RRULE (Wiederholungsregel) *
                   </label>
                   <input
+                    id="rrule"
                     type="text"
                     bind:value={newEvent.rrule}
                     required
@@ -498,10 +538,14 @@
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    for="default-duration"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Standarddauer (Minuten)
                   </label>
                   <input
+                    id="default-duration"
                     type="number"
                     bind:value={newEvent.default_duration_minutes}
                     min="30"
@@ -515,10 +559,14 @@
             <!-- Location -->
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="location-type"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Ort-Typ
                 </label>
                 <select
+                  id="location-type"
                   bind:value={newEvent.location_type}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
@@ -531,10 +579,14 @@
               {#if newEvent.location_type === "physical" || newEvent.location_type === "hybrid"}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      for="location-name"
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Ort Name
                     </label>
                     <input
+                      id="location-name"
                       type="text"
                       bind:value={newEvent.location_name}
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -542,10 +594,14 @@
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      for="location-address"
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Adresse
                     </label>
                     <input
+                      id="location-address"
                       type="text"
                       bind:value={newEvent.location_address}
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -556,10 +612,14 @@
 
               {#if newEvent.location_type === "online" || newEvent.location_type === "hybrid"}
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    for="location-url"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Online-URL
                   </label>
                   <input
+                    id="location-url"
                     type="url"
                     bind:value={newEvent.location_url}
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -571,10 +631,14 @@
             <!-- Options -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="max-participants"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Max. Teilnehmer
                 </label>
                 <input
+                  id="max-participants"
                   type="number"
                   bind:value={newEvent.max_participants}
                   min="1"
@@ -583,10 +647,14 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="event-status"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Status
                 </label>
                 <select
+                  id="event-status"
                   bind:value={newEvent.status}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 >
@@ -622,10 +690,14 @@
             <!-- Organizer -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="organizer-name"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Organisator Name
                 </label>
                 <input
+                  id="organizer-name"
                   type="text"
                   bind:value={newEvent.organizer_name}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -633,10 +705,14 @@
               </div>
 
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="organizer-email"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Organisator E-Mail
                 </label>
                 <input
+                  id="organizer-email"
                   type="email"
                   bind:value={newEvent.organizer_email}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
