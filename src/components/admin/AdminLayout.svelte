@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { link, push } from "svelte-spa-router";
   import { adminAuth } from "../../stores/admin";
+  import BrandLogo from "../ui/BrandLogo.svelte";
 
   let isAuthenticated = false;
   let currentUser: any = null;
@@ -39,7 +40,8 @@
     <nav class="bg-white shadow-sm border-b">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
-          <div class="flex items-center">
+          <div class="flex items-center space-x-3">
+            <BrandLogo size="sm" />
             <h1 class="text-xl font-semibold text-gray-900">
               Hypnose-Stammtisch.de - Admin
             </h1>

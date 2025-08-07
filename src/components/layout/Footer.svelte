@@ -1,6 +1,6 @@
 <script lang="ts">
   import { link } from "svelte-spa-router";
-  import Logo from "../ui/Logo.svelte";
+  import BrandLogo from "../ui/BrandLogo.svelte";
 
   const currentYear = new Date().getFullYear();
 
@@ -33,7 +33,7 @@
       <!-- Brand section -->
       <div class="md:col-span-1">
         <div class="flex items-center space-x-3 mb-4">
-          <Logo className="w-8 h-8" />
+          <BrandLogo size="sm" />
           <div>
             <div class="text-lg font-display font-bold text-smoke-50">
               Hypnose Stammtisch.de

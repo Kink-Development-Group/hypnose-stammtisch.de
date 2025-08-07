@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { link } from "svelte-spa-router";
-  import Logo from "../ui/Logo.svelte";
+  import BrandLogo from "../ui/BrandLogo.svelte";
 
   let heroRef: HTMLElement;
   let isVisible = false;
@@ -47,7 +47,11 @@
   <div class="relative z-10 text-center px-4 max-w-5xl mx-auto">
     <!-- Logo -->
     <div class="mb-8 flex justify-center">
-      <Logo className="w-24 h-24 md:w-32 md:h-32" showAnimation={isVisible} />
+      <BrandLogo
+        size="xl"
+        className="w-24 h-24 md:w-32 md:h-32"
+        showAnimation={isVisible}
+      />
     </div>
 
     <!-- Main heading -->

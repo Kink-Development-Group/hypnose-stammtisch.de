@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { push } from "svelte-spa-router";
+  import BrandLogo from "../../components/ui/BrandLogo.svelte";
   import { adminAuth } from "../../stores/admin";
 
   let email = "";
@@ -53,7 +54,10 @@
   class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
 >
   <div class="max-w-md w-full space-y-8">
-    <div>
+    <div class="text-center">
+      <div class="flex justify-center mb-6">
+        <BrandLogo size="lg" />
+      </div>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
         Admin Anmeldung
       </h2>

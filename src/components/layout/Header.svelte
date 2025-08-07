@@ -1,7 +1,7 @@
 <script lang="ts">
   import { link } from "svelte-spa-router";
   import { isMobileMenuOpen } from "../../stores/ui";
-  import Logo from "../ui/Logo.svelte";
+  import BrandLogo from "../ui/BrandLogo.svelte";
 
   const navigation = [
     { href: "/", label: "Home", ariaLabel: "Zur Startseite" },
@@ -58,7 +58,7 @@
           class="flex items-center space-x-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal-900 rounded-md p-1"
           aria-label="Hypnose-Stammtisch.de Zur Startseite"
         >
-          <Logo className="w-10 h-10 md:w-12 md:h-12" />
+          <BrandLogo size="md" className="w-10 h-10 md:w-12 md:h-12" />
           <div class="hidden sm:block">
             <div
               class="text-xl md:text-2xl font-display font-bold text-smoke-50"
