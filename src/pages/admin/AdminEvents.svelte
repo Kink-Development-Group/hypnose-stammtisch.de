@@ -50,8 +50,8 @@
     default_duration_minutes: 120,
   };
 
-  onMount(async () => {
-    await loadEvents();
+  onMount(() => {
+    loadEvents();
 
     // Starte Auto-Update
     adminAutoUpdate.start(30000); // 30 Sekunden

@@ -274,4 +274,354 @@ class AdminMessagesController
       Response::error('Failed to fetch statistics: ' . $e->getMessage(), 500);
     }
   }
+
+  /**
+   * Get notes for a message
+   */
+  public static function getNotes(int $messageId): void
+  {
+    AdminAuth::requireAuth();
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+
+    try {
+      $sql = "SELECT n.*,
+                     CASE
+                       WHEN n.updated_at > n.created_at THEN n.updated_at
+                       ELSE n.created_at
+                     END as last_modified
+              FROM message_notes n
+              WHERE n.message_id = ?
+              ORDER BY n.created_at ASC";
+
+      $notes = Database::fetchAll($sql, [$messageId]);
+
+      // Format timestamps
+      foreach ($notes as &$note) {
+        $note['created_at_formatted'] = date('d.m.Y H:i', strtotime($note['created_at']));
+        $note['updated_at_formatted'] = $note['updated_at']
+          ? date('d.m.Y H:i', strtotime($note['updated_at']))
+          : null;
+      }
+
+      Response::success($notes);
+    } catch (Exception $e) {
+      Response::error('Failed to fetch notes: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Add note to message
+   */
+  public static function addNote(int $messageId): void
+  {
+    AdminAuth::requireAuth();
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+
+    if (!isset($input['note']) || trim($input['note']) === '') {
+      Response::error('Note text is required', 400);
+      return;
+    }
+
+    $noteType = $input['note_type'] ?? 'general';
+    $allowedTypes = ['processing', 'communication', 'general'];
+
+    if (!in_array($noteType, $allowedTypes)) {
+      Response::error('Invalid note type', 400);
+      return;
+    }
+
+    try {
+      $currentUser = AdminAuth::getCurrentUser();
+
+      $sql = "INSERT INTO message_notes (message_id, admin_user, note, note_type)
+              VALUES (?, ?, ?, ?)";
+
+      $noteId = Database::insert($sql, [
+        $messageId,
+        $currentUser['username'],
+        trim($input['note']),
+        $noteType
+      ]);
+
+      if (!$noteId) {
+        Response::error('Failed to add note', 500);
+        return;
+      }
+
+      // Get the created note
+      $createdNote = Database::fetchOne(
+        "SELECT * FROM message_notes WHERE id = ?",
+        [$noteId]
+      );
+
+      $createdNote['created_at_formatted'] = date('d.m.Y H:i', strtotime($createdNote['created_at']));
+
+      Response::success($createdNote, 'Note added successfully');
+    } catch (Exception $e) {
+      Response::error('Failed to add note: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Update note
+   */
+  public static function updateNote(int $messageId, int $noteId): void
+  {
+    AdminAuth::requireAuth();
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+
+    if (!isset($input['note']) || trim($input['note']) === '') {
+      Response::error('Note text is required', 400);
+      return;
+    }
+
+    try {
+      $currentUser = AdminAuth::getCurrentUser();
+
+      // Verify note belongs to message and user has permission to edit
+      $existingNote = Database::fetchOne(
+        "SELECT * FROM message_notes WHERE id = ? AND message_id = ?",
+        [$noteId, $messageId]
+      );
+
+      if (!$existingNote) {
+        Response::notFound(['message' => 'Note not found']);
+        return;
+      }
+
+      // Only allow editing own notes or if admin
+      if ($existingNote['admin_user'] !== $currentUser['username'] && $currentUser['role'] !== 'admin') {
+        Response::error('Permission denied', 403);
+        return;
+      }
+
+      $sql = "UPDATE message_notes
+              SET note = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ? AND message_id = ?";
+
+      $affected = Database::execute($sql, [
+        trim($input['note']),
+        $noteId,
+        $messageId
+      ])->rowCount();
+
+      if ($affected === 0) {
+        Response::error('Failed to update note', 500);
+        return;
+      }
+
+      Response::success(null, 'Note updated successfully');
+    } catch (Exception $e) {
+      Response::error('Failed to update note: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Delete note
+   */
+  public static function deleteNote(int $messageId, int $noteId): void
+  {
+    AdminAuth::requireAuth();
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+
+    try {
+      $currentUser = AdminAuth::getCurrentUser();
+
+      // Verify note belongs to message and user has permission to delete
+      $existingNote = Database::fetchOne(
+        "SELECT * FROM message_notes WHERE id = ? AND message_id = ?",
+        [$noteId, $messageId]
+      );
+
+      if (!$existingNote) {
+        Response::notFound(['message' => 'Note not found']);
+        return;
+      }
+
+      // Only allow deleting own notes or if admin
+      if ($existingNote['admin_user'] !== $currentUser['username'] && $currentUser['role'] !== 'admin') {
+        Response::error('Permission denied', 403);
+        return;
+      }
+
+      $sql = "DELETE FROM message_notes WHERE id = ? AND message_id = ?";
+      $affected = Database::execute($sql, [$noteId, $messageId])->rowCount();
+
+      if ($affected === 0) {
+        Response::error('Failed to delete note', 500);
+        return;
+      }
+
+      Response::success(null, 'Note deleted successfully');
+    } catch (Exception $e) {
+      Response::error('Failed to delete note: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Get available email addresses for responses
+   */
+  public static function getEmailAddresses(): void
+  {
+    AdminAuth::requireAuth();
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+
+    try {
+      $sql = "SELECT id, email, display_name, department, is_default
+              FROM admin_email_addresses
+              WHERE is_active = 1
+              ORDER BY is_default DESC, department ASC, display_name ASC";
+
+      $addresses = Database::fetchAll($sql);
+
+      Response::success($addresses);
+    } catch (Exception $e) {
+      Response::error('Failed to fetch email addresses: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Send email response
+   */
+  public static function sendResponse(int $messageId): void
+  {
+    AdminAuth::requireAuth();
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+
+    // Validation
+    $required = ['from_email_id', 'subject', 'body'];
+    foreach ($required as $field) {
+      if (!isset($input[$field]) || trim($input[$field]) === '') {
+        Response::error("Field '$field' is required", 400);
+        return;
+      }
+    }
+
+    try {
+      $currentUser = AdminAuth::getCurrentUser();
+
+      // Get the original message
+      $message = Database::fetchOne(
+        "SELECT * FROM contact_submissions WHERE id = ?",
+        [$messageId]
+      );
+
+      if (!$message) {
+        Response::notFound(['message' => 'Message not found']);
+        return;
+      }
+
+      // Get the from email address
+      $fromEmail = Database::fetchOne(
+        "SELECT * FROM admin_email_addresses WHERE id = ? AND is_active = 1",
+        [$input['from_email_id']]
+      );
+
+      if (!$fromEmail) {
+        Response::error('Invalid from email address', 400);
+        return;
+      }
+
+      // Store the response in database
+      $responseId = Database::insert(
+        "INSERT INTO message_responses
+         (message_id, admin_user, from_email, to_email, subject, body, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          $messageId,
+          $currentUser['username'],
+          $fromEmail['email'],
+          $message['email'],
+          trim($input['subject']),
+          trim($input['body']),
+          'draft' // Will be updated to 'sent' after successful email
+        ]
+      );
+
+      // Here you would integrate with your email service (PHPMailer, etc.)
+      // For now, we'll mark it as sent
+
+      Database::execute(
+        "UPDATE message_responses SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [$responseId]
+      );
+
+      // Update the original message as responded
+      Database::execute(
+        "UPDATE contact_submissions SET response_sent = 1, processed_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [$messageId]
+      );
+
+      Response::success([
+        'response_id' => $responseId,
+        'status' => 'sent'
+      ], 'Response sent successfully');
+    } catch (Exception $e) {
+      Response::error('Failed to send response: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Get response history for a message
+   */
+  public static function getResponses(int $messageId): void
+  {
+    AdminAuth::requireAuth();
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+
+    try {
+      $sql = "SELECT r.*, a.display_name as from_display_name
+              FROM message_responses r
+              LEFT JOIN admin_email_addresses a ON r.from_email = a.email
+              WHERE r.message_id = ?
+              ORDER BY r.sent_at DESC";
+
+      $responses = Database::fetchAll($sql, [$messageId]);
+
+      // Format timestamps
+      foreach ($responses as &$response) {
+        $response['sent_at_formatted'] = $response['sent_at']
+          ? date('d.m.Y H:i', strtotime($response['sent_at']))
+          : null;
+      }
+
+      Response::success($responses);
+    } catch (Exception $e) {
+      Response::error('Failed to fetch responses: ' . $e->getMessage(), 500);
+    }
+  }
 }

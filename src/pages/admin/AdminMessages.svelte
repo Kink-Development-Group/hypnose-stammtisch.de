@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
+  import AdminMessageNotes from "../../components/admin/AdminMessageNotes.svelte";
+  import AdminMessageResponse from "../../components/admin/AdminMessageResponse.svelte";
   import { AdminAPI } from "../../stores/admin";
   import {
     adminAutoUpdate,
@@ -15,6 +17,8 @@
   let deleteConfirm: any = null;
   let currentPage = 1;
   let totalPages = 1;
+  let showNotes = false;
+  let showEmailComposer = false;
   let filters = {
     status: "",
     subject: "",
@@ -25,12 +29,15 @@
   $: stats = $adminStats;
   $: loading = $adminLoading;
 
-  onMount(async () => {
-    await loadMessages();
-    await loadStats();
+  onMount(() => {
+    // Async initialization
+    (async () => {
+      await loadMessages();
+      await loadStats();
 
-    // Starte Auto-Update
-    adminAutoUpdate.start(30000); // 30 Sekunden
+      // Starte Auto-Update
+      adminAutoUpdate.start(30000); // 30 Sekunden
+    })();
 
     // Event Bus Listener für automatische Updates
     const unsubscribeEventBus = adminEventBus.subscribe((event) => {
@@ -225,7 +232,8 @@
         </div>
         <div class="bg-white rounded-lg shadow p-6">
           <div class="text-2xl font-bold text-gray-600">
-            {stats.recent_count || 0}
+            {stats.status_counts?.reduce((sum, item) => sum + item.count, 0) ||
+              0}
           </div>
           <div class="text-sm text-gray-600">Letzte 7 Tage</div>
         </div>
@@ -340,7 +348,7 @@
                             </p>
                           </div>
                           <div class="mt-1 text-xs text-gray-500">
-                            {message.submitted_at_formatted}
+                            {new Date(message.created_at).toLocaleString()}
                           </div>
                         </div>
                       </div>
@@ -383,8 +391,9 @@
       <!-- Message Detail -->
       <div class="lg:w-1/2">
         {#if selectedMessage}
-          <div class="bg-white shadow rounded-lg p-6">
-            <div class="border-b border-gray-200 pb-4 mb-4">
+          <div class="bg-white shadow rounded-lg">
+            <!-- Message Header -->
+            <div class="border-b border-gray-200 px-6 py-4">
               <div class="flex items-center justify-between mb-2">
                 <h3 class="text-lg font-medium text-gray-900">
                   {selectedMessage.name}
@@ -406,100 +415,172 @@
                 </p>
                 <p>
                   <strong>Eingegangen:</strong>
-                  {selectedMessage.submitted_at_formatted}
+                  {new Date(
+                    selectedMessage.created_at || selectedMessage.createdAt,
+                  ).toLocaleString()}
                 </p>
-                {#if selectedMessage.processed_at_formatted}
+                {#if selectedMessage.processedAt || selectedMessage.processed_at}
                   <p>
                     <strong>Bearbeitet:</strong>
-                    {selectedMessage.processed_at_formatted}
+                    {new Date(
+                      selectedMessage.processedAt ||
+                        selectedMessage.processed_at,
+                    ).toLocaleString()}
                   </p>
                 {/if}
-                {#if selectedMessage.assigned_to}
+                {#if selectedMessage.assignedTo || selectedMessage.assigned_to}
                   <p>
                     <strong>Zugewiesen an:</strong>
-                    {selectedMessage.assigned_to}
+                    {selectedMessage.assignedTo || selectedMessage.assigned_to}
                   </p>
                 {/if}
               </div>
             </div>
 
-            <div class="mb-6">
-              <h4 class="text-sm font-medium text-gray-900 mb-2">Nachricht</h4>
-              <div
-                class="bg-gray-50 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap"
+            <!-- Tab Navigation -->
+            <div class="px-6">
+              <nav
+                class="flex space-x-8 border-b border-gray-200"
+                aria-label="Tabs"
               >
-                {selectedMessage.message}
-              </div>
+                <button
+                  on:click={() => {
+                    showNotes = false;
+                    showEmailComposer = false;
+                  }}
+                  class="py-2 px-1 border-b-2 font-medium text-sm {!showNotes &&
+                  !showEmailComposer
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+                >
+                  Nachricht
+                </button>
+                <button
+                  on:click={() => {
+                    showNotes = true;
+                    showEmailComposer = false;
+                  }}
+                  class="py-2 px-1 border-b-2 font-medium text-sm {showNotes &&
+                  !showEmailComposer
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+                >
+                  Notizen
+                </button>
+                <button
+                  on:click={() => {
+                    showNotes = false;
+                    showEmailComposer = true;
+                  }}
+                  class="py-2 px-1 border-b-2 font-medium text-sm {showEmailComposer &&
+                  !showNotes
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+                >
+                  E-Mail Antwort
+                </button>
+              </nav>
             </div>
 
-            <!-- Actions -->
-            <div class="space-y-4">
-              <div>
-                <h4 class="block text-sm font-medium text-gray-700 mb-2">
-                  Status ändern
-                </h4>
-                <div class="flex space-x-2">
-                  <button
-                    on:click={() =>
-                      updateMessageStatus(selectedMessage.id, "new")}
-                    class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-                    disabled={selectedMessage.status === "new"}
+            <!-- Tab Content -->
+            <div class="p-6">
+              {#if !showNotes && !showEmailComposer}
+                <!-- Original Message Content -->
+                <div class="mb-6">
+                  <h4 class="text-sm font-medium text-gray-900 mb-2">
+                    Nachricht
+                  </h4>
+                  <div
+                    class="bg-gray-50 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap"
                   >
-                    Neu
-                  </button>
-                  <button
-                    on:click={() =>
-                      updateMessageStatus(selectedMessage.id, "in_progress")}
-                    class="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
-                    disabled={selectedMessage.status === "in_progress"}
-                  >
-                    In Bearbeitung
-                  </button>
-                  <button
-                    on:click={() =>
-                      updateMessageStatus(selectedMessage.id, "resolved")}
-                    class="px-3 py-1 text-sm bg-green-100 text-green-800 rounded hover:bg-green-200"
-                    disabled={selectedMessage.status === "resolved"}
-                  >
-                    Erledigt
-                  </button>
-                  <button
-                    on:click={() =>
-                      updateMessageStatus(selectedMessage.id, "spam")}
-                    class="px-3 py-1 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200"
-                    disabled={selectedMessage.status === "spam"}
-                  >
-                    Spam
-                  </button>
+                    {selectedMessage.message}
+                  </div>
                 </div>
-              </div>
 
-              <div class="flex space-x-3">
-                {#if !selectedMessage.response_sent}
-                  <button
-                    on:click={() => markAsResponded(selectedMessage.id)}
-                    class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700"
-                  >
-                    Als beantwortet markieren
-                  </button>
-                {/if}
+                <!-- Actions -->
+                <div class="space-y-4">
+                  <div>
+                    <h4 class="block text-sm font-medium text-gray-700 mb-2">
+                      Status ändern
+                    </h4>
+                    <div class="flex space-x-2">
+                      <button
+                        on:click={() =>
+                          updateMessageStatus(selectedMessage.id, "new")}
+                        class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                        disabled={selectedMessage.status === "new"}
+                      >
+                        Neu
+                      </button>
+                      <button
+                        on:click={() =>
+                          updateMessageStatus(
+                            selectedMessage.id,
+                            "in_progress",
+                          )}
+                        class="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+                        disabled={selectedMessage.status === "in_progress"}
+                      >
+                        In Bearbeitung
+                      </button>
+                      <button
+                        on:click={() =>
+                          updateMessageStatus(selectedMessage.id, "resolved")}
+                        class="px-3 py-1 text-sm bg-green-100 text-green-800 rounded hover:bg-green-200"
+                        disabled={selectedMessage.status === "resolved"}
+                      >
+                        Erledigt
+                      </button>
+                      <button
+                        on:click={() =>
+                          updateMessageStatus(selectedMessage.id, "spam")}
+                        class="px-3 py-1 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200"
+                        disabled={selectedMessage.status === "spam"}
+                      >
+                        Spam
+                      </button>
+                    </div>
+                  </div>
 
-                <button
-                  on:click={() => (deleteConfirm = selectedMessage)}
-                  class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700"
-                >
-                  Löschen
-                </button>
+                  <div class="flex space-x-3">
+                    {#if !selectedMessage.response_sent}
+                      <button
+                        on:click={() => markAsResponded(selectedMessage.id)}
+                        class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700"
+                      >
+                        Als beantwortet markieren
+                      </button>
+                    {/if}
 
-                <a
-                  href="mailto:{selectedMessage.email}?subject=Re: {getSubjectLabel(
-                    selectedMessage.subject,
-                  )}"
-                  class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
-                >
-                  E-Mail antworten
-                </a>
-              </div>
+                    <button
+                      on:click={() => (deleteConfirm = selectedMessage)}
+                      class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700"
+                    >
+                      Löschen
+                    </button>
+
+                    <a
+                      href="mailto:{selectedMessage.email}?subject=Re: {getSubjectLabel(
+                        selectedMessage.subject,
+                      )}"
+                      class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                    >
+                      E-Mail antworten
+                    </a>
+                  </div>
+                </div>
+              {:else if showNotes}
+                <!-- Notes Tab -->
+                <AdminMessageNotes messageId={selectedMessage.id} />
+              {:else if showEmailComposer}
+                <!-- Email Response Tab -->
+                <AdminMessageResponse
+                  messageId={selectedMessage.id}
+                  contactEmail={selectedMessage.email}
+                  contactName={selectedMessage.name}
+                  originalSubject={getSubjectLabel(selectedMessage.subject)}
+                />
+              {/if}
             </div>
           </div>
         {:else}

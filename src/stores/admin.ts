@@ -393,4 +393,141 @@ export class AdminAPI {
     }
     return result;
   }
+
+  // Message Notes API
+  static async getMessageNotes(messageId: number) {
+    return this.request(`/messages/${messageId}/notes`);
+  }
+
+  static async addMessageNote(
+    messageId: number,
+    note: string,
+    noteType: string = "general",
+  ) {
+    adminNotifications.info("Notiz wird hinzugefügt...");
+
+    try {
+      const result = await this.request(`/messages/${messageId}/notes`, {
+        method: "POST",
+        body: JSON.stringify({ note, note_type: noteType }),
+      });
+
+      if (result.success) {
+        adminNotifications.success("Notiz erfolgreich hinzugefügt!");
+      } else {
+        adminNotifications.error(
+          result.message || "Fehler beim Hinzufügen der Notiz",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      adminNotifications.error("Netzwerkfehler beim Hinzufügen der Notiz");
+      return { success: false, message: "Network error" };
+    }
+  }
+
+  static async updateMessageNote(
+    messageId: number,
+    noteId: number,
+    note: string,
+  ) {
+    adminNotifications.info("Notiz wird aktualisiert...");
+
+    try {
+      const result = await this.request(
+        `/messages/${messageId}/notes/${noteId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ note }),
+        },
+      );
+
+      if (result.success) {
+        adminNotifications.success("Notiz erfolgreich aktualisiert!");
+      } else {
+        adminNotifications.error(
+          result.message || "Fehler beim Aktualisieren der Notiz",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      adminNotifications.error("Netzwerkfehler beim Aktualisieren der Notiz");
+      return { success: false, message: "Network error" };
+    }
+  }
+
+  static async deleteMessageNote(messageId: number, noteId: number) {
+    adminNotifications.info("Notiz wird gelöscht...");
+
+    try {
+      const result = await this.request(
+        `/messages/${messageId}/notes/${noteId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (result.success) {
+        adminNotifications.success("Notiz erfolgreich gelöscht!");
+      } else {
+        adminNotifications.error(
+          result.message || "Fehler beim Löschen der Notiz",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      adminNotifications.error("Netzwerkfehler beim Löschen der Notiz");
+      return { success: false, message: "Network error" };
+    }
+  }
+
+  // Email Response API
+  static async getEmailAddresses() {
+    return this.request("/messages/email-addresses");
+  }
+
+  static async sendMessageResponse(
+    messageId: number,
+    fromEmailId: number,
+    subject: string,
+    body: string,
+  ) {
+    adminNotifications.info("E-Mail wird gesendet...");
+
+    try {
+      const result = await this.request(`/messages/${messageId}/response`, {
+        method: "POST",
+        body: JSON.stringify({
+          from_email_id: fromEmailId,
+          subject,
+          body,
+        }),
+      });
+
+      if (result.success) {
+        adminNotifications.success("E-Mail erfolgreich gesendet!");
+        // Update message as responded
+        adminEventHelpers.updateMessage(messageId, {
+          response_sent: true,
+          updated_at: new Date().toISOString(),
+        });
+      } else {
+        adminNotifications.error(
+          result.message || "Fehler beim Senden der E-Mail",
+        );
+      }
+
+      return result;
+    } catch (error) {
+      adminNotifications.error("Netzwerkfehler beim Senden der E-Mail");
+      return { success: false, message: "Network error" };
+    }
+  }
+
+  static async getMessageResponses(messageId: number) {
+    return this.request(`/messages/${messageId}/responses`);
+  }
 }

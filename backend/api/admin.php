@@ -88,6 +88,11 @@ try {
         AdminMessagesController::stats();
         return;
       }
+    } elseif ($path === '/messages/email-addresses') {
+      if ($method === 'GET') {
+        AdminMessagesController::getEmailAddresses();
+        return;
+      }
     } elseif (preg_match('#^/messages/(\d+)$#', $path, $matches)) {
       $id = (int)$matches[1];
       if ($method === 'GET') {
@@ -107,6 +112,37 @@ try {
       $id = (int)$matches[1];
       if ($method === 'PATCH') {
         AdminMessagesController::markResponded($id);
+        return;
+      }
+    } elseif (preg_match('#^/messages/(\d+)/notes$#', $path, $matches)) {
+      $id = (int)$matches[1];
+      if ($method === 'GET') {
+        AdminMessagesController::getNotes($id);
+        return;
+      } elseif ($method === 'POST') {
+        AdminMessagesController::addNote($id);
+        return;
+      }
+    } elseif (preg_match('#^/messages/(\d+)/notes/(\d+)$#', $path, $matches)) {
+      $messageId = (int)$matches[1];
+      $noteId = (int)$matches[2];
+      if ($method === 'PUT') {
+        AdminMessagesController::updateNote($messageId, $noteId);
+        return;
+      } elseif ($method === 'DELETE') {
+        AdminMessagesController::deleteNote($messageId, $noteId);
+        return;
+      }
+    } elseif (preg_match('#^/messages/(\d+)/response$#', $path, $matches)) {
+      $id = (int)$matches[1];
+      if ($method === 'POST') {
+        AdminMessagesController::sendResponse($id);
+        return;
+      }
+    } elseif (preg_match('#^/messages/(\d+)/responses$#', $path, $matches)) {
+      $id = (int)$matches[1];
+      if ($method === 'GET') {
+        AdminMessagesController::getResponses($id);
         return;
       }
     }
