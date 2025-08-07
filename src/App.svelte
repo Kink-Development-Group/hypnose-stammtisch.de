@@ -16,6 +16,7 @@
   import AdminEvents from "./pages/admin/AdminEvents.svelte";
   import AdminLogin from "./pages/admin/AdminLogin.svelte";
   import AdminMessages from "./pages/admin/AdminMessages.svelte";
+  import AdminUsersPage from "./pages/admin/AdminUsersPage.svelte";
   // Import components
   import EventModal from "./components/calendar/EventModal.svelte";
   import Footer from "./components/layout/Footer.svelte";
@@ -31,6 +32,7 @@
     "/admin/login": AdminLogin,
     "/admin/events": AdminEvents,
     "/admin/messages": AdminMessages,
+    "/admin/users": AdminUsersPage,
     // Regular routes
     "/": Home,
     "/events": Events,

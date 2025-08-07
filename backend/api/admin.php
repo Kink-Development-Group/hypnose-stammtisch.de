@@ -13,6 +13,7 @@ use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Controllers\AdminAuthController;
 use HypnoseStammtisch\Controllers\AdminEventsController;
 use HypnoseStammtisch\Controllers\AdminMessagesController;
+use HypnoseStammtisch\Controllers\AdminUsersController;
 use HypnoseStammtisch\Utils\Response;
 
 // Load configuration
@@ -52,6 +53,36 @@ try {
   if ($path === '/auth/csrf' && $method === 'GET') {
     AdminAuthController::csrf();
     return;
+  }
+
+  // Route users endpoints (only for head admins)
+  if (str_starts_with($path, '/users')) {
+    if ($path === '/users') {
+      if ($method === 'GET') {
+        AdminUsersController::index();
+        return;
+      } elseif ($method === 'POST') {
+        AdminUsersController::create();
+        return;
+      }
+    } elseif ($path === '/users/permissions') {
+      if ($method === 'GET') {
+        AdminUsersController::permissions();
+        return;
+      }
+    } elseif (preg_match('#^/users/(\d+)$#', $path, $matches)) {
+      $id = (int)$matches[1];
+      if ($method === 'GET') {
+        AdminUsersController::show($id);
+        return;
+      } elseif ($method === 'PUT') {
+        AdminUsersController::update($id);
+        return;
+      } elseif ($method === 'DELETE') {
+        AdminUsersController::delete($id);
+        return;
+      }
+    }
   }
 
   // Route events endpoints
