@@ -118,6 +118,11 @@ vendor/
 *.php.bak
 *.php~
 
+# Debug and test files
+debug_*.php
+test_*.php
+temp_*.php
+
 # Package managers
 package-lock.json
 yarn.lock

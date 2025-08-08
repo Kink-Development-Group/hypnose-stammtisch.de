@@ -44,15 +44,26 @@
 
   async function checkPermissions() {
     try {
+      console.log("AdminUsers: Checking permissions...");
       const response = await fetch("/api/admin/users/permissions", {
         credentials: "include",
       });
 
+      console.log("AdminUsers: Permissions response status:", response.status);
+
       if (response.ok) {
         permissions = await response.json();
+        console.log("AdminUsers: Permissions loaded:", permissions);
+      } else {
+        console.error(
+          "AdminUsers: Permissions request failed:",
+          response.status,
+        );
+        const errorText = await response.text();
+        console.error("AdminUsers: Error response:", errorText);
       }
     } catch (err) {
-      console.error("Failed to check permissions:", err);
+      console.error("AdminUsers: Failed to check permissions:", err);
     }
   }
 
@@ -243,6 +254,12 @@
         Sie haben keine Berechtigung, Admin-Benutzer zu verwalten. Nur
         Head-Admins können diese Funktion nutzen.
       </p>
+      <div class="mt-4 text-sm text-gray-600 bg-gray-100 p-2 rounded">
+        <strong>Debug Info:</strong><br />
+        Current permissions: {JSON.stringify(permissions)}<br />
+        can_manage_users: {permissions.can_manage_users}<br />
+        Überprüfen Sie die Browser-Konsole für weitere Details.
+      </div>
     </div>
   </div>
 {:else}

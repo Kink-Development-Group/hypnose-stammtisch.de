@@ -9,6 +9,7 @@
   let isAuthenticated = false;
   let currentUser: any = null;
   let currentPath = "";
+  let permissions: any = {};
 
   onMount(async () => {
     // Check authentication status
@@ -21,9 +22,38 @@
     isAuthenticated = true;
     currentUser = status.data;
 
+    // Check permissions
+    await checkPermissions();
+
     // Track current path for navigation highlighting
     currentPath = window.location.hash.substring(1) || window.location.pathname;
   });
+
+  async function checkPermissions() {
+    try {
+      console.log("Checking permissions...");
+      const response = await fetch("/api/admin/users/permissions", {
+        credentials: "include",
+      });
+
+      console.log("Permissions response status:", response.status);
+
+      if (response.ok) {
+        permissions = await response.json();
+        console.log("Permissions loaded:", permissions);
+      } else {
+        console.error(
+          "Permissions request failed:",
+          response.status,
+          response.statusText,
+        );
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+      }
+    } catch (err) {
+      console.error("Failed to check permissions:", err);
+    }
+  }
 
   async function handleLogout() {
     const result = await adminAuth.logout();
@@ -52,6 +82,13 @@
           <div class="flex items-center space-x-4">
             <!-- Admin Status Bar -->
             <AdminStatusBar />
+
+            <!-- Debug Information -->
+            <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              Role: {currentUser?.role || "unknown"} | Can manage users: {permissions.can_manage_users
+                ? "Yes"
+                : "No"}
+            </div>
 
             <span class="text-sm text-gray-600">
               Angemeldet als: <strong>{currentUser?.username}</strong>
@@ -119,29 +156,31 @@
             Nachrichten
           </a>
 
-          <a
-            href="/admin/users"
-            use:link
-            class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
-            '/admin/users'
-              ? 'bg-blue-100 text-blue-700'
-              : 'text-gray-700 hover:bg-gray-50'}"
-          >
-            <svg
-              class="mr-4 h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          {#if permissions.can_manage_users}
+            <a
+              href="/admin/users"
+              use:link
+              class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
+              '/admin/users'
+                ? 'bg-blue-100 text-blue-700'
+                : 'text-gray-700 hover:bg-gray-50'}"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-              />
-            </svg>
-            Admin-Benutzer
-          </a>
+              <svg
+                class="mr-4 h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                />
+              </svg>
+              Admin-Benutzer
+            </a>
+          {/if}
         </nav>
       </aside>
 

@@ -175,6 +175,28 @@ Gibt die Berechtigungen des aktuellen Benutzers zurück.
 
 ## Troubleshooting
 
+### Problem: "Default Head Admin hat keine Berechtigung, Admin-Benutzer zu editieren"
+
+**Ursache**:
+
+- Sie loggen sich mit einem Benutzer ein, der die Rolle "admin" oder "moderator" hat
+- Nur Benutzer mit der Rolle "head" können andere Admin-Benutzer verwalten
+- Die Navigation zeigt die "Admin-Benutzer"-Option jetzt nur noch für Head-Admins an
+
+**Lösung**:
+
+1. Stellen Sie sicher, dass Sie sich mit dem Head-Admin einloggen:
+   - E-Mail: `head@hypnose-stammtisch.de`
+   - Passwort: `admin123` (sollte geändert werden!)
+
+2. Oder befördern Sie einen bestehenden Admin zum Head-Admin:
+
+   ```bash
+   php cli/cli.php admin update --id=2 --role=head
+   ```
+
+3. **WICHTIG**: Die "Admin-Benutzer"-Navigation ist jetzt nur noch für Head-Admins sichtbar
+
 ### Problem: Kann nicht auf Benutzerverwaltung zugreifen
 
 - **Lösung**: Stellen Sie sicher, dass Sie als Head-Admin angemeldet sind

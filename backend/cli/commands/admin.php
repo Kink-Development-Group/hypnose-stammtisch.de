@@ -142,10 +142,12 @@ class AdminCommand
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
     // Create user
-    $userId = Database::execute(
+    $result = Database::execute(
       "INSERT INTO users (username, email, password_hash, role, is_active, created_at) VALUES (?, ?, ?, ?, ?, NOW())",
       [$username, $email, $passwordHash, $role, $active ? 1 : 0]
     );
+
+    $userId = Database::getConnection()->lastInsertId();
 
     $this->output("Admin user created successfully!", 'success');
     $this->output("ID: {$userId}", 'info');
