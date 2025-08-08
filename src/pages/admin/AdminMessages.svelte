@@ -29,6 +29,14 @@
   $: stats = $adminStats;
   $: loading = $adminLoading;
 
+  // Automatische Aktualisierung der selectedMessage wenn sich die Nachrichtenliste ändert
+  $: if (selectedMessage && messages) {
+    const updatedMessage = messages.find((m) => m.id === selectedMessage.id);
+    if (updatedMessage && updatedMessage.status !== selectedMessage.status) {
+      selectedMessage = updatedMessage;
+    }
+  }
+
   onMount(() => {
     // Async initialization
     (async () => {
@@ -95,25 +103,51 @@
 
   async function updateMessageStatus(messageId: number, status: string) {
     try {
+      // Sofortige lokale Aktualisierung der selectedMessage
+      if (selectedMessage && selectedMessage.id === messageId) {
+        selectedMessage = {
+          ...selectedMessage,
+          status,
+          updated_at: new Date().toISOString(),
+        };
+      }
+
       const result = await AdminAPI.updateMessageStatus(messageId, status);
       // Optimistische Updates werden automatisch durch AdminAPI gehandhabt
       if (!result.success) {
         error = result.message || "Fehler beim Aktualisieren des Status";
+        // Bei Fehler die ursprünglichen Daten zurücksetzen
+        await loadMessages();
       }
     } catch (e) {
       error = "Netzwerkfehler beim Aktualisieren des Status";
+      // Bei Fehler die ursprünglichen Daten zurücksetzen
+      await loadMessages();
     }
   }
 
   async function markAsResponded(messageId: number) {
     try {
+      // Sofortige lokale Aktualisierung der selectedMessage
+      if (selectedMessage && selectedMessage.id === messageId) {
+        selectedMessage = {
+          ...selectedMessage,
+          status: "responded",
+          updated_at: new Date().toISOString(),
+        };
+      }
+
       const result = await AdminAPI.markMessageResponded(messageId);
       // Optimistische Updates werden automatisch durch AdminAPI gehandhabt
       if (!result.success) {
         error = result.message || "Fehler beim Markieren als beantwortet";
+        // Bei Fehler die ursprünglichen Daten zurücksetzen
+        await loadMessages();
       }
     } catch (e) {
       error = "Netzwerkfehler beim Markieren als beantwortet";
+      // Bei Fehler die ursprünglichen Daten zurücksetzen
+      await loadMessages();
     }
   }
 
@@ -507,10 +541,13 @@
                       <button
                         on:click={() =>
                           updateMessageStatus(selectedMessage.id, "new")}
-                        class="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                        class="px-3 py-1 text-sm rounded transition-colors {selectedMessage.status ===
+                        'new'
+                          ? 'bg-blue-200 text-blue-900 font-medium'
+                          : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}"
                         disabled={selectedMessage.status === "new"}
                       >
-                        Neu
+                        {selectedMessage.status === "new" ? "✓ " : ""}Neu
                       </button>
                       <button
                         on:click={() =>
@@ -518,26 +555,38 @@
                             selectedMessage.id,
                             "in_progress",
                           )}
-                        class="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200"
+                        class="px-3 py-1 text-sm rounded transition-colors {selectedMessage.status ===
+                        'in_progress'
+                          ? 'bg-yellow-200 text-yellow-900 font-medium'
+                          : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}"
                         disabled={selectedMessage.status === "in_progress"}
                       >
-                        In Bearbeitung
+                        {selectedMessage.status === "in_progress" ? "✓ " : ""}In
+                        Bearbeitung
                       </button>
                       <button
                         on:click={() =>
                           updateMessageStatus(selectedMessage.id, "resolved")}
-                        class="px-3 py-1 text-sm bg-green-100 text-green-800 rounded hover:bg-green-200"
+                        class="px-3 py-1 text-sm rounded transition-colors {selectedMessage.status ===
+                        'resolved'
+                          ? 'bg-green-200 text-green-900 font-medium'
+                          : 'bg-green-100 text-green-800 hover:bg-green-200'}"
                         disabled={selectedMessage.status === "resolved"}
                       >
-                        Erledigt
+                        {selectedMessage.status === "resolved"
+                          ? "✓ "
+                          : ""}Erledigt
                       </button>
                       <button
                         on:click={() =>
                           updateMessageStatus(selectedMessage.id, "spam")}
-                        class="px-3 py-1 text-sm bg-red-100 text-red-800 rounded hover:bg-red-200"
+                        class="px-3 py-1 text-sm rounded transition-colors {selectedMessage.status ===
+                        'spam'
+                          ? 'bg-red-200 text-red-900 font-medium'
+                          : 'bg-red-100 text-red-800 hover:bg-red-200'}"
                         disabled={selectedMessage.status === "spam"}
                       >
-                        Spam
+                        {selectedMessage.status === "spam" ? "✓ " : ""}Spam
                       </button>
                     </div>
                   </div>
