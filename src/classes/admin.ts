@@ -1,3 +1,4 @@
+import { ZodDate, ZodEmail, ZodGUID } from "zod";
 import { Role } from "../enums/role";
 
 /**
@@ -5,20 +6,20 @@ import { Role } from "../enums/role";
  * This class is responsible for managing admin user data and behavior.
  */
 export default class Admin {
-  public readonly id: string;
+  public readonly id: ZodGUID;
   public username: string;
-  public email: string;
+  public email: ZodEmail;
   public role: Role;
-  public created_at: Date;
-  public updated_at: Date;
+  public created_at: ZodDate;
+  public updated_at: ZodDate;
 
   constructor(
-    id: string,
+    id: ZodGUID,
     username: string,
-    email: string,
+    email: ZodEmail,
     role: Role,
-    created_at: Date,
-    updated_at: Date,
+    created_at: ZodDate,
+    updated_at: ZodDate,
   ) {
     this.id = id;
     this.username = username;
