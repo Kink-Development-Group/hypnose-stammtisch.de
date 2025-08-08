@@ -1,16 +1,10 @@
 import { writable } from "svelte/store";
+import User from "../classes/User";
 import { adminEventHelpers, adminNotifications } from "./adminData";
-
-export interface AdminUser {
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-}
 
 export interface AdminAuthState {
   isAuthenticated: boolean;
-  user: AdminUser | null;
+  user: User | null;
   loading: boolean;
 }
 
@@ -60,10 +54,11 @@ class AdminAuthStore {
       const result = await response.json();
 
       if (result.success) {
+        const user = User.fromApiData(result.data);
         adminAuthState.update((state) => ({
           ...state,
           isAuthenticated: true,
-          user: result.data,
+          user,
           loading: false,
         }));
       } else {
@@ -144,10 +139,11 @@ class AdminAuthStore {
 
       if (result.success && result.data) {
         console.log("AdminAuth: Status check successful", result.data);
+        const user = User.fromApiData(result.data);
         adminAuthState.update((state) => ({
           ...state,
           isAuthenticated: true,
-          user: result.data,
+          user,
           loading: false,
         }));
       } else {

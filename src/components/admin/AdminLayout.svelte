@@ -1,13 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { link, push } from "svelte-spa-router";
+  import User from "../../classes/User";
   import { adminAuth } from "../../stores/admin";
+  import { UserHelpers } from "../../utils/userHelpers";
   import BrandLogo from "../ui/BrandLogo.svelte";
   import AdminNotifications from "./AdminNotifications.svelte";
   import AdminStatusBar from "./AdminStatusBar.svelte";
 
   let isAuthenticated = false;
-  let currentUser: any = null;
+  let currentUser: User | null = null;
   let currentPath = "";
   let permissions: any = {};
 
@@ -32,55 +34,16 @@
 
     console.log("AdminLayout: Authentication successful, setting up admin UI");
     isAuthenticated = true;
-    currentUser = status.data;
+    currentUser = User.fromApiData(status.data);
 
-    // Check permissions only after successful authentication
-    await checkPermissions();
+    // Use UserHelpers to get permissions
+    permissions = UserHelpers.getPermissions(currentUser);
 
     // Track current path for navigation highlighting
     currentPath = window.location.hash.substring(1) || window.location.pathname;
 
     console.log("AdminLayout: Setup complete", { currentUser, permissions });
   });
-
-  async function checkPermissions() {
-    try {
-      console.log("AdminLayout: Checking permissions...");
-      const response = await fetch("/api/admin/users/permissions", {
-        credentials: "include",
-      });
-
-      console.log("AdminLayout: Permissions response status:", response.status);
-
-      if (response.ok) {
-        permissions = await response.json();
-        console.log("AdminLayout: Permissions loaded:", permissions);
-      } else {
-        console.error(
-          "AdminLayout: Permissions request failed:",
-          response.status,
-          response.statusText,
-        );
-
-        // If we get 401, user is not authenticated
-        if (response.status === 401) {
-          console.log(
-            "AdminLayout: Permissions check failed - not authenticated, redirecting",
-          );
-          isAuthenticated = false;
-          currentUser = null;
-          permissions = {};
-          push("/admin/login");
-          return;
-        }
-
-        const errorText = await response.text();
-        console.error("AdminLayout: Error response:", errorText);
-      }
-    } catch (err) {
-      console.error("AdminLayout: Failed to check permissions:", err);
-    }
-  }
 
   async function handleLogout() {
     await adminAuth.logout();

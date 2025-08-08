@@ -32,7 +32,7 @@ export const addNotification = (notification: Omit<Notification, "id">) => {
   notifications.update((current) => [...current, newNotification]);
 
   // Auto-remove after duration
-  if (newNotification.duration > 0) {
+  if (newNotification.duration && newNotification.duration > 0) {
     setTimeout(() => {
       removeNotification(id);
     }, newNotification.duration);

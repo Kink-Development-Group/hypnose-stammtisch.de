@@ -1,37 +1,29 @@
 <script lang="ts">
   import { onMount } from "svelte";
-
-  interface AdminUser {
-    id: number;
-    username: string;
-    email: string;
-    role: "admin" | "moderator" | "head";
-    is_active: boolean;
-    last_login: string | null;
-    created_at: string;
-    updated_at: string;
-  }
+  import User from "../../classes/User";
+  import { Role } from "../../enums/role";
+  import { UserHelpers } from "../../utils/userHelpers";
 
   interface UserFormData {
     username: string;
     email: string;
     password?: string;
-    role: "admin" | "moderator" | "head";
+    role: Role;
     is_active: boolean;
   }
 
-  let users: AdminUser[] = [];
+  let users: User[] = [];
   let loading = true;
   let error = "";
   let showCreateForm = false;
-  let editingUser: AdminUser | null = null;
+  let editingUser: User | null = null;
   let permissions = { can_manage_users: false };
 
   let formData: UserFormData = {
     username: "",
     email: "",
     password: "",
-    role: "admin",
+    role: Role.ADMIN,
     is_active: true,
   };
 
@@ -80,7 +72,8 @@
         throw new Error("Failed to load users");
       }
 
-      users = await response.json();
+      const apiUsers = await response.json();
+      users = UserHelpers.fromApiArray(apiUsers);
     } catch (err) {
       error = "Fehler beim Laden der Admin-Benutzer";
       console.error("Error loading users:", err);
@@ -156,7 +149,7 @@
     }
   }
 
-  async function deleteUser(user: AdminUser) {
+  async function deleteUser(user: User) {
     if (
       !confirm(
         `Sind Sie sicher, dass Sie den Benutzer "${user.username}" löschen möchten?`,
@@ -188,7 +181,7 @@
     }
   }
 
-  function startEdit(user: AdminUser) {
+  function startEdit(user: User) {
     editingUser = user;
     formData = {
       username: user.username,
@@ -204,7 +197,7 @@
       username: "",
       email: "",
       password: "",
-      role: "admin",
+      role: Role.ADMIN,
       is_active: true,
     };
   }
@@ -214,35 +207,8 @@
     resetForm();
   }
 
-  function getRoleDisplayName(role: string): string {
-    switch (role) {
-      case "head":
-        return "Head Admin";
-      case "admin":
-        return "Administrator";
-      case "moderator":
-        return "Moderator";
-      default:
-        return role;
-    }
-  }
-
-  function getRoleBadgeClass(role: string): string {
-    switch (role) {
-      case "head":
-        return "bg-red-100 text-red-800";
-      case "admin":
-        return "bg-blue-100 text-blue-800";
-      case "moderator":
-        return "bg-green-100 text-green-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  }
-
-  function formatDate(dateString: string | null): string {
-    if (!dateString) return "Nie";
-    return new Date(dateString).toLocaleString("de-DE");
+  function formatDate(date: Date | string | null): string {
+    return UserHelpers.formatDate(date);
   }
 </script>
 
@@ -353,9 +319,9 @@
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="moderator">Moderator</option>
-              <option value="admin">Administrator</option>
-              <option value="head">Head Admin</option>
+              <option value={Role.MODERATOR}>Moderator</option>
+              <option value={Role.ADMIN}>Administrator</option>
+              <option value={Role.HEADADMIN}>Head Admin</option>
             </select>
           </div>
 
@@ -474,11 +440,11 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span
-                    class="inline-flex px-2 py-1 text-xs font-medium rounded-full {getRoleBadgeClass(
+                    class="inline-flex px-2 py-1 text-xs font-medium rounded-full {UserHelpers.getRoleBadgeClass(
                       user.role,
                     )}"
                   >
-                    {getRoleDisplayName(user.role)}
+                    {UserHelpers.getRoleDisplayName(user.role)}
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
