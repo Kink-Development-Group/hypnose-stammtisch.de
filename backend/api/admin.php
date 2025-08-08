@@ -70,8 +70,8 @@ try {
         AdminUsersController::permissions();
         return;
       }
-    } elseif (preg_match('#^/users/(\d+)$#', $path, $matches)) {
-      $id = (int)$matches[1];
+    } elseif (preg_match('#^/users/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+      $id = (string)$matches[1];
       if ($method === 'GET') {
         AdminUsersController::show($id);
         return;
@@ -95,8 +95,8 @@ try {
         AdminEventsController::create();
         return;
       }
-    } elseif (preg_match('#^/events/(\d+)$#', $path, $matches)) {
-      $id = (int)$matches[1];
+    } elseif (preg_match('#^/events/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+      $id = (string)$matches[1];
       if ($method === 'PUT') {
         AdminEventsController::update($id);
         return;
@@ -124,8 +124,8 @@ try {
         AdminMessagesController::getEmailAddresses();
         return;
       }
-    } elseif (preg_match('#^/messages/(\d+)$#', $path, $matches)) {
-      $id = (int)$matches[1];
+    } elseif (preg_match('#^/messages/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+      $id = $matches[1]; // Pass as string to match controller expectation
       if ($method === 'GET') {
         AdminMessagesController::show($id);
         return;
@@ -133,20 +133,20 @@ try {
         AdminMessagesController::delete($id);
         return;
       }
-    } elseif (preg_match('#^/messages/(\d+)/status$#', $path, $matches)) {
-      $id = (int)$matches[1];
+    } elseif (preg_match('#^/messages/([a-zA-Z0-9\-]+)/status$#', $path, $matches)) {
+      $id = $matches[1]; // Pass as string to match controller expectation
       if ($method === 'PATCH') {
         AdminMessagesController::updateStatus($id);
         return;
       }
-    } elseif (preg_match('#^/messages/(\d+)/responded$#', $path, $matches)) {
-      $id = (int)$matches[1];
+    } elseif (preg_match('#^/messages/([a-zA-Z0-9\-]+)/responded$#', $path, $matches)) {
+      $id = $matches[1]; // Pass as string to match controller expectation
       if ($method === 'PATCH') {
         AdminMessagesController::markResponded($id);
         return;
       }
-    } elseif (preg_match('#^/messages/(\d+)/notes$#', $path, $matches)) {
-      $id = (int)$matches[1];
+    } elseif (preg_match('#^/messages/([a-zA-Z0-9\-]+)/notes$#', $path, $matches)) {
+      $id = $matches[1];
       if ($method === 'GET') {
         AdminMessagesController::getNotes($id);
         return;
@@ -154,9 +154,9 @@ try {
         AdminMessagesController::addNote($id);
         return;
       }
-    } elseif (preg_match('#^/messages/(\d+)/notes/(\d+)$#', $path, $matches)) {
-      $messageId = (int)$matches[1];
-      $noteId = (int)$matches[2];
+    } elseif (preg_match('#^/messages/([a-zA-Z0-9\-]+)/notes/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+      $messageId = $matches[1];
+      $noteId = $matches[2];
       if ($method === 'PUT') {
         AdminMessagesController::updateNote($messageId, $noteId);
         return;
@@ -164,14 +164,14 @@ try {
         AdminMessagesController::deleteNote($messageId, $noteId);
         return;
       }
-    } elseif (preg_match('#^/messages/(\d+)/response$#', $path, $matches)) {
-      $id = (int)$matches[1];
+    } elseif (preg_match('#^/messages/([a-zA-Z0-9\-]+)/response$#', $path, $matches)) {
+      $id = $matches[1];
       if ($method === 'POST') {
         AdminMessagesController::sendResponse($id);
         return;
       }
-    } elseif (preg_match('#^/messages/(\d+)/responses$#', $path, $matches)) {
-      $id = (int)$matches[1];
+    } elseif (preg_match('#^/messages/([a-zA-Z0-9\-]+)/responses$#', $path, $matches)) {
+      $id = $matches[1];
       if ($method === 'GET') {
         AdminMessagesController::getResponses($id);
         return;

@@ -1,6 +1,6 @@
 <script lang="ts">
   import AdminGuard from "../../components/admin/AdminGuard.svelte";
-  import AdminUsersPage from "./AdminUsersPage.svelte";
+  import AdminUsers from "./AdminUsers.svelte";
 
   export let params = {};
 </script>
@@ -9,4 +9,4 @@
   <title>Admin Benutzer - Hypnose Stammtisch</title>
 </svelte:head>
 
-<AdminGuard component={AdminUsersPage} {params} />
+<AdminGuard component={AdminUsers} {params} />

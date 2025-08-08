@@ -558,15 +558,6 @@
                     >
                       Löschen
                     </button>
-
-                    <a
-                      href="mailto:{selectedMessage.email}?subject=Re: {getSubjectLabel(
-                        selectedMessage.subject,
-                      )}"
-                      class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
-                    >
-                      E-Mail antworten
-                    </a>
                   </div>
                 </div>
               {:else if showNotes}

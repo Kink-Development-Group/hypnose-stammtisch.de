@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
+  import { push } from "svelte-spa-router";
+  import User from "../../classes/User";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
-  import { AdminAPI } from "../../stores/admin";
+  import { AdminAPI, adminAuth } from "../../stores/admin";
   import {
     adminAutoUpdate,
     adminEventBus,
@@ -15,6 +17,7 @@
   let showEditModal = false;
   let editingItem: any = null;
   let deleteConfirm: any = null;
+  let currentUser: User | null = null;
 
   // Reactive subscriptions
   $: events = $adminEvents;
@@ -51,20 +54,44 @@
   };
 
   onMount(() => {
-    loadEvents();
+    let unsubscribeEventBus: (() => void) | null = null;
 
-    // Starte Auto-Update
-    adminAutoUpdate.start(30000); // 30 Sekunden
-
-    // Event Bus Listener für automatische Updates
-    const unsubscribeEventBus = adminEventBus.subscribe((event) => {
-      if (event?.data?.autoRefresh || event?.data?.manualRefresh) {
-        loadEvents();
+    const initializeComponent = async () => {
+      // Check authentication and permissions
+      const status = await adminAuth.checkStatus();
+      if (!status.success) {
+        push("/admin/login");
+        return;
       }
-    });
+
+      currentUser = User.fromApiData(status.data);
+
+      // Check if user has permission to manage events
+      if (!currentUser.canManageEvents()) {
+        error = "Sie haben keine Berechtigung, Veranstaltungen zu verwalten.";
+        push("/admin/messages"); // Redirect to messages instead
+        return;
+      }
+
+      loadEvents();
+
+      // Starte Auto-Update
+      adminAutoUpdate.start(30000); // 30 Sekunden
+
+      // Event Bus Listener für automatische Updates
+      unsubscribeEventBus = adminEventBus.subscribe((event) => {
+        if (event?.data?.autoRefresh || event?.data?.manualRefresh) {
+          loadEvents();
+        }
+      });
+    };
+
+    initializeComponent();
 
     return () => {
-      unsubscribeEventBus();
+      if (unsubscribeEventBus) {
+        unsubscribeEventBus();
+      }
     };
   });
 

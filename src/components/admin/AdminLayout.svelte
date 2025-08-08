@@ -84,9 +84,9 @@
 
             <!-- Debug Information -->
             <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              Role: {currentUser?.role || "unknown"} | Can manage users: {permissions.can_manage_users
+              Role: {currentUser?.role || "unknown"} | Users: {permissions.can_manage_users
                 ? "Yes"
-                : "No"}
+                : "No"} | Events: {permissions.can_manage_events ? "Yes" : "No"}
             </div>
 
             <span class="text-sm text-gray-600">
@@ -107,29 +107,31 @@
       <!-- Sidebar -->
       <aside class="w-64 bg-white shadow-sm min-h-screen">
         <nav class="mt-5 px-2">
-          <a
-            href="/admin/events"
-            use:link
-            class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
-            '/admin/events'
-              ? 'bg-blue-100 text-blue-700'
-              : 'text-gray-700 hover:bg-gray-50'}"
-          >
-            <svg
-              class="mr-4 h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          {#if permissions.can_manage_events}
+            <a
+              href="/admin/events"
+              use:link
+              class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
+              '/admin/events'
+                ? 'bg-blue-100 text-blue-700'
+                : 'text-gray-700 hover:bg-gray-50'}"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            Veranstaltungen
-          </a>
+              <svg
+                class="mr-4 h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              Veranstaltungen
+            </a>
+          {/if}
 
           <a
             href="/admin/messages"

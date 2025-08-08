@@ -233,6 +233,23 @@ class AdminUsersController
       return;
     }
 
+    // Check for duplicate username/email (excluding current user)
+    if (isset($input['username'])) {
+      $existingUsername = Database::fetchOne("SELECT id FROM users WHERE username = ? AND id != ?", [$input['username'], $id]);
+      if ($existingUsername) {
+        Response::error('Username already exists', 400, ['username' => 'Username is already taken']);
+        return;
+      }
+    }
+
+    if (isset($input['email'])) {
+      $existingEmail = Database::fetchOne("SELECT id FROM users WHERE email = ? AND id != ?", [$input['email'], $id]);
+      if ($existingEmail) {
+        Response::error('Email already exists', 400, ['email' => 'Email is already taken']);
+        return;
+      }
+    }
+
     try {
       $updateFields = [];
       $updateValues = [];
@@ -260,7 +277,8 @@ class AdminUsersController
 
       if (isset($input['is_active'])) {
         $updateFields[] = 'is_active = ?';
-        $updateValues[] = $input['is_active'];
+        // Ensure boolean conversion for MySQL
+        $updateValues[] = $input['is_active'] ? 1 : 0;
       }
 
       if (empty($updateFields)) {
@@ -287,8 +305,10 @@ class AdminUsersController
         Response::error('Failed to update admin user', 500);
       }
     } catch (\Exception $e) {
-      error_log("Error updating admin user: " . $e->getMessage());
-      Response::error('Failed to update admin user', 500);
+      error_log("Error updating admin user ID $id: " . $e->getMessage());
+      error_log("Update data: " . json_encode($input));
+      error_log("Stack trace: " . $e->getTraceAsString());
+      Response::error('Failed to update admin user: ' . $e->getMessage(), 500);
     }
   }
 

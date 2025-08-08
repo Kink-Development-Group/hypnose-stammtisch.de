@@ -110,8 +110,8 @@
     showComposer = true;
     // Set default greeting
     if (!body.trim()) {
-      const greeting = contactName ? `Liebe/r ${contactName},` : "Hallo,";
-      body = `${greeting}\n\nvielen Dank für Ihre Nachricht.\n\n\n\nMit freundlichen Grüßen\nIhr Hypnose-Stammtisch Team`;
+      const greeting = contactName ? `Moin ${contactName},` : "Moin,";
+      body = `${greeting}\n\nvielen Dank für Deine Nachricht.\n\n\n\nMit freundlichen Grüßen\nDein Hypnose-Stammtisch.de Team`;
     }
   }
 

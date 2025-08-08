@@ -278,7 +278,7 @@ class AdminMessagesController
   /**
    * Get notes for a message
    */
-  public static function getNotes(int $messageId): void
+  public static function getNotes(string $messageId): void
   {
     AdminAuth::requireAuth();
 
@@ -316,7 +316,7 @@ class AdminMessagesController
   /**
    * Add note to message
    */
-  public static function addNote(int $messageId): void
+  public static function addNote(string $messageId): void
   {
     AdminAuth::requireAuth();
 
@@ -375,7 +375,7 @@ class AdminMessagesController
   /**
    * Update note
    */
-  public static function updateNote(int $messageId, int $noteId): void
+  public static function updateNote(string $messageId, string $noteId): void
   {
     AdminAuth::requireAuth();
 
@@ -435,7 +435,7 @@ class AdminMessagesController
   /**
    * Delete note
    */
-  public static function deleteNote(int $messageId, int $noteId): void
+  public static function deleteNote(string $messageId, string $noteId): void
   {
     AdminAuth::requireAuth();
 
@@ -507,7 +507,7 @@ class AdminMessagesController
   /**
    * Send email response
    */
-  public static function sendResponse(int $messageId): void
+  public static function sendResponse(string $messageId): void
   {
     AdminAuth::requireAuth();
 
@@ -594,7 +594,7 @@ class AdminMessagesController
   /**
    * Get response history for a message
    */
-  public static function getResponses(int $messageId): void
+  public static function getResponses(string $messageId): void
   {
     AdminAuth::requireAuth();
 
