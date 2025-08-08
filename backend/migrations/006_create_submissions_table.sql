@@ -20,8 +20,3 @@ CREATE TABLE IF NOT EXISTS submissions (
     INDEX idx_created_at (created_at),
     INDEX idx_processed_at (processed_at)
 );
-
--- Insert migration record
-INSERT INTO migrations (version, description)
-VALUES ('006', 'Create submissions table for event submissions')
-ON DUPLICATE KEY UPDATE description = VALUES(description);

@@ -44,8 +44,17 @@
       console.log("AdminUsers: Permissions response status:", response.status);
 
       if (response.ok) {
-        permissions = await response.json();
-        console.log("AdminUsers: Permissions loaded:", permissions);
+        const result = await response.json();
+        console.log("AdminUsers: Permissions response:", result);
+
+        // Handle both direct permissions object and wrapped response
+        if (result.success && result.data) {
+          permissions = result.data;
+        } else {
+          permissions = result;
+        }
+
+        console.log("AdminUsers: Final permissions:", permissions);
       } else {
         console.error(
           "AdminUsers: Permissions request failed:",
@@ -72,8 +81,22 @@
         throw new Error("Failed to load users");
       }
 
-      const apiUsers = await response.json();
+      const result = await response.json();
+      console.log("AdminUsers: Users API response:", result);
+
+      // Handle both direct array and wrapped response
+      let apiUsers;
+      if (result.success && result.data) {
+        apiUsers = result.data;
+      } else if (Array.isArray(result)) {
+        apiUsers = result;
+      } else {
+        throw new Error("Invalid API response format");
+      }
+
+      console.log("AdminUsers: Extracted users data:", apiUsers);
       users = UserHelpers.fromApiArray(apiUsers);
+      console.log("AdminUsers: Processed users:", users);
     } catch (err) {
       error = "Fehler beim Laden der Admin-Benutzer";
       console.error("Error loading users:", err);

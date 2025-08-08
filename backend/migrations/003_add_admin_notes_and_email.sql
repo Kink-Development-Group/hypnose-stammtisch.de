@@ -5,7 +5,7 @@
 -- Admin notes for messages
 CREATE TABLE IF NOT EXISTS message_notes (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    message_id INT NOT NULL,
+    message_id VARCHAR(36) NOT NULL,
     admin_user VARCHAR(50) NOT NULL,
     note TEXT NOT NULL,
     note_type ENUM('processing', 'communication', 'general') DEFAULT 'general',
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS message_notes (
 -- Email responses sent through the admin interface
 CREATE TABLE IF NOT EXISTS message_responses (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    message_id INT NOT NULL,
+    message_id VARCHAR(36) NOT NULL,
     admin_user VARCHAR(50) NOT NULL,
     from_email VARCHAR(255) NOT NULL,
     to_email VARCHAR(255) NOT NULL,

@@ -65,19 +65,27 @@ class AdminAuth
       return null;
     }
 
-    $sql = "SELECT id, username, email, role, last_login FROM users WHERE id = ? AND is_active = 1";
+    $sql = "SELECT id, username, email, role, is_active, last_login, created_at, updated_at
+            FROM users WHERE id = ? AND is_active = 1";
     $user = Database::fetchOne($sql, [$_SESSION['admin_user_id']]);
+
+    if ($user) {
+      // Ensure is_active is boolean and convert datetime fields to ISO format
+      $user['is_active'] = (bool)$user['is_active'];
+      $user['last_login'] = $user['last_login'] ? date('c', strtotime($user['last_login'])) : null;
+      $user['created_at'] = date('c', strtotime($user['created_at']));
+      $user['updated_at'] = date('c', strtotime($user['updated_at']));
+    }
 
     return $user ?: null;
   }
-
   /**
    * Authenticate user with email and password
    */
   public static function authenticate(string $email, string $password): array
   {
-    $sql = "SELECT id, username, email, password_hash, role FROM users
-                WHERE email = ? AND is_active = 1";
+    $sql = "SELECT id, username, email, password_hash, role, is_active, created_at, updated_at
+            FROM users WHERE email = ? AND is_active = 1";
     $user = Database::fetchOne($sql, [$email]);
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
@@ -87,6 +95,11 @@ class AdminAuth
     // Update last login
     $updateSql = "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?";
     Database::execute($updateSql, [$user['id']]);
+
+    // Get updated user data with last_login
+    $sql = "SELECT id, username, email, role, is_active, last_login, created_at, updated_at
+            FROM users WHERE id = ?";
+    $updatedUser = Database::fetchOne($sql, [$user['id']]);
 
     // Start session
     self::startSession();
@@ -99,10 +112,14 @@ class AdminAuth
     return [
       'success' => true,
       'user' => [
-        'id' => $user['id'],
-        'username' => $user['username'],
-        'email' => $user['email'],
-        'role' => $user['role']
+        'id' => $updatedUser['id'],
+        'username' => $updatedUser['username'],
+        'email' => $updatedUser['email'],
+        'role' => $updatedUser['role'],
+        'is_active' => (bool)$updatedUser['is_active'],
+        'last_login' => $updatedUser['last_login'] ? date('c', strtotime($updatedUser['last_login'])) : null,
+        'created_at' => date('c', strtotime($updatedUser['created_at'])),
+        'updated_at' => date('c', strtotime($updatedUser['updated_at']))
       ]
     ];
   }

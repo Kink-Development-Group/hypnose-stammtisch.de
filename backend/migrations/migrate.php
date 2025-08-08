@@ -21,6 +21,12 @@ function runMigrations(): void
   try {
     $connection = Database::getConnection();
 
+    // Make sure we're not in a transaction
+    if (Database::inTransaction()) {
+      Database::rollback();
+      echo "Warning: Rolling back existing transaction before starting migrations.\n";
+    }
+
     // Create migrations table if it doesn't exist
     $connection->exec("
             CREATE TABLE IF NOT EXISTS migrations (
@@ -62,6 +68,9 @@ function runMigrations(): void
       );
 
       try {
+        // Start transaction for this migration
+        Database::beginTransaction();
+
         foreach ($statements as $statement) {
           if (trim($statement)) {
             $connection->exec($statement);
@@ -74,9 +83,16 @@ function runMigrations(): void
           [$version, "Migration from file: {$filename}"]
         );
 
+        // Commit the transaction
+        Database::commit();
+
         echo "Migration {$version} completed successfully.\n";
         $migrationCount++;
       } catch (Exception $e) {
+        // Rollback on error
+        if (Database::inTransaction()) {
+          Database::rollback();
+        }
         throw new RuntimeException("Migration {$version} failed: " . $e->getMessage());
       }
     }

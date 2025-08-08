@@ -23,7 +23,13 @@ class AdminAuthStore {
    * Reset all authentication state
    */
   reset() {
-    console.log("AdminAuth: Resetting all authentication state");
+    // Only log in development mode
+    if (
+      typeof process !== "undefined" &&
+      process.env.NODE_ENV === "development"
+    ) {
+      console.log("AdminAuth: Resetting all authentication state");
+    }
     adminAuthState.set({
       isAuthenticated: false,
       user: null,
@@ -42,6 +48,11 @@ class AdminAuthStore {
     adminAuthState.update((state) => ({ ...state, loading: true }));
 
     try {
+      console.log("Attempting login with:", {
+        email,
+        api_url: `${API_BASE}/auth/login`,
+      });
+
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: {
@@ -51,7 +62,14 @@ class AdminAuthStore {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log("Response status:", response.status);
+      console.log(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries()),
+      );
+
       const result = await response.json();
+      console.log("Response data:", result);
 
       if (result.success) {
         const user = User.fromApiData(result.data);
@@ -61,12 +79,15 @@ class AdminAuthStore {
           user,
           loading: false,
         }));
+        console.log("Login successful, user:", user);
       } else {
         adminAuthState.update((state) => ({ ...state, loading: false }));
+        console.log("Login failed:", result);
       }
 
       return result;
     } catch (error) {
+      console.error("Login error:", error);
       adminAuthState.update((state) => ({ ...state, loading: false }));
       return {
         success: false,
@@ -138,7 +159,12 @@ class AdminAuthStore {
       const result = await response.json();
 
       if (result.success && result.data) {
-        console.log("AdminAuth: Status check successful", result.data);
+        if (
+          typeof process !== "undefined" &&
+          process.env.NODE_ENV === "development"
+        ) {
+          console.log("AdminAuth: Status check successful", result.data);
+        }
         const user = User.fromApiData(result.data);
         adminAuthState.update((state) => ({
           ...state,
@@ -147,10 +173,15 @@ class AdminAuthStore {
           loading: false,
         }));
       } else {
-        console.log(
-          "AdminAuth: Status check failed",
-          result.message || "No user data",
-        );
+        if (
+          typeof process !== "undefined" &&
+          process.env.NODE_ENV === "development"
+        ) {
+          console.log(
+            "AdminAuth: Status check failed",
+            result.message || "No user data",
+          );
+        }
         adminAuthState.update((state) => ({
           ...state,
           isAuthenticated: false,
@@ -165,7 +196,12 @@ class AdminAuthStore {
 
       return result;
     } catch (error) {
-      console.error("AdminAuth: Status check error", error);
+      if (
+        typeof process !== "undefined" &&
+        process.env.NODE_ENV === "development"
+      ) {
+        console.error("AdminAuth: Status check error", error);
+      }
       adminAuthState.update((state) => ({
         ...state,
         isAuthenticated: false,

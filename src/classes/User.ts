@@ -8,9 +8,26 @@ export const UserSchema = z.object({
   email: z.string().email(),
   role: z.nativeEnum(Role),
   is_active: z.boolean().optional().default(true),
-  last_login: z.string().datetime().nullable().optional(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  last_login: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((val) => {
+      if (!val) return null;
+      // Try to parse various datetime formats
+      const date = new Date(val);
+      return date.toISOString();
+    }),
+  created_at: z.string().transform((val) => {
+    // Convert any valid date string to ISO format
+    const date = new Date(val);
+    return date.toISOString();
+  }),
+  updated_at: z.string().transform((val) => {
+    // Convert any valid date string to ISO format
+    const date = new Date(val);
+    return date.toISOString();
+  }),
 });
 
 export type UserData = z.infer<typeof UserSchema>;
@@ -94,18 +111,14 @@ export default class User {
    * Check if user has permission to manage other users
    */
   canManageUsers(): boolean {
-    return this.role === Role.HEADADMIN || this.role === Role.ADMIN;
+    return this.role === Role.HEADADMIN;
   }
 
   /**
    * Check if user has permission to manage events
    */
   canManageEvents(): boolean {
-    return (
-      this.role === Role.HEADADMIN ||
-      this.role === Role.ADMIN ||
-      this.role === Role.MODERATOR
-    );
+    return this.role === Role.HEADADMIN || this.role === Role.ADMIN;
   }
 
   /**

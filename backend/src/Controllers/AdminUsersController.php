@@ -48,9 +48,16 @@ class AdminUsersController
 
       $users = Database::fetchAll($sql);
 
-      // Remove password_hash from response for security
+      // Format users data and convert datetime fields
       $users = array_map(function ($user) {
-        unset($user['password_hash']);
+        unset($user['password_hash']); // Remove password_hash for security
+
+        // Convert datetime fields to ISO format
+        $user['is_active'] = (bool)$user['is_active'];
+        $user['last_login'] = $user['last_login'] ? date('c', strtotime($user['last_login'])) : null;
+        $user['created_at'] = date('c', strtotime($user['created_at']));
+        $user['updated_at'] = date('c', strtotime($user['updated_at']));
+
         return $user;
       }, $users);
 
