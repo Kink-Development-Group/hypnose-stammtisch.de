@@ -158,11 +158,5 @@
         </button>
       </div>
     </form>
-
-    <div class="mt-6 text-center">
-      <p class="text-xs text-gray-500">
-        Standard-Anmeldedaten: admin@example.com / password
-      </p>
-    </div>
   </div>
 </div>

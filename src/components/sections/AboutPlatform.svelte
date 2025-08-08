@@ -6,6 +6,7 @@
       name: "JohnaSwitch",
       role: "Leitung 2. Hypnose Stammtisch Hamburg, Teil des Teams der Hypnose Stammtische in Hamburg",
       location: "Hamburg",
+      logo: "",
       description:
         "Organisiert den monatlichen 2. Hypnose Stammtisch Hamburg im BaSeMent und führt Einsteiger-Workshops durch. (wenn es passt xD)",
       specialties: [
