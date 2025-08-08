@@ -14,7 +14,7 @@ use Carbon\Carbon;
 class Event
 {
     public function __construct(
-        public ?int $id = null,
+        public ?string $id = null,
         public string $title = '',
         public string $slug = '',
         public string $description = '',
@@ -153,7 +153,7 @@ class Event
     /**
      * Find event by ID
      */
-    public static function findById(int $id): ?self
+    public static function findById(string $id): ?self
     {
         $row = Database::fetchOne("SELECT * FROM events WHERE id = ?", [$id]);
 
@@ -242,7 +242,7 @@ class Event
         $id = Database::insert($sql, $params);
 
         if ($id) {
-            $this->id = (int)$id;
+            $this->id = $id;
             return true;
         }
 

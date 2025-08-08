@@ -90,7 +90,7 @@ class AdminMessagesController
   /**
    * Get single message by ID
    */
-  public static function show(int $id): void
+  public static function show(string $id): void
   {
     AdminAuth::requireAuth();
 
@@ -123,7 +123,7 @@ class AdminMessagesController
   /**
    * Update message status
    */
-  public static function updateStatus(int $id): void
+  public static function updateStatus(string $id): void
   {
     AdminAuth::requireAuth();
 
@@ -172,7 +172,7 @@ class AdminMessagesController
   /**
    * Mark message as responded
    */
-  public static function markResponded(int $id): void
+  public static function markResponded(string $id): void
   {
     AdminAuth::requireAuth();
 
@@ -202,7 +202,7 @@ class AdminMessagesController
   /**
    * Delete message
    */
-  public static function delete(int $id): void
+  public static function delete(string $id): void
   {
     AdminAuth::requireAuth();
 

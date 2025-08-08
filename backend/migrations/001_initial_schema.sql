@@ -5,7 +5,7 @@
 -- Events table
 CREATE TABLE
   IF NOT EXISTS events (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     title VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
@@ -68,8 +68,8 @@ CREATE TABLE
 -- Event registrations table
 CREATE TABLE
   IF NOT EXISTS event_registrations (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    event_id INT NOT NULL,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    event_id VARCHAR(36) NOT NULL,
     -- Participant info
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE
 -- Contact form submissions table
 CREATE TABLE
   IF NOT EXISTS contact_submissions (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     -- Contact info
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -133,7 +133,7 @@ CREATE TABLE
 -- Calendar feed tokens table (for secure ICS access)
 CREATE TABLE
   IF NOT EXISTS calendar_feed_tokens (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     token VARCHAR(64) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
@@ -168,7 +168,7 @@ CREATE TABLE
 -- Rate limiting table
 CREATE TABLE
   IF NOT EXISTS rate_limits (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     ip_address VARCHAR(45) NOT NULL,
     endpoint VARCHAR(255) NOT NULL,
     requests_count INT DEFAULT 1,
@@ -181,7 +181,7 @@ CREATE TABLE
 -- Migration tracking table
 CREATE TABLE
   IF NOT EXISTS migrations (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
     version VARCHAR(50) NOT NULL UNIQUE,
     description TEXT,
     executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

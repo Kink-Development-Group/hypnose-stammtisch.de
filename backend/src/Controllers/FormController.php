@@ -384,17 +384,27 @@ class FormController
   /**
    * Store event submission in database
    */
-  private function storeEventSubmission(array $data): ?int
+  private function storeEventSubmission(array $data): ?string
   {
     try {
-      $sql = "INSERT INTO submissions (payload, status, created_at) VALUES (?, 'pending', NOW())";
+      // Generate UUID first
+      $uuid = Database::fetchOne("SELECT UUID() as uuid")['uuid'];
+
+      $sql = "INSERT INTO submissions (id, payload, status, ip_address, user_agent, referrer, created_at)
+              VALUES (?, ?, 'pending', ?, ?, ?, NOW())";
       $payload = json_encode([
         'type' => 'event',
         'data' => $data
       ]);
 
-      $result = Database::insert($sql, [$payload]);
-      return $result === false ? null : (int)$result;
+      $result = Database::execute($sql, [
+        $uuid,
+        $payload,
+        $_SERVER['REMOTE_ADDR'] ?? '',
+        $_SERVER['HTTP_USER_AGENT'] ?? '',
+        $_SERVER['HTTP_REFERER'] ?? ''
+      ]);
+      return $result !== false ? $uuid : null;
     } catch (\Exception $e) {
       error_log("Error storing event submission: " . $e->getMessage());
       return null;
@@ -403,13 +413,17 @@ class FormController
   /**
    * Store contact submission in database
    */
-  private function storeContactSubmission(array $data): ?int
+  private function storeContactSubmission(array $data): ?string
   {
     try {
-      $sql = "INSERT INTO contact_submissions (name, email, subject, message, ip_address, user_agent, referrer, submitted_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+      // Generate UUID first
+      $uuid = Database::fetchOne("SELECT UUID() as uuid")['uuid'];
 
-      $result = Database::insert($sql, [
+      $sql = "INSERT INTO contact_submissions (id, name, email, subject, message, ip_address, user_agent, referrer, submitted_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+
+      $result = Database::execute($sql, [
+        $uuid,
         $data['name'],
         $data['email'],
         $data['subject'],
@@ -418,7 +432,7 @@ class FormController
         $data['user_agent'],
         $data['referrer']
       ]);
-      return $result === false ? null : (int)$result;
+      return $result !== false ? $uuid : null;
     } catch (\Exception $e) {
       error_log("Error storing contact submission: " . $e->getMessage());
       return null;
@@ -507,7 +521,7 @@ class FormController
   /**
    * Notify admins of new submission
    */
-  private function notifyAdminsOfSubmission(int $submissionId, array $data): void
+  private function notifyAdminsOfSubmission(string $submissionId, array $data): void
   {
     try {
       $adminEmail = Config::get('mail.admin_email');
@@ -530,7 +544,7 @@ class FormController
   /**
    * Notify admins of new contact
    */
-  private function notifyAdminsOfContact(int $submissionId, array $data): void
+  private function notifyAdminsOfContact(string $submissionId, array $data): void
   {
     try {
       $adminEmail = Config::get('mail.admin_email');
@@ -631,7 +645,7 @@ class FormController
   /**
    * Get admin notification email template
    */
-  private function getAdminNotificationTemplate(string $type, int $id, array $data): string
+  private function getAdminNotificationTemplate(string $type, string $id, array $data): string
   {
     if ($type === 'event') {
       return "

@@ -42,7 +42,6 @@ class CalendarController
             if ($token) {
                 $this->updateTokenAccess($token);
             }
-
         } catch (\Exception $e) {
             error_log("Calendar feed error: " . $e->getMessage());
             Response::json(['success' => false, 'error' => 'Failed to generate calendar feed'], 500);
@@ -69,7 +68,6 @@ class CalendarController
                     'last_updated' => date('c')
                 ]
             ]);
-
         } catch (\Exception $e) {
             error_log("Calendar meta error: " . $e->getMessage());
             Response::error('Failed to fetch calendar metadata', 500);
@@ -80,7 +78,7 @@ class CalendarController
      * Generate individual event ICS
      * GET /api/calendar/event/{id}/ics
      */
-    public function eventIcs(int $id): void
+    public function eventIcs(string $id): void
     {
         try {
             $event = Event::findById($id);
@@ -94,7 +92,6 @@ class CalendarController
 
             $filename = $this->sanitizeFilename($event->title) . '.ics';
             Response::ics($icsContent, $filename);
-
         } catch (\Exception $e) {
             error_log("Event ICS error: " . $e->getMessage());
             Response::error('Failed to generate event ICS', 500);

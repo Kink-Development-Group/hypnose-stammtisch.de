@@ -64,7 +64,7 @@ class AdminUsersController
   /**
    * Get specific admin user
    */
-  public static function show(int $id): void
+  public static function show(string $id): void
   {
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       Response::error('Method not allowed', 405);
@@ -177,7 +177,7 @@ class AdminUsersController
   /**
    * Update admin user
    */
-  public static function update(int $id): void
+  public static function update(string $id): void
   {
     if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
       Response::error('Method not allowed', 405);
@@ -288,7 +288,7 @@ class AdminUsersController
   /**
    * Delete admin user
    */
-  public static function delete(int $id): void
+  public static function delete(string $id): void
   {
     if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
       Response::error('Method not allowed', 405);

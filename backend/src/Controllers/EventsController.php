@@ -208,7 +208,7 @@ class EventsController
    * Update event (future admin feature)
    * PUT /api/events/{id}
    */
-  public function update(int $id): void
+  public function update(string $id): void
   {
     Response::json([
       'success' => false,
@@ -220,7 +220,7 @@ class EventsController
    * Delete event (future admin feature)
    * DELETE /api/events/{id}
    */
-  public function destroy(int $id): void
+  public function destroy(string $id): void
   {
     Response::json([
       'success' => false,
@@ -300,7 +300,7 @@ class EventsController
    * Download single event as ICS
    * GET /api/events/{id}/ics
    */
-  public function downloadICS(int $id): void
+  public function downloadICS(string $id): void
   {
     try {
       $event = Event::findById($id);

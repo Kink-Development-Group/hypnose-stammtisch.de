@@ -82,7 +82,7 @@ class AdminEventsController
   /**
    * Update existing event or series
    */
-  public static function update(int $id): void
+  public static function update(string $id): void
   {
     AdminAuth::requireAuth();
 
@@ -114,7 +114,7 @@ class AdminEventsController
   /**
    * Delete event or series
    */
-  public static function delete(int $id): void
+  public static function delete(string $id): void
   {
     AdminAuth::requireAuth();
 
@@ -282,7 +282,7 @@ class AdminEventsController
   /**
    * Update single event
    */
-  private static function updateSingleEvent(int $id, array $input): void
+  private static function updateSingleEvent(string $id, array $input): void
   {
     $validator = new Validator($input);
     $validator->required(['title', 'start_datetime', 'end_datetime', 'category'])
@@ -338,7 +338,7 @@ class AdminEventsController
   /**
    * Update event series
    */
-  private static function updateSeries(int $id, array $input): void
+  private static function updateSeries(string $id, array $input): void
   {
     $validator = new Validator($input);
     $validator->required(['title', 'rrule', 'start_date'])
