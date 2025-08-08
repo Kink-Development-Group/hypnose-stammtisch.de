@@ -10,11 +10,15 @@
   let error = "";
 
   onMount(async () => {
-    // Check if already authenticated
-    const status = await adminAuth.checkStatus();
-    if (status.success) {
-      push("/admin/events");
-    }
+    console.log("AdminLogin: Component mounted, clearing authentication state");
+
+    // Always clear authentication state when visiting login page
+    adminAuth.reset();
+
+    // Force logout to ensure clean state
+    await adminAuth.logout();
+
+    console.log("AdminLogin: Ready for login");
   });
 
   async function handleLogin() {

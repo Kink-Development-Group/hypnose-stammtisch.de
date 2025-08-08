@@ -13,10 +13,10 @@
   import Privacy from "./pages/Privacy.svelte";
   import Resources from "./pages/Resources.svelte";
   // Import admin pages
-  import AdminEvents from "./pages/admin/AdminEvents.svelte";
+  import AdminEventsGuarded from "./pages/admin/AdminEventsGuarded.svelte";
   import AdminLogin from "./pages/admin/AdminLogin.svelte";
-  import AdminMessages from "./pages/admin/AdminMessages.svelte";
-  import AdminUsersPage from "./pages/admin/AdminUsersPage.svelte";
+  import AdminMessagesGuarded from "./pages/admin/AdminMessagesGuarded.svelte";
+  import AdminUsersGuarded from "./pages/admin/AdminUsersGuarded.svelte";
   // Import components
   import EventModal from "./components/calendar/EventModal.svelte";
   import Footer from "./components/layout/Footer.svelte";
@@ -30,9 +30,9 @@
     // Admin routes - these need to come before the wildcard
     "/admin": AdminLogin,
     "/admin/login": AdminLogin,
-    "/admin/events": AdminEvents,
-    "/admin/messages": AdminMessages,
-    "/admin/users": AdminUsersPage,
+    "/admin/events": AdminEventsGuarded,
+    "/admin/messages": AdminMessagesGuarded,
+    "/admin/users": AdminUsersGuarded,
     // Regular routes
     "/": Home,
     "/events": Events,

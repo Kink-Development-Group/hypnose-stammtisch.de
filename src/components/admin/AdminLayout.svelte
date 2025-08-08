@@ -12,52 +12,88 @@
   let permissions: any = {};
 
   onMount(async () => {
+    // Initialize with loading state
+    isAuthenticated = false;
+    currentUser = null;
+    permissions = {};
+
     // Check authentication status
+    console.log("AdminLayout: Checking authentication status...");
     const status = await adminAuth.checkStatus();
+
+    console.log("AdminLayout: Auth status result:", status);
+
     if (!status.success) {
+      console.log("AdminLayout: Authentication failed, redirecting to login");
+      isAuthenticated = false;
       push("/admin/login");
       return;
     }
 
+    console.log("AdminLayout: Authentication successful, setting up admin UI");
     isAuthenticated = true;
     currentUser = status.data;
 
-    // Check permissions
+    // Check permissions only after successful authentication
     await checkPermissions();
 
     // Track current path for navigation highlighting
     currentPath = window.location.hash.substring(1) || window.location.pathname;
+
+    console.log("AdminLayout: Setup complete", { currentUser, permissions });
   });
 
   async function checkPermissions() {
     try {
-      console.log("Checking permissions...");
+      console.log("AdminLayout: Checking permissions...");
       const response = await fetch("/api/admin/users/permissions", {
         credentials: "include",
       });
 
-      console.log("Permissions response status:", response.status);
+      console.log("AdminLayout: Permissions response status:", response.status);
 
       if (response.ok) {
         permissions = await response.json();
-        console.log("Permissions loaded:", permissions);
+        console.log("AdminLayout: Permissions loaded:", permissions);
       } else {
         console.error(
-          "Permissions request failed:",
+          "AdminLayout: Permissions request failed:",
           response.status,
           response.statusText,
         );
+
+        // If we get 401, user is not authenticated
+        if (response.status === 401) {
+          console.log(
+            "AdminLayout: Permissions check failed - not authenticated, redirecting",
+          );
+          isAuthenticated = false;
+          currentUser = null;
+          permissions = {};
+          push("/admin/login");
+          return;
+        }
+
         const errorText = await response.text();
-        console.error("Error response:", errorText);
+        console.error("AdminLayout: Error response:", errorText);
       }
     } catch (err) {
-      console.error("Failed to check permissions:", err);
+      console.error("AdminLayout: Failed to check permissions:", err);
     }
   }
 
   async function handleLogout() {
-    const result = await adminAuth.logout();
-    if (result.success) {
+    await adminAuth.logout();
+
+    // Force a complete cleanup and redirect
+    isAuthenticated = false;
+    currentUser = null;
+    permissions = {};
+
+    // Force page reload to clear any cached state
+    if (typeof window !== "undefined") {
+      window.location.href = "/admin/login";
+    } else {
       push("/admin/login");
     }
   }

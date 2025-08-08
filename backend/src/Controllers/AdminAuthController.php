@@ -56,7 +56,20 @@ class AdminAuthController
       return;
     }
 
+    // Log the logout attempt
+    $user = AdminAuth::getCurrentUser();
+    if ($user) {
+      error_log("Admin logout: User {$user['username']} ({$user['email']}) logging out");
+    }
+
+    // Perform logout
     AdminAuth::logout();
+
+    // Add additional headers to prevent caching
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
     Response::success(null, 'Logout successful');
   }
 
@@ -70,11 +83,20 @@ class AdminAuthController
       return;
     }
 
+    // Add cache prevention headers
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+
     $user = AdminAuth::getCurrentUser();
 
     if ($user) {
+      // Log successful status check
+      error_log("Admin status check: User {$user['username']} is authenticated");
       Response::success($user, 'Authenticated');
     } else {
+      // Log failed status check
+      error_log("Admin status check: No authenticated user found");
       Response::unauthorized(['message' => 'Not authenticated']);
     }
   }

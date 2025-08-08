@@ -26,6 +26,22 @@ const API_BASE = "/api/admin";
 
 class AdminAuthStore {
   /**
+   * Reset all authentication state
+   */
+  reset() {
+    console.log("AdminAuth: Resetting all authentication state");
+    adminAuthState.set({
+      isAuthenticated: false,
+      user: null,
+      loading: false,
+    });
+
+    // Clear cached data
+    localStorage.removeItem("admin_user");
+    sessionStorage.removeItem("admin_user");
+  }
+
+  /**
    * Login with email and password
    */
   async login(email: string, password: string) {
@@ -76,14 +92,31 @@ class AdminAuthStore {
 
       const result = await response.json();
 
+      // Always update the frontend state to logged out,
+      // regardless of server response
       adminAuthState.update((state) => ({
         ...state,
         isAuthenticated: false,
         user: null,
       }));
 
+      // Clear any cached data
+      localStorage.removeItem("admin_user");
+      sessionStorage.removeItem("admin_user");
+
       return result;
     } catch (error) {
+      // Even on network error, ensure frontend is logged out
+      adminAuthState.update((state) => ({
+        ...state,
+        isAuthenticated: false,
+        user: null,
+      }));
+
+      // Clear any cached data
+      localStorage.removeItem("admin_user");
+      sessionStorage.removeItem("admin_user");
+
       return {
         success: false,
         message: "Network error occurred",
@@ -99,31 +132,54 @@ class AdminAuthStore {
       const response = await fetch(`${API_BASE}/auth/status`, {
         method: "GET",
         credentials: "include",
+        // Prevent caching to ensure fresh status check
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       });
 
       const result = await response.json();
 
-      if (result.success) {
+      if (result.success && result.data) {
+        console.log("AdminAuth: Status check successful", result.data);
         adminAuthState.update((state) => ({
           ...state,
           isAuthenticated: true,
           user: result.data,
+          loading: false,
         }));
       } else {
+        console.log(
+          "AdminAuth: Status check failed",
+          result.message || "No user data",
+        );
         adminAuthState.update((state) => ({
           ...state,
           isAuthenticated: false,
           user: null,
+          loading: false,
         }));
+
+        // Clear any stale cached data
+        localStorage.removeItem("admin_user");
+        sessionStorage.removeItem("admin_user");
       }
 
       return result;
     } catch (error) {
+      console.error("AdminAuth: Status check error", error);
       adminAuthState.update((state) => ({
         ...state,
         isAuthenticated: false,
         user: null,
+        loading: false,
       }));
+
+      // Clear any stale cached data
+      localStorage.removeItem("admin_user");
+      sessionStorage.removeItem("admin_user");
 
       return {
         success: false,

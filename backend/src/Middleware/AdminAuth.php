@@ -31,7 +31,19 @@ class AdminAuth
       session_start([
         'use_strict_mode' => true,
         'cookie_lifetime' => 3600 * 8, // 8 hours
+        'gc_maxlifetime' => 3600 * 8, // Match cookie lifetime
+        'gc_probability' => 1,
+        'gc_divisor' => 100,
       ]);
+
+      // Regenerate session ID periodically for security
+      if (!isset($_SESSION['session_started'])) {
+        session_regenerate_id(true);
+        $_SESSION['session_started'] = time();
+      } elseif (time() - $_SESSION['session_started'] > 1800) { // 30 minutes
+        session_regenerate_id(true);
+        $_SESSION['session_started'] = time();
+      }
     }
   }
 
@@ -101,8 +113,41 @@ class AdminAuth
   public static function logout(): void
   {
     self::startSession();
+
+    // Clear all session data
     session_unset();
+
+    // Destroy the session
     session_destroy();
+
+    // Clear the session cookie by setting it to expire in the past
+    if (isset($_COOKIE[session_name()])) {
+      setcookie(
+        session_name(),
+        '',
+        time() - 3600,
+        '/',
+        'localhost',
+        false,
+        true
+      );
+    }
+
+    // Also clear any additional admin-specific cookies if they exist
+    $adminCookies = ['admin_session', 'admin_token', 'admin_remember'];
+    foreach ($adminCookies as $cookieName) {
+      if (isset($_COOKIE[$cookieName])) {
+        setcookie(
+          $cookieName,
+          '',
+          time() - 3600,
+          '/',
+          'localhost',
+          false,
+          true
+        );
+      }
+    }
   }
 
   /**
