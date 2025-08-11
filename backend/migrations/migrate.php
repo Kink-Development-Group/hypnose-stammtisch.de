@@ -184,30 +184,29 @@ function seedDatabase(): void
 }
 
 // Main execution
-if (php_sapi_name() !== 'cli') {
-  die('This script can only be run from command line.');
-}
+// Allow inclusion from web context; only execute CLI handler when run directly
+if (php_sapi_name() === 'cli' && realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+  $command = $argv[1] ?? 'migrate';
 
-$command = $argv[1] ?? 'migrate';
+  switch ($command) {
+    case 'migrate':
+      runMigrations();
+      break;
 
-switch ($command) {
-  case 'migrate':
-    runMigrations();
-    break;
+    case 'seed':
+      seedDatabase();
+      break;
 
-  case 'seed':
-    seedDatabase();
-    break;
+    case 'fresh':
+      runMigrations();
+      seedDatabase();
+      break;
 
-  case 'fresh':
-    runMigrations();
-    seedDatabase();
-    break;
-
-  default:
-    echo "Usage: php migrate.php [migrate|seed|fresh]\n";
-    echo "  migrate - Run pending migrations\n";
-    echo "  seed    - Seed database with sample data\n";
-    echo "  fresh   - Run migrations and seed data\n";
-    exit(1);
+    default:
+      echo "Usage: php migrate.php [migrate|seed|fresh]\n";
+      echo "  migrate - Run pending migrations\n";
+      echo "  seed    - Seed database with sample data\n";
+      echo "  fresh   - Run migrations and seed data\n";
+      exit(1);
+  }
 }

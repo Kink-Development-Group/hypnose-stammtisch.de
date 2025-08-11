@@ -1,0 +1,40 @@
+# Security hardening for backend core when placed inside public root
+# Deny direct access to sensitive directories if this folder is ever exposed
+<IfModule mod_authz_core.c>
+  <Directory "migrations">
+    Require all denied
+  </Directory>
+  <Directory "vendor">
+    Require all denied
+  </Directory>
+  <Directory "logs">
+    Require all denied
+  </Directory>
+  <Directory "config">
+    Require all denied
+  </Directory>
+  <Directory "cache">
+    Require all denied
+  </Directory>
+  <Directory "temp">
+    Require all denied
+  </Directory>
+  <Directory "uploads/private">
+    Require all denied
+  </Directory>
+</IfModule>
+
+# Hide dotfiles
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+# Protect environment & build artifacts
+<FilesMatch "(composer\.(json|lock)|package\.json|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|\.env.*|phpunit\.xml.*)$">
+  Require all denied
+</FilesMatch>
+
+# Fallback: prevent execution in these data directories
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>

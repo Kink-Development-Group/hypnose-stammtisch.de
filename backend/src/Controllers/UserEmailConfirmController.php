@@ -6,6 +6,7 @@ namespace HypnoseStammtisch\Controllers;
 
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Utils\Response;
+use HypnoseStammtisch\Utils\AuditLogger;
 
 class UserEmailConfirmController
 {
@@ -21,6 +22,7 @@ class UserEmailConfirmController
       return;
     }
     Database::execute('UPDATE users SET email = pending_email, pending_email = NULL, email_change_token = NULL, email_change_requested_at = NULL WHERE id = ?', [$row['id']]);
+    AuditLogger::log('user.email_confirmed', 'user', (string)$row['id']);
     Response::success(['email_confirmed' => true], 'E-Mail erfolgreich bestätigt');
   }
 }

@@ -1,0 +1,11 @@
+# Default deny inside uploads unless explicitly overridden
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+
+# Allow public subfolder
+<Directory "public">
+  <IfModule mod_authz_core.c>
+    Require all granted
+  </IfModule>
+</Directory>

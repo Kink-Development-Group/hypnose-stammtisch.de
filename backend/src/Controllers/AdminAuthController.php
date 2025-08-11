@@ -7,6 +7,8 @@ namespace HypnoseStammtisch\Controllers;
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Middleware\AdminAuth;
 use HypnoseStammtisch\Utils\Response;
+use HypnoseStammtisch\Utils\RateLimiter;
+use HypnoseStammtisch\Utils\AuditLogger;
 use HypnoseStammtisch\Utils\Validator;
 
 /**
@@ -26,6 +28,14 @@ class AdminAuthController
       return;
     }
 
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $rlKey = 'login:' . $ip;
+    $rl = RateLimiter::attempt($rlKey, 10, 300); // 10 Versuche pro 5 Minuten
+    if (!$rl['allowed']) {
+      Response::error('Too many login attempts. Try again later.', 429, ['reset' => $rl['reset']]);
+      return;
+    }
+
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
     $validator = new Validator($input);
@@ -40,11 +50,13 @@ class AdminAuthController
     $result = AdminAuth::authenticate($input['email'], $input['password']);
 
     if ($result['success']) {
+      AuditLogger::log('auth.login_stage1', 'user', (string)$result['twofa_required']);
       Response::success([
         'twofa_required' => $result['twofa_required'],
         'twofa_configured' => $result['twofa_configured']
       ], $result['message']);
     } else {
+      AuditLogger::log('auth.login_failed', null, null, ['email' => $input['email'] ?? null]);
       Response::error($result['message'], 401);
     }
   }
@@ -59,10 +71,9 @@ class AdminAuthController
       return;
     }
 
-    // Log the logout attempt
     $user = AdminAuth::getCurrentUser();
     if ($user) {
-      error_log("Admin logout: User {$user['username']} ({$user['email']}) logging out");
+      AuditLogger::log('auth.logout', 'user', (string)$user['id']);
     }
 
     // Perform logout
@@ -189,6 +200,14 @@ class AdminAuthController
       return;
     }
 
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $rlKey = '2fa:' . ($ip) . ':' . ($_SESSION['admin_user_pending_id'] ?? 'none');
+    $rl = RateLimiter::attempt($rlKey, 15, 600); // 15 Codes pro 10 Minuten
+    if (!$rl['allowed']) {
+      Response::error('Too many 2FA attempts. Try again later.', 429, ['reset' => $rl['reset']]);
+      return;
+    }
+
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $validator = new Validator($input);
     $validator->required(['code']);
@@ -227,6 +246,7 @@ class AdminAuthController
     }
 
     if (!$valid) {
+      AuditLogger::log('auth.2fa_failed');
       Response::error('Invalid 2FA code', 401);
       return;
     }
@@ -254,6 +274,7 @@ class AdminAuthController
     unset($_SESSION['twofa_attempts']);
 
     if ($final['success']) {
+      AuditLogger::log('auth.login_success', 'user', (string)$userId, ['first_activation' => $wasDisabled]);
       $payload = $final['user'];
       if ($backupCodes !== null) {
         $payload = array_merge($payload, ['backup_codes' => $backupCodes]);
@@ -283,6 +304,7 @@ class AdminAuthController
       return;
     }
 
+    AuditLogger::log('2fa.backup_regenerate');
     // delete existing
     Database::execute('DELETE FROM user_twofa_backup_codes WHERE user_id = ?', [$user['id']]);
     $plainCodes = [];

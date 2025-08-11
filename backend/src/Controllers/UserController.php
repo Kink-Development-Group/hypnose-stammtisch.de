@@ -7,6 +7,7 @@ namespace HypnoseStammtisch\Controllers;
 use HypnoseStammtisch\Middleware\AdminAuth;
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Utils\Response;
+use HypnoseStammtisch\Utils\AuditLogger;
 use HypnoseStammtisch\Utils\Validator;
 use PHPMailer\PHPMailer\PHPMailer;
 use HypnoseStammtisch\Config\Config;
@@ -89,6 +90,7 @@ class UserController
     }
     $params[] = $current['id'];
     Database::execute('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?', $params);
+    AuditLogger::log('user.profile_update', 'user', (string)$current['id'], ['fields' => $fields]);
     $updated = AdminAuth::getCurrentUser();
     Response::success(['updated' => true, 'user' => $updated], 'Profile updated');
   }
@@ -169,6 +171,7 @@ class UserController
     }
     $params[] = $id;
     Database::execute('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?', $params);
+    AuditLogger::log('admin.user_update', 'user', (string)$id, ['fields' => $fields]);
     $user = Database::fetchOne('SELECT id, username, email, role, is_active, last_login, created_at, updated_at FROM users WHERE id = ?', [$id]);
     Response::success(['updated' => true, 'user' => $user], 'User updated');
   }
