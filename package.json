@@ -9,8 +9,9 @@
     "dev:frontend": "vite",
     "dev:backend": "cd backend && php cli/cli.php dev serve",
     "build": "vite build",
-    "build:all": "npm run backend:install:prod && npm run build",
     "build:frontend": "vite build",
+    "build:bundle": "tsx scripts/build-backend.ts",
+    "build:all": "npm run backend:install:prod && npm run build:frontend && npm run build:bundle",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
@@ -64,7 +65,8 @@
     "tailwindcss": "^3.4.17",
     "tslib": "^2.8.1",
     "typescript": "^5.9.2",
-    "vite": "^7.0.6"
+    "vite": "^7.0.6",
+    "tsx": "^4.7.0"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.0.0",

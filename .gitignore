@@ -131,3 +131,7 @@ pnpm-lock.yaml
 # Build artifacts
 *.tgz
 *.tar.gz
+
+*.js
+*.js.map
+*.cjs
