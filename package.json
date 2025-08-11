@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.0.0",
+    "qrcode": "^1.5.3",
     "dayjs": "^1.11.13",
     "dompurify": "^3.2.6",
     "ical.js": "^2.2.0",

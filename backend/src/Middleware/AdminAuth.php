@@ -48,12 +48,12 @@ class AdminAuth
   }
 
   /**
-   * Check if user is authenticated as admin
+   * Check if user is authenticated as admin (incl. 2FA)
    */
   public static function isAuthenticated(): bool
   {
     self::startSession();
-    return isset($_SESSION['admin_user_id']) && isset($_SESSION['admin_user_email']);
+    return isset($_SESSION['admin_user_id']) && isset($_SESSION['admin_user_email']) && !empty($_SESSION['admin_2fa_verified']);
   }
 
   /**
@@ -79,12 +79,13 @@ class AdminAuth
 
     return $user ?: null;
   }
+
   /**
-   * Authenticate user with email and password
+   * Authenticate user with email & password (stage 1 of 2FA)
    */
   public static function authenticate(string $email, string $password): array
   {
-    $sql = "SELECT id, username, email, password_hash, role, is_active, created_at, updated_at
+    $sql = "SELECT id, username, email, password_hash, role, is_active, twofa_secret, twofa_enabled, created_at, updated_at
             FROM users WHERE email = ? AND is_active = 1";
     $user = Database::fetchOne($sql, [$email]);
 
@@ -92,35 +93,21 @@ class AdminAuth
       return ['success' => false, 'message' => 'Invalid credentials'];
     }
 
-    // Update last login
-    $updateSql = "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?";
-    Database::execute($updateSql, [$user['id']]);
-
-    // Get updated user data with last_login
-    $sql = "SELECT id, username, email, role, is_active, last_login, created_at, updated_at
-            FROM users WHERE id = ?";
-    $updatedUser = Database::fetchOne($sql, [$user['id']]);
-
     // Start session
     self::startSession();
     session_regenerate_id(true);
 
-    $_SESSION['admin_user_id'] = $user['id'];
-    $_SESSION['admin_user_email'] = $user['email'];
-    $_SESSION['admin_user_role'] = $user['role'];
+    $_SESSION['admin_user_password_ok'] = true;
+    $_SESSION['admin_2fa_verified'] = false;
+    $_SESSION['admin_user_pending_id'] = $user['id'];
+
+    $twofaConfigured = !empty($user['twofa_secret']) && (bool)$user['twofa_enabled'];
 
     return [
       'success' => true,
-      'user' => [
-        'id' => $updatedUser['id'],
-        'username' => $updatedUser['username'],
-        'email' => $updatedUser['email'],
-        'role' => $updatedUser['role'],
-        'is_active' => (bool)$updatedUser['is_active'],
-        'last_login' => $updatedUser['last_login'] ? date('c', strtotime($updatedUser['last_login'])) : null,
-        'created_at' => date('c', strtotime($updatedUser['created_at'])),
-        'updated_at' => date('c', strtotime($updatedUser['updated_at']))
-      ]
+      'twofa_required' => true,
+      'twofa_configured' => $twofaConfigured,
+      'message' => $twofaConfigured ? 'Second factor required' : '2FA setup required'
     ];
   }
 
@@ -168,7 +155,7 @@ class AdminAuth
   }
 
   /**
-   * Require admin authentication (middleware function)
+   * Require admin authentication
    */
   public static function requireAuth(): void
   {
@@ -179,18 +166,53 @@ class AdminAuth
   }
 
   /**
-   * Check CSRF token
+   * Finalize 2FA after successful verification
+   */
+  public static function finalizeTwoFactor(string $userId): array
+  {
+    $sql = "SELECT id, username, email, role, is_active, last_login, created_at, updated_at, twofa_enabled FROM users WHERE id = ?";
+    $user = Database::fetchOne($sql, [$userId]);
+
+    if (!$user) {
+      return ['success' => false, 'message' => 'User not found'];
+    }
+
+    Database::execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$userId]);
+
+    $user['last_login'] = date('c');
+
+    $_SESSION['admin_user_id'] = $user['id'];
+    $_SESSION['admin_user_email'] = $user['email'];
+    $_SESSION['admin_user_role'] = $user['role'];
+    $_SESSION['admin_2fa_verified'] = true;
+
+    unset($_SESSION['admin_user_pending_id'], $_SESSION['admin_user_password_ok']);
+
+    return [
+      'success' => true,
+      'user' => [
+        'id' => $user['id'],
+        'username' => $user['username'],
+        'email' => $user['email'],
+        'role' => $user['role'],
+        'is_active' => (bool)$user['is_active'],
+        'last_login' => $user['last_login'],
+        'created_at' => date('c', strtotime($user['created_at'])),
+        'updated_at' => date('c', strtotime($user['updated_at']))
+      ]
+    ];
+  }
+
+  /**
+   * Verify CSRF token
    */
   public static function verifyCSRF(string $token = null): bool
   {
     self::startSession();
-
     if (!isset($_SESSION['csrf_token'])) {
       return false;
     }
-
     $providedToken = $token ?? $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? null;
-
     return $providedToken && hash_equals($_SESSION['csrf_token'], $providedToken);
   }
 
@@ -200,11 +222,9 @@ class AdminAuth
   public static function generateCSRF(): string
   {
     self::startSession();
-
     if (!isset($_SESSION['csrf_token'])) {
       $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
-
     return $_SESSION['csrf_token'];
   }
 }

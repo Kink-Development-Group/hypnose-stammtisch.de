@@ -55,6 +55,23 @@ try {
     return;
   }
 
+  if ($path === '/auth/2fa/setup' && $method === 'POST') {
+    \HypnoseStammtisch\Controllers\AdminAuthController::twofaSetup();
+    return;
+  }
+  if ($path === '/auth/2fa/verify' && $method === 'POST') {
+    \HypnoseStammtisch\Controllers\AdminAuthController::twofaVerify();
+    return;
+  }
+  if ($path === '/auth/2fa/backup-codes/generate' && $method === 'POST') {
+    AdminAuthController::twofaBackupGenerate();
+    return;
+  }
+  if ($path === '/auth/2fa/backup-codes/status' && $method === 'GET') {
+    AdminAuthController::twofaBackupStatus();
+    return;
+  }
+
   // Route users endpoints (only for head admins)
   if (str_starts_with($path, '/users')) {
     if ($path === '/users') {

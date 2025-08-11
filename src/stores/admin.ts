@@ -6,6 +6,17 @@ export interface AdminAuthState {
   isAuthenticated: boolean;
   user: User | null;
   loading: boolean;
+  // 2FA additions
+  twofaPending?: boolean;
+  twofaConfigured?: boolean;
+  twofaSecret?: string;
+  otpauthUri?: string;
+  stage?: "login" | "setup" | "verify" | "show-backups";
+  verifying?: boolean;
+  lastError?: string;
+  backupCodes?: string[];
+  backupRemaining?: number;
+  usingBackup?: boolean;
 }
 
 // Store for admin authentication state
@@ -13,6 +24,8 @@ export const adminAuthState = writable<AdminAuthState>({
   isAuthenticated: false,
   user: null,
   loading: false,
+  stage: "login",
+  usingBackup: false,
 });
 
 // Admin API base URL
@@ -34,6 +47,7 @@ class AdminAuthStore {
       isAuthenticated: false,
       user: null,
       loading: false,
+      stage: "login",
     });
 
     // Clear cached data
@@ -45,7 +59,11 @@ class AdminAuthStore {
    * Login with email and password
    */
   async login(email: string, password: string) {
-    adminAuthState.update((state) => ({ ...state, loading: true }));
+    adminAuthState.update((state) => ({
+      ...state,
+      loading: true,
+      lastError: undefined,
+    }));
 
     try {
       console.log("Attempting login with:", {
@@ -72,27 +90,142 @@ class AdminAuthStore {
       console.log("Response data:", result);
 
       if (result.success) {
-        const user = User.fromApiData(result.data);
+        // Backend now returns twofa flags instead of user directly
+        if (result.data?.twofa_required) {
+          const twofaConfigured = !!result.data?.twofa_configured;
+          adminAuthState.update((state) => ({
+            ...state,
+            loading: false,
+            twofaPending: true,
+            twofaConfigured,
+            stage: twofaConfigured ? "verify" : "setup",
+          }));
+          // If not configured yet, immediately request setup (secret)
+          if (!twofaConfigured) {
+            this.twofaSetup();
+          }
+        } else if (result.data && result.data.id) {
+          // Fallback: direct user object (should not happen with mandatory 2FA)
+          const user = User.fromApiData(result.data);
+          adminAuthState.update((state) => ({
+            ...state,
+            isAuthenticated: true,
+            user,
+            loading: false,
+            stage: "login",
+          }));
+        } else {
+          // Unexpected structure
+          adminAuthState.update((s) => ({
+            ...s,
+            loading: false,
+            lastError: "Unerwartete Antwort vom Server",
+          }));
+        }
+      } else {
         adminAuthState.update((state) => ({
           ...state,
-          isAuthenticated: true,
-          user,
           loading: false,
+          lastError: result.message,
         }));
-        console.log("Login successful, user:", user);
-      } else {
-        adminAuthState.update((state) => ({ ...state, loading: false }));
         console.log("Login failed:", result);
       }
 
       return result;
     } catch (error) {
       console.error("Login error:", error);
-      adminAuthState.update((state) => ({ ...state, loading: false }));
+      adminAuthState.update((state) => ({
+        ...state,
+        loading: false,
+        lastError: "Network error occurred",
+      }));
       return {
         success: false,
         message: "Network error occurred",
       };
+    }
+  }
+
+  /**
+   * Request 2FA setup (secret + otpauth URI)
+   */
+  async twofaSetup() {
+    try {
+      const resp = await fetch(`${API_BASE}/auth/2fa/setup`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const result = await resp.json();
+      if (result.success) {
+        adminAuthState.update((s) => ({
+          ...s,
+          twofaSecret: result.data?.secret,
+          otpauthUri: result.data?.otpauth_uri,
+          twofaConfigured: false,
+          stage: "setup",
+        }));
+      } else {
+        adminAuthState.update((s) => ({
+          ...s,
+          lastError: result.message || "2FA Setup fehlgeschlagen",
+        }));
+      }
+      return result;
+    } catch (e) {
+      adminAuthState.update((s) => ({
+        ...s,
+        lastError: "Netzwerkfehler beim 2FA Setup",
+      }));
+      return { success: false, message: "Network error" };
+    }
+  }
+
+  /**
+   * Verify 2FA code
+   */
+  async twofaVerify(code: string) {
+    adminAuthState.update((s) => ({
+      ...s,
+      verifying: true,
+      lastError: undefined,
+    }));
+    try {
+      const resp = await fetch(`${API_BASE}/auth/2fa/verify`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const result = await resp.json();
+      if (result.success && result.data) {
+        const user = User.fromApiData(result.data);
+        const backupCodes = result.data.backup_codes as string[] | undefined;
+        adminAuthState.update((s) => ({
+          ...s,
+          isAuthenticated: true,
+          user,
+          twofaPending: false,
+          verifying: false,
+          stage: backupCodes && backupCodes.length ? "show-backups" : "login",
+          twofaSecret: undefined,
+          otpauthUri: undefined,
+          backupCodes: backupCodes || s.backupCodes,
+        }));
+      } else {
+        adminAuthState.update((s) => ({
+          ...s,
+          verifying: false,
+          lastError: result.message || "Ungültiger 2FA Code",
+        }));
+      }
+      return result;
+    } catch (e) {
+      adminAuthState.update((s) => ({
+        ...s,
+        verifying: false,
+        lastError: "Netzwerkfehler bei 2FA Verifikation",
+      }));
+      return { success: false, message: "Network error" };
     }
   }
 
@@ -158,7 +291,7 @@ class AdminAuthStore {
 
       const result = await response.json();
 
-      if (result.success && result.data) {
+      if (result.success && result.data && !result.data.twofa_pending) {
         if (
           typeof process !== "undefined" &&
           process.env.NODE_ENV === "development"
@@ -171,6 +304,17 @@ class AdminAuthStore {
           isAuthenticated: true,
           user,
           loading: false,
+        }));
+      } else if (result.success && result.data?.twofa_pending) {
+        // Keep user on 2FA verification screen
+        adminAuthState.update((state) => ({
+          ...state,
+          isAuthenticated: false,
+          user: null,
+          loading: false,
+          twofaPending: true,
+          stage: "verify",
+          twofaConfigured: true,
         }));
       } else {
         if (
@@ -218,6 +362,46 @@ class AdminAuthStore {
         message: "Network error occurred",
       };
     }
+  }
+
+  /**
+   * Generate backup codes
+   */
+  async generateBackupCodes() {
+    const res = await fetch(
+      "/backend/api/admin/auth/2fa/backup-codes/generate",
+      { method: "POST", credentials: "include" },
+    );
+    if (res.ok) {
+      const json = await res.json();
+      adminAuthState.update((s) => ({ ...s, backupCodes: json.data.codes }));
+    }
+  }
+
+  /**
+   * Load backup status
+   */
+  async loadBackupStatus() {
+    const res = await fetch("/backend/api/admin/auth/2fa/backup-codes/status", {
+      credentials: "include",
+    });
+    if (res.ok) {
+      const json = await res.json();
+      adminAuthState.update((s) => ({
+        ...s,
+        backupRemaining: json.data.remaining,
+      }));
+    }
+  }
+
+  /**
+   * Toggle using backup code flag
+   */
+  toggleUsingBackup(flag?: boolean) {
+    adminAuthState.update((s) => ({
+      ...s,
+      usingBackup: flag ?? !s.usingBackup,
+    }));
   }
 }
 
