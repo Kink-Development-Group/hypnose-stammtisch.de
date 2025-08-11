@@ -22,14 +22,70 @@ class EventsController
    */
   private function eventToArray($event): array
   {
-    if (method_exists($event, 'toArray')) {
-      return $event->toArray();
-    } elseif (isset($event->toArray) && is_callable($event->toArray)) {
-      return call_user_func($event->toArray);
-    } else {
-      // Fallback for mock objects
-      return (array) $event;
+    // Bereits ein Array -> normalisieren (z.B. DB-Row oder bereits konvertiert)
+    if (is_array($event)) {
+      return $this->normalizeEventArray($event);
     }
+    // Objekt mit toArray Methode
+    if (is_object($event) && method_exists($event, 'toArray')) {
+      $arr = $event->toArray();
+      return is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
+    }
+    // Objekt hat evtl. Property oder Closure toArray
+    if (is_object($event) && isset($event->toArray) && is_callable($event->toArray)) {
+      $arr = call_user_func($event->toArray);
+      return is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
+    }
+    // Generischer Fallback
+    return $this->normalizeEventArray((array)$event);
+  }
+
+  /**
+   * Normalisiere Event-Array Keys (snake_case Erwartung der API) und setze Defaults
+   */
+  private function normalizeEventArray(array $e): array
+  {
+    // Falls Modell-Properties im camelCase kommen, mappe auf snake_case
+    $map = [
+      'startDatetime' => 'start_datetime',
+      'endDatetime' => 'end_datetime',
+      'isRecurring' => 'is_recurring',
+      'recurrenceEndDate' => 'recurrence_end_date',
+      'parentEventId' => 'parent_event_id',
+      'difficultyLevel' => 'difficulty_level',
+      'maxParticipants' => 'max_participants',
+      'currentParticipants' => 'current_participants',
+      'ageRestriction' => 'age_restriction',
+      'isFeatured' => 'is_featured',
+      'requiresRegistration' => 'requires_registration',
+      'registrationDeadline' => 'registration_deadline',
+      'organizerName' => 'organizer_name',
+      'organizerEmail' => 'organizer_email',
+      'organizerBio' => 'organizer_bio',
+      'metaDescription' => 'meta_description',
+      'imageUrl' => 'image_url',
+      'createdAt' => 'created_at',
+      'updatedAt' => 'updated_at'
+    ];
+    foreach ($map as $from => $to) {
+      if (array_key_exists($from, $e) && !array_key_exists($to, $e)) {
+        $e[$to] = $e[$from];
+      }
+    }
+    // Minimal erforderliche Felder absichern
+    $defaults = [
+      'title' => '',
+      'slug' => '',
+      'start_datetime' => $e['start_datetime'] ?? ($e['start_date'] ?? null),
+      'end_datetime' => $e['end_datetime'] ?? ($e['start_datetime'] ?? null),
+      'timezone' => $e['timezone'] ?? 'Europe/Berlin'
+    ];
+    foreach ($defaults as $k => $v) {
+      if (!array_key_exists($k, $e)) {
+        $e[$k] = $v;
+      }
+    }
+    return $e;
   }
 
   /**

@@ -318,6 +318,24 @@ class AdminEventsController
         return;
       }
 
+      // Normalisiere leere Strings -> null
+      $startTime = isset($input['start_time']) && trim((string)$input['start_time']) !== '' ? substr($input['start_time'], 0, 5) : null;
+      $endTime   = isset($input['end_time']) && trim((string)$input['end_time']) !== '' ? substr($input['end_time'], 0, 5) : null;
+      $endDate   = isset($input['end_date']) && trim((string)$input['end_date']) !== '' ? $input['end_date'] : null;
+
+      // Zeitliche Plausibilitätsprüfung falls beide gesetzt
+      if ($startTime && $endTime) {
+        $st = \DateTime::createFromFormat('H:i', $startTime);
+        $et = \DateTime::createFromFormat('H:i', $endTime);
+        if ($st && $et && $et <= $st) {
+          Response::error('end_time muss nach start_time liegen', 400);
+          return;
+        }
+      }
+
+      $exdatesJson = isset($input['exdates']) ? json_encode($input['exdates']) : null;
+      $tagsJson    = isset($input['tags']) ? json_encode($input['tags']) : null;
+
       $sql = "INSERT INTO event_series (
         title, slug, description, rrule, start_date, end_date, start_time, end_time, exdates,
         default_location_type, default_location_name,
@@ -325,26 +343,66 @@ class AdminEventsController
         default_requires_registration, status, tags
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-      $seriesId = Database::insert($sql, [
-        $input['title'],
-        $slug,
-        $input['description'] ?? null,
-        $input['rrule'],
-        $input['start_date'],
-        // allow open-ended series (fortwährend) by accepting null end_date
-        $input['end_date'] ?? null,
-        $input['start_time'] ?? null,
-        $input['end_time'] ?? null,
-        isset($input['exdates']) ? json_encode($input['exdates']) : null,
-        $input['default_location_type'] ?? 'physical',
-        $input['default_location_name'] ?? null,
-        $input['default_location_address'] ?? null,
-        $input['default_category'] ?? 'stammtisch',
-        $input['default_max_participants'] ?? null,
-        $input['default_requires_registration'] ?? true,
-        $input['status'] ?? 'draft',
-        isset($input['tags']) ? json_encode($input['tags']) : null
-      ]);
+      try {
+        $seriesId = Database::insert($sql, [
+          $input['title'],
+          $slug,
+          $input['description'] ?? null,
+          $input['rrule'],
+          $input['start_date'],
+          $endDate,
+          $startTime,
+          $endTime,
+          $exdatesJson,
+          $input['default_location_type'] ?? 'physical',
+          $input['default_location_name'] ?? null,
+          $input['default_location_address'] ?? null,
+          $input['default_category'] ?? 'stammtisch',
+          $input['default_max_participants'] ?? null,
+          $input['default_requires_registration'] ?? true,
+          $input['status'] ?? 'draft',
+          $tagsJson
+        ]);
+      } catch (\Exception $inner) {
+        $innerMsg = $inner->getMessage();
+        // Fallback: wenn Migration 003 noch nicht gelaufen (start_time / end_time unbekannt)
+        if (str_contains(strtolower($innerMsg), 'unknown column') && (str_contains($innerMsg, 'start_time') || str_contains($innerMsg, 'end_time'))) {
+          // Versuche Insert ohne Zeit-Spalten
+          $fallbackSql = "INSERT INTO event_series (
+            title, slug, description, rrule, start_date, end_date, exdates,
+            default_location_type, default_location_name, default_location_address, default_category, default_max_participants,
+            default_requires_registration, status, tags
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+          try {
+            $seriesId = Database::insert($fallbackSql, [
+              $input['title'],
+              $slug,
+              $input['description'] ?? null,
+              $input['rrule'],
+              $input['start_date'],
+              $endDate,
+              $exdatesJson,
+              $input['default_location_type'] ?? 'physical',
+              $input['default_location_name'] ?? null,
+              $input['default_location_address'] ?? null,
+              $input['default_category'] ?? 'stammtisch',
+              $input['default_max_participants'] ?? null,
+              $input['default_requires_registration'] ?? true,
+              $input['status'] ?? 'draft',
+              $tagsJson
+            ]);
+            // Informiere Client, dass Migration fehlt
+            Response::success([
+              'id' => $seriesId,
+              'warning' => 'Serie erstellt, aber Migration 003 (start_time/end_time) scheint nicht angewendet. Bitte Migration ausführen.'
+            ], 'Event series created (ohne Zeit-Spalten)');
+            return;
+          } catch (\Exception $fallbackEx) {
+            throw $fallbackEx; // gehe in äußeres catch
+          }
+        }
+        throw $inner; // rethrow, wird unten gefangen
+      }
 
       Response::success(['id' => $seriesId], 'Event series created successfully');
     } catch (Exception $e) {
@@ -354,7 +412,9 @@ class AdminEventsController
         Response::error('Series slug collision – bitte erneut versuchen', 400);
         return;
       }
-      Response::error('Failed to create event series: ' . $msg, 500);
+      Response::error('Failed to create event series: ' . $msg, 500, [
+        'hint' => 'Falls "Unknown column start_time" auftritt: php backend/migrations/migrate.php migrate ausführen.'
+      ]);
     }
   }
 
@@ -429,14 +489,22 @@ class AdminEventsController
     }
 
     try {
-      if (!empty($input['start_time']) && !empty($input['end_time'])) {
-        $startT = \DateTime::createFromFormat('H:i', substr($input['start_time'], 0, 5));
-        $endT = \DateTime::createFromFormat('H:i', substr($input['end_time'], 0, 5));
+      // Normalisierung & Validierung Zeiten
+      $startTime = isset($input['start_time']) && trim((string)$input['start_time']) !== '' ? substr($input['start_time'], 0, 5) : null;
+      $endTime   = isset($input['end_time']) && trim((string)$input['end_time']) !== '' ? substr($input['end_time'], 0, 5) : null;
+      if ($startTime && $endTime) {
+        $startT = \DateTime::createFromFormat('H:i', $startTime);
+        $endT = \DateTime::createFromFormat('H:i', $endTime);
         if ($startT && $endT && $endT <= $startT) {
           Response::error('end_time muss nach start_time liegen', 400);
           return;
         }
       }
+
+      $exdatesJson = isset($input['exdates']) ? json_encode($input['exdates']) : null;
+      $tagsJson = isset($input['tags']) ? json_encode($input['tags']) : null;
+      $endDate = isset($input['end_date']) && trim((string)$input['end_date']) !== '' ? $input['end_date'] : null;
+
       $sql = "UPDATE event_series SET
         title = ?, description = ?, rrule = ?, start_date = ?, end_date = ?, start_time = ?, end_time = ?,
         exdates = ?, default_location_type = ?,
@@ -445,25 +513,57 @@ class AdminEventsController
         tags = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?";
 
-      Database::execute($sql, [
-        $input['title'],
-        $input['description'] ?? null,
-        $input['rrule'],
-        $input['start_date'],
-        $input['end_date'] ?? null,
-        $input['start_time'] ?? null,
-        $input['end_time'] ?? null,
-        isset($input['exdates']) ? json_encode($input['exdates']) : null,
-        $input['default_location_type'] ?? 'physical',
-        $input['default_location_name'] ?? null,
-        $input['default_location_address'] ?? null,
-        $input['default_category'] ?? 'stammtisch',
-        $input['default_max_participants'] ?? null,
-        $input['default_requires_registration'] ?? true,
-        $input['status'] ?? 'draft',
-        isset($input['tags']) ? json_encode($input['tags']) : null,
-        $id
-      ]);
+      try {
+        Database::execute($sql, [
+          $input['title'],
+          $input['description'] ?? null,
+          $input['rrule'],
+          $input['start_date'],
+          $endDate,
+          $startTime,
+          $endTime,
+          $exdatesJson,
+          $input['default_location_type'] ?? 'physical',
+          $input['default_location_name'] ?? null,
+          $input['default_location_address'] ?? null,
+          $input['default_category'] ?? 'stammtisch',
+          $input['default_max_participants'] ?? null,
+          $input['default_requires_registration'] ?? true,
+          $input['status'] ?? 'draft',
+          $tagsJson,
+          $id
+        ]);
+      } catch (\Exception $inner) {
+        $msg = $inner->getMessage();
+        if (str_contains(strtolower($msg), 'unknown column') && (str_contains($msg, 'start_time') || str_contains($msg, 'end_time'))) {
+          // Fallback ohne Zeitspalten (Migration 003 fehlt)
+          $fallbackSql = "UPDATE event_series SET
+              title = ?, description = ?, rrule = ?, start_date = ?, end_date = ?,
+              exdates = ?, default_location_type = ?, default_location_name = ?, default_location_address = ?, default_category = ?,
+              default_max_participants = ?, default_requires_registration = ?, status = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?";
+          Database::execute($fallbackSql, [
+            $input['title'],
+            $input['description'] ?? null,
+            $input['rrule'],
+            $input['start_date'],
+            $endDate,
+            $exdatesJson,
+            $input['default_location_type'] ?? 'physical',
+            $input['default_location_name'] ?? null,
+            $input['default_location_address'] ?? null,
+            $input['default_category'] ?? 'stammtisch',
+            $input['default_max_participants'] ?? null,
+            $input['default_requires_registration'] ?? true,
+            $input['status'] ?? 'draft',
+            $tagsJson,
+            $id
+          ]);
+          Response::success(null, 'Event series updated (ohne Zeit-Spalten – bitte Migration 003 ausführen)');
+          return;
+        }
+        throw $inner;
+      }
 
       Response::success(null, 'Event series updated successfully');
     } catch (Exception $e) {

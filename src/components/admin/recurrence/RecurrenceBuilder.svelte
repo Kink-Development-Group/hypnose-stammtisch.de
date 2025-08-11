@@ -170,8 +170,7 @@
     <div>
       <label
         for="rb-freq"
-        class="block text-xs font-semibold text-gray-950 dark:text-white mb-1"
-        >Frequenz</label
+        class="block text-xs font-semibold text-gray-700 mb-1">Frequenz</label
       >
       <select
         id="rb-freq"
@@ -189,8 +188,7 @@
     <div>
       <label
         for="rb-interval"
-        class="block text-xs font-semibold text-gray-950 dark:text-white mb-1"
-        >Intervall</label
+        class="block text-xs font-semibold text-gray-700 mb-1">Intervall</label
       >
       <input
         id="rb-interval"
@@ -205,7 +203,7 @@
     <div>
       <label
         for="rb-until"
-        class="block text-xs font-semibold text-gray-950 dark:text-white mb-1"
+        class="block text-xs font-semibold text-gray-700 mb-1"
         >Ende (Datum)</label
       >
       <input
@@ -220,8 +218,7 @@
     <div>
       <label
         for="rb-count"
-        class="block text-xs font-semibold text-gray-950 dark:text-white mb-1"
-        >Anzahl</label
+        class="block text-xs font-semibold text-gray-700 mb-1">Anzahl</label
       >
       <input
         id="rb-count"
@@ -238,7 +235,7 @@
   {#if freq === "WEEKLY"}
     <div>
       <span
-        class="block text-xs font-semibold text-gray-950 dark:text-white mb-1"
+        class="block text-xs font-semibold text-gray-700 mb-1"
         id="rb-weekdays-label">Wochentage</span
       >
       <div class="flex flex-wrap gap-1">
@@ -373,12 +370,12 @@
   </div>
 
   <div class="space-y-1">
-    <span class="block text-xs font-medium text-gray-900 dark:text-smoke-50"
+    <span class="block text-xs font-medium text-gray-700"
       >Vorschau (erste {occurrences.length} Termine)</span
     >
     {#if occurrences.length}
       <ul
-        class="text-[11px] grid grid-cols-1 md:grid-cols-2 gap-x-4 list-disc list-inside text-gray-800 dark:text-smoke-100"
+        class="text-[11px] grid grid-cols-1 md:grid-cols-2 gap-x-4 list-disc list-inside text-gray-800"
       >
         {#each occurrences as o}
           <li>{dayjs(o).format("DD.MM.YYYY")}</li>

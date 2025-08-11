@@ -71,14 +71,18 @@
   };
 
   const closeModal = () => {
-    closeModal();
+    // Schließe Modal (Stores zurücksetzen)
+    showEventModal.set(false);
+    selectedEvent.set(null);
 
-    // Restore focus
+    // Fokus zurück auf vorheriges Element
     if (previousFocus) {
-      previousFocus.focus();
+      try {
+        previousFocus.focus();
+      } catch {}
     }
 
-    // Unlock body scroll
+    // Scroll wieder erlauben
     document.body.style.overflow = "auto";
   };
 
