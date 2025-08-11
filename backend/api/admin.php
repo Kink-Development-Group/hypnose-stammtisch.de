@@ -153,6 +153,15 @@ try {
         \HypnoseStammtisch\Controllers\AdminEventsController::getSeriesExdates($seriesId);
         return;
       }
+    } elseif (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/cancel$#', $path, $matches)) {
+      $seriesId = (string)$matches[1];
+      if ($method === 'POST') {
+        \HypnoseStammtisch\Controllers\AdminEventsController::cancelSeriesInstance($seriesId);
+        return;
+      } elseif ($method === 'DELETE') {
+        \HypnoseStammtisch\Controllers\AdminEventsController::restoreSeriesInstance($seriesId);
+        return;
+      }
     }
     if ($path === '/events') {
       if ($method === 'GET') {

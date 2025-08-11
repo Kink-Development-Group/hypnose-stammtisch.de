@@ -377,7 +377,7 @@ class EventsController
           return $dt->between($seriesStart, $seriesEnd);
         });
 
-        // Fetch overrides for those instance dates
+        // Fetch overrides for those instance dates (inkl. cancellations)
         $instanceDates = array_map(fn($i) => substr($i['start_datetime'], 0, 10), $instances);
         if (!empty($instanceDates)) {
           $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
@@ -392,7 +392,13 @@ class EventsController
           foreach ($instances as $inst) {
             $dateKey = substr($inst['start_datetime'], 0, 10);
             if (isset($overrideMap[$dateKey])) {
-              $expanded[] = $overrideMap[$dateKey];
+              // Cancellations werden nur aufgenommen falls Frontend sie darstellen soll; Option: komplett ausblenden
+              if (($overrideMap[$dateKey]['override_type'] ?? null) === 'cancelled') {
+                // Wir geben trotzdem das Cancel-Objekt aus (kann Frontend kennzeichnen)
+                $expanded[] = $overrideMap[$dateKey];
+              } else {
+                $expanded[] = $overrideMap[$dateKey];
+              }
             } else {
               $inst['series_id'] = $series['id'];
               $inst['instance_date'] = $dateKey;

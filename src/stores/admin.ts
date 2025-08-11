@@ -844,6 +844,38 @@ export class AdminAPI {
     return this.request(`/events/series/${seriesId}/exdates`);
   }
 
+  // Cancel single series instance
+  static async cancelSeriesInstance(
+    seriesId: string,
+    instanceDate: string,
+    reason?: string,
+  ) {
+    adminNotifications.info("Instanz wird abgesagt...");
+    const res = await this.request(`/events/series/${seriesId}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ instance_date: instanceDate, reason }),
+    });
+    if (res.success) {
+      adminNotifications.success("Instanz abgesagt");
+    } else {
+      adminNotifications.error(res.message || "Fehler beim Absagen");
+    }
+    return res;
+  }
+
+  // Restore cancelled instance
+  static async restoreSeriesInstance(seriesId: string, instanceDate: string) {
+    adminNotifications.info("Absage wird zurückgenommen...");
+    const url = `/events/series/${seriesId}/cancel?instance_date=${encodeURIComponent(instanceDate)}`;
+    const res = await this.request(url, { method: "DELETE" });
+    if (res.success) {
+      adminNotifications.success("Absage entfernt");
+    } else {
+      adminNotifications.error(res.message || "Fehler beim Wiederherstellen");
+    }
+    return res;
+  }
+
   static async addSeriesExdate(seriesId: string, date: string) {
     adminNotifications.info("EXDATE wird hinzugefügt...");
     const res = await this.request(`/events/series/${seriesId}/exdates`, {

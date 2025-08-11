@@ -18,6 +18,9 @@ export interface Event {
   createdAt: Date;
   updatedAt: Date;
   instanceDate?: Date; // für einzelne Serien-Instanz
+  overrideType?: "changed" | "cancelled";
+  cancellationReason?: string;
+  isCancelled?: boolean; // abgeleitet
 }
 
 export interface EventSeries {

@@ -40,6 +40,9 @@ export function transformApiEvent(apiEvent: any): Event {
     instanceDate: apiEvent.instance_date
       ? new Date(apiEvent.instance_date)
       : undefined,
+    overrideType: apiEvent.override_type || undefined,
+    cancellationReason: apiEvent.cancellation_reason || undefined,
+    isCancelled: (apiEvent.override_type || apiEvent.status) === "cancelled",
   };
 }
 

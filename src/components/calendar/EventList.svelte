@@ -9,17 +9,26 @@
   dayjs.locale("de");
 
   // Group events by date
-  $: groupedEvents = events.reduce(
-    (groups, event) => {
-      const dateKey = dayjs(event.startDate).format("YYYY-MM-DD");
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
-      }
-      groups[dateKey].push(event);
-      return groups;
-    },
-    {} as Record<string, Event[]>,
-  );
+  $: groupedEvents = events
+    // Sort: cancelled last within same date
+    .slice()
+    .sort((a, b) => {
+      if (a.startDate.getTime() !== b.startDate.getTime()) return 0; // grouping handles date difference
+      if (a.isCancelled && !b.isCancelled) return 1;
+      if (!a.isCancelled && b.isCancelled) return -1;
+      return 0;
+    })
+    .reduce(
+      (groups, event) => {
+        const dateKey = dayjs(event.startDate).format("YYYY-MM-DD");
+        if (!groups[dateKey]) {
+          groups[dateKey] = [];
+        }
+        groups[dateKey].push(event);
+        return groups;
+      },
+      {} as Record<string, Event[]>,
+    );
 
   $: sortedDateKeys = Object.keys(groupedEvents).sort();
 
