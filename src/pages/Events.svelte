@@ -24,11 +24,27 @@
       isLoading.set(true);
 
       // In a real app, this would be an API call
-      const response = await fetch("/api/events?view=expanded");
+      // Zeitraum bestimmen (für Recurrence Expansion im Backend)
+      const now = new Date();
+      // Standard: aktueller Monat
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      // Zusätzlicher Puffer: eine Woche vorher/nachher für flüssiges Navigieren
+      const fromDate = new Date(
+        startOfMonth.getTime() - 7 * 24 * 60 * 60 * 1000,
+      );
+      const toDate = new Date(endOfMonth.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const fmt = (d: Date) => d.toISOString().slice(0, 10);
+      const url = `/api/events?view=expanded&from_date=${fmt(fromDate)}&to_date=${fmt(toDate)}`;
+      console.log("[DEBUG] Fetch URL:", url);
+      const response = await fetch(url);
       if (response.ok) {
         const result = await response.json();
+        console.log("[DEBUG] Events API Response:", result);
         const apiEvents = result.success ? result.data : [];
+        console.log("[DEBUG] API Events:", apiEvents);
         const transformedEvents = transformApiEvents(apiEvents);
+        console.log("[DEBUG] Transformierte Events:", transformedEvents);
         events.set(transformedEvents);
       } else {
         throw new Error("Failed to load events");

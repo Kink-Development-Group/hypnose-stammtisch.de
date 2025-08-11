@@ -317,11 +317,17 @@ class EventsController
       $eventArray = $this->eventToArray($event);
       if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
         try {
+          $exdatesRaw = $eventArray['exdates'] ?? '[]';
+          $exdatesDecoded = json_decode($exdatesRaw, true);
+          if ($exdatesDecoded === null && !empty($exdatesRaw)) {
+            error_log("Invalid exdates JSON for event {$eventArray['id']}: " . $exdatesRaw);
+            $exdatesDecoded = [];
+          }
           $instances = RRuleProcessor::expandRecurringEvent(
             $eventArray,
             $startDate,
             $endDate,
-            json_decode($eventArray['exdates'] ?? '[]', true)
+            $exdatesDecoded
           );
           $expanded = array_merge($expanded, $instances);
         } catch (\Exception $e) {
@@ -342,9 +348,24 @@ class EventsController
       $seriesList = \HypnoseStammtisch\Database\Database::fetchAll($seriesSql);
 
       foreach ($seriesList as $series) {
-        $seriesStart = Carbon::parse($series['start_date']);
-        $seriesEnd = $series['end_date'] ? Carbon::parse($series['end_date']) : $endDate->copy();
+        $seriesStart = Carbon::parse($series['start_date'])->startOfDay();
+        $seriesEnd = $series['end_date'] ? Carbon::parse($series['end_date'])->endOfDay() : $endDate->copy();
+        // Falls RRULE ein UNTIL enthält und keine end_date gesetzt ist, erweitere seriesEnd entsprechend (aber clamp später)
+        if (empty($series['end_date']) && !empty($series['rrule']) && str_contains($series['rrule'], 'UNTIL=')) {
+          if (preg_match('/UNTIL=([0-9TZ]+)/', $series['rrule'], $m)) {
+            try {
+              $untilCandidate = Carbon::parse($m[1]);
+              if ($untilCandidate->gt($seriesEnd)) {
+                $seriesEnd = $untilCandidate->endOfDay();
+              }
+            } catch (\Exception $e) {
+              // ignore parse error
+            }
+          }
+        }
         $seriesEnd = $seriesEnd->gt($endDate) ? $endDate->copy() : $seriesEnd; // clamp
+        // Debug Grenze
+        //error_log('Series window ' . $series['id'] . ' => ' . $seriesStart->toDateTimeString() . ' - ' . $seriesEnd->toDateTimeString());
 
         // Build pseudo event for RRULE expansion using start_time/end_time
         $startTime = $series['start_time'] ?? '00:00:00';
@@ -368,13 +389,24 @@ class EventsController
           'is_recurring' => true
         ];
 
-        $exdates = $series['exdates'] ? json_decode($series['exdates'], true) : [];
+        $exdatesRaw = $series['exdates'] ?? '[]';
+        $exdatesDecoded = json_decode($exdatesRaw, true);
+        if (!is_array($exdatesDecoded)) {
+          if (!empty($exdatesRaw)) {
+            error_log("Invalid exdates JSON for series {$series['id']}: " . $exdatesRaw);
+          }
+          $exdatesDecoded = [];
+        }
+        $exdates = $exdatesDecoded;
         $instances = RRuleProcessor::expandRecurringEvent($pseudo, $startDate, $endDate, $exdates);
+        if (empty($instances)) {
+          error_log('RRULE yielded no instances for series ' . $series['id'] . ' within ' . $startDate->toDateString() . ' - ' . $endDate->toDateString() . ' | RRULE=' . $series['rrule']);
+        }
 
         // Clip instances to series end (if defined)
         $instances = array_filter($instances, function ($i) use ($seriesStart, $seriesEnd) {
           $dt = Carbon::parse($i['start_datetime']);
-          return $dt->between($seriesStart, $seriesEnd);
+          return $dt->between($seriesStart, $seriesEnd); // inclusive boundaries
         });
 
         // Fetch overrides for those instance dates (inkl. cancellations)
