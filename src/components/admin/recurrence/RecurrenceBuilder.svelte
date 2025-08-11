@@ -28,6 +28,9 @@
   let parseError: string | null = null;
   let occurrences: Date[] = [];
   let summary = "";
+  // Berechnete Anzahl (wenn Enddatum/UNTIL gesetzt)
+  let derivedCount: number | null = null;
+  let derivedCountOverflow = false;
 
   const weekOptions = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
   const posOptions = [1, 2, 3, 4, -1];
@@ -119,6 +122,59 @@
     } catch (e) {
       return "";
     }
+  }
+
+  function computeDerivedCount() {
+    derivedCount = null;
+    derivedCountOverflow = false;
+    if (!startDate || !until) return;
+    try {
+      const opts: any = { freq: RRule[freq], interval };
+      // dtstart
+      const base = dayjs(startDate + "T09:00:00").toDate();
+      opts.dtstart = base;
+      if (freq === "WEEKLY") {
+        if (weekdays.length === 0) {
+          const wd = dayjs(startDate).day();
+          const map = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+          opts.byweekday = [(RRule as any)[map[wd]]];
+        } else {
+          opts.byweekday = weekdays.map((w) => (RRule as any)[w]);
+        }
+      } else if (freq === "MONTHLY") {
+        if (monthlyMode === "bymonthday") {
+          const md = monthday || dayjs(startDate).date();
+          opts.bymonthday = [md];
+        } else {
+          opts.bysetpos = setpos;
+          opts.byweekday = [(RRule as any)[setposWeekday]];
+        }
+      }
+      opts.until = dayjs(until + "T23:59:59").toDate();
+      // Niemals count setzen – wir wollen maßgeblich UNTIL verwenden
+      const rule = new RRule(opts);
+      const maxCompute = 1000;
+      const all: Date[] = [];
+      rule.all((d: Date, i: number) => {
+        all.push(d);
+        if (i + 1 >= maxCompute) {
+          derivedCountOverflow = true;
+          return true; // stop early
+        }
+        return false;
+      });
+      derivedCount = all.length;
+    } catch (e) {
+      derivedCount = null;
+    }
+  }
+
+  // Reaktiv berechnen wenn UNTIL vorhanden und nicht im manuellen Modus
+  $: if (!manualEdit && until) {
+    computeDerivedCount();
+  } else if (!until) {
+    derivedCount = null;
+    derivedCountOverflow = false;
   }
 
   function buildAndEmit() {
@@ -220,15 +276,41 @@
         for="rb-count"
         class="block text-xs font-semibold text-gray-700 mb-1">Anzahl</label
       >
-      <input
-        id="rb-count"
-        type="number"
-        min="1"
-        bind:value={count}
-        class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-charcoal-800 text-gray-900 dark:text-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        on:input={() => buildAndEmit()}
-        {disabled}
-      />
+      {#if until && !manualEdit}
+        <div class="flex items-center gap-2">
+          <input
+            id="rb-count"
+            type="number"
+            min="1"
+            value={derivedCount ?? ""}
+            disabled
+            class="w-28 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-gray-100 dark:bg-charcoal-700 text-gray-700 dark:text-gray-300"
+          />
+          <span class="text-[10px] text-gray-600 dark:text-smoke-300">
+            {#if derivedCount !== null}
+              {derivedCountOverflow
+                ? `${derivedCount}+ (gekürzt)`
+                : `${derivedCount}`} berechnet aus Start+Ende
+            {:else}
+              wird berechnet…
+            {/if}
+          </span>
+        </div>
+        <div class="text-[10px] text-gray-500 dark:text-smoke-400 mt-0.5">
+          Deaktiviert weil Enddatum gesetzt (UNTIL). Entferne Enddatum um feste
+          Anzahl zu definieren.
+        </div>
+      {:else}
+        <input
+          id="rb-count"
+          type="number"
+          min="1"
+          bind:value={count}
+          class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-charcoal-800 text-gray-900 dark:text-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          on:input={() => buildAndEmit()}
+          {disabled}
+        />
+      {/if}
     </div>
   </div>
 

@@ -56,6 +56,47 @@
     end_time: "",
   };
 
+  // Sync-Logik: Wenn ein Enddatum (Serie) geändert wird, RecurrenceBuilder-UNTIL spiegeln (und umgekehrt)
+  // Annahme: RecurrenceBuilder value (RRULE) enthält ggf. ein UNTIL=YYYYMMDD oder COUNT.
+  $: if (newEvent.event_type === "series" && newEvent.end_date) {
+    // Wenn end_date vorhanden aber RRULE kein UNTIL oder anderes Datum -> aktualisieren
+    if (newEvent.rrule) {
+      const untilMatch = newEvent.rrule.match(/UNTIL=(\d{8})/);
+      const iso = newEvent.end_date.replace(/-/g, "");
+      if (untilMatch && untilMatch[1] !== iso) {
+        newEvent.rrule = newEvent.rrule.replace(/UNTIL=\d{8}/, "UNTIL=" + iso);
+      } else if (!untilMatch) {
+        // Falls COUNT existiert, nicht automatisch ersetzen; nur hinzufügen wenn weder UNTIL noch COUNT
+        if (!/COUNT=\d+/.test(newEvent.rrule)) {
+          // Füge UNTIL am Ende vor evtl. nachgestellten Leerzeichen hinzu
+          if (/;$/.test(newEvent.rrule)) {
+            newEvent.rrule += "UNTIL=" + iso;
+          } else {
+            newEvent.rrule +=
+              (newEvent.rrule.endsWith("\n") ? "" : ";") + "UNTIL=" + iso;
+          }
+        }
+      }
+    }
+  }
+
+  // Wenn RRULE-Ende (UNTIL) geändert wurde und ein anderes end_date gesetzt ist -> angleichen
+  $: if (newEvent.event_type === "series" && newEvent.rrule) {
+    const untilMatch = newEvent.rrule.match(/UNTIL=(\d{8})/);
+    if (untilMatch) {
+      const rruleDate = untilMatch[1];
+      const formatted =
+        rruleDate.slice(0, 4) +
+        "-" +
+        rruleDate.slice(4, 6) +
+        "-" +
+        rruleDate.slice(6, 8);
+      if (newEvent.end_date && newEvent.end_date !== formatted) {
+        newEvent.end_date = formatted;
+      }
+    }
+  }
+
   onMount(() => {
     let unsubscribeEventBus: (() => void) | null = null;
 
