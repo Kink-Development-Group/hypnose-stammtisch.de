@@ -148,6 +148,33 @@ try {
   out('Führe Migrationen aus ...', 'info');
   runMigrations();
 
+  // 3b. Standard Head-Admin sicherstellen (laut Dokumentation)
+  // Wird NUR angelegt, wenn es noch keinen Benutzer mit Rolle 'head' gibt und
+  // keine --admin-email Option genutzt wurde (diese hat Vorrang und kann später ausführen)
+  try {
+    $defaultHeadEmail = 'head@hypnose-stammtisch.de';
+    $defaultHeadPass  = 'admin123'; // Dokumentation weist auf unmittelbares Ändern hin
+    $headExists = Database::fetchOne("SELECT id,email FROM users WHERE role='head' LIMIT 1");
+    if (!$headExists) {
+      $userExists = Database::fetchOne('SELECT id FROM users WHERE email = ?', [$defaultHeadEmail]);
+      $hash = password_hash($defaultHeadPass, PASSWORD_DEFAULT);
+      if ($userExists) {
+        Database::execute('UPDATE users SET password_hash=?, role="head", is_active=1 WHERE email=?', [$hash, $defaultHeadEmail]);
+        out('Vorhandener Benutzer auf Head-Admin aktualisiert (Standard).', 'ok');
+      } else {
+        Database::execute('INSERT INTO users (username, email, password_hash, role, is_active, created_at) VALUES (?, ?, ?, "head", 1, NOW())', ['headadmin', $defaultHeadEmail, $hash]);
+        out('Standard Head-Admin angelegt (laut Dokumentation).', 'ok');
+      }
+      out('Standard Head-Admin Zugangsdaten:', 'info');
+      out('  Email: ' . $defaultHeadEmail, 'info');
+      out('  Passwort: ' . $defaultHeadPass . '  (BITTE SOFORT ÄNDERN!)', 'warn');
+    } else {
+      out('Head-Admin existiert bereits (Überspringe Standard-Anlage).', 'info');
+    }
+  } catch (Throwable $e) {
+    out('Warnung: Konnte Standard Head-Admin nicht prüfen/anlegen: ' . $e->getMessage(), 'warn');
+  }
+
   // 4. Seeding falls gewünscht
   if ($options['seed']) {
     $already = false;

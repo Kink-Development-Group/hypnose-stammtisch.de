@@ -13,6 +13,22 @@
   let twofaCode = ""; // used for both TOTP or backup code depending on toggle
   $: state = $adminAuthState;
 
+  // Aufbereitete Darstellung des Secrets (Gruppierung für manuelle Eingabe)
+  $: formattedSecret = state.twofaSecret
+    ? state.twofaSecret
+        .replace(/[^A-Z2-7=]/gi, "") // nur Base32 relevante Zeichen
+        .toUpperCase()
+        .replace(/=+$/, "") // Padding entfernen für bessere Lesbarkeit
+        .match(/.{1,4}/g)
+        ?.join(" ")
+    : "";
+
+  function copySecret() {
+    if (state.twofaSecret) {
+      navigator.clipboard.writeText(state.twofaSecret).catch(() => {});
+    }
+  }
+
   onMount(async () => {
     // Always clear authentication state when visiting login page
     adminAuth.reset();
@@ -195,8 +211,27 @@
           </div>
         {/if}
         {#if state.twofaSecret}
-          <div class="p-2 bg-gray-100 rounded font-mono text-sm select-all">
-            {state.twofaSecret}
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-gray-700"
+                >Alternativ: Secret manuell eingeben</span
+              >
+              <button
+                type="button"
+                on:click={copySecret}
+                class="text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
+                >Kopieren</button
+              >
+            </div>
+            <div
+              class="p-2 bg-white border rounded font-mono text-sm select-all break-all"
+            >
+              {formattedSecret}
+            </div>
+            <p class="text-xs text-gray-500 leading-snug">
+              Falls das Scannen nicht funktioniert, geben Sie dieses Secret
+              (Base32) in Ihrer Authenticator-App ein. Leerzeichen ignorieren.
+            </p>
           </div>
         {/if}
         <div class="space-y-2">

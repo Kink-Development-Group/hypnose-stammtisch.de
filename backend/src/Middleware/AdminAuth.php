@@ -168,20 +168,26 @@ class AdminAuth
   /**
    * Finalize 2FA after successful verification
    */
-  public static function finalizeTwoFactor(string $userId): array
+  /**
+   * Finalize 2FA nach erfolgreicher Verifikation.
+   * Akzeptiert sowohl int als auch string, da Session IDs numerisch gespeichert sein können.
+   */
+  public static function finalizeTwoFactor(int|string $userId): array
   {
+    // Ensure string for DB layer (Prepared Statements akzeptieren beides, wir normalisieren dennoch)
+    $idParam = (string)$userId;
     $sql = "SELECT id, username, email, role, is_active, last_login, created_at, updated_at, twofa_enabled FROM users WHERE id = ?";
-    $user = Database::fetchOne($sql, [$userId]);
+    $user = Database::fetchOne($sql, [$idParam]);
 
     if (!$user) {
       return ['success' => false, 'message' => 'User not found'];
     }
 
-    Database::execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$userId]);
+    Database::execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?", [$idParam]);
 
     $user['last_login'] = date('c');
 
-    $_SESSION['admin_user_id'] = $user['id'];
+    $_SESSION['admin_user_id'] = $user['id']; // bleibt numerisch oder string wie aus DB
     $_SESSION['admin_user_email'] = $user['email'];
     $_SESSION['admin_user_role'] = $user['role'];
     $_SESSION['admin_2fa_verified'] = true;

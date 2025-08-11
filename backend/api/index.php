@@ -73,9 +73,8 @@ $path = $_SERVER['PATH_INFO'] ?? $_SERVER['REQUEST_URI'] ?? '/';
 // Remove query string from path
 $path = parse_url($path, PHP_URL_PATH);
 
-// Check if this is an admin API request
-if (str_starts_with($path, '/api/admin')) {
-  // Forward to admin API handler
+// Check if this is an admin API request (support both /api/admin/* and /admin/* depending on server docroot/rewrite)
+if (str_starts_with($path, '/api/admin') || str_starts_with($path, '/admin')) {
   require_once __DIR__ . '/admin.php';
   return;
 }

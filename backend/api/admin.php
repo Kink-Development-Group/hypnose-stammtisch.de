@@ -27,8 +27,8 @@ Response::handlePreflight();
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// Remove /api/admin prefix
-$path = preg_replace('#^/api/admin#', '', $path);
+// Remove /api/admin or /admin prefix (falls Setup ohne /api läuft)
+$path = preg_replace('#^/(?:api/)?admin#', '', $path);
 $path = rtrim($path, '/') ?: '/';
 
 // Split path into segments
