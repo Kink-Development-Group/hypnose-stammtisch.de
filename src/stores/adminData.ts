@@ -24,6 +24,8 @@ export interface AdminEvent {
   tags: string[];
   created_at: string;
   updated_at: string;
+  series_id?: string;
+  instance_date?: string; // falls Override einer Serie
 }
 
 export interface AdminMessage {

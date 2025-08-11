@@ -24,7 +24,7 @@
       isLoading.set(true);
 
       // In a real app, this would be an API call
-      const response = await fetch("/api/events");
+      const response = await fetch("/api/events?view=expanded");
       if (response.ok) {
         const result = await response.json();
         const apiEvents = result.success ? result.data : [];

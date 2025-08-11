@@ -25,6 +25,7 @@ class Event
         public bool $isRecurring = false,
         public ?string $rrule = null,
         public ?string $recurrenceEndDate = null,
+        public ?string $parentEventId = null,
         public string $locationType = 'physical',
         public string $locationName = '',
         public string $locationAddress = '',
@@ -338,6 +339,7 @@ class Event
             isRecurring: (bool)($data['is_recurring'] ?? false),
             rrule: $data['rrule'],
             recurrenceEndDate: $data['recurrence_end_date'],
+            parentEventId: $data['parent_event_id'] ?? null,
             locationType: $data['location_type'] ?? 'physical',
             locationName: $data['location_name'] ?? '',
             locationAddress: $data['location_address'] ?? '',
@@ -383,6 +385,7 @@ class Event
             'is_recurring' => $this->isRecurring,
             'rrule' => $this->rrule,
             'recurrence_end_date' => $this->recurrenceEndDate,
+            'parent_event_id' => $this->parentEventId,
             'location_type' => $this->locationType,
             'location_name' => $this->locationName,
             'location_address' => $this->locationAddress,
@@ -587,11 +590,11 @@ class Event
         }
 
         try {
-            $sql = "SELECT exdates_utc FROM event_series WHERE id = (SELECT series_id FROM events WHERE id = ?)";
+            $sql = "SELECT exdates FROM event_series WHERE id = (SELECT series_id FROM events WHERE id = ?)";
             $result = Database::fetchOne($sql, [$this->id]);
 
-            if ($result && !empty($result['exdates_utc'])) {
-                $exdates = json_decode($result['exdates_utc'], true);
+            if ($result && !empty($result['exdates'])) {
+                $exdates = json_decode($result['exdates'], true);
                 return is_array($exdates) ? $exdates : [];
             }
 
@@ -608,7 +611,7 @@ class Event
     private function updateExceptionDates(array $exdates): bool
     {
         try {
-            $sql = "UPDATE event_series SET exdates_utc = ? WHERE id = (SELECT series_id FROM events WHERE id = ?)";
+            $sql = "UPDATE event_series SET exdates = ? WHERE id = (SELECT series_id FROM events WHERE id = ?)";
             $result = Database::execute($sql, [json_encode($exdates), $this->id]);
             return $result !== false;
         } catch (\Exception $e) {

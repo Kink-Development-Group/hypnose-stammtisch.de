@@ -17,6 +17,7 @@ export interface Event {
   exdates?: Date[];
   createdAt: Date;
   updatedAt: Date;
+  instanceDate?: Date; // für einzelne Serien-Instanz
 }
 
 export interface EventSeries {

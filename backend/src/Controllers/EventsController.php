@@ -249,23 +249,17 @@ class EventsController
    */
   private function getExpandedEvents(array $filters): array
   {
-    // Get base events
+    // Date range
+    $startDate = isset($filters['from_date']) ? Carbon::parse($filters['from_date']) : Carbon::now();
+    $endDate = isset($filters['to_date']) ? Carbon::parse($filters['to_date']) : Carbon::now()->addMonths(3);
+
+    $expanded = [];
+
+    // 1. Expand legacy recurring events (events table with rrule)
     $baseEvents = Event::getAllPublished($filters);
-    $expandedEvents = [];
-
-    // Set date range for expansion
-    $startDate = isset($filters['from_date'])
-      ? Carbon::parse($filters['from_date'])
-      : Carbon::now();
-    $endDate = isset($filters['to_date'])
-      ? Carbon::parse($filters['to_date'])
-      : Carbon::now()->addMonths(3); // Default 3 months ahead
-
     foreach ($baseEvents as $event) {
       $eventArray = $this->eventToArray($event);
-
       if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
-        // Expand recurring event
         try {
           $instances = RRuleProcessor::expandRecurringEvent(
             $eventArray,
@@ -273,27 +267,97 @@ class EventsController
             $endDate,
             json_decode($eventArray['exdates'] ?? '[]', true)
           );
-          $expandedEvents = array_merge($expandedEvents, $instances);
+          $expanded = array_merge($expanded, $instances);
         } catch (\Exception $e) {
-          error_log("Error expanding recurring event {$eventArray['id']}: " . $e->getMessage());
-          // Add the base event if expansion fails
-          $expandedEvents[] = $eventArray;
+          error_log("Recurring expansion failed for event {$eventArray['id']}: " . $e->getMessage());
+          $expanded[] = $eventArray;
         }
       } else {
-        // Add single event if it's in the date range
         $eventStart = Carbon::parse($eventArray['start_datetime']);
         if ($eventStart->between($startDate, $endDate)) {
-          $expandedEvents[] = $eventArray;
+          $expanded[] = $eventArray;
         }
       }
     }
 
-    // Sort by start date
-    usort($expandedEvents, function ($a, $b) {
-      return strtotime($a['start_datetime']) - strtotime($b['start_datetime']);
-    });
+    // 2. Expand series (event_series) + apply overrides (events.series_id)
+    try {
+      $seriesSql = "SELECT * FROM event_series WHERE status = 'published'";
+      $seriesList = \HypnoseStammtisch\Database\Database::fetchAll($seriesSql);
 
-    return $expandedEvents;
+      foreach ($seriesList as $series) {
+        $seriesStart = Carbon::parse($series['start_date']);
+        $seriesEnd = $series['end_date'] ? Carbon::parse($series['end_date']) : $endDate->copy();
+        $seriesEnd = $seriesEnd->gt($endDate) ? $endDate->copy() : $seriesEnd; // clamp
+
+        // Build pseudo event for RRULE expansion using start_time/end_time
+        $startTime = $series['start_time'] ?? '00:00:00';
+        $endTime = $series['end_time'] ?? null;
+        $durationMinutes = (int)($series['default_duration_minutes'] ?? 120);
+
+        $eventStartTemplate = Carbon::parse($series['start_date'] . ' ' . $startTime, 'Europe/Berlin');
+        $eventEndTemplate = $endTime
+          ? Carbon::parse($series['start_date'] . ' ' . $endTime, 'Europe/Berlin')
+          : $eventStartTemplate->copy()->addMinutes($durationMinutes);
+
+        $pseudo = [
+          'id' => 'series_' . $series['id'],
+          'title' => $series['title'],
+          'description' => $series['description'],
+          'start_datetime' => $eventStartTemplate->toDateTimeString(),
+          'end_datetime' => $eventEndTemplate->toDateTimeString(),
+          'timezone' => 'Europe/Berlin',
+          'rrule' => $series['rrule'],
+          'is_recurring' => true
+        ];
+
+        $exdates = $series['exdates'] ? json_decode($series['exdates'], true) : [];
+        $instances = RRuleProcessor::expandRecurringEvent($pseudo, $startDate, $endDate, $exdates);
+
+        // Clip instances to series end (if defined)
+        $instances = array_filter($instances, function ($i) use ($seriesStart, $seriesEnd) {
+          $dt = Carbon::parse($i['start_datetime']);
+          return $dt->between($seriesStart, $seriesEnd);
+        });
+
+        // Fetch overrides for those instance dates
+        $instanceDates = array_map(fn($i) => substr($i['start_datetime'], 0, 10), $instances);
+        if (!empty($instanceDates)) {
+          $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
+          $overrideSql = "SELECT * FROM events WHERE series_id = ? AND instance_date IN ($placeholders)";
+          $params = array_merge([$series['id']], $instanceDates);
+          $overrides = \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params);
+          $overrideMap = [];
+          foreach ($overrides as $ov) {
+            $overrideMap[$ov['instance_date']] = $ov;
+          }
+
+          foreach ($instances as $inst) {
+            $dateKey = substr($inst['start_datetime'], 0, 10);
+            if (isset($overrideMap[$dateKey])) {
+              $expanded[] = $overrideMap[$dateKey];
+            } else {
+              $inst['series_id'] = $series['id'];
+              $inst['instance_date'] = $dateKey;
+              $expanded[] = $inst;
+            }
+          }
+        } else {
+          foreach ($instances as $inst) {
+            $dateKey = substr($inst['start_datetime'], 0, 10);
+            $inst['series_id'] = $series['id'];
+            $inst['instance_date'] = $dateKey;
+            $expanded[] = $inst;
+          }
+        }
+      }
+    } catch (\Exception $e) {
+      error_log('Series expansion failed: ' . $e->getMessage());
+    }
+
+    // Sort combined list
+    usort($expanded, fn($a, $b) => strtotime($a['start_datetime']) <=> strtotime($b['start_datetime']));
+    return $expanded;
   }
 
   /**

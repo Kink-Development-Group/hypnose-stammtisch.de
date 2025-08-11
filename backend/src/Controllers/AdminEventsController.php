@@ -279,11 +279,11 @@ class AdminEventsController
       }
 
       $sql = "INSERT INTO event_series (
-                title, slug, description, rrule, start_date, end_date, exdates,
-                default_duration_minutes, default_location_type, default_location_name,
-                default_location_address, default_category, default_max_participants,
-                default_requires_registration, status, tags
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        title, slug, description, rrule, start_date, end_date, start_time, end_time, exdates,
+        default_duration_minutes, default_location_type, default_location_name,
+        default_location_address, default_category, default_max_participants,
+        default_requires_registration, status, tags
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
       $seriesId = Database::insert($sql, [
         $input['title'],
@@ -291,7 +291,10 @@ class AdminEventsController
         $input['description'] ?? null,
         $input['rrule'],
         $input['start_date'],
+        // allow open-ended series (fortwährend) by accepting null end_date
         $input['end_date'] ?? null,
+        $input['start_time'] ?? null,
+        $input['end_time'] ?? null,
         isset($input['exdates']) ? json_encode($input['exdates']) : null,
         $input['default_duration_minutes'] ?? 120,
         $input['default_location_type'] ?? 'physical',
@@ -382,12 +385,12 @@ class AdminEventsController
 
     try {
       $sql = "UPDATE event_series SET
-                title = ?, description = ?, rrule = ?, start_date = ?, end_date = ?,
-                exdates = ?, default_duration_minutes = ?, default_location_type = ?,
-                default_location_name = ?, default_location_address = ?, default_category = ?,
-                default_max_participants = ?, default_requires_registration = ?, status = ?,
-                tags = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?";
+        title = ?, description = ?, rrule = ?, start_date = ?, end_date = ?, start_time = ?, end_time = ?,
+        exdates = ?, default_duration_minutes = ?, default_location_type = ?,
+        default_location_name = ?, default_location_address = ?, default_category = ?,
+        default_max_participants = ?, default_requires_registration = ?, status = ?,
+        tags = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?";
 
       Database::execute($sql, [
         $input['title'],
@@ -395,6 +398,8 @@ class AdminEventsController
         $input['rrule'],
         $input['start_date'],
         $input['end_date'] ?? null,
+        $input['start_time'] ?? null,
+        $input['end_time'] ?? null,
         isset($input['exdates']) ? json_encode($input['exdates']) : null,
         $input['default_duration_minutes'] ?? 120,
         $input['default_location_type'] ?? 'physical',
@@ -447,5 +452,207 @@ class AdminEventsController
     $dt = new \DateTime($datetime, new \DateTimeZone($timezone));
     $dt->setTimezone(new \DateTimeZone('UTC'));
     return $dt->format('Y-m-d H:i:s');
+  }
+
+  /**
+   * Create an override (individual instance) for an event series occurrence
+   * POST /admin/events/series/{seriesId}/overrides
+   * Body: { instance_date: 'YYYY-MM-DD', title?, start_time?, end_time?, description?, ... }
+   */
+  public static function createSeriesOverride(string $seriesId): void
+  {
+    AdminAuth::requireAuth();
+    $user = AdminAuth::getCurrentUser();
+    if (!$user || !in_array($user['role'], ['head', 'admin', 'event_manager'])) {
+      Response::error('Insufficient permissions', 403);
+      return;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $validator = new Validator($input);
+    $validator->required(['instance_date']);
+
+    if (!$validator->isValid()) {
+      Response::error('Validation failed', 400, $validator->getErrors());
+      return;
+    }
+
+    try {
+      // Load series
+      $series = Database::fetchOne('SELECT * FROM event_series WHERE id = ?', [$seriesId]);
+      if (!$series) {
+        Response::notFound(['message' => 'Series not found']);
+        return;
+      }
+
+      $instanceDate = $input['instance_date'];
+      // Build start/end datetime using provided times or series defaults
+      $startTime = $input['start_time'] ?? $series['start_time'] ?? '00:00:00';
+      $endTime = $input['end_time'] ?? $series['end_time'] ?? null;
+
+      if ($endTime === null && isset($series['end_time'])) {
+        $endTime = $series['end_time'];
+      }
+
+      if ($endTime === null) {
+        // fallback duration via default_duration_minutes
+        $duration = (int)($series['default_duration_minutes'] ?? 120);
+        $endTime = (new \DateTime($startTime))->modify("+{$duration} minutes")->format('H:i:s');
+      }
+
+      $timezone = $input['timezone'] ?? 'Europe/Berlin';
+      $startDtLocal = $instanceDate . ' ' . $startTime;
+      $endDtLocal = $instanceDate . ' ' . $endTime;
+      $startUTC = self::convertToUTC($startDtLocal, $timezone);
+      $endUTC = self::convertToUTC($endDtLocal, $timezone);
+
+      $sql = 'INSERT INTO events (
+        title, slug, description, content, start_datetime, end_datetime, timezone,
+        location_type, location_name, location_address, location_url, category, difficulty_level,
+        max_participants, status, is_featured, requires_registration, organizer_name, organizer_email,
+        tags, series_id, instance_date, parent_event_id
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+
+      $title = $input['title'] ?? $series['title'];
+      $slug = self::generateSlug($title);
+      $eventId = Database::insert($sql, [
+        $title,
+        $slug,
+        $input['description'] ?? $series['description'] ?? null,
+        $input['content'] ?? null,
+        $startUTC,
+        $endUTC,
+        $timezone,
+        $input['location_type'] ?? $series['default_location_type'] ?? 'physical',
+        $input['location_name'] ?? $series['default_location_name'] ?? null,
+        $input['location_address'] ?? $series['default_location_address'] ?? null,
+        $input['location_url'] ?? null,
+        $input['category'] ?? $series['default_category'] ?? 'stammtisch',
+        $input['difficulty_level'] ?? 'all',
+        $input['max_participants'] ?? $series['default_max_participants'] ?? null,
+        $input['status'] ?? 'draft',
+        $input['is_featured'] ?? 0,
+        $input['requires_registration'] ?? ($series['default_requires_registration'] ?? 1),
+        $input['organizer_name'] ?? null,
+        $input['organizer_email'] ?? null,
+        isset($input['tags']) ? json_encode($input['tags']) : $series['tags'],
+        $seriesId,
+        $instanceDate,
+        null
+      ]);
+
+      Response::success(['id' => $eventId], 'Series override created');
+    } catch (\Exception $e) {
+      Response::error('Failed to create override: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * List overrides for a series
+   */
+  public static function listSeriesOverrides(string $seriesId): void
+  {
+    AdminAuth::requireAuth();
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+    try {
+      $rows = Database::fetchAll('SELECT * FROM events WHERE series_id = ? ORDER BY instance_date ASC', [$seriesId]);
+      Response::success(['overrides' => $rows]);
+    } catch (\Exception $e) {
+      Response::error('Failed to list overrides: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Add EXDATE to series
+   */
+  public static function addSeriesExdate(string $seriesId): void
+  {
+    AdminAuth::requireAuth();
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    if (empty($input['date'])) {
+      Response::error('date required', 400);
+      return;
+    }
+    try {
+      $series = Database::fetchOne('SELECT exdates FROM event_series WHERE id = ?', [$seriesId]);
+      if (!$series) {
+        Response::notFound(['message' => 'Series not found']);
+        return;
+      }
+      $exdates = $series['exdates'] ? json_decode($series['exdates'], true) : [];
+      if (!in_array($input['date'], $exdates)) {
+        $exdates[] = $input['date'];
+        sort($exdates);
+      }
+      Database::execute('UPDATE event_series SET exdates = ? WHERE id = ?', [json_encode($exdates), $seriesId]);
+      Response::success(['exdates' => $exdates], 'EXDATE added');
+    } catch (\Exception $e) {
+      Response::error('Failed to add exdate: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Remove EXDATE
+   */
+  public static function removeSeriesExdate(string $seriesId): void
+  {
+    AdminAuth::requireAuth();
+    if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+    $date = $_GET['date'] ?? null;
+    if (!$date) {
+      Response::error('date query param required', 400);
+      return;
+    }
+    try {
+      $series = Database::fetchOne('SELECT exdates FROM event_series WHERE id = ?', [$seriesId]);
+      if (!$series) {
+        Response::notFound(['message' => 'Series not found']);
+        return;
+      }
+      $exdates = $series['exdates'] ? json_decode($series['exdates'], true) : [];
+      $exdates = array_values(array_filter($exdates, fn($d) => $d !== $date));
+      Database::execute('UPDATE event_series SET exdates = ? WHERE id = ?', [json_encode($exdates), $seriesId]);
+      Response::success(['exdates' => $exdates], 'EXDATE removed');
+    } catch (\Exception $e) {
+      Response::error('Failed to remove exdate: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Get EXDATES list for a series
+   */
+  public static function getSeriesExdates(string $seriesId): void
+  {
+    AdminAuth::requireAuth();
+    if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+    try {
+      $series = Database::fetchOne('SELECT exdates FROM event_series WHERE id = ?', [$seriesId]);
+      if (!$series) {
+        Response::notFound(['message' => 'Series not found']);
+        return;
+      }
+      $exdates = $series['exdates'] ? json_decode($series['exdates'], true) : [];
+      Response::success(['exdates' => $exdates]);
+    } catch (\Exception $e) {
+      Response::error('Failed to get exdates: ' . $e->getMessage(), 500);
+    }
   }
 }

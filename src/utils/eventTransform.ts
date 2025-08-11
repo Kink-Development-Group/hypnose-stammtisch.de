@@ -37,6 +37,9 @@ export function transformApiEvent(apiEvent: any): Event {
       : [],
     createdAt: new Date(apiEvent.created_at || Date.now()),
     updatedAt: new Date(apiEvent.updated_at || Date.now()),
+    instanceDate: apiEvent.instance_date
+      ? new Date(apiEvent.instance_date)
+      : undefined,
   };
 }
 

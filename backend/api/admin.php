@@ -124,6 +124,29 @@ try {
 
   // Route events endpoints
   if (str_starts_with($path, '/events')) {
+    // Series specific nested routes: /events/series/{id}/...
+    if (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/overrides$#', $path, $matches)) {
+      $seriesId = (string)$matches[1];
+      if ($method === 'POST') {
+        \HypnoseStammtisch\Controllers\AdminEventsController::createSeriesOverride($seriesId);
+        return;
+      } elseif ($method === 'GET') {
+        \HypnoseStammtisch\Controllers\AdminEventsController::listSeriesOverrides($seriesId);
+        return;
+      }
+    } elseif (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/exdates$#', $path, $matches)) {
+      $seriesId = (string)$matches[1];
+      if ($method === 'POST') {
+        \HypnoseStammtisch\Controllers\AdminEventsController::addSeriesExdate($seriesId);
+        return;
+      } elseif ($method === 'DELETE') {
+        \HypnoseStammtisch\Controllers\AdminEventsController::removeSeriesExdate($seriesId);
+        return;
+      } elseif ($method === 'GET') {
+        \HypnoseStammtisch\Controllers\AdminEventsController::getSeriesExdates($seriesId);
+        return;
+      }
+    }
     if ($path === '/events') {
       if ($method === 'GET') {
         AdminEventsController::index();
