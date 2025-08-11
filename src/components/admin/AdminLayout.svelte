@@ -92,6 +92,11 @@
             <span class="text-sm text-gray-600">
               Angemeldet als: <strong>{currentUser?.username}</strong>
             </span>
+            <a
+              href="/admin/profile"
+              use:link
+              class="text-sm text-blue-600 hover:underline">Profil</a
+            >
             <button
               on:click={handleLogout}
               class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"

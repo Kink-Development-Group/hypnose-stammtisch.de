@@ -14,6 +14,7 @@ use HypnoseStammtisch\Controllers\AdminAuthController;
 use HypnoseStammtisch\Controllers\AdminEventsController;
 use HypnoseStammtisch\Controllers\AdminMessagesController;
 use HypnoseStammtisch\Controllers\AdminUsersController;
+use HypnoseStammtisch\Controllers\UserController;
 use HypnoseStammtisch\Utils\Response;
 
 // Load configuration
@@ -74,6 +75,16 @@ try {
 
   // Route users endpoints (only for head admins)
   if (str_starts_with($path, '/users')) {
+    if ($path === '/users/me') {
+      if ($method === 'GET') {
+        UserController::me();
+        return;
+      }
+      if (in_array($method, ['PUT', 'PATCH'], true)) {
+        UserController::updateMe();
+        return;
+      }
+    }
     if ($path === '/users') {
       if ($method === 'GET') {
         AdminUsersController::index();
@@ -87,13 +98,14 @@ try {
         AdminUsersController::permissions();
         return;
       }
-    } elseif (preg_match('#^/users/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+    } elseif (preg_match('#^/users/([0-9]+)$#', $path, $matches)) {
       $id = (string)$matches[1];
       if ($method === 'GET') {
         AdminUsersController::show($id);
         return;
-      } elseif ($method === 'PUT') {
-        AdminUsersController::update($id);
+      } elseif (in_array($method, ['PUT', 'PATCH'], true)) {
+        // head admin extended update
+        UserController::adminUpdateUser($id);
         return;
       } elseif ($method === 'DELETE') {
         AdminUsersController::delete($id);
