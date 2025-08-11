@@ -86,6 +86,8 @@ export default class User {
         return "Administrator";
       case Role.MODERATOR:
         return "Moderator";
+      case Role.EVENTMANAGER:
+        return "Event-Manager";
       default:
         return "Unbekannt";
     }
@@ -102,6 +104,8 @@ export default class User {
         return "bg-blue-100 text-blue-800";
       case Role.MODERATOR:
         return "bg-green-100 text-green-800";
+      case Role.EVENTMANAGER:
+        return "bg-indigo-100 text-indigo-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -118,7 +122,11 @@ export default class User {
    * Check if user has permission to manage events
    */
   canManageEvents(): boolean {
-    return this.role === Role.HEADADMIN || this.role === Role.ADMIN;
+    return (
+      this.role === Role.HEADADMIN ||
+      this.role === Role.ADMIN ||
+      this.role === Role.EVENTMANAGER
+    );
   }
 
   /**

@@ -62,6 +62,12 @@ class AdminEventsController
   public static function create(): void
   {
     AdminAuth::requireAuth();
+    // Only head, admin, or event role may create
+    $user = AdminAuth::getCurrentUser();
+    if (!$user || !in_array($user['role'], ['head', 'admin', 'event_manager'])) {
+      Response::error('Insufficient permissions to create events', 403);
+      return;
+    }
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
       Response::error('Method not allowed', 405);
@@ -85,6 +91,11 @@ class AdminEventsController
   public static function update(string $id): void
   {
     AdminAuth::requireAuth();
+    $user = AdminAuth::getCurrentUser();
+    if (!$user || !in_array($user['role'], ['head', 'admin', 'event_manager'])) {
+      Response::error('Insufficient permissions to update events', 403);
+      return;
+    }
 
     if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
       Response::error('Method not allowed', 405);
@@ -117,6 +128,13 @@ class AdminEventsController
   public static function delete(string $id): void
   {
     AdminAuth::requireAuth();
+    $user = AdminAuth::getCurrentUser();
+    if (!$user) {
+      Response::error('Authentication required', 401);
+      return;
+    }
+    // event role has restricted delete rights
+    $isEventManager = $user['role'] === 'event_manager';
 
     if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
       Response::error('Method not allowed', 405);
@@ -143,7 +161,20 @@ class AdminEventsController
         Database::execute("DELETE FROM event_series WHERE id = ?", [$id]);
         $message = 'Event series deleted successfully';
       } else {
-        // Delete single event
+        if ($isEventManager) {
+          // Check if event already ended (end_datetime < now UTC)
+          $event = Database::fetchOne("SELECT end_datetime FROM events WHERE id = ?", [$id]);
+          if (!$event) {
+            Response::notFound(['message' => 'Event not found']);
+            return;
+          }
+          $now = new \DateTime('now', new \DateTimeZone('UTC'));
+          $end = new \DateTime($event['end_datetime'], new \DateTimeZone('UTC'));
+          if ($end > $now) {
+            Response::error('Event-Manager can only delete past events', 403);
+            return;
+          }
+        }
         Database::execute("DELETE FROM events WHERE id = ?", [$id]);
         $message = 'Event deleted successfully';
       }

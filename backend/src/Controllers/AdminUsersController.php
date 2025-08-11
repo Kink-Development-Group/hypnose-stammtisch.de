@@ -120,16 +120,16 @@ class AdminUsersController
     $validator->length('password', 8, 255);
 
     // Validate role manually
-    if (!Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head'])) {
+    if (!Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head', 'event_manager'])) {
       // Since getErrors() returns a copy, we need to manually set the error
       $errors = $validator->getErrors();
       $errors['role'] = 'Invalid role. Must be admin, moderator, or head.';
       // We need to check this differently
     }
 
-    if (!$validator->isValid() || !Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head'])) {
+    if (!$validator->isValid() || !Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head', 'event_manager'])) {
       $errors = $validator->getErrors();
-      if (!Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head'])) {
+      if (!Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head', 'event_manager'])) {
         $errors['role'] = 'Invalid role. Must be admin, moderator, or head.';
       }
       Response::error('Validation failed', 400, $errors);
@@ -224,7 +224,7 @@ class AdminUsersController
 
     // Check validation and role enum separately
     $errors = $validator->getErrors();
-    if (isset($input['role']) && !Validator::isValidEnum($input['role'], ['admin', 'moderator', 'head'])) {
+    if (isset($input['role']) && !Validator::isValidEnum($input['role'], ['admin', 'moderator', 'head', 'event_manager'])) {
       $errors['role'] = 'Invalid role. Must be admin, moderator, or head.';
     }
 
@@ -370,7 +370,7 @@ class AdminUsersController
 
     $permissions = [
       'can_manage_users' => $user['role'] === 'head',
-      'can_manage_events' => in_array($user['role'], ['head', 'admin']),
+      'can_manage_events' => in_array($user['role'], ['head', 'admin', 'event_manager']),
       'can_view_messages' => in_array($user['role'], ['head', 'admin', 'moderator']),
       'role' => $user['role']
     ];

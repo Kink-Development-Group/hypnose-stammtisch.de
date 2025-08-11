@@ -7,4 +7,5 @@ export enum Role {
   HEADADMIN = "head",
   ADMIN = "admin",
   MODERATOR = "moderator",
+  EVENTMANAGER = "event_manager", // Neue Rolle: darf nur Events erstellen/bearbeiten und vergangene löschen
 }

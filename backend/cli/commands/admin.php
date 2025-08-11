@@ -69,7 +69,7 @@ class AdminCommand
     echo "  --username TEXT  Username for the admin\n";
     echo "  --email TEXT     Email address\n";
     echo "  --password TEXT  Password (will prompt if not provided)\n";
-    echo "  --role TEXT      Role: head, admin, moderator\n";
+    echo "  --role TEXT      Role: head, admin, moderator, event_manager\n";
     echo "  --active BOOL    Set user as active/inactive (true/false)\n";
     echo "  --id INT         User ID for update/delete operations\n";
     echo "  --notes TEXT     Admin notes\n\n";
@@ -123,7 +123,7 @@ class AdminCommand
   {
     $username = $this->options['username'] ?? $this->prompt('Username');
     $email = $this->options['email'] ?? $this->prompt('Email');
-    $role = $this->options['role'] ?? $this->promptChoice('Role', ['admin', 'moderator', 'head'], 'admin');
+    $role = $this->options['role'] ?? $this->promptChoice('Role', ['admin', 'moderator', 'event_manager', 'head'], 'admin');
     $active = $this->options['active'] ?? true;
 
     // Validate email
@@ -162,12 +162,13 @@ class AdminCommand
     $users = Database::fetchAll("
             SELECT id, username, email, role, is_active, created_at, last_login
             FROM users
-            WHERE role IN ('head', 'admin', 'moderator')
+            WHERE role IN ('head', 'admin', 'moderator', 'event_manager')
             ORDER BY
                 CASE role
                     WHEN 'head' THEN 1
                     WHEN 'admin' THEN 2
                     WHEN 'moderator' THEN 3
+                    WHEN 'event_manager' THEN 4
                 END,
                 username
         ");
@@ -228,7 +229,7 @@ class AdminCommand
     }
 
     if (isset($this->options['role'])) {
-      if (!in_array($this->options['role'], ['head', 'admin', 'moderator'])) {
+      if (!in_array($this->options['role'], ['head', 'admin', 'moderator', 'event_manager'])) {
         throw new InvalidArgumentException("Invalid role");
       }
       $updates[] = "role = ?";
@@ -320,7 +321,7 @@ class AdminCommand
   private function promoteUser(): void
   {
     $id = $this->options['id'] ?? $this->prompt('User ID');
-    $newRole = $this->options['role'] ?? $this->promptChoice('New Role', ['admin', 'moderator', 'head'], 'admin');
+    $newRole = $this->options['role'] ?? $this->promptChoice('New Role', ['admin', 'moderator', 'event_manager', 'head'], 'admin');
 
     Database::execute("UPDATE users SET role = ? WHERE id = ?", [$newRole, $id]);
     $this->output("User promoted to {$newRole}!", 'success');

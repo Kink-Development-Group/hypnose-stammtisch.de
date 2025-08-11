@@ -205,6 +205,16 @@
     }
   }
 
+  function canDelete(_item: any): boolean {
+    if (!currentUser) return false;
+    // Head & Admin: alles
+    if (currentUser.role === "head" || currentUser.role === "admin")
+      return true;
+    // Event-Manager: jetzt volle Verwaltung inkl. Serien-Löschung
+    if (currentUser.role === "event_manager") return true;
+    return false;
+  }
+
   function formatDate(dateString: string): string {
     return new Date(dateString).toLocaleString("de-DE");
   }
@@ -315,12 +325,20 @@
                       >
                         Bearbeiten
                       </button>
-                      <button
-                        on:click={() => (deleteConfirm = event)}
-                        class="text-red-600 hover:text-red-800 text-sm font-medium"
-                      >
-                        Löschen
-                      </button>
+                      {#if canDelete(event)}
+                        <button
+                          on:click={() => (deleteConfirm = event)}
+                          class="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Löschen
+                        </button>
+                      {:else if currentUser?.role === "event_manager"}
+                        <span
+                          class="text-xs text-gray-400"
+                          title="Nur vergangene Veranstaltungen können gelöscht werden"
+                          >(nur vergangene löschbar)</span
+                        >
+                      {/if}
                     </div>
                   </div>
                 </li>
@@ -379,12 +397,14 @@
                       >
                         Bearbeiten
                       </button>
-                      <button
-                        on:click={() => (deleteConfirm = seriesItem)}
-                        class="text-red-600 hover:text-red-800 text-sm font-medium"
-                      >
-                        Löschen
-                      </button>
+                      {#if canDelete(seriesItem)}
+                        <button
+                          on:click={() => (deleteConfirm = seriesItem)}
+                          class="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Löschen
+                        </button>
+                      {/if}
                     </div>
                   </div>
                 </li>

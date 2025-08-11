@@ -15,6 +15,7 @@ Eine moderne, barrierefreie Webanwendung für die Hypnose-Community mit Kalender
 - 📝 **Event-Einreichung** mit Moderations-Workflow
 - 💬 **Kontaktformular** mit Spam-Schutz
 - 🔒 **DSGVO-konform** mit Datenschutz-Features
+- 👥 **Rollen & Berechtigungen** inkl. Rolle "Event-Manager" (role: `event_manager`) – volle Event- & Serienverwaltung (Erstellen, Bearbeiten, Löschen), jedoch keine Benutzer-/Nachrichtenverwaltung
 
 ### Technologie-Stack
 
@@ -60,20 +61,20 @@ git clone https://github.com/ihr-username/hypnose-stammtisch.de.git
 cd hypnose-stammtisch.de
 ```
 
-2. **Frontend Setup**
+1. **Frontend Setup**
 
 ```bash
 npm install
 ```
 
-3. **Backend Setup**
+1. **Backend Setup**
 
 ```bash
 cd backend
 composer install
 ```
 
-4. **Datenbank einrichten**
+1. **Datenbank einrichten**
 
 ```bash
 # MySQL-Datenbank erstellen
@@ -83,7 +84,7 @@ mysql -u root -p -e "CREATE DATABASE hypnose_stammtisch CHARACTER SET utf8mb4 CO
 mysql -u root -p hypnose_stammtisch < migrations/001_initial_schema.sql
 ```
 
-5. **Konfiguration**
+1. **Konfiguration**
 
 ```bash
 # Backend-Konfiguration

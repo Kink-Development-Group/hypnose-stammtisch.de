@@ -26,6 +26,9 @@ export class UserHelpers {
       case Role.MODERATOR:
       case "moderator":
         return "Moderator";
+      case Role.EVENTMANAGER:
+      case "event_manager":
+        return "Event-Manager";
       default:
         return "Unbekannt";
     }
@@ -45,6 +48,9 @@ export class UserHelpers {
       case Role.MODERATOR:
       case "moderator":
         return "bg-green-100 text-green-800";
+      case Role.EVENTMANAGER:
+      case "event_manager":
+        return "bg-indigo-100 text-indigo-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
