@@ -134,6 +134,13 @@ try {
         \HypnoseStammtisch\Controllers\AdminEventsController::listSeriesOverrides($seriesId);
         return;
       }
+    } elseif (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/overrides/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+      $seriesId = (string)$matches[1];
+      $overrideId = (string)$matches[2];
+      if ($method === 'DELETE') {
+        \HypnoseStammtisch\Controllers\AdminEventsController::deleteSeriesOverride($seriesId, $overrideId);
+        return;
+      }
     } elseif (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/exdates$#', $path, $matches)) {
       $seriesId = (string)$matches[1];
       if ($method === 'POST') {

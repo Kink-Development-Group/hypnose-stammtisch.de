@@ -203,6 +203,15 @@ class AdminEventsController
     }
 
     try {
+      // Validate time order if provided
+      if (!empty($input['start_time']) && !empty($input['end_time'])) {
+        $startT = \DateTime::createFromFormat('H:i', substr($input['start_time'], 0, 5));
+        $endT = \DateTime::createFromFormat('H:i', substr($input['end_time'], 0, 5));
+        if ($startT && $endT && $endT <= $startT) {
+          Response::error('end_time muss nach start_time liegen', 400);
+          return;
+        }
+      }
       // Generate slug if not provided
       $slug = $input['slug'] ?? self::generateSlug($input['title']);
 
@@ -384,6 +393,14 @@ class AdminEventsController
     }
 
     try {
+      if (!empty($input['start_time']) && !empty($input['end_time'])) {
+        $startT = \DateTime::createFromFormat('H:i', substr($input['start_time'], 0, 5));
+        $endT = \DateTime::createFromFormat('H:i', substr($input['end_time'], 0, 5));
+        if ($startT && $endT && $endT <= $startT) {
+          Response::error('end_time muss nach start_time liegen', 400);
+          return;
+        }
+      }
       $sql = "UPDATE event_series SET
         title = ?, description = ?, rrule = ?, start_date = ?, end_date = ?, start_time = ?, end_time = ?,
         exdates = ?, default_duration_minutes = ?, default_location_type = ?,
@@ -567,6 +584,29 @@ class AdminEventsController
       Response::success(['overrides' => $rows]);
     } catch (\Exception $e) {
       Response::error('Failed to list overrides: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Delete a series override (individual instance event)
+   */
+  public static function deleteSeriesOverride(string $seriesId, string $overrideId): void
+  {
+    AdminAuth::requireAuth();
+    if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+    try {
+      $row = Database::fetchOne('SELECT id FROM events WHERE id = ? AND series_id = ?', [$overrideId, $seriesId]);
+      if (!$row) {
+        Response::notFound(['message' => 'Override not found']);
+        return;
+      }
+      Database::execute('DELETE FROM events WHERE id = ?', [$overrideId]);
+      Response::success(null, 'Override deleted');
+    } catch (\Exception $e) {
+      Response::error('Failed to delete override: ' . $e->getMessage(), 500);
     }
   }
 

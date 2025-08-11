@@ -802,4 +802,79 @@ export class AdminAPI {
   static async getMessageResponses(messageId: number) {
     return this.request(`/messages/${messageId}/responses`);
   }
+
+  // Series Overrides & EXDATES
+  static async getSeriesOverrides(seriesId: string) {
+    return this.request(`/events/series/${seriesId}/overrides`);
+  }
+
+  static async createSeriesOverride(seriesId: string, data: any) {
+    adminNotifications.info("Override wird erstellt...");
+    const res = await this.request(`/events/series/${seriesId}/overrides`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    if (res.success) {
+      adminNotifications.success("Override erstellt");
+    } else {
+      adminNotifications.error(
+        res.message || "Fehler beim Erstellen des Overrides",
+      );
+    }
+    return res;
+  }
+
+  static async deleteSeriesOverride(seriesId: string, overrideId: string) {
+    adminNotifications.info("Override wird gelöscht...");
+    const res = await this.request(
+      `/events/series/${seriesId}/overrides/${overrideId}`,
+      { method: "DELETE" },
+    );
+    if (res.success) {
+      adminNotifications.success("Override gelöscht");
+    } else {
+      adminNotifications.error(
+        res.message || "Fehler beim Löschen des Overrides",
+      );
+    }
+    return res;
+  }
+
+  static async getSeriesExdates(seriesId: string) {
+    return this.request(`/events/series/${seriesId}/exdates`);
+  }
+
+  static async addSeriesExdate(seriesId: string, date: string) {
+    adminNotifications.info("EXDATE wird hinzugefügt...");
+    const res = await this.request(`/events/series/${seriesId}/exdates`, {
+      method: "POST",
+      body: JSON.stringify({ date }),
+    });
+    if (res.success) {
+      adminNotifications.success("EXDATE hinzugefügt");
+    } else {
+      adminNotifications.error(
+        res.message || "Fehler beim Hinzufügen der EXDATE",
+      );
+    }
+    return res;
+  }
+
+  static async removeSeriesExdate(seriesId: string, date: string) {
+    adminNotifications.info("EXDATE wird entfernt...");
+    const res = await this.request(
+      `/events/series/${seriesId}/exdates?date=${encodeURIComponent(date)}`,
+      {
+        method: "DELETE",
+      },
+    );
+    if (res.success) {
+      adminNotifications.success("EXDATE entfernt");
+    } else {
+      adminNotifications.error(
+        res.message || "Fehler beim Entfernen der EXDATE",
+      );
+    }
+    return res;
+  }
 }

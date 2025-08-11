@@ -3,6 +3,7 @@
   import { push } from "svelte-spa-router";
   import User from "../../classes/User";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
+  import SeriesManagement from "../../components/admin/SeriesManagement.svelte";
   import { AdminAPI, adminAuth } from "../../stores/admin";
   import {
     adminAutoUpdate,
@@ -51,6 +52,8 @@
     end_date: "",
     exdates: [],
     default_duration_minutes: 120,
+    start_time: "",
+    end_time: "",
   };
 
   onMount(() => {
@@ -163,6 +166,8 @@
       end_date: "",
       exdates: [],
       default_duration_minutes: 120,
+      start_time: "",
+      end_time: "",
     };
     editingItem = null;
   }
@@ -407,6 +412,14 @@
                       {/if}
                     </div>
                   </div>
+                  <!-- Overrides & EXDATE Management -->
+                  <details class="mt-4 bg-gray-50 rounded p-4">
+                    <summary
+                      class="cursor-pointer text-sm font-semibold text-gray-700"
+                      >Instanzen & Ausnahmen verwalten</summary
+                    >
+                    <SeriesManagement {seriesItem} />
+                  </details>
                 </li>
               {/each}
             </ul>
@@ -605,6 +618,33 @@
                     bind:value={newEvent.rrule}
                     required
                     placeholder="z.B. FREQ=WEEKLY;BYDAY=TU"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="series-start-time"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                    >Startzeit (Serie)</label
+                  >
+                  <input
+                    id="series-start-time"
+                    type="time"
+                    bind:value={newEvent.start_time}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label
+                    for="series-end-time"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                    >Endzeit (Serie)</label
+                  >
+                  <input
+                    id="series-end-time"
+                    type="time"
+                    bind:value={newEvent.end_time}
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
