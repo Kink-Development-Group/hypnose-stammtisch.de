@@ -55,9 +55,15 @@ copyTree(
   copyTree(join(backendDir, dir), join(distDir, dir)),
 );
 
+// .env Datei aus backend übernehmen (wenn vorhanden)
+const backendEnv = join(backendDir, ".env");
+if (existsSync(backendEnv)) {
+  copyFileSync(backendEnv, join(distDir, ".env"));
+}
+
 writeFileSync(
   join(distDir, "README_DEPLOY.txt"),
-  `Deployment Paket\n- Frontend + API\n- Bitte eigene .env außerhalb platzieren\n- install.php nicht enthalten\n`,
+  `Deployment Paket\n- Frontend + API + backend .env (übernommen)\n- Prüfen Sie die .env auf Produktionswerte bevor Sie deployen!\n- install.php nicht enthalten\n`,
 );
 console.log(
   "Bundle fertig: dist/ enthält Frontend + Backend API (TS build script).",
