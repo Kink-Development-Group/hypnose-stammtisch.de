@@ -8,6 +8,8 @@ use HypnoseStammtisch\Middleware\AdminAuth;
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\Validator;
+use PHPMailer\PHPMailer\PHPMailer;
+use HypnoseStammtisch\Config\Config;
 
 class UserController
 {
@@ -63,8 +65,15 @@ class UserController
       $params[] = $input['username'];
     }
     if (isset($input['email']) && $input['email'] !== $current['email']) {
-      $fields[] = 'email = ?';
+      // create pending email change with token
+      $token = bin2hex(random_bytes(16));
+      $fields[] = 'pending_email = ?';
       $params[] = $input['email'];
+      $fields[] = 'email_change_token = ?';
+      $params[] = $token;
+      $fields[] = 'email_change_requested_at = CURRENT_TIMESTAMP';
+      // send confirmation email
+      self::sendEmailChangeConfirmation($current['email'], $input['email'], $token);
     }
     if (!empty($input['password'])) {
       $fields[] = 'password_hash = ?';
@@ -127,8 +136,19 @@ class UserController
     $params = [];
     foreach (['username', 'email'] as $f) {
       if (isset($input[$f])) {
-        $fields[] = "$f = ?";
-        $params[] = $input[$f];
+        if ($f === 'email') {
+          $token = bin2hex(random_bytes(16));
+          $fields[] = 'pending_email = ?';
+          $params[] = $input[$f];
+          $fields[] = 'email_change_token = ?';
+          $params[] = $token;
+          $fields[] = 'email_change_requested_at = CURRENT_TIMESTAMP';
+          // send confirmation to new email only
+          self::sendEmailChangeConfirmation(null, $input[$f], $token);
+        } else {
+          $fields[] = "$f = ?";
+          $params[] = $input[$f];
+        }
       }
     }
     if (!empty($input['password'])) {
@@ -151,5 +171,34 @@ class UserController
     Database::execute('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?', $params);
     $user = Database::fetchOne('SELECT id, username, email, role, is_active, last_login, created_at, updated_at FROM users WHERE id = ?', [$id]);
     Response::success(['updated' => true, 'user' => $user], 'User updated');
+  }
+
+  private static function sendEmailChangeConfirmation(?string $oldEmail, string $newEmail, string $token): void
+  {
+    try {
+      $confirmUrl = Config::get('app.url', 'https://hypnose-stammtisch.de') . '/api/admin/users/confirm-email?token=' . urlencode($token);
+      $mail = new PHPMailer(true);
+      if (Config::get('mail.smtp_enabled', false)) {
+        $mail->isSMTP();
+        $mail->Host = Config::get('mail.smtp_host');
+        $mail->SMTPAuth = true;
+        $mail->Username = Config::get('mail.smtp_username');
+        $mail->Password = Config::get('mail.smtp_password');
+        $mail->SMTPSecure = Config::get('mail.smtp_encryption', 'tls');
+        $mail->Port = Config::get('mail.smtp_port', 587);
+      }
+      $mail->setFrom(Config::get('mail.from_email', 'noreply@hypnose-stammtisch.de'), Config::get('mail.from_name', 'Hypnose Stammtisch'));
+      $mail->addAddress($newEmail);
+      if ($oldEmail && $oldEmail !== $newEmail) {
+        $mail->addCC($oldEmail);
+      }
+      $mail->isHTML(true);
+      $mail->Subject = 'E-Mail Änderung bestätigen';
+      $mail->Body = '<p>Bitte bestätige die Änderung deiner E-Mail-Adresse.</p><p><a href="' . htmlspecialchars($confirmUrl, ENT_QUOTES) . '">E-Mail jetzt bestätigen</a></p><p>Falls du das nicht warst, ignoriere diese Nachricht.</p>';
+      $mail->AltBody = 'Bitte bestätige die Änderung deiner E-Mail-Adresse: ' . $confirmUrl;
+      $mail->send();
+    } catch (\Throwable $e) {
+      error_log('Failed to send email change confirmation: ' . $e->getMessage());
+    }
   }
 }

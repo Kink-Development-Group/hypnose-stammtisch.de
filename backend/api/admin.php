@@ -75,6 +75,14 @@ try {
 
   // Route users endpoints (only for head admins)
   if (str_starts_with($path, '/users')) {
+    if ($path === '/users/confirm-email' && $method === 'GET') {
+      if (isset($_GET['token'])) {
+        \HypnoseStammtisch\Controllers\UserEmailConfirmController::confirm($_GET['token']);
+        return;
+      }
+      \HypnoseStammtisch\Utils\Response::error('Token required', 400);
+      return;
+    }
     if ($path === '/users/me') {
       if ($method === 'GET') {
         UserController::me();

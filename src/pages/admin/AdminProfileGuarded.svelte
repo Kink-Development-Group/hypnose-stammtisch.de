@@ -11,6 +11,10 @@
   let message = "";
   let error = "";
   let resetTwofa = false;
+  let backupRemaining: number | null = null;
+  let regenLoading = false;
+  let showConfirmReset = false;
+  let passwordStrength = 0;
 
   onMount(async () => {
     const st = get(adminAuthState);
@@ -23,7 +27,65 @@
       username = current.username;
       email = current.email;
     }
+    // Load backup status
+    try {
+      const r = await fetch("/api/admin/auth/2fa/backup-codes/status", {
+        credentials: "include",
+      });
+      if (r.ok) {
+        const j = await r.json();
+        if (j.success) backupRemaining = j.data.remaining;
+      }
+    } catch {
+      /* ignore */
+    }
   });
+
+  $: passwordStrength = calcPasswordStrength(password);
+
+  function calcPasswordStrength(pw: string): number {
+    if (!pw) return 0;
+    let s = 0;
+    if (pw.length >= 8) s++;
+    if (pw.length >= 12) s++;
+    if (/[A-Z]/.test(pw)) s++;
+    if (/[a-z]/.test(pw)) s++;
+    if (/\d/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    return Math.min(s, 6);
+  }
+
+  async function regenerateBackupCodes() {
+    regenLoading = true;
+    error = "";
+    message = "";
+    try {
+      const r = await fetch("/api/admin/auth/2fa/backup-codes/generate", {
+        method: "POST",
+        credentials: "include",
+      });
+      const j = await r.json();
+      if (j.success) {
+        message = "Neue Backup-Codes generiert. Alte wurden ungültig.";
+        backupRemaining = j.data.codes.length;
+        // optional: anzeigen / download
+        const blob = new Blob([j.data.codes.join("\n")], {
+          type: "text/plain",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "backup-codes.txt";
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        error = j.message || "Fehler beim Generieren";
+      }
+    } catch {
+      error = "Netzwerkfehler";
+    }
+    regenLoading = false;
+  }
 
   async function saveProfile() {
     loading = true;
@@ -108,15 +170,76 @@
           placeholder="Leer lassen für unverändert"
         />
       </div>
-      <div class="flex items-center gap-2">
-        <input
-          id="reset2fa"
-          type="checkbox"
-          bind:checked={resetTwofa}
-          class="h-4 w-4"
-        />
-        <label for="reset2fa" class="text-sm"
-          >2FA zurücksetzen (erzwingt Neueinrichtung beim nächsten Login)</label
+      <div class="space-y-2">
+        <div class="flex items-center gap-2">
+          <input
+            id="reset2fa"
+            type="checkbox"
+            bind:checked={resetTwofa}
+            class="h-4 w-4"
+            on:change={() => {
+              if (resetTwofa) showConfirmReset = true;
+            }}
+          />
+          <label for="reset2fa" class="text-sm"
+            >2FA zurücksetzen (erzwingt Neueinrichtung beim nächsten Login)</label
+          >
+        </div>
+        {#if showConfirmReset && resetTwofa}
+          <div
+            class="p-3 bg-red-50 border border-red-200 rounded text-xs space-y-2"
+          >
+            <p>
+              <strong>Achtung:</strong> Sie müssen 2FA beim nächsten Login neu einrichten.
+              Fortfahren?
+            </p>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="px-3 py-1 bg-red-600 text-white rounded text-xs"
+                on:click={() => {
+                  showConfirmReset = false;
+                }}>Ja</button
+              >
+              <button
+                type="button"
+                class="px-3 py-1 bg-gray-200 rounded text-xs"
+                on:click={() => {
+                  resetTwofa = false;
+                  showConfirmReset = false;
+                }}>Abbrechen</button
+              >
+            </div>
+          </div>
+        {/if}
+      </div>
+      <div class="space-y-1">
+        <div class="flex justify-between text-xs text-gray-600">
+          <span>Passwort-Stärke</span><span>{passwordStrength}/6</span>
+        </div>
+        <div class="h-2 bg-gray-200 rounded overflow-hidden">
+          <div
+            class="h-full transition-all"
+            style="width: {(passwordStrength / 6) * 100}%"
+            class:bg-red-500={passwordStrength < 3}
+            class:bg-yellow-500={passwordStrength >= 3 && passwordStrength < 5}
+            class:bg-green-600={passwordStrength >= 5}
+          ></div>
+        </div>
+      </div>
+      <div class="space-y-2 border-t pt-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm">Verbleibende Backup-Codes:</span>
+          <span class="text-sm font-mono">{backupRemaining ?? "–"}</span>
+        </div>
+        <button
+          type="button"
+          on:click={regenerateBackupCodes}
+          class="text-xs px-3 py-1 rounded bg-indigo-600 text-white disabled:opacity-50"
+          disabled={regenLoading}
+          >{regenLoading
+            ? "Generiere..."
+            : "Backup-Codes neu generieren"}</button
         >
       </div>
       <button
