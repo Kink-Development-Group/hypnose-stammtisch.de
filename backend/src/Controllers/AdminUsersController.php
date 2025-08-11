@@ -123,14 +123,14 @@ class AdminUsersController
     if (!Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head', 'event_manager'])) {
       // Since getErrors() returns a copy, we need to manually set the error
       $errors = $validator->getErrors();
-      $errors['role'] = 'Invalid role. Must be admin, moderator, or head.';
+      $errors['role'] = 'Invalid role. Must be head, admin, moderator, or event_manager.';
       // We need to check this differently
     }
 
     if (!$validator->isValid() || !Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head', 'event_manager'])) {
       $errors = $validator->getErrors();
       if (!Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head', 'event_manager'])) {
-        $errors['role'] = 'Invalid role. Must be admin, moderator, or head.';
+        $errors['role'] = 'Invalid role. Must be head, admin, moderator, or event_manager.';
       }
       Response::error('Validation failed', 400, $errors);
       return;
@@ -225,7 +225,7 @@ class AdminUsersController
     // Check validation and role enum separately
     $errors = $validator->getErrors();
     if (isset($input['role']) && !Validator::isValidEnum($input['role'], ['admin', 'moderator', 'head', 'event_manager'])) {
-      $errors['role'] = 'Invalid role. Must be admin, moderator, or head.';
+      $errors['role'] = 'Invalid role. Must be head, admin, moderator, or event_manager.';
     }
 
     if (!empty($errors)) {

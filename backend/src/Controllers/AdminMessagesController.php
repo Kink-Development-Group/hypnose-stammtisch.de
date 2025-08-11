@@ -15,11 +15,23 @@ use Exception;
 class AdminMessagesController
 {
   /**
+   * Ensure current user has permission to manage/view messages
+   */
+  private static function requireMessagesPermission(): void
+  {
+    AdminAuth::requireAuth();
+    $user = AdminAuth::getCurrentUser();
+    if (!$user || !in_array($user['role'], ['head', 'admin', 'moderator'], true)) {
+      Response::error('Insufficient permissions for messages', 403);
+      exit;
+    }
+  }
+  /**
    * Get all contact form submissions
    */
   public static function index(): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       Response::error('Method not allowed', 405);
@@ -92,7 +104,7 @@ class AdminMessagesController
    */
   public static function show(string $id): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       Response::error('Method not allowed', 405);
@@ -125,7 +137,7 @@ class AdminMessagesController
    */
   public static function updateStatus(string $id): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
       Response::error('Method not allowed', 405);
@@ -174,7 +186,7 @@ class AdminMessagesController
    */
   public static function markResponded(string $id): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
       Response::error('Method not allowed', 405);
@@ -204,7 +216,7 @@ class AdminMessagesController
    */
   public static function delete(string $id): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
       Response::error('Method not allowed', 405);
@@ -231,7 +243,7 @@ class AdminMessagesController
    */
   public static function stats(): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       Response::error('Method not allowed', 405);
@@ -280,7 +292,7 @@ class AdminMessagesController
    */
   public static function getNotes(string $messageId): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       Response::error('Method not allowed', 405);
@@ -318,7 +330,7 @@ class AdminMessagesController
    */
   public static function addNote(string $messageId): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
       Response::error('Method not allowed', 405);
@@ -377,7 +389,7 @@ class AdminMessagesController
    */
   public static function updateNote(string $messageId, string $noteId): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
       Response::error('Method not allowed', 405);
@@ -437,7 +449,7 @@ class AdminMessagesController
    */
   public static function deleteNote(string $messageId, string $noteId): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
       Response::error('Method not allowed', 405);
@@ -483,7 +495,7 @@ class AdminMessagesController
    */
   public static function getEmailAddresses(): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       Response::error('Method not allowed', 405);
@@ -509,7 +521,7 @@ class AdminMessagesController
    */
   public static function sendResponse(string $messageId): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
       Response::error('Method not allowed', 405);
@@ -596,7 +608,7 @@ class AdminMessagesController
    */
   public static function getResponses(string $messageId): void
   {
-    AdminAuth::requireAuth();
+    self::requireMessagesPermission();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       Response::error('Method not allowed', 405);

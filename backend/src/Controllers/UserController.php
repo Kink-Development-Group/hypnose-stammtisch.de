@@ -117,7 +117,7 @@ class UserController
     if (isset($input['username']) && strlen((string)$input['username']) < 3) {
       $errors['username'][] = 'Username too short (min 3)';
     }
-    if (isset($input['role']) && !in_array($input['role'], ['admin', 'moderator', 'head'], true)) {
+    if (isset($input['role']) && !in_array($input['role'], ['admin', 'moderator', 'head', 'event_manager'], true)) {
       Response::error('Invalid role', 400);
       return;
     }

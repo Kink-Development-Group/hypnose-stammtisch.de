@@ -42,8 +42,10 @@ function runMigrations(): void
     $executed = Database::fetchAll("SELECT version FROM migrations ORDER BY version");
     $executedVersions = array_column($executed, 'version');
 
-    // Use ONLY the consolidated baseline migration. Legacy fragments kept for reference are ignored.
-    $migrationFiles = [__DIR__ . '/001_initial_schema.sql'];
+    // Sammle alle Migrations-Dateien (NNN_*.sql) aufsteigend sortiert
+    $allFiles = glob(__DIR__ . DIRECTORY_SEPARATOR . '[0-9][0-9][0-9]_*.sql');
+    sort($allFiles, SORT_STRING);
+    $migrationFiles = $allFiles ?: [];
 
     $migrationCount = 0;
 
@@ -61,11 +63,6 @@ function runMigrations(): void
 
       if (in_array($version, $executedVersions)) {
         echo "Migration {$version} already executed, skipping...\n";
-        // Short-circuit: if base schema (001) is applied, ignore higher legacy fragments
-        if ($version === '001') {
-          echo "Base schema present – skipping any remaining legacy migration files.\n";
-          break;
-        }
         continue;
       }
 

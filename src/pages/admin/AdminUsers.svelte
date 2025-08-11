@@ -646,6 +646,9 @@
                       <option value={Role.MODERATOR}
                         >Moderator - Eingeschränkte Verwaltungsrechte</option
                       >
+                      <option value={Role.EVENTMANAGER}
+                        >Event-Manager - Darf Events anlegen & bearbeiten</option
+                      >
                     </select>
                     <div
                       class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"
