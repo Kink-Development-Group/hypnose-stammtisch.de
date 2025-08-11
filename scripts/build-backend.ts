@@ -55,10 +55,34 @@ copyTree(
   copyTree(join(backendDir, dir), join(distDir, dir)),
 );
 
+// migrations kopieren (nur konsolidierte Baseline + Runner) + Schutzdatei
+const migrationsDir = join(backendDir, "migrations");
+if (existsSync(migrationsDir)) {
+  const targetMig = join(distDir, "migrations");
+  ensureDir(targetMig);
+  ["001_initial_schema.sql", "migrate.php", "README.md"].forEach((f) => {
+    const p = join(migrationsDir, f);
+    if (existsSync(p)) copyFileSync(p, join(targetMig, f));
+  });
+  // .htaccess zum Schutz (falls Apache, verhindert Download der SQL Files)
+  try {
+    writeFileSync(
+      join(targetMig, ".htaccess"),
+      "<IfModule mod_authz_core.c>\n  Require all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n  Deny from all\n</IfModule>\n",
+    );
+  } catch {}
+}
+
 // .env Datei aus backend übernehmen (wenn vorhanden)
 const backendEnv = join(backendDir, ".env");
 if (existsSync(backendEnv)) {
   copyFileSync(backendEnv, join(distDir, ".env"));
+}
+
+// setup.php für Web-Setup mit kopieren
+const backendSetup = join(backendDir, "setup.php");
+if (existsSync(backendSetup)) {
+  copyFileSync(backendSetup, join(distDir, "setup.php"));
 }
 
 writeFileSync(

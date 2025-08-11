@@ -47,13 +47,12 @@ class Database
                 $dsn,
                 $config['user'],
                 $config['pass'],
-                $config['options']
+                $config['options'] + [\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true]
             );
 
             // Set timezone
             $timezone = Config::get('app.timezone', 'Europe/Berlin');
             self::$connection->exec("SET time_zone = '{$timezone}'");
-
         } catch (PDOException $e) {
             error_log("Database connection failed: " . $e->getMessage());
 

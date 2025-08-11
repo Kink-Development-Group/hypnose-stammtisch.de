@@ -42,18 +42,30 @@ function runMigrations(): void
     $executed = Database::fetchAll("SELECT version FROM migrations ORDER BY version");
     $executedVersions = array_column($executed, 'version');
 
-    // Find migration files
-    $migrationFiles = glob(__DIR__ . '/*.sql');
-    sort($migrationFiles);
+    // Use ONLY the consolidated baseline migration. Legacy fragments kept for reference are ignored.
+    $migrationFiles = [__DIR__ . '/001_initial_schema.sql'];
 
     $migrationCount = 0;
 
+    $seenVersionFile = [];
     foreach ($migrationFiles as $file) {
       $filename = basename($file);
       $version = substr($filename, 0, 3); // Get first 3 characters as version
 
+      // Skip duplicate version files beyond the first one
+      if (isset($seenVersionFile[$version])) {
+        echo "Duplicate migration file for version {$version} ({$filename}) – skipping duplicate.\n";
+        continue;
+      }
+      $seenVersionFile[$version] = $filename;
+
       if (in_array($version, $executedVersions)) {
         echo "Migration {$version} already executed, skipping...\n";
+        // Short-circuit: if base schema (001) is applied, ignore higher legacy fragments
+        if ($version === '001') {
+          echo "Base schema present – skipping any remaining legacy migration files.\n";
+          break;
+        }
         continue;
       }
 
@@ -61,15 +73,37 @@ function runMigrations(): void
 
       $sql = file_get_contents($file);
 
-      // Split by semicolon and execute each statement
-      $statements = array_filter(
-        array_map('trim', explode(';', $sql)),
-        fn($stmt) => !empty($stmt) && !str_starts_with($stmt, '--')
-      );
+      // Split by Semicolon (naiv) und bereinige führende Kommentarzeilen je Statement
+      $rawChunks = array_map('trim', explode(';', $sql));
+      $statements = [];
+      foreach ($rawChunks as $chunk) {
+        if ($chunk === '') {
+          continue;
+        }
+        $lines = preg_split('/\r?\n/', $chunk);
+        $filtered = [];
+        foreach ($lines as $ln) {
+          // Entferne reine Kommentarzeilen (beginnend mit -- oder leer)
+          if (preg_match('/^\s*--/', $ln)) {
+            continue;
+          }
+          $filtered[] = $ln;
+        }
+        $clean = trim(implode("\n", $filtered));
+        if ($clean !== '') {
+          $statements[] = $clean;
+        }
+      }
 
       try {
-        // Start transaction for this migration
-        Database::beginTransaction();
+        $useTx = count($statements) > 0;
+        if ($useTx) {
+          try {
+            Database::beginTransaction();
+          } catch (Exception $e) {
+            $useTx = false;
+          }
+        }
 
         foreach ($statements as $statement) {
           if (trim($statement)) {
@@ -77,14 +111,21 @@ function runMigrations(): void
           }
         }
 
-        // Record migration after successful execution
-        Database::execute(
-          "INSERT INTO migrations (version, description) VALUES (?, ?)",
-          [$version, "Migration from file: {$filename}"]
-        );
+        // Refresh executed versions (in case file inserted itself)
+        $executed = Database::fetchAll("SELECT version FROM migrations ORDER BY version");
+        $executedVersions = array_column($executed, 'version');
+        $alreadyInserted = in_array($version, $executedVersions, true);
+        if (!$alreadyInserted) {
+          Database::execute(
+            "INSERT INTO migrations (version, description) VALUES (?, ?)",
+            [$version, "Migration from file: {$filename}"]
+          );
+          $executedVersions[] = $version;
+        }
 
-        // Commit the transaction
-        Database::commit();
+        if ($useTx && Database::inTransaction()) {
+          Database::commit();
+        }
 
         echo "Migration {$version} completed successfully.\n";
         $migrationCount++;
