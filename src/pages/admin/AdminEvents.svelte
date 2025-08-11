@@ -194,8 +194,32 @@
 
     // Populate form with existing data
     Object.keys(newEvent).forEach((key) => {
-      if (editingItem[key] !== undefined) {
-        (newEvent as any)[key] = editingItem[key];
+      let value = editingItem[key];
+      if (key === "tags") {
+        // Tags immer als Array normalisieren
+        if (Array.isArray(value)) {
+          value = value.filter(
+            (t: string) => typeof t === "string" && t.trim() !== "",
+          );
+        } else if (typeof value === "string") {
+          try {
+            const arr = JSON.parse(value);
+            if (Array.isArray(arr)) {
+              value = arr.filter(
+                (t: string) => typeof t === "string" && t.trim() !== "",
+              );
+            } else {
+              value = [];
+            }
+          } catch {
+            value = [];
+          }
+        } else {
+          value = [];
+        }
+      }
+      if (value !== undefined) {
+        (newEvent as any)[key] = value;
       }
     });
 

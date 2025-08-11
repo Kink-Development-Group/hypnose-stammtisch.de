@@ -20,11 +20,31 @@ export function transformApiEvent(apiEvent: any): Event {
           : "physical",
     locationAddress: apiEvent.location_address || apiEvent.venue_address || "",
     onlineUrl: apiEvent.location_url || "",
-    tags: Array.isArray(apiEvent.tags)
-      ? apiEvent.tags
-      : typeof apiEvent.tags === "string"
-        ? apiEvent.tags.split(",").map((t: string) => t.trim())
-        : [],
+    tags: (() => {
+      let result: string[] = [];
+      if (Array.isArray(apiEvent.tags)) {
+        result = (apiEvent.tags as string[]).filter(
+          (t: string) => typeof t === "string" && t.trim() !== "",
+        );
+      } else if (typeof apiEvent.tags === "string") {
+        try {
+          const arr = JSON.parse(apiEvent.tags);
+          if (Array.isArray(arr)) {
+            result = arr.filter(
+              (t: string) => typeof t === "string" && t.trim() !== "",
+            );
+          }
+        } catch {}
+        if (apiEvent.tags.trim() === "" || apiEvent.tags.trim() === "[]") {
+          result = [];
+        }
+      }
+      // Fallback: falls result kein Array ist, setze leeres Array
+      if (!Array.isArray(result)) {
+        result = [];
+      }
+      return result;
+    })(),
     beginnerFriendly:
       apiEvent.beginner_friendly ||
       apiEvent.difficulty_level === "beginner" ||
