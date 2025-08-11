@@ -12,6 +12,9 @@
   import NotFound from "./pages/NotFound.svelte";
   import Privacy from "./pages/Privacy.svelte";
   import Resources from "./pages/Resources.svelte";
+  import Faq from "./pages/ResourcesFaq.svelte";
+  import SafetyGuide from "./pages/ResourcesSafetyGuide.svelte";
+  import SubmitEvent from "./pages/SubmitEvent.svelte";
   // Import admin pages
   import AdminEventsGuarded from "./pages/admin/AdminEventsGuarded.svelte";
   import AdminLogin from "./pages/admin/AdminLogin.svelte";
@@ -39,11 +42,14 @@
     "/events/:id": Events, // Will show event modal
     "/about": About,
     "/resources": Resources,
+    "/resources/safety-guide": SafetyGuide,
+    "/resources/faq": Faq,
     "/learning-resources": LearningResources,
     "/code-of-conduct": CodeOfConduct,
     "/contact": Contact,
     "/privacy": Privacy,
     "/imprint": Imprint,
+    "/submit-event": SubmitEvent,
     // Catch-all route must be last
     "*": NotFound,
   };
