@@ -293,12 +293,13 @@ class EventsController
         // Build pseudo event for RRULE expansion using start_time/end_time
         $startTime = $series['start_time'] ?? '00:00:00';
         $endTime = $series['end_time'] ?? null;
-        $durationMinutes = (int)($series['default_duration_minutes'] ?? 120);
-
+        if (!$endTime) {
+          // Ohne Endzeit ignorieren wir die Serie (inkonsistente Daten)
+          error_log('Serie ohne end_time ignoriert: ' . $series['id']);
+          continue;
+        }
         $eventStartTemplate = Carbon::parse($series['start_date'] . ' ' . $startTime, 'Europe/Berlin');
-        $eventEndTemplate = $endTime
-          ? Carbon::parse($series['start_date'] . ' ' . $endTime, 'Europe/Berlin')
-          : $eventStartTemplate->copy()->addMinutes($durationMinutes);
+        $eventEndTemplate = Carbon::parse($series['start_date'] . ' ' . $endTime, 'Europe/Berlin');
 
         $pseudo = [
           'id' => 'series_' . $series['id'],

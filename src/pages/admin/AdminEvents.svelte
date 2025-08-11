@@ -51,7 +51,6 @@
     start_date: "",
     end_date: "",
     exdates: [],
-    default_duration_minutes: 120,
     start_time: "",
     end_time: "",
   };
@@ -165,7 +164,6 @@
       start_date: "",
       end_date: "",
       exdates: [],
-      default_duration_minutes: 120,
       start_time: "",
       end_time: "",
     };
@@ -645,23 +643,6 @@
                     id="series-end-time"
                     type="time"
                     bind:value={newEvent.end_time}
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    for="default-duration"
-                    class="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Standarddauer (Minuten)
-                  </label>
-                  <input
-                    id="default-duration"
-                    type="number"
-                    bind:value={newEvent.default_duration_minutes}
-                    min="30"
-                    max="600"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

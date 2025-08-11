@@ -212,7 +212,7 @@ class AdminEventsController
           return;
         }
       }
-      // Generate slug if not provided
+      // Generate slug if not provided (more entropy to avoid collisions)
       $slug = $input['slug'] ?? self::generateSlug($input['title']);
 
       // Check if slug exists
@@ -224,6 +224,12 @@ class AdminEventsController
       // Convert times to UTC
       $startUTC = self::convertToUTC($input['start_datetime'], $input['timezone'] ?? 'Europe/Berlin');
       $endUTC = self::convertToUTC($input['end_datetime'], $input['timezone'] ?? 'Europe/Berlin');
+
+      // Validate chronological order
+      if (strtotime($endUTC) <= strtotime($startUTC)) {
+        Response::error('end_datetime muss nach start_datetime liegen', 400);
+        return;
+      }
 
       $sql = "INSERT INTO events (
                 title, slug, description, content, start_datetime, end_datetime, timezone,
@@ -257,7 +263,32 @@ class AdminEventsController
 
       Response::success(['id' => $eventId], 'Event created successfully');
     } catch (Exception $e) {
-      Response::error('Failed to create event: ' . $e->getMessage(), 500);
+      $msg = $e->getMessage();
+      $inputPreview = $input;
+      if (isset($inputPreview['content']) && is_string($inputPreview['content']) && strlen($inputPreview['content']) > 200) {
+        $inputPreview['content'] = substr($inputPreview['content'], 0, 200) . '…';
+      }
+      // Versuche zusätzliche PDO-Fehlerinfos zu extrahieren
+      if ($e instanceof \PDOException && method_exists($e, 'errorInfo') && !empty($e->errorInfo)) {
+        error_log('[createSingleEvent][pdo] errorInfo: ' . json_encode($e->errorInfo));
+      }
+      error_log('[createSingleEvent] Insert attempt params: ' . json_encode([
+        'title' => $input['title'] ?? null,
+        'slug' => $slug ?? null,
+        'startUTC' => $startUTC ?? null,
+        'endUTC' => $endUTC ?? null,
+        'timezone' => $input['timezone'] ?? 'Europe/Berlin',
+        'category' => $input['category'] ?? null,
+        'max_participants' => $input['max_participants'] ?? null,
+      ]));
+      error_log('[createSingleEvent] Exception: ' . $msg . ' | Input: ' . json_encode($inputPreview));
+      if (str_contains(strtolower($msg), 'duplicate') && str_contains($msg, 'slug')) {
+        Response::error('Slug collision – bitte erneut versuchen', 400);
+        return;
+      }
+      $debug = \HypnoseStammtisch\Config\Config::get('app.debug', false);
+      $extra = $debug ? ['exception' => $msg, 'input' => $inputPreview] : [];
+      Response::error('Failed to create event: ' . ($debug ? $msg : 'internal error'), 500, $extra);
     }
   }
 
@@ -277,7 +308,7 @@ class AdminEventsController
     }
 
     try {
-      // Generate slug if not provided
+      // Generate slug if not provided (more entropy)
       $slug = $input['slug'] ?? self::generateSlug($input['title']);
 
       // Check if slug exists in series table
@@ -289,10 +320,10 @@ class AdminEventsController
 
       $sql = "INSERT INTO event_series (
         title, slug, description, rrule, start_date, end_date, start_time, end_time, exdates,
-        default_duration_minutes, default_location_type, default_location_name,
+        default_location_type, default_location_name,
         default_location_address, default_category, default_max_participants,
         default_requires_registration, status, tags
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
       $seriesId = Database::insert($sql, [
         $input['title'],
@@ -305,7 +336,6 @@ class AdminEventsController
         $input['start_time'] ?? null,
         $input['end_time'] ?? null,
         isset($input['exdates']) ? json_encode($input['exdates']) : null,
-        $input['default_duration_minutes'] ?? 120,
         $input['default_location_type'] ?? 'physical',
         $input['default_location_name'] ?? null,
         $input['default_location_address'] ?? null,
@@ -318,7 +348,13 @@ class AdminEventsController
 
       Response::success(['id' => $seriesId], 'Event series created successfully');
     } catch (Exception $e) {
-      Response::error('Failed to create event series: ' . $e->getMessage(), 500);
+      $msg = $e->getMessage();
+      error_log('[createSeries] Exception: ' . $msg . ' | Input: ' . json_encode($input));
+      if (str_contains(strtolower($msg), 'duplicate') && str_contains($msg, 'slug')) {
+        Response::error('Series slug collision – bitte erneut versuchen', 400);
+        return;
+      }
+      Response::error('Failed to create event series: ' . $msg, 500);
     }
   }
 
@@ -403,7 +439,7 @@ class AdminEventsController
       }
       $sql = "UPDATE event_series SET
         title = ?, description = ?, rrule = ?, start_date = ?, end_date = ?, start_time = ?, end_time = ?,
-        exdates = ?, default_duration_minutes = ?, default_location_type = ?,
+        exdates = ?, default_location_type = ?,
         default_location_name = ?, default_location_address = ?, default_category = ?,
         default_max_participants = ?, default_requires_registration = ?, status = ?,
         tags = ?, updated_at = CURRENT_TIMESTAMP
@@ -418,7 +454,6 @@ class AdminEventsController
         $input['start_time'] ?? null,
         $input['end_time'] ?? null,
         isset($input['exdates']) ? json_encode($input['exdates']) : null,
-        $input['default_duration_minutes'] ?? 120,
         $input['default_location_type'] ?? 'physical',
         $input['default_location_name'] ?? null,
         $input['default_location_address'] ?? null,
@@ -441,13 +476,18 @@ class AdminEventsController
    */
   private static function generateSlug(string $title): string
   {
-    $slug = strtolower(trim($title));
-    $slug = preg_replace('/[^a-z0-9-]/', '-', $slug);
-    $slug = preg_replace('/-+/', '-', $slug);
-    $slug = trim($slug, '-');
-
-    // Add timestamp to ensure uniqueness
-    return $slug . '-' . time();
+    $base = strtolower(trim($title));
+    $base = preg_replace('/[^a-z0-9-]/', '-', $base);
+    $base = preg_replace('/-+/', '-', $base);
+    $base = trim($base, '-');
+    // More entropy: datetime + random hex; robust fallback wenn random_bytes nicht verfügbar
+    try {
+      $rand = substr(bin2hex(random_bytes(4)), 0, 8);
+    } catch (\Throwable $e) {
+      $rand = substr(sha1(uniqid((string)mt_rand(), true)), 0, 8);
+    }
+    $suffix = date('YmdHis') . '-' . $rand;
+    return $base . '-' . $suffix;
   }
 
   /**
@@ -516,10 +556,10 @@ class AdminEventsController
         $endTime = $series['end_time'];
       }
 
+      // Wenn keine Endzeit vorhanden ist, kein automatisches Fallback mehr (Pflicht: Nutzer definiert Zeiten in Serie oder Override)
       if ($endTime === null) {
-        // fallback duration via default_duration_minutes
-        $duration = (int)($series['default_duration_minutes'] ?? 120);
-        $endTime = (new \DateTime($startTime))->modify("+{$duration} minutes")->format('H:i:s');
+        Response::error('Serie oder Override benötigt end_time (Standarddauer entfernt)', 400);
+        return;
       }
 
       $timezone = $input['timezone'] ?? 'Europe/Berlin';
