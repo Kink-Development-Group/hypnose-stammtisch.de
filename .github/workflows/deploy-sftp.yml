@@ -23,6 +23,16 @@ jobs:
       - name: Build project
         run: npm run build:all
 
+      - name: Replace .env lines from local to prod with Repository secrets
+        run: |
+          sed -i 's|^DATABASE_URL=.*|DATABASE_URL=${{ secrets.DATABASE_URL }}|' .env
+          sed -i 's|^DB_HOST=.*|DB_HOST=${{ secrets.DB_HOST }}|' .env
+          sed -i 's|^DB_PORT=.*|DB_PORT=${{ secrets.DB_PORT }}|' .env
+          sed -i 's|^DB_NAME=.*|DB_NAME=${{ secrets.DB_NAME }}|' .env
+          sed -i 's|^DB_USER=.*|DB_USER=${{ secrets.DB_USER }}|' .env
+          sed -i 's|^DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DB_PASS }}|' .env
+          sed -i 's|^NODE_ENV=.*|NODE_ENV=production|' .env
+
       - name: Deploy to SFTP
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -30,5 +40,5 @@ jobs:
           port: ${{ secrets.SFTP_PORT }}
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASS }}
-          source: "./dist/*"
+          source: "./dist/**"
           target: ${{ secrets.SFTP_REMOTE_DIR }}
