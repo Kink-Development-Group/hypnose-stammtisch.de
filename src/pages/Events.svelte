@@ -36,7 +36,6 @@
       const toDate = new Date(endOfMonth.getTime() + 7 * 24 * 60 * 60 * 1000);
       const fmt = (d: Date) => d.toISOString().slice(0, 10);
       const url = `/api/events?view=expanded&from_date=${fmt(fromDate)}&to_date=${fmt(toDate)}`;
-      console.log("[DEBUG] Fetch URL:", url);
       const response = await fetch(url);
       if (response.ok) {
         const result = await response.json();
