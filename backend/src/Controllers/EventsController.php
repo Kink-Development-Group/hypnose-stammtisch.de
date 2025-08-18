@@ -364,7 +364,6 @@ class EventsController
           }
         }
         $seriesEnd = $seriesEnd->gt($endDate) ? $endDate->copy() : $seriesEnd; // clamp
-        // Debug Grenze
         //error_log('Series window ' . $series['id'] . ' => ' . $seriesStart->toDateTimeString() . ' - ' . $seriesEnd->toDateTimeString());
 
         // Build pseudo event for RRULE expansion using start_time/end_time
