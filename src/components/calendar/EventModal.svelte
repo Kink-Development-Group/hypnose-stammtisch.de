@@ -431,7 +431,7 @@
             >
               Beschreibung
             </h3>
-            <!-- Safe HTML Injection: description wird via marked.parse gerendert und mit DOMPurify.sanitize bereinigt -->
+            <!-- Sichere HTML-Injektion: description wird via marked.parse gerendert und mit DOMPurify.sanitize bereinigt -->
             <div
               id="modal-description"
               class="prose prose-invert prose-sm max-w-none prose-a:text-accent-400 prose-a:hover:text-accent-300"
