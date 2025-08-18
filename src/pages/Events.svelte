@@ -40,11 +40,8 @@
       const response = await fetch(url);
       if (response.ok) {
         const result = await response.json();
-        console.log("[DEBUG] Events API Response:", result);
         const apiEvents = result.success ? result.data : [];
-        console.log("[DEBUG] API Events:", apiEvents);
         const transformedEvents = transformApiEvents(apiEvents);
-        console.log("[DEBUG] Transformierte Events:", transformedEvents);
         events.set(transformedEvents);
       } else {
         throw new Error("Failed to load events");

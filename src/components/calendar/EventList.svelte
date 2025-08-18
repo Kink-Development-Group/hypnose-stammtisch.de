@@ -5,14 +5,6 @@
   import EventCard from "./EventCard.svelte";
 
   export let events: Event[] = [];
-  console.log(
-    "[DEBUG] EventList Events:",
-    events.map((e) => ({
-      id: e.id,
-      title: e.title,
-      instanceDate: e.instanceDate,
-    })),
-  );
 
   dayjs.locale("de");
 

@@ -100,7 +100,6 @@ class AdminAuthStore {
             twofaConfigured,
             stage: twofaConfigured ? "verify" : "setup",
           }));
-          console.error("Login error");
           if (!twofaConfigured) {
             this.twofaSetup();
           }
@@ -305,7 +304,6 @@ class AdminAuthStore {
           user,
           loading: false,
         }));
-        console.error("AdminAuth: Status check error");
         // Keep user on 2FA verification screen
         adminAuthState.update((state) => ({
           ...state,

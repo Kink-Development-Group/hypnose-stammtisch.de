@@ -11,14 +11,6 @@
 
   export let view: CalendarView = "month";
   export let events: Event[] = [];
-  console.log(
-    "[DEBUG] Calendar Events:",
-    events.map((e) => ({
-      id: e.id,
-      title: e.title,
-      instanceDate: e.instanceDate,
-    })),
-  );
 
   dayjs.locale("de");
 

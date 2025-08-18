@@ -67,14 +67,7 @@ export const filteredEvents = derived(
 
       return true;
     });
-    console.log(
-      "[DEBUG] Filtered Events:",
-      filtered.map((e) => ({
-        id: e.id,
-        title: e.title,
-        instanceDate: e.instanceDate,
-      })),
-    );
+
     return filtered;
   },
 );

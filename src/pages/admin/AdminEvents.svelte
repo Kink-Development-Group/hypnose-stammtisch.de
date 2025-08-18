@@ -148,33 +148,10 @@
     adminLoading.set(true);
     try {
       const result = await AdminAPI.getEvents();
-      console.log("[DEBUG] Events API Response:", result);
-      if (result.success) {
-        console.log(
-          `[DEBUG] Anzahl Events: ${result.data.events?.length ?? 0}`,
-        );
-        console.log(
-          `[DEBUG] Anzahl Serien: ${result.data.series?.length ?? 0}`,
-        );
-        if (result.data.series) {
-          result.data.series.forEach((serie: any, idx: number) => {
-            console.log(`[DEBUG] Serie #${idx + 1}:`, {
-              id: serie.id,
-              title: serie.title,
-              rrule: serie.rrule,
-              exdates: serie.exdates,
-              start_date: serie.start_date,
-              end_date: serie.end_date,
-            });
-          });
-        }
-      }
       if (!result.success) {
         error = result.message || "Fehler beim Laden der Veranstaltungen";
       }
-    } catch (e) {
-      error = "Netzwerkfehler beim Laden der Veranstaltungen";
-      console.error("[DEBUG] Events API Fehler:", e);
+    } catch (_e) {
     } finally {
       adminLoading.set(false);
     }

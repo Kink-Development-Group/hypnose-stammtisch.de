@@ -160,8 +160,8 @@ export function demonstrateValidation() {
     };
 
     User.fromApiData(invalidData);
-  } catch {
-    console.log("Validation correctly failed for invalid data");
+  } catch (error) {
+    console.log("Validation correctly failed for invalid data:", error);
   }
 }
 

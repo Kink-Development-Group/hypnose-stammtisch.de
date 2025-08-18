@@ -34,7 +34,9 @@ export function transformApiEvent(apiEvent: any): Event {
               (t: string) => typeof t === "string" && t.trim() !== "",
             );
           }
-        } catch {}
+        } catch (e) {
+          console.error("Error parsing event tags:", e);
+        }
         if (apiEvent.tags.trim() === "" || apiEvent.tags.trim() === "[]") {
           result = [];
         }

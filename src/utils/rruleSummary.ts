@@ -95,7 +95,8 @@ export function summarizeRRule(
       out += ` (nächster: ${first})`;
     }
     return out;
-  } catch {
+  } catch (e) {
+    console.error("Error summarizing RRULE:", e);
     return "Ungültige Wiederholungsregel";
   }
 }
