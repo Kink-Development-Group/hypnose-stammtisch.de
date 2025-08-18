@@ -100,7 +100,7 @@ class AdminAuthStore {
             twofaConfigured,
             stage: twofaConfigured ? "verify" : "setup",
           }));
-          // If not configured yet, immediately request setup (secret)
+          console.error("Login error");
           if (!twofaConfigured) {
             this.twofaSetup();
           }
@@ -132,8 +132,8 @@ class AdminAuthStore {
       }
 
       return result;
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (_error) {
+      console.error("Login error");
       adminAuthState.update((state) => ({
         ...state,
         loading: false,
@@ -171,7 +171,7 @@ class AdminAuthStore {
         }));
       }
       return result;
-    } catch (e) {
+    } catch (_e) {
       adminAuthState.update((s) => ({
         ...s,
         lastError: "Netzwerkfehler beim 2FA Setup",
@@ -219,7 +219,7 @@ class AdminAuthStore {
         }));
       }
       return result;
-    } catch (e) {
+    } catch (_e) {
       adminAuthState.update((s) => ({
         ...s,
         verifying: false,
@@ -254,7 +254,7 @@ class AdminAuthStore {
       sessionStorage.removeItem("admin_user");
 
       return result;
-    } catch (error) {
+    } catch (_error) {
       // Even on network error, ensure frontend is logged out
       adminAuthState.update((state) => ({
         ...state,
@@ -305,7 +305,7 @@ class AdminAuthStore {
           user,
           loading: false,
         }));
-      } else if (result.success && result.data?.twofa_pending) {
+        console.error("AdminAuth: Status check error");
         // Keep user on 2FA verification screen
         adminAuthState.update((state) => ({
           ...state,
@@ -339,12 +339,12 @@ class AdminAuthStore {
       }
 
       return result;
-    } catch (error) {
+    } catch (_error) {
       if (
         typeof process !== "undefined" &&
         process.env.NODE_ENV === "development"
       ) {
-        console.error("AdminAuth: Status check error", error);
+        console.error("AdminAuth: Status check error");
       }
       adminAuthState.update((state) => ({
         ...state,
@@ -479,7 +479,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch (_error) {
       adminEventHelpers.removeEvent(tempEvent.id);
       adminNotifications.error("Netzwerkfehler beim Erstellen des Events");
       return { success: false, message: "Network error" };
@@ -515,7 +515,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch (_error) {
       this.getEvents();
       adminNotifications.error("Netzwerkfehler beim Aktualisieren des Events");
       return { success: false, message: "Network error" };
@@ -543,7 +543,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch (_error) {
       this.getEvents();
       adminNotifications.error("Netzwerkfehler beim Löschen des Events");
       return { success: false, message: "Network error" };
@@ -592,7 +592,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch (_error) {
       this.getMessages();
       adminNotifications.error("Netzwerkfehler beim Aktualisieren des Status");
       return { success: false, message: "Network error" };
@@ -622,7 +622,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       this.getMessages();
       adminNotifications.error("Netzwerkfehler beim Markieren als beantwortet");
       return { success: false, message: "Network error" };
@@ -651,7 +651,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       this.getMessages();
       adminNotifications.error("Netzwerkfehler beim Löschen der Nachricht");
       return { success: false, message: "Network error" };
@@ -693,7 +693,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       adminNotifications.error("Netzwerkfehler beim Hinzufügen der Notiz");
       return { success: false, message: "Network error" };
     }
@@ -724,7 +724,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       adminNotifications.error("Netzwerkfehler beim Aktualisieren der Notiz");
       return { success: false, message: "Network error" };
     }
@@ -750,7 +750,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       adminNotifications.error("Netzwerkfehler beim Löschen der Notiz");
       return { success: false, message: "Network error" };
     }
@@ -793,7 +793,7 @@ export class AdminAPI {
       }
 
       return result;
-    } catch (error) {
+    } catch {
       adminNotifications.error("Netzwerkfehler beim Senden der E-Mail");
       return { success: false, message: "Network error" };
     }

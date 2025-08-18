@@ -101,7 +101,7 @@
           href="https://ec.europa.eu/consumers/odr/"
           class="text-accent-400 hover:text-accent-300"
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
         >
           https://ec.europa.eu/consumers/odr/
         </a>
@@ -223,7 +223,7 @@
               href="https://www.hetzner.com"
               class="text-accent-400 hover:text-accent-300"
               target="_blank"
-              rel="noopener">hetzner.com</a
+              rel="noopener noreferrer">hetzner.com</a
             >
           </p>
         </div>

@@ -276,7 +276,7 @@
     >
       <!-- Day headers -->
       <div class="contents" role="row">
-        {#each ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] as dayName, index}
+        {#each ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] as dayName, index (dayName)}
           <div
             class="calendar-day-header p-3 text-center text-sm font-medium text-smoke-400 border-b border-charcoal-700"
             role="columnheader"
@@ -290,7 +290,7 @@
       </div>
 
       <!-- Calendar days -->
-      {#each monthDays as day}
+      {#each monthDays as day (day.date)}
         <div
           class="calendar-day min-h-[120px] p-2 border border-charcoal-700 {day.isCurrentMonth
             ? 'bg-charcoal-800'
@@ -319,7 +319,7 @@
 
           <!-- Events -->
           <div class="space-y-1">
-            {#each day.events.slice(0, 3) as event}
+            {#each day.events.slice(0, 3) as event (event.id)}
               <button
                 class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded truncate hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-400"
                 on:click={() => handleEventClick(event)}
@@ -344,7 +344,7 @@
     <!-- Week view -->
     <div class="week-view">
       <div class="grid grid-cols-7 gap-4">
-        {#each weekDays as day}
+        {#each weekDays as day (day.date)}
           <div class="week-day">
             <!-- Day header -->
             <div class="text-center mb-4 pb-2 border-b border-charcoal-700">
@@ -362,7 +362,7 @@
 
             <!-- Events for this day -->
             <div class="space-y-2">
-              {#each day.events as event}
+              {#each day.events as event (event.id)}
                 <button
                   class="w-full text-left p-3 bg-charcoal-800 border border-charcoal-700 rounded-lg hover:bg-charcoal-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400"
                   on:click={() => handleEventClick(event)}

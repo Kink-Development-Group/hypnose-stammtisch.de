@@ -160,7 +160,7 @@ export function demonstrateValidation() {
     };
 
     User.fromApiData(invalidData);
-  } catch (error) {
+  } catch {
     console.log("Validation correctly failed for invalid data");
   }
 }

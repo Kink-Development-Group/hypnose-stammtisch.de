@@ -276,7 +276,7 @@
       } else {
         error = result.message || "Fehler beim Speichern";
       }
-    } catch (e) {
+    } catch {
       error = "Netzwerkfehler beim Speichern";
     }
   }
@@ -291,7 +291,7 @@
       } else {
         error = result.message || "Fehler beim Löschen";
       }
-    } catch (e) {
+    } catch {
       error = "Netzwerkfehler beim Löschen";
     }
   }
