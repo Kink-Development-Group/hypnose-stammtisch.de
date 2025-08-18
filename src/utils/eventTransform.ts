@@ -35,7 +35,7 @@ export function transformApiEvent(apiEvent: any): Event {
             );
           }
         } catch (e) {
-          console.error("Error parsing event tags:", e);
+          console.error("Error parsing event tags:", e && e.message ? e.message : String(e));
         }
         if (apiEvent.tags.trim() === "" || apiEvent.tags.trim() === "[]") {
           result = [];
