@@ -23,6 +23,68 @@ jobs:
       - name: Build project
         run: npm run build:all
 
+      - name: Ensure .env file exists
+        run: |
+          if [ ! -f .env ]; then
+          echo "Creating .env file with default values..."
+          cat > .env << EOF
+            # Database Configuration
+            DB_HOST=
+            DB_PORT=
+            DB_NAME=
+            DB_USER=
+            DB_PASS=
+
+            # Application Settings
+            APP_ENV=production
+            APP_DEBUG=false
+            APP_URL=
+            FRONTEND_URL=
+
+            # Security Settings
+            JWT_SECRET=
+            CSRF_TOKEN_NAME=csrf_token
+            SESSION_LIFETIME=28800
+
+            # Email Configuration
+            MAIL_HOST=
+            MAIL_PORT=587
+            MAIL_USERNAME=
+            MAIL_PASSWORD=
+            MAIL_ENCRYPTION=tls
+            MAIL_FROM_ADDRESS=info@hypnose-stammtisch.de
+            MAIL_FROM_NAME="Hypnose Stammtisch"
+
+            # Contact Form Recipients
+            CONTACT_GENERAL=info@hypnose-stammtisch.de
+            CONTACT_EVENTS=events@hypnose-stammtisch.de
+            CONTACT_CONDUCT=conduct@hypnose-stammtisch.de
+            CONTACT_SUPPORT=support@hypnose-stammtisch.de
+
+            # Calendar Settings
+            CALENDAR_TIMEZONE=Europe/Berlin
+            CALENDAR_FEED_TOKEN=
+
+            # File Upload Settings
+            MAX_FILE_SIZE=10485760
+            UPLOAD_PATH=../uploads
+            ALLOWED_EXTENSIONS=jpg,jpeg,png,gif,pdf
+
+            # Rate Limiting
+            RATE_LIMIT_REQUESTS=100
+            RATE_LIMIT_WINDOW=3600
+
+            # CORS Settings
+            CORS_ALLOWED_ORIGINS=
+            CORS_ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+            CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With
+
+            # Head-Admin Zugangsdaten
+            HEAD_ADMIN_EMAIL=
+            HEAD_ADMIN_PASS=
+            EOF
+            fi
+
       - name: Replace .env lines from local to prod with Repository secrets
         run: |
           sed -i 's|^DATABASE_URL=.*|DATABASE_URL=${{ secrets.DATABASE_URL }}|' .env
