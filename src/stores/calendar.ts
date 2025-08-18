@@ -23,7 +23,7 @@ export const eventFilters = writable<EventFilter>({
 export const filteredEvents = derived(
   [events, eventFilters],
   ([$events, $filters]) => {
-    return $events.filter((event) => {
+    const filtered = $events.filter((event) => {
       // Tag filter
       if ($filters.tags.length > 0) {
         const hasMatchingTag = $filters.tags.some((tag) =>
@@ -67,6 +67,8 @@ export const filteredEvents = derived(
 
       return true;
     });
+
+    return filtered;
   },
 );
 

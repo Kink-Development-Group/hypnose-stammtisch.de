@@ -135,3 +135,6 @@ pnpm-lock.yaml
 *.js
 *.js.map
 *.cjs
+
+playwright-report/
+test-results/

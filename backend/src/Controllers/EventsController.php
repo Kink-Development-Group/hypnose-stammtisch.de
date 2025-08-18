@@ -317,11 +317,17 @@ class EventsController
       $eventArray = $this->eventToArray($event);
       if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
         try {
+          $exdatesRaw = $eventArray['exdates'] ?? '[]';
+          $exdatesDecoded = json_decode($exdatesRaw, true);
+          if ($exdatesDecoded === null && !empty($exdatesRaw)) {
+            error_log("Invalid exdates JSON for event {$eventArray['id']}: " . $exdatesRaw);
+            $exdatesDecoded = [];
+          }
           $instances = RRuleProcessor::expandRecurringEvent(
             $eventArray,
             $startDate,
             $endDate,
-            json_decode($eventArray['exdates'] ?? '[]', true)
+            $exdatesDecoded
           );
           $expanded = array_merge($expanded, $instances);
         } catch (\Exception $e) {
@@ -342,8 +348,21 @@ class EventsController
       $seriesList = \HypnoseStammtisch\Database\Database::fetchAll($seriesSql);
 
       foreach ($seriesList as $series) {
-        $seriesStart = Carbon::parse($series['start_date']);
-        $seriesEnd = $series['end_date'] ? Carbon::parse($series['end_date']) : $endDate->copy();
+        $seriesStart = Carbon::parse($series['start_date'])->startOfDay();
+        $seriesEnd = $series['end_date'] ? Carbon::parse($series['end_date'])->endOfDay() : $endDate->copy();
+        // Falls RRULE ein UNTIL enthält und keine end_date gesetzt ist, erweitere seriesEnd entsprechend (aber clamp später)
+        if (empty($series['end_date']) && !empty($series['rrule']) && str_contains($series['rrule'], 'UNTIL=')) {
+          if (preg_match('/UNTIL=([0-9TZ]+)/', $series['rrule'], $m)) {
+            try {
+              $untilCandidate = Carbon::parse($m[1]);
+              if ($untilCandidate->gt($seriesEnd)) {
+                $seriesEnd = $untilCandidate->endOfDay();
+              }
+            } catch (\Exception $e) {
+              // ignore parse error
+            }
+          }
+        }
         $seriesEnd = $seriesEnd->gt($endDate) ? $endDate->copy() : $seriesEnd; // clamp
 
         // Build pseudo event for RRULE expansion using start_time/end_time
@@ -368,16 +387,27 @@ class EventsController
           'is_recurring' => true
         ];
 
-        $exdates = $series['exdates'] ? json_decode($series['exdates'], true) : [];
+        $exdatesRaw = $series['exdates'] ?? '[]';
+        $exdatesDecoded = json_decode($exdatesRaw, true);
+        if (!is_array($exdatesDecoded)) {
+          if (!empty($exdatesRaw)) {
+            error_log("Invalid exdates JSON for series {$series['id']}: " . $exdatesRaw);
+          }
+          $exdatesDecoded = [];
+        }
+        $exdates = $exdatesDecoded;
         $instances = RRuleProcessor::expandRecurringEvent($pseudo, $startDate, $endDate, $exdates);
+        if (empty($instances)) {
+          error_log('RRULE yielded no instances for series ' . $series['id'] . ' within ' . $startDate->toDateString() . ' - ' . $endDate->toDateString() . ' | RRULE=' . $series['rrule']);
+        }
 
         // Clip instances to series end (if defined)
         $instances = array_filter($instances, function ($i) use ($seriesStart, $seriesEnd) {
           $dt = Carbon::parse($i['start_datetime']);
-          return $dt->between($seriesStart, $seriesEnd);
+          return $dt->between($seriesStart, $seriesEnd); // inclusive boundaries
         });
 
-        // Fetch overrides for those instance dates
+        // Fetch overrides for those instance dates (inkl. cancellations)
         $instanceDates = array_map(fn($i) => substr($i['start_datetime'], 0, 10), $instances);
         if (!empty($instanceDates)) {
           $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
@@ -392,7 +422,13 @@ class EventsController
           foreach ($instances as $inst) {
             $dateKey = substr($inst['start_datetime'], 0, 10);
             if (isset($overrideMap[$dateKey])) {
-              $expanded[] = $overrideMap[$dateKey];
+              // Cancellations werden nur aufgenommen falls Frontend sie darstellen soll; Option: komplett ausblenden
+              if (($overrideMap[$dateKey]['override_type'] ?? null) === 'cancelled') {
+                // Wir geben trotzdem das Cancel-Objekt aus (kann Frontend kennzeichnen)
+                $expanded[] = $overrideMap[$dateKey];
+              } else {
+                $expanded[] = $overrideMap[$dateKey];
+              }
             } else {
               $inst['series_id'] = $series['id'];
               $inst['instance_date'] = $dateKey;

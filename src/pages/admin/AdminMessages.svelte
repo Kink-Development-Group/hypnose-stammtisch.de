@@ -83,7 +83,7 @@
       } else {
         error = result.message || "Fehler beim Laden der Nachrichten";
       }
-    } catch (e) {
+    } catch {
       error = "Netzwerkfehler beim Laden der Nachrichten";
     } finally {
       adminLoading.set(false);
@@ -96,8 +96,8 @@
       if (!result.success) {
         console.error("Fehler beim Laden der Statistiken:", result.message);
       }
-    } catch (e) {
-      console.error("Netzwerkfehler beim Laden der Statistiken:", e);
+    } catch {
+      console.error("Netzwerkfehler beim Laden der Statistiken");
     }
   }
 
@@ -119,7 +119,7 @@
         // Bei Fehler die ursprünglichen Daten zurücksetzen
         await loadMessages();
       }
-    } catch (e) {
+    } catch {
       error = "Netzwerkfehler beim Aktualisieren des Status";
       // Bei Fehler die ursprünglichen Daten zurücksetzen
       await loadMessages();
@@ -144,7 +144,7 @@
         // Bei Fehler die ursprünglichen Daten zurücksetzen
         await loadMessages();
       }
-    } catch (e) {
+    } catch {
       error = "Netzwerkfehler beim Markieren als beantwortet";
       // Bei Fehler die ursprünglichen Daten zurücksetzen
       await loadMessages();
@@ -164,7 +164,7 @@
       } else {
         error = result.message || "Fehler beim Löschen der Nachricht";
       }
-    } catch (e) {
+    } catch {
       error = "Netzwerkfehler beim Löschen der Nachricht";
     }
   }

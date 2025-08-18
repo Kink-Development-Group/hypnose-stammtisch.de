@@ -96,6 +96,8 @@ export function summarizeRRule(
     }
     return out;
   } catch (e) {
+    const errMsg = e && typeof e === "object" && "message" in e ? (e as Error).message : String(e);
+    console.error("Error summarizing RRULE:", errMsg);
     return "Ungültige Wiederholungsregel";
   }
 }

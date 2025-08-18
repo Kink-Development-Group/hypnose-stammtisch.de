@@ -1,0 +1,44 @@
+name: Build and Deploy to SFTP
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build:all
+
+      - name: Replace .env lines from local to prod with Repository secrets
+        run: |
+          sed -i 's|^DATABASE_URL=.*|DATABASE_URL=${{ secrets.DATABASE_URL }}|' .env
+          sed -i 's|^DB_HOST=.*|DB_HOST=${{ secrets.DB_HOST }}|' .env
+          sed -i 's|^DB_PORT=.*|DB_PORT=${{ secrets.DB_PORT }}|' .env
+          sed -i 's|^DB_NAME=.*|DB_NAME=${{ secrets.DB_NAME }}|' .env
+          sed -i 's|^DB_USER=.*|DB_USER=${{ secrets.DB_USER }}|' .env
+          sed -i 's|^DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DB_PASS }}|' .env
+          sed -i 's|^NODE_ENV=.*|NODE_ENV=production|' .env
+
+      - name: Deploy to SFTP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          port: ${{ secrets.SFTP_PORT }}
+          username: ${{ secrets.SFTP_USER }}
+          password: ${{ secrets.SFTP_PASS }}
+          source: "./dist/**"
+          target: ${{ secrets.SFTP_REMOTE_DIR }}

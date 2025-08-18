@@ -49,8 +49,9 @@ class RRuleProcessor
         if (empty($event['rrule'])) {
             return [];
         }
-
-        $rrule = self::parseRRule($event['rrule']);
+        // Normalisiere RRULE: entferne evtl. enthaltene DTSTART-Zeile und 'RRULE:' Präfix
+        $normalizedRRule = self::normalizeRRuleString($event['rrule']);
+        $rrule = self::parseRRule($normalizedRRule);
         $instances = [];
 
         $eventStart = Carbon::parse($event['start_datetime'], $event['timezone'] ?? 'Europe/Berlin');
@@ -58,7 +59,7 @@ class RRuleProcessor
         $duration = $eventEnd->diffInMinutes($eventStart);
 
         // Convert exdates to Carbon objects for comparison
-        $exdateObjects = array_map(function($date) use ($event) {
+        $exdateObjects = array_map(function ($date) use ($event) {
             return Carbon::parse($date, $event['timezone'] ?? 'Europe/Berlin');
         }, $exdates);
 
@@ -140,20 +141,59 @@ class RRuleProcessor
     }
 
     /**
+     * Normalize raw RRULE content which might include full iCal block lines like:
+     *   DTSTART:20250812T070000Z\nRRULE:FREQ=DAILY;INTERVAL=1;UNTIL=20250816T215959Z
+     * We only need the portion after RRULE: and without line breaks.
+     */
+    private static function normalizeRRuleString(string $raw): string
+    {
+        $raw = trim($raw);
+        // Split into lines to remove DTSTART and pick RRULE line if present
+        $lines = preg_split('/\r?\n/', $raw);
+        $candidate = [];
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '') continue;
+            if (stripos($line, 'DTSTART:') === 0) {
+                // ignore DTSTART line
+                continue;
+            }
+            if (stripos($line, 'RRULE:') === 0) {
+                $line = substr($line, 6); // remove 'RRULE:' prefix
+            }
+            $candidate[] = $line;
+        }
+        if (!empty($candidate)) {
+            // Wenn mehrere Zeilen übrig sind, verbinde mit ';'
+            $raw = implode(';', $candidate);
+        }
+        // Falls dennoch ein RRULE: Fragment vorhanden, erneut entfernen
+        if (stripos($raw, 'RRULE:') === 0) {
+            $raw = substr($raw, 6);
+        }
+        return trim($raw);
+    }
+
+    /**
      * Get next occurrence based on BYDAY rule
      */
     private static function getNextByDayOccurrence(Carbon $current, array $byDay, int $interval): Carbon
     {
         $dayMap = [
-            'SU' => 0, 'MO' => 1, 'TU' => 2, 'WE' => 3,
-            'TH' => 4, 'FR' => 5, 'SA' => 6
+            'SU' => 0,
+            'MO' => 1,
+            'TU' => 2,
+            'WE' => 3,
+            'TH' => 4,
+            'FR' => 5,
+            'SA' => 6
         ];
 
-        $targetDays = array_map(function($day) use ($dayMap) {
+        $targetDays = array_map(function ($day) use ($dayMap) {
             return $dayMap[strtoupper($day)] ?? null;
         }, $byDay);
 
-        $targetDays = array_filter($targetDays, function($day) {
+        $targetDays = array_filter($targetDays, function ($day) {
             return $day !== null;
         });
 

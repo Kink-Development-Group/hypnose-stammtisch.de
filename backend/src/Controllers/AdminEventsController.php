@@ -672,8 +672,8 @@ class AdminEventsController
         title, slug, description, content, start_datetime, end_datetime, timezone,
         location_type, location_name, location_address, location_url, category, difficulty_level,
         max_participants, status, is_featured, requires_registration, organizer_name, organizer_email,
-        tags, series_id, instance_date, parent_event_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        tags, series_id, instance_date, parent_event_id, override_type
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
 
       $title = $input['title'] ?? $series['title'];
       $slug = self::generateSlug($title);
@@ -700,7 +700,8 @@ class AdminEventsController
         isset($input['tags']) ? json_encode($input['tags']) : $series['tags'],
         $seriesId,
         $instanceDate,
-        null
+        null,
+        'changed'
       ]);
 
       Response::success(['id' => $eventId], 'Series override created');
@@ -833,6 +834,109 @@ class AdminEventsController
       Response::success(['exdates' => $exdates]);
     } catch (\Exception $e) {
       Response::error('Failed to get exdates: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Cancel a single instance of a series (creates or updates override_type=cancelled)
+   * POST /admin/events/series/{seriesId}/cancel
+   * Body: { instance_date: 'YYYY-MM-DD', reason?: string }
+   */
+  public static function cancelSeriesInstance(string $seriesId): void
+  {
+    AdminAuth::requireAuth();
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    if (empty($input['instance_date'])) {
+      Response::error('instance_date required', 400);
+      return;
+    }
+    try {
+      $series = Database::fetchOne('SELECT * FROM event_series WHERE id = ?', [$seriesId]);
+      if (!$series) {
+        Response::notFound(['message' => 'Series not found']);
+        return;
+      }
+      $instanceDate = $input['instance_date'];
+      // Versuche bestehendes Override zu finden
+      $existing = Database::fetchOne('SELECT id, override_type FROM events WHERE series_id = ? AND instance_date = ?', [$seriesId, $instanceDate]);
+      if ($existing) {
+        Database::execute('UPDATE events SET override_type = ?, cancellation_reason = ?, status = ? WHERE id = ?', [
+          'cancelled',
+          $input['reason'] ?? null,
+          'cancelled',
+          $existing['id']
+        ]);
+        Response::success(['id' => $existing['id']], 'Instance cancelled');
+        return;
+      }
+      // Neues Cancel-Override (minimal – nutzt Serien-Metadaten)
+      if (!$series['start_time'] || !$series['end_time']) {
+        Response::error('Serie benötigt start_time & end_time für Cancel-Instanz (Migration 003+)', 400);
+        return;
+      }
+      $tz = 'Europe/Berlin';
+      $startUTC = self::convertToUTC($instanceDate . ' ' . $series['start_time'], $tz);
+      $endUTC = self::convertToUTC($instanceDate . ' ' . $series['end_time'], $tz);
+      $insertSql = 'INSERT INTO events (title, slug, start_datetime, end_datetime, timezone, category, status, tags, series_id, instance_date, parent_event_id, override_type, cancellation_reason) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)';
+      $title = $series['title'] . ' (abgesagt)';
+      $slug = self::generateSlug($title . '-' . $instanceDate);
+      $id = Database::insert($insertSql, [
+        $title,
+        $slug,
+        $startUTC,
+        $endUTC,
+        $tz,
+        $series['default_category'] ?? 'stammtisch',
+        'cancelled',
+        $series['tags'],
+        $seriesId,
+        $instanceDate,
+        null,
+        'cancelled',
+        $input['reason'] ?? null
+      ]);
+      Response::success(['id' => $id], 'Instance cancelled');
+    } catch (\Exception $e) {
+      Response::error('Failed to cancel instance: ' . $e->getMessage(), 500);
+    }
+  }
+
+  /**
+   * Restore a cancelled instance (removes cancellation override or switches changed->active)
+   * DELETE /admin/events/series/{seriesId}/cancel?instance_date=YYYY-MM-DD
+   */
+  public static function restoreSeriesInstance(string $seriesId): void
+  {
+    AdminAuth::requireAuth();
+    if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
+      Response::error('Method not allowed', 405);
+      return;
+    }
+    $instanceDate = $_GET['instance_date'] ?? null;
+    if (!$instanceDate) {
+      Response::error('instance_date query param required', 400);
+      return;
+    }
+    try {
+      $row = Database::fetchOne('SELECT id, override_type FROM events WHERE series_id = ? AND instance_date = ?', [$seriesId, $instanceDate]);
+      if (!$row) {
+        Response::success(null, 'Nothing to restore');
+        return;
+      }
+      if ($row['override_type'] === 'cancelled') {
+        // vollständige Cancel-Override entfernen
+        Database::execute('DELETE FROM events WHERE id = ?', [$row['id']]);
+        Response::success(null, 'Cancellation removed');
+        return;
+      }
+      // Wenn geändert, nur Status zurücksetzen (kein echtes cancel restore nötig)
+      Response::success(null, 'No cancellation to remove');
+    } catch (\Exception $e) {
+      Response::error('Failed to restore instance: ' . $e->getMessage(), 500);
     }
   }
 }

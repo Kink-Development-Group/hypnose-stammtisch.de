@@ -71,7 +71,11 @@
   <!-- Event header -->
   <header class="mb-4">
     <div class="flex items-start justify-between mb-2">
-      <h3 class="text-lg font-semibold text-smoke-50 leading-tight">
+      <h3
+        class="text-lg font-semibold leading-tight {event.isCancelled
+          ? 'text-smoke-400 line-through'
+          : 'text-smoke-50'}"
+      >
         {event.title}
       </h3>
       {#if event.beginnerFriendly}
@@ -81,6 +85,12 @@
         >
           ✨
         </span>
+      {/if}
+      {#if event.isCancelled}
+        <span
+          class="badge badge-caution ml-2 flex-shrink-0"
+          aria-label="Abgesagt">✖</span
+        >
       {/if}
     </div>
 
@@ -151,7 +161,18 @@
 
   <!-- Description -->
   <div class="mb-4">
-    <p class="text-smoke-300 text-sm leading-relaxed line-clamp-3">
+    {#if event.isCancelled}
+      <p class="text-caution-300 text-sm font-medium">
+        Abgesagt{event.cancellationReason
+          ? `: ${event.cancellationReason}`
+          : ""}
+      </p>
+    {/if}
+    <p
+      class="{event.isCancelled
+        ? 'text-smoke-500 italic'
+        : 'text-smoke-300'} text-sm leading-relaxed line-clamp-3"
+    >
       {event.description}
     </p>
   </div>

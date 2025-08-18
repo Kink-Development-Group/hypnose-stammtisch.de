@@ -11,6 +11,10 @@
   let newOverrideEnd = "";
   let newOverrideTitle = "";
   let newExdate = "";
+  // Cancellation
+  let cancelDate = "";
+  let cancelReason = "";
+  let restoreDate = "";
 
   async function loadData() {
     loading = true;
@@ -63,6 +67,33 @@
     const res = await AdminAPI.deleteSeriesOverride(seriesItem.id, ovId);
     if (res.success) {
       overrides = overrides.filter((o) => o.id !== ovId);
+    }
+  }
+
+  async function cancelInstance() {
+    if (!cancelDate) return;
+    const res = await AdminAPI.cancelSeriesInstance(
+      seriesItem.id,
+      cancelDate,
+      cancelReason || undefined,
+    );
+    if (res.success) {
+      // Reload overrides to reflect cancellation (it appears as override with status cancelled)
+      loadData();
+      cancelDate = "";
+      cancelReason = "";
+    }
+  }
+
+  async function restoreInstance() {
+    if (!restoreDate) return;
+    const res = await AdminAPI.restoreSeriesInstance(
+      seriesItem.id,
+      restoreDate,
+    );
+    if (res.success) {
+      loadData();
+      restoreDate = "";
     }
   }
 </script>
@@ -202,6 +233,65 @@
           {/each}
         </ul>
       {/if}
+    </div>
+
+    <div class="space-y-2">
+      <h4 class="text-sm font-semibold text-gray-700">Instanz absagen</h4>
+      <div class="flex flex-col md:flex-row gap-2 items-end">
+        <div>
+          <label
+            for="cancel-date-{seriesItem.id}"
+            class="block text-xs text-gray-600 mb-1">Datum</label
+          >
+          <input
+            id="cancel-date-{seriesItem.id}"
+            type="date"
+            bind:value={cancelDate}
+            class="border rounded px-2 py-1 text-sm"
+          />
+        </div>
+        <div class="flex-1">
+          <label
+            for="cancel-reason-{seriesItem.id}"
+            class="block text-xs text-gray-600 mb-1">Grund (optional)</label
+          >
+          <input
+            id="cancel-reason-{seriesItem.id}"
+            type="text"
+            bind:value={cancelReason}
+            placeholder="z.B. Ausfall Referent"
+            class="w-full border rounded px-2 py-1 text-sm"
+          />
+        </div>
+        <button
+          on:click={cancelInstance}
+          class="bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700"
+          >Absagen</button
+        >
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <h4 class="text-sm font-semibold text-gray-700">Absage zurücknehmen</h4>
+      <div class="flex flex-col md:flex-row gap-2 items-end">
+        <div>
+          <label
+            for="restore-date-{seriesItem.id}"
+            class="block text-xs text-gray-600 mb-1">Datum</label
+          >
+          <input
+            id="restore-date-{seriesItem.id}"
+            type="date"
+            bind:value={restoreDate}
+            class="border rounded px-2 py-1 text-sm"
+          />
+        </div>
+        <button
+          on:click={restoreInstance}
+          class="bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700"
+          >Wiederherstellen</button
+        >
+      </div>
     </div>
   {/if}
 </div>

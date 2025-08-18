@@ -11,9 +11,9 @@
     xl: "w-24 h-24",
   };
 
-  // Logo configuration
-  $: logoSrc = "/LogoHypnoseStammtisch.de.svg";
-  $: logoAlt = "Hypnose-Stammtisch.de Logo";
+  // Logo configuration (keine reaktiven Literale)
+  const logoSrc = "/LogoHypnoseStammtisch.de.svg";
+  const logoAlt = "Hypnose-Stammtisch.de Logo";
 </script>
 
 <div class="brand-logo {className}" class:animate-pulse={showAnimation}>

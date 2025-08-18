@@ -65,7 +65,7 @@
       else until = null;
       manualString = rr;
       parseError = null;
-    } catch (e) {
+    } catch {
       parseError = "Kann vorhandene Regel nicht parsen";
     }
   }
@@ -119,7 +119,7 @@
     try {
       const rule = new RRule(opts);
       return rule.toString();
-    } catch (e) {
+    } catch {
       return "";
     }
   }
@@ -164,7 +164,7 @@
         return false;
       });
       derivedCount = all.length;
-    } catch (e) {
+    } catch {
       derivedCount = null;
     }
   }
@@ -201,7 +201,7 @@
       occurrences = previewOccurrences(value);
       summary = summarizeRRule(value, { occurrences });
       dispatch("change", { value });
-    } catch (e) {
+    } catch {
       parseError = "Ungültige RRULE";
     }
   }
@@ -402,7 +402,7 @@
             on:change={() => buildAndEmit()}
             {disabled}
           >
-            {#each weekOptions as w}
+            {#each weekOptions as w (w)}
               <option value={w}>{w}</option>
             {/each}
           </select>
