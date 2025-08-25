@@ -41,4 +41,4 @@ jobs:
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASS }}
           source: "./dist/**"
-          target: ${{ secrets.SFTP_REMOTE_DIR }}
+          target: ${{ secrets.SFTP_REMOTE_DIR }}/dist
