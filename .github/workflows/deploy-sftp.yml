@@ -3,7 +3,7 @@ name: Build and Deploy to SFTP
 on:
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   build-and-deploy:
