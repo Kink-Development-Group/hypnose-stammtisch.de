@@ -186,7 +186,7 @@ export const allStammtischLocations =
   writable<StammtischLocation[]>(sampleLocations);
 
 export const mapViewport = writable<MapViewport>({
-  center: { lat: 50.1109, lng: 8.6821 }, // DACH-Region center (Frankfurt area)
+  center: { lat: 49.5, lng: 10.5 }, // Optimiert für DACH-Region (Zentrum zwischen Deutschland, Österreich, Schweiz)
   zoom: 6,
 });
 
