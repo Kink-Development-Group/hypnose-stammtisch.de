@@ -10,6 +10,11 @@
       label: "Stammtische & Events",
       ariaLabel: "Zu den Veranstaltungen",
     },
+    {
+      href: "/map",
+      label: "Karte",
+      ariaLabel: "Zur Stammtisch-Karte",
+    },
     { href: "/about", label: "Über uns", ariaLabel: "Zur Über-uns-Seite" },
     {
       href: "/learning-resources",

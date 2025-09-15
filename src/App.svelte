@@ -9,6 +9,7 @@
   import Home from "./pages/Home.svelte";
   import Imprint from "./pages/Imprint.svelte";
   import LearningResources from "./pages/LearningResources.svelte";
+  import Map from "./pages/Map.svelte";
   import NotFound from "./pages/NotFound.svelte";
   import Privacy from "./pages/Privacy.svelte";
   import Resources from "./pages/Resources.svelte";
@@ -42,6 +43,7 @@
     "/": Home,
     "/events": Events,
     "/events/:id": Events, // Will show event modal
+    "/map": Map,
     "/about": About,
     "/resources": Resources,
     "/resources/safety-guide": SafetyGuide,
