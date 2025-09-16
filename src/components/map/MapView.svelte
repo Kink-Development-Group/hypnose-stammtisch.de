@@ -74,7 +74,7 @@
       dragging: true,
       maxBounds: dachBounds, // Restrict panning to DACH region
       maxBoundsViscosity: 1.0, // How much to stop panning outside bounds
-      minZoom: 3, // Weitere Zoom-Stufe nach draußen ermöglichen
+      minZoom: 4, // Weitere Zoom-Stufe nach draußen ermöglichen
       maxZoom: 15, // Reasonable max zoom for city level
     });
 
@@ -140,7 +140,7 @@
 
           // Erstelle GeoJSON Layer mit Styling
           const layer = L.geoJSON(geoJsonData, {
-            style: (feature) => {
+            style: (_feature) => {
               // Verwende das ISO-Code aus unserem Mapping
               return {
                 ...baseStyle,
@@ -175,33 +175,33 @@
         name: "Deutschland",
         color: "#1f77b4",
         coords: [
-          [54.983, 5.866],
-          [54.983, 15.042],
-          [47.271, 15.042],
-          [47.271, 5.866],
-          [54.983, 5.866],
+          [54.983, 5.866] as [number, number],
+          [54.983, 15.042] as [number, number],
+          [47.271, 15.042] as [number, number],
+          [47.271, 5.866] as [number, number],
+          [54.983, 5.866] as [number, number],
         ],
       },
       {
         name: "Österreich",
         color: "#d62728",
         coords: [
-          [49.021, 9.531],
-          [49.021, 17.161],
-          [46.372, 17.161],
-          [46.372, 9.531],
-          [49.021, 9.531],
+          [49.021, 9.531] as [number, number],
+          [49.021, 17.161] as [number, number],
+          [46.372, 17.161] as [number, number],
+          [46.372, 9.531] as [number, number],
+          [49.021, 9.531] as [number, number],
         ],
       },
       {
         name: "Schweiz",
         color: "#2ca02c",
         coords: [
-          [47.808, 5.956],
-          [47.808, 10.492],
-          [45.818, 10.492],
-          [45.818, 5.956],
-          [47.808, 5.956],
+          [47.808, 5.956] as [number, number],
+          [47.808, 10.492] as [number, number],
+          [45.818, 10.492] as [number, number],
+          [45.818, 5.956] as [number, number],
+          [47.808, 5.956] as [number, number],
         ],
       },
     ];
@@ -334,8 +334,6 @@
   }
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-static-element-interactions -->
 <div
   bind:this={mapContainer}
   class="map-container {className}"

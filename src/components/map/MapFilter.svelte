@@ -55,7 +55,7 @@
       <div class="filter-section">
         <h3 class="filter-title">Länder</h3>
         <div class="filter-grid">
-          {#each countries as country}
+          {#each countries as country (country.name)}
             <label class="filter-checkbox">
               <input
                 type="checkbox"
@@ -76,7 +76,7 @@
         <div class="filter-section">
           <h3 class="filter-title">Regionen</h3>
           <div class="filter-grid">
-            {#each $availableRegions as region}
+            {#each $availableRegions as region (region)}
               <label class="filter-checkbox">
                 <input
                   type="checkbox"
@@ -95,7 +95,7 @@
         <div class="filter-section">
           <h3 class="filter-title">Tags</h3>
           <div class="filter-tags">
-            {#each $availableTags as tag}
+            {#each $availableTags as tag (tag)}
               <button
                 class="tag-filter"
                 class:active={$mapFilter.tags.includes(tag)}

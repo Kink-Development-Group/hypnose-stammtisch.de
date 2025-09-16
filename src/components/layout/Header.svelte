@@ -79,7 +79,7 @@
 
       <!-- Desktop Navigation -->
       <div class="hidden md:flex items-center space-x-6">
-        {#each navigation as item}
+        {#each navigation as item (item.href)}
           <a
             href={item.href}
             use:link
@@ -139,7 +139,7 @@
         aria-orientation="vertical"
       >
         <div class="space-y-2">
-          {#each navigation as item}
+          {#each navigation as item (item.href)}
             <a
               href={item.href}
               use:link

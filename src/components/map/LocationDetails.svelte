@@ -141,7 +141,7 @@
         <section class="content-section">
           <h3 class="section-title">🏷️ Charakteristika</h3>
           <div class="tags">
-            {#each currentLocation.tags as tag}
+            {#each currentLocation.tags as tag (tag)}
               <span class="tag">{tag}</span>
             {/each}
           </div>

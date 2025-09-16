@@ -86,7 +86,7 @@
             </h3>
           </div>
           <div class="space-y-4">
-            {#each platformInfo.values as value, index}
+            {#each platformInfo.values as value, index (index)}
               <div class="flex items-start group">
                 <div
                   class="w-8 h-8 bg-gradient-to-br from-accent-400/20 to-accent-500/20 rounded-full flex items-center justify-center mr-4 mt-1 group-hover:from-accent-400/40 group-hover:to-accent-500/40 transition-all duration-300"
@@ -122,7 +122,7 @@
             </h3>
           </div>
           <div class="space-y-4">
-            {#each platformInfo.coverage as area}
+            {#each platformInfo.coverage as area (area)}
               <div class="flex items-center group">
                 <div
                   class="w-8 h-8 bg-gradient-to-br from-secondary-400/20 to-secondary-500/20 rounded-full flex items-center justify-center mr-4 group-hover:from-secondary-400/40 group-hover:to-secondary-500/40 transition-all duration-300"
@@ -201,7 +201,7 @@
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {#each teamMembers as member}
+        {#each teamMembers as member (member.name)}
           <div
             class="card bg-gradient-to-br from-charcoal-800 to-charcoal-700 border-charcoal-600 hover:border-accent-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-accent-500/10"
           >
@@ -240,7 +240,7 @@
 
                 <!-- Specialties -->
                 <div class="flex flex-wrap gap-2 mb-4">
-                  {#each member.specialties as specialty}
+                  {#each member.specialties as specialty (specialty)}
                     <span class="badge badge-outline-accent text-xs px-3 py-1">
                       {specialty}
                     </span>

@@ -321,7 +321,7 @@
         id="rb-weekdays-label">Wochentage</span
       >
       <div class="flex flex-wrap gap-1">
-        {#each weekOptions as w}
+        {#each weekOptions as w, index (index)}
           <button
             type="button"
             aria-pressed={weekdays.includes(w)}
@@ -391,7 +391,7 @@
             on:change={() => buildAndEmit()}
             {disabled}
           >
-            {#each posOptions as p}
+            {#each posOptions as p, index (index)}
               <option value={p}>{p === -1 ? "letzte" : p + "."}</option>
             {/each}
           </select>
@@ -459,7 +459,7 @@
       <ul
         class="text-[11px] grid grid-cols-1 md:grid-cols-2 gap-x-4 list-disc list-inside text-gray-800"
       >
-        {#each occurrences as o}
+        {#each occurrences as o, index (index)}
           <li>{dayjs(o).format("DD.MM.YYYY")}</li>
         {/each}
       </ul>
