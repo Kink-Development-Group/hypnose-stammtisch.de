@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites>
-  <testsuite name="HypnoseStammtisch\Tests\Integration\PHPUnitConfigTest" file="D:\git\hypnose-stammtisch.de\backend\tests\Integration\PHPUnitConfigTest.php" tests="2" assertions="4" errors="0" failures="0" skipped="0" time="0.007351">
-    <testcase name="testPHPUnitIsWorking" file="D:\git\hypnose-stammtisch.de\backend\tests\Integration\PHPUnitConfigTest.php" line="14" class="HypnoseStammtisch\Tests\Integration\PHPUnitConfigTest" classname="HypnoseStammtisch.Tests.Integration.PHPUnitConfigTest" assertions="1" time="0.006306"/>
-    <testcase name="testAssertionMethods" file="D:\git\hypnose-stammtisch.de\backend\tests\Integration\PHPUnitConfigTest.php" line="19" class="HypnoseStammtisch\Tests\Integration\PHPUnitConfigTest" classname="HypnoseStammtisch.Tests.Integration.PHPUnitConfigTest" assertions="3" time="0.001045"/>
+  <testsuite name="HypnoseStammtisch\Tests\Integration\PHPUnitConfigTest" file="D:\git\hypnose-stammtisch.de\backend\tests\Integration\PHPUnitConfigTest.php" tests="2" assertions="4" errors="0" failures="0" skipped="0" time="0.008017">
+    <testcase name="testPHPUnitIsWorking" file="D:\git\hypnose-stammtisch.de\backend\tests\Integration\PHPUnitConfigTest.php" line="14" class="HypnoseStammtisch\Tests\Integration\PHPUnitConfigTest" classname="HypnoseStammtisch.Tests.Integration.PHPUnitConfigTest" assertions="1" time="0.007055"/>
+    <testcase name="testAssertionMethods" file="D:\git\hypnose-stammtisch.de\backend\tests\Integration\PHPUnitConfigTest.php" line="19" class="HypnoseStammtisch\Tests\Integration\PHPUnitConfigTest" classname="HypnoseStammtisch.Tests.Integration.PHPUnitConfigTest" assertions="3" time="0.000962"/>
   </testsuite>
 </testsuites>
