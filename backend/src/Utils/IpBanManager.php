@@ -219,12 +219,20 @@ class IpBanManager
             'REMOTE_ADDR'                // Standard
         ];
 
+        // Determine environment (default to 'production' if not set)
+        $environment = Config::get('environment') ?? 'production';
+        // Set IP validation flags based on environment
+        $ipValidationFlags = FILTER_VALIDATE_IP;
+        if ($environment === 'production') {
+            $ipValidationFlags |= FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+        }
+
         foreach ($ipHeaders as $header) {
             if (!empty($_SERVER[$header])) {
                 $ips = explode(',', $_SERVER[$header]);
                 $ip = trim($ips[0]);
 
-                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+                if (filter_var($ip, $ipValidationFlags)) {
                     return $ip;
                 }
             }
