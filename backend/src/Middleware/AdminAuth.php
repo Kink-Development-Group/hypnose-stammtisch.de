@@ -83,15 +83,39 @@ class AdminAuth
   /**
    * Authenticate user with email & password (stage 1 of 2FA)
    */
-  public static function authenticate(string $email, string $password): array
+  public static function authenticate(string $email, string $password, string $ipAddress = ''): array
   {
-    $sql = "SELECT id, username, email, password_hash, role, is_active, twofa_secret, twofa_enabled, created_at, updated_at
+    $sql = "SELECT id, username, email, password_hash, role, is_active, locked_until, locked_reason, twofa_secret, twofa_enabled, created_at, updated_at
             FROM users WHERE email = ? AND is_active = 1";
     $user = Database::fetchOne($sql, [$email]);
 
+    // Get IP if not provided
+    if (empty($ipAddress)) {
+      $ipAddress = \HypnoseStammtisch\Utils\IpBanManager::getClientIP();
+    }
+
+    // Check if user exists and password is correct
     if (!$user || !password_verify($password, $user['password_hash'])) {
+      // Handle failed login - even if user doesn't exist, we track by IP and username
+      \HypnoseStammtisch\Utils\FailedLoginTracker::handleFailedLogin(
+        $user ? (int)$user['id'] : null,
+        $email,
+        $ipAddress
+      );
+      
       return ['success' => false, 'message' => 'Invalid credentials'];
     }
+
+    // Check if account is locked
+    if (\HypnoseStammtisch\Utils\FailedLoginTracker::isAccountLocked((int)$user['id'])) {
+      return [
+        'success' => false, 
+        'message' => 'Account is temporarily locked due to security reasons'
+      ];
+    }
+
+    // Success - clear any failed attempts for this account
+    \HypnoseStammtisch\Utils\FailedLoginTracker::clearFailedAttemptsForAccount((int)$user['id']);
 
     // Start session
     self::startSession();
@@ -105,6 +129,7 @@ class AdminAuth
 
     return [
       'success' => true,
+      'user_id' => $user['id'],
       'twofa_required' => true,
       'twofa_configured' => $twofaConfigured,
       'message' => $twofaConfigured ? 'Second factor required' : '2FA setup required'

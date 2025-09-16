@@ -28,7 +28,14 @@ class AdminAuthController
       return;
     }
 
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    // Check for IP ban first - before any other processing
+    $ip = \HypnoseStammtisch\Utils\IpBanManager::getClientIP();
+    $ipBanCheck = \HypnoseStammtisch\Utils\IpBanManager::checkIPBanMiddleware($ip);
+    if ($ipBanCheck['blocked']) {
+      Response::error('Access denied', 403);
+      return;
+    }
+
     $rlKey = 'login:' . $ip;
     $rl = RateLimiter::attempt($rlKey, 10, 300); // 10 Versuche pro 5 Minuten
     if (!$rl['allowed']) {
@@ -47,16 +54,16 @@ class AdminAuthController
       return;
     }
 
-    $result = AdminAuth::authenticate($input['email'], $input['password']);
+    $result = AdminAuth::authenticate($input['email'], $input['password'], $ip);
 
     if ($result['success']) {
-      AuditLogger::log('auth.login_stage1', 'user', (string)$result['twofa_required']);
+      AuditLogger::log('auth.login_stage1', 'user', (string)$result['user_id']);
       Response::success([
         'twofa_required' => $result['twofa_required'],
         'twofa_configured' => $result['twofa_configured']
       ], $result['message']);
     } else {
-      AuditLogger::log('auth.login_failed', null, null, ['email' => $input['email'] ?? null]);
+      AuditLogger::log('auth.login_failed', null, null, ['email' => $input['email'] ?? null, 'ip' => $ip]);
       Response::error($result['message'], 401);
     }
   }
