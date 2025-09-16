@@ -911,7 +911,7 @@
                     type="button"
                     on:click={() => addAvailableTag(tag)}
                     disabled={formData.tags.includes(tag)}
-                    class="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="px-3 py-1.5 text-sm bg-gray-50 border-2 border-gray-300 text-gray-700 rounded-md hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-50 disabled:hover:border-gray-300 disabled:hover:text-gray-700"
                   >
                     {tag}
                   </button>
@@ -932,7 +932,7 @@
               <button
                 type="button"
                 on:click={addTag}
-                class="px-4 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md hover:bg-gray-200"
+                class="px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded-r-md hover:bg-blue-700 hover:border-blue-700 transition-colors font-medium"
               >
                 Hinzufügen
               </button>
