@@ -55,7 +55,7 @@
         <h3 class="text-smoke-50 font-semibold mb-4">Community</h3>
         <nav aria-label="Community-Navigation">
           <ul class="space-y-2">
-            {#each footerLinks.community as linkItem}
+            {#each footerLinks.community as linkItem (linkItem.href)}
               <li>
                 <a
                   href={linkItem.href}
@@ -75,7 +75,7 @@
         <h3 class="text-smoke-50 font-semibold mb-4">Rechtliches</h3>
         <nav aria-label="Rechtliche Navigation">
           <ul class="space-y-2">
-            {#each footerLinks.legal as linkItem}
+            {#each footerLinks.legal as linkItem (linkItem.href)}
               <li>
                 <a
                   href={linkItem.href}
@@ -114,7 +114,7 @@
 
         <!-- Social links -->
         <div class="flex items-center space-x-4">
-          {#each footerLinks.social as socialLink}
+          {#each footerLinks.social as socialLink (socialLink.href)}
             <a
               href={socialLink.href}
               target="_blank"

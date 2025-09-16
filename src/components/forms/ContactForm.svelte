@@ -305,7 +305,7 @@
         aria-describedby={errors.subject ? "subject-error" : undefined}
         aria-invalid={errors.subject ? "true" : "false"}
       >
-        {#each subjectOptions as option}
+        {#each subjectOptions as option (option.value)}
           <option value={option.value}>{option.label}</option>
         {/each}
       </select>

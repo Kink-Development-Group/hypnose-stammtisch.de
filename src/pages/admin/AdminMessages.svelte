@@ -341,7 +341,7 @@
               </div>
             {:else}
               <ul class="divide-y divide-gray-200">
-                {#each messages as message}
+                {#each messages as message (message.id)}
                   <li class="px-6 py-4">
                     <button
                       class="w-full text-left hover:bg-gray-50 {selectedMessage?.id ===

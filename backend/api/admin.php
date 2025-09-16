@@ -13,6 +13,7 @@ use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Controllers\AdminAuthController;
 use HypnoseStammtisch\Controllers\AdminEventsController;
 use HypnoseStammtisch\Controllers\AdminMessagesController;
+use HypnoseStammtisch\Controllers\AdminStammtischLocationController;
 use HypnoseStammtisch\Controllers\AdminUsersController;
 use HypnoseStammtisch\Controllers\AdminSecurityController;
 use HypnoseStammtisch\Controllers\UserController;
@@ -251,6 +252,41 @@ try {
       $id = $matches[1];
       if ($method === 'GET') {
         AdminMessagesController::getResponses($id);
+        return;
+      }
+    }
+  }
+
+  // Route stammtisch-locations endpoints (for head admins and admins)
+  if (str_starts_with($path, '/stammtisch-locations')) {
+    if ($path === '/stammtisch-locations') {
+      if ($method === 'GET') {
+        AdminStammtischLocationController::index();
+        return;
+      } elseif ($method === 'POST') {
+        AdminStammtischLocationController::create();
+        return;
+      }
+    } elseif ($path === '/stammtisch-locations/stats') {
+      if ($method === 'GET') {
+        AdminStammtischLocationController::stats();
+        return;
+      }
+    } elseif ($path === '/stammtisch-locations/bulk-status') {
+      if ($method === 'POST') {
+        AdminStammtischLocationController::bulkUpdateStatus();
+        return;
+      }
+    } elseif (preg_match('#^/stammtisch-locations/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+      $id = (string)$matches[1];
+      if ($method === 'GET') {
+        AdminStammtischLocationController::show($id);
+        return;
+      } elseif ($method === 'PUT') {
+        AdminStammtischLocationController::update($id);
+        return;
+      } elseif ($method === 'DELETE') {
+        AdminStammtischLocationController::delete($id);
         return;
       }
     }

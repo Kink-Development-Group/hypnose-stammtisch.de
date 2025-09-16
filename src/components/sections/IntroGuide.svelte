@@ -80,7 +80,7 @@
 
   <!-- Guide steps -->
   <div class="space-y-8">
-    {#each guideSteps as step, index}
+    {#each guideSteps as step, index (step.title)}
       <div class="flex flex-col md:flex-row gap-6 items-start">
         <!-- Step number and icon -->
         <div class="flex-shrink-0 flex flex-col items-center">
@@ -105,7 +105,7 @@
 
           <!-- Step checklist -->
           <ul class="space-y-2 mb-6">
-            {#each step.content as item}
+            {#each step.content as item (item)}
               <li class="flex items-start text-sm text-smoke-400">
                 <svg
                   class="w-4 h-4 text-accent-400 mr-3 mt-0.5 flex-shrink-0"

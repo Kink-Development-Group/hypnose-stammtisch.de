@@ -3,7 +3,7 @@ name: Build and Deploy to SFTP
 on:
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   build-and-deploy:
@@ -23,6 +23,22 @@ jobs:
       - name: Build project
         run: npm run build:all
 
+      - name: Create .env file from example and secrets
+        run: |
+          cp backend/.env.example .env
+          sed -i "s|DB_HOST=.*|DB_HOST=${{ secrets.DB_HOST }}|" .env
+          sed -i "s|DB_PORT=.*|DB_PORT=${{ secrets.DB_PORT }}|" .env
+          sed -i "s|DB_NAME=.*|DB_NAME=${{ secrets.DB_NAME }}|" .env
+          sed -i "s|DB_USER=.*|DB_USER=${{ secrets.DB_USER }}|" .env
+          sed -i "s|DB_PASS=.*|DB_PASS=${{ secrets.DB_PASS }}|" .env
+          sed -i "s|JWT_SECRET=.*|JWT_SECRET=${{ secrets.JWT_SECRET }}|" .env
+          sed -i "s|MAIL_HOST=.*|MAIL_HOST=${{ secrets.MAIL_HOST }}|" .env
+          sed -i "s|MAIL_PORT=.*|MAIL_PORT=${{ secrets.MAIL_PORT }}|" .env
+          sed -i "s|MAIL_USERNAME=.*|MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}|" .env
+          sed -i "s|MAIL_PASSWORD=.*|MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}|" .env
+          sed -i "s|MAIL_FROM_ADDRESS=.*|MAIL_FROM_ADDRESS=${{ secrets.MAIL_FROM_ADDRESS }}|" .env
+          sed -i "s|CALENDAR_FEED_TOKEN=.*|CALENDAR_FEED_TOKEN=${{ secrets.CALENDAR_FEED_TOKEN }}|" .env
+
       - name: Deploy to SFTP
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -31,4 +47,4 @@ jobs:
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASS }}
           source: "./dist/**"
-          target: ${{ secrets.SFTP_REMOTE_DIR }}
+          target: ${{ secrets.SFTP_REMOTE_DIR }}/dist
