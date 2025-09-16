@@ -43,7 +43,47 @@ Eine moderne, barrierefreie Webanwendung für die Hypnose-Community mit Kalender
 - **@axe-core/playwright** - Accessibility Testing
 - **ESLint + Prettier** - Code-Qualität
 
-## 🚀 Quick Start
+## �️ Security Features
+
+### Account Lockout & IP Blocking
+
+Comprehensive protection against brute-force attacks:
+
+- **Automatic account lockout** after repeated failed login attempts
+- **IP banning** for suspicious activities
+- **Head-admin protection**: Head admin accounts are not locked (only IP is banned)
+- **Complete audit logging** of all security-relevant events
+- **Admin tools** for management and monitoring
+- **GDPR compliant** with configurable retention periods
+
+**Configuration (.env):**
+
+```env
+MAX_FAILED_ATTEMPTS=5              # Max failed attempts before lockout
+TIME_WINDOW_SECONDS=900            # Time window for counting (15 minutes)
+IP_BAN_DURATION_SECONDS=3600       # IP ban duration (1 hour, 0 = permanent)
+ACCOUNT_LOCK_DURATION_SECONDS=3600 # Account lock duration (1 hour, 0 = manual)
+HEAD_ADMIN_ROLE_NAME=head          # Role name for head admin
+```
+
+**CLI Tools:**
+
+```bash
+# Security statistics
+php cli/commands/security.php stats
+
+# Manage IP bans and account locks
+php cli/commands/security.php list-bans
+php cli/commands/security.php unlock user@example.com
+php cli/commands/security.php unban 192.168.1.100
+
+# Automated maintenance
+php scripts/security_maintenance.php all
+```
+
+For detailed documentation, see `backend/README_SECURITY.md`
+
+## 🗂️ Project Structure
 
 ### Voraussetzungen
 

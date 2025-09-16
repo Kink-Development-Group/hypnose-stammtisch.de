@@ -17,6 +17,13 @@ return [
   'security' => [
     'csrf_token_lifetime' => (int)($_ENV['CSRF_TOKEN_LIFETIME'] ?? 3600),
     'password_min_length' => 8,
+
+    // Failed login protection
+    'max_failed_attempts' => (int)($_ENV['MAX_FAILED_ATTEMPTS'] ?? 5),
+    'time_window_seconds' => (int)($_ENV['TIME_WINDOW_SECONDS'] ?? 900), // 15 minutes
+    'ip_ban_duration_seconds' => (int)($_ENV['IP_BAN_DURATION_SECONDS'] ?? 3600), // 1 hour, 0 = permanent
+    'account_lock_duration_seconds' => (int)($_ENV['ACCOUNT_LOCK_DURATION_SECONDS'] ?? 3600), // 1 hour, 0 = manual unlock
+    'head_admin_role_name' => $_ENV['HEAD_ADMIN_ROLE_NAME'] ?? 'head',
   ],
 
   'calendar' => [
