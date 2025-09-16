@@ -191,7 +191,7 @@
                     currentLocation.contact.telegram || "",
                   )}
               >
-                📱 Telegram: {currentLocation.contact.telegram}
+                📱 FetLife: {currentLocation.contact.telegram}
               </button>
             {/if}
 

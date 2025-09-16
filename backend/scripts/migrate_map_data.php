@@ -180,7 +180,7 @@ foreach ($sampleLocations as $locationData) {
       description: $locationData['description'],
       contactEmail: $locationData['contact_email'] ?? null,
       contactPhone: null,
-      contactTelegram: $locationData['contact_telegram'] ?? null,
+      contactFetLife: $locationData['contact_telegram'] ?? null,
       contactWebsite: $locationData['contact_website'] ?? null,
       meetingFrequency: $locationData['meeting_frequency'] ?? null,
       meetingLocation: $locationData['meeting_location'] ?? null,

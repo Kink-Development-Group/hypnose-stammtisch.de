@@ -155,7 +155,7 @@ class AdminStammtischLocationController
         description: $input['description'] ?? '',
         contactEmail: $input['contact_email'] ?? null,
         contactPhone: $input['contact_phone'] ?? null,
-        contactTelegram: $input['contact_telegram'] ?? null,
+        contactFetLife: $input['contact_telegram'] ?? null,
         contactWebsite: $input['contact_website'] ?? null,
         meetingFrequency: $input['meeting_frequency'] ?? null,
         meetingLocation: $input['meeting_location'] ?? null,
@@ -249,7 +249,7 @@ class AdminStammtischLocationController
       if (isset($input['description'])) $location->description = $input['description'];
       if (isset($input['contact_email'])) $location->contactEmail = $input['contact_email'] ?: null;
       if (isset($input['contact_phone'])) $location->contactPhone = $input['contact_phone'] ?: null;
-      if (isset($input['contact_telegram'])) $location->contactTelegram = $input['contact_telegram'] ?: null;
+      if (isset($input['contact_telegram'])) $location->contactFetLife = $input['contact_telegram'] ?: null;
       if (isset($input['contact_website'])) $location->contactWebsite = $input['contact_website'] ?: null;
       if (isset($input['meeting_frequency'])) $location->meetingFrequency = $input['meeting_frequency'] ?: null;
       if (isset($input['meeting_location'])) $location->meetingLocation = $input['meeting_location'] ?: null;
