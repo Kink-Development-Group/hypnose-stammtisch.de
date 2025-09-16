@@ -83,7 +83,7 @@
       attribution:
         '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 15,
-      minZoom: 4, // Angepasst für weitere Zoom-Stufe nach draußen
+      minZoom: 4,
     }).addTo(map);
 
     // Add DACH region highlight overlay
