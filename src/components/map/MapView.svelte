@@ -74,7 +74,7 @@
       dragging: true,
       maxBounds: dachBounds, // Restrict panning to DACH region
       maxBoundsViscosity: 1.0, // How much to stop panning outside bounds
-      minZoom: 5, // Prevent zooming out too far
+      minZoom: 3, // Weitere Zoom-Stufe nach draußen ermöglichen
       maxZoom: 15, // Reasonable max zoom for city level
     });
 
@@ -83,11 +83,8 @@
       attribution:
         '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 15,
-      minZoom: 5,
+      minZoom: 4, // Angepasst für weitere Zoom-Stufe nach draußen
     }).addTo(map);
-
-    // Add DACH region highlight overlay
-    addDachRegionHighlight();
 
     // Add DACH region highlight overlay
     addDachRegionHighlight();
@@ -109,47 +106,117 @@
   function addDachRegionHighlight() {
     if (!map || !L) return;
 
-    // Approximate DACH region boundaries as LatLng tuples
-    const dachRegions: L.LatLngExpression[][] = [
-      // Germany
-      [
-        [54.983, 5.866], // Northwest
-        [54.983, 15.042], // Northeast
-        [47.271, 15.042], // Southeast
-        [47.271, 5.866], // Southwest
-        [54.983, 5.866], // Close polygon
-      ],
-      // Austria
-      [
-        [49.021, 9.531],
-        [49.021, 17.161],
-        [46.372, 17.161],
-        [46.372, 9.531],
-        [49.021, 9.531],
-      ],
-      // Switzerland
-      [
-        [47.808, 5.956],
-        [47.808, 10.492],
-        [45.818, 10.492],
-        [45.818, 5.956],
-        [47.808, 5.956],
-      ],
+    // GeoJSON-basierte DACH-Länder Darstellung
+    const countryStyles = {
+      DE: { color: "#1f77b4", fillColor: "#1f77b4", fillOpacity: 0.15 }, // Blau für Deutschland
+      AT: { color: "#d62728", fillColor: "#d62728", fillOpacity: 0.15 }, // Rot für Österreich
+      CH: { color: "#2ca02c", fillColor: "#2ca02c", fillOpacity: 0.15 }, // Grün für Schweiz
+    };
+
+    const baseStyle = {
+      weight: 2,
+      opacity: 0.8,
+      interactive: false, // Keine Interaktion mit den Ländergrenzen
+    };
+
+    // Lade authentische OSM GeoJSON-Dateien für die DACH-Länder
+    const loadCountryBoundaries = async () => {
+      try {
+        const countries = {
+          germany: "DE",
+          austria: "AT",
+          switzerland: "CH",
+        };
+        const geoJsonLayers: any[] = [];
+
+        for (const [filename, isoCode] of Object.entries(countries)) {
+          const response = await fetch(`/data/${filename}.geojson`);
+          if (!response.ok) {
+            console.warn(`Could not load ${filename}.geojson`);
+            continue;
+          }
+
+          const geoJsonData = await response.json();
+
+          // Erstelle GeoJSON Layer mit Styling
+          const layer = L.geoJSON(geoJsonData, {
+            style: (feature) => {
+              // Verwende das ISO-Code aus unserem Mapping
+              return {
+                ...baseStyle,
+                ...countryStyles[isoCode as keyof typeof countryStyles],
+              };
+            },
+          }).addTo(map);
+
+          geoJsonLayers.push(layer);
+        }
+
+        console.log(`✅ Loaded ${geoJsonLayers.length} country boundaries`);
+      } catch (error) {
+        console.error("Error loading country boundaries:", error);
+        // Fallback zu vereinfachten Polygonen falls GeoJSON nicht lädt
+        addFallbackRegions();
+      }
+    };
+
+    loadCountryBoundaries();
+  }
+
+  // Fallback-Funktion mit vereinfachten Polygonen
+  function addFallbackRegions() {
+    if (!map || !L) return;
+
+    console.log("Using fallback simplified boundaries");
+
+    // Sehr vereinfachte aber erkennbare Ländergrenzen als Fallback
+    const fallbackRegions = [
+      {
+        name: "Deutschland",
+        color: "#1f77b4",
+        coords: [
+          [54.983, 5.866],
+          [54.983, 15.042],
+          [47.271, 15.042],
+          [47.271, 5.866],
+          [54.983, 5.866],
+        ],
+      },
+      {
+        name: "Österreich",
+        color: "#d62728",
+        coords: [
+          [49.021, 9.531],
+          [49.021, 17.161],
+          [46.372, 17.161],
+          [46.372, 9.531],
+          [49.021, 9.531],
+        ],
+      },
+      {
+        name: "Schweiz",
+        color: "#2ca02c",
+        coords: [
+          [47.808, 5.956],
+          [47.808, 10.492],
+          [45.818, 10.492],
+          [45.818, 5.956],
+          [47.808, 5.956],
+        ],
+      },
     ];
 
-    // Add subtle highlighting for DACH regions
-    dachRegions.forEach((region) => {
-      L.polygon(region, {
-        color: "#4F46E5", // Indigo border
+    fallbackRegions.forEach((region) => {
+      L.polygon(region.coords, {
+        color: region.color,
         weight: 2,
-        opacity: 0.3,
-        fillColor: "#4F46E5",
-        fillOpacity: 0.05,
-        interactive: false, // Don't interfere with map interactions
+        opacity: 0.8,
+        fillColor: region.color,
+        fillOpacity: 0.15,
+        interactive: false,
       }).addTo(map);
     });
   }
-
   function updateMarkers(locations: StammtischLocation[]) {
     if (!map || !L) return;
 

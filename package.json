@@ -17,6 +17,7 @@
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
+    "fetch:boundaries": "node scripts/fetch-dach-boundaries.js",
     "install:backend": "cd backend && composer install",
     "backend:install:prod": "cd backend && composer install --no-dev --optimize-autoloader",
     "setup": "npm install && npm run install:backend && npm run setup:backend",
