@@ -9,7 +9,7 @@
     filteredLocations,
     isMapLoading,
     selectedLocation,
-  } from "../stores/map";
+  } from "../stores/api-map";
 
   let showMobileDetails = false;
 
@@ -94,7 +94,7 @@
         {#if $isMapLoading}
           <div class="map-loading-state">
             <div class="loading-spinner"></div>
-            <p>Lade Stammtisch-Daten...</p>
+            <p>Karte wird geladen...</p>
           </div>
         {:else}
           <MapView height="600px" />

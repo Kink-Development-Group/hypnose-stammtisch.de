@@ -2,11 +2,13 @@
   import type { Map } from "leaflet";
   import { onDestroy, onMount } from "svelte";
   import {
-    filteredLocations,
+    filteredStammtischLocations,
+    isLoadingLocations,
+    locationsError,
     mapViewport,
     openLocationDetails,
     updateMapViewport,
-  } from "../../stores/map";
+  } from "../../stores/api-map";
   import type { StammtischLocation } from "../../types/stammtisch";
 
   let mapContainer: HTMLDivElement;
@@ -100,7 +102,7 @@
     });
 
     // Update markers when locations change
-    updateMarkers($filteredLocations);
+    updateMarkers($filteredStammtischLocations);
   }
 
   function addDachRegionHighlight() {
@@ -303,7 +305,7 @@
 
   // React to store changes
   $: if (map && L) {
-    updateMarkers($filteredLocations);
+    updateMarkers($filteredStammtischLocations);
   }
 
   // Update map view when viewport changes (from external sources)
@@ -327,7 +329,9 @@
   function handleShowDetails(event: Event) {
     const customEvent = event as CustomEvent;
     const locationId = customEvent.detail;
-    const location = $filteredLocations.find((l) => l.id === locationId);
+    const location = $filteredStammtischLocations.find(
+      (l) => l.id === locationId,
+    );
     if (location) {
       openLocationDetails(location);
     }
@@ -342,11 +346,24 @@
   aria-label="Interaktive Karte mit Stammtisch-Standorten"
   tabindex="-1"
 >
-  <!-- Loading indicator -->
+  <!-- Loading indicators -->
   {#if !map}
     <div class="map-loading">
       <div class="loading-spinner"></div>
       <p>Karte wird geladen...</p>
+    </div>
+  {:else if $isLoadingLocations}
+    <div class="locations-loading">
+      <div class="loading-spinner small"></div>
+      <span>Stammtische werden geladen...</span>
+    </div>
+  {/if}
+
+  <!-- Error indicator -->
+  {#if $locationsError}
+    <div class="locations-error">
+      <span class="error-icon">⚠️</span>
+      <span>Fehler beim Laden der Stammtische: {$locationsError}</span>
     </div>
   {/if}
 </div>
@@ -381,6 +398,48 @@
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 1rem;
+  }
+
+  .loading-spinner.small {
+    width: 24px;
+    height: 24px;
+    border-width: 3px;
+    margin-bottom: 0;
+    margin-right: 0.5rem;
+  }
+
+  .locations-loading {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(31, 41, 55, 0.9);
+    color: #e5e7eb;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    z-index: 1000;
+  }
+
+  .locations-error {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(220, 38, 38, 0.9);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    z-index: 1000;
+    max-width: 90%;
+  }
+
+  .error-icon {
+    margin-right: 0.5rem;
   }
 
   @keyframes spin {

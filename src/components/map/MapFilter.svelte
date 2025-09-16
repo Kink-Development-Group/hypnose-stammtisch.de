@@ -7,7 +7,7 @@
     toggleCountryFilter,
     toggleRegionFilter,
     toggleTagFilter,
-  } from "../../stores/map";
+  } from "../../stores/api-map";
 
   let isExpanded = false;
 
@@ -76,14 +76,14 @@
         <div class="filter-section">
           <h3 class="filter-title">Regionen</h3>
           <div class="filter-grid">
-            {#each $availableRegions as region (region)}
+            {#each $availableRegions as region (region.name)}
               <label class="filter-checkbox">
                 <input
                   type="checkbox"
-                  checked={$mapFilter.regions.includes(region)}
-                  on:change={() => toggleRegionFilter(region)}
+                  checked={$mapFilter.regions.includes(region.name)}
+                  on:change={() => toggleRegionFilter(region.name)}
                 />
-                <span class="checkbox-label">{region}</span>
+                <span class="checkbox-label">{region.name}</span>
               </label>
             {/each}
           </div>

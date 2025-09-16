@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { closeLocationDetails, selectedLocation } from "../../stores/map";
+  import { closeLocationDetails, selectedLocation } from "../../stores/api-map";
   import type { StammtischLocation } from "../../types/stammtisch";
 
   export let location: StammtischLocation | null = null;
