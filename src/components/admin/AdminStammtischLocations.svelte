@@ -516,7 +516,7 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          {#each locations as location}
+          {#each locations as location (location.id)}
             <tr class="hover:bg-gray-50">
               <td class="px-6 py-4 whitespace-nowrap">
                 <input
@@ -567,7 +567,7 @@
               </td>
               <td class="px-6 py-4">
                 <div class="flex flex-wrap gap-1">
-                  {#each location.tags.slice(0, 3) as tag}
+                  {#each location.tags.slice(0, 3) as tag (tag)}
                     <span
                       class="inline-flex px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
                     >
@@ -690,7 +690,7 @@
                 required
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {#each countryOptions as country}
+                {#each countryOptions as country (country.code)}
                   <option value={country.code}>
                     {country.flag}
                     {country.name}
@@ -906,7 +906,7 @@
             <div class="mb-3">
               <p class="text-sm text-gray-600 mb-2">Verfügbare Tags:</p>
               <div class="flex flex-wrap gap-2">
-                {#each availableTags as tag}
+                {#each availableTags as tag (tag)}
                   <button
                     type="button"
                     on:click={() => addAvailableTag(tag)}
@@ -940,7 +940,7 @@
 
             <!-- Selected Tags -->
             <div class="flex flex-wrap gap-2">
-              {#each formData.tags as tag}
+              {#each formData.tags as tag (tag)}
                 <span
                   class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
                 >
