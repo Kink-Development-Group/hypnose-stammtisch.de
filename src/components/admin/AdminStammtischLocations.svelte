@@ -19,7 +19,7 @@
   let error = "";
   let showCreateForm = false;
   let editingLocation: StammtischLocation | null = null;
-  let selectedLocations: Set<string> = new Set();
+  let selectedLocations: string[] = [];
 
   // Form state
   let formData = {
@@ -267,31 +267,30 @@
   }
 
   function toggleLocationSelection(locationId: string) {
-    if (selectedLocations.has(locationId)) {
-      selectedLocations.delete(locationId);
+    if (selectedLocations.includes(locationId)) {
+      selectedLocations = selectedLocations.filter(id => id !== locationId);
     } else {
-      selectedLocations.add(locationId);
+      selectedLocations = [...selectedLocations, locationId];
     }
-    selectedLocations = new Set(selectedLocations); // Trigger reactivity
   }
 
   function selectAllLocations() {
-    selectedLocations = new Set(locations.map((l) => l.id));
+    selectedLocations = locations.map((l) => l.id);
   }
 
   function clearSelection() {
-    selectedLocations = new Set();
+    selectedLocations = [];
   }
 
   async function bulkUpdateStatus(status: "draft" | "published" | "archived") {
-    if (selectedLocations.size === 0) {
+    if (selectedLocations.length === 0) {
       alert("Bitte wählen Sie mindestens einen Stammtisch aus.");
       return;
     }
 
     if (
       !confirm(
-        `Möchten Sie ${selectedLocations.size} Stammtische auf "${status}" setzen?`,
+        `Möchten Sie ${selectedLocations.length} Stammtische auf "${status}" setzen?`,
       )
     ) {
       return;
@@ -307,7 +306,7 @@
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ids: Array.from(selectedLocations),
+            ids: selectedLocations,
             status,
           }),
         },
@@ -412,11 +411,11 @@
   {/if}
 
   <!-- Bulk Actions -->
-  {#if selectedLocations.size > 0}
+  {#if selectedLocations.length > 0}
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
       <div class="flex items-center justify-between">
         <span class="text-blue-700">
-          {selectedLocations.size} Standort(e) ausgewählt
+          {selectedLocations.length} Standort(e) ausgewählt
         </span>
         <div class="flex space-x-2">
           <button
@@ -476,7 +475,7 @@
             >
               <input
                 type="checkbox"
-                checked={selectedLocations.size === locations.length}
+                checked={selectedLocations.length === locations.length}
                 on:change={(e) => {
                   const target = e.target as HTMLInputElement;
                   if (target.checked) {
@@ -521,7 +520,7 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <input
                   type="checkbox"
-                  checked={selectedLocations.has(location.id)}
+                  checked={selectedLocations.includes(location.id)}
                   on:change={() => toggleLocationSelection(location.id)}
                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
