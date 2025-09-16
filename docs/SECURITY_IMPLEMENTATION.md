@@ -48,13 +48,13 @@ HEAD_ADMIN_ROLE_NAME=head
 
 ### Configuration Options
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MAX_FAILED_ATTEMPTS` | 5 | Number of failed attempts before triggering protection |
-| `TIME_WINDOW_SECONDS` | 900 | Time window (15 min) for counting failed attempts |
-| `IP_BAN_DURATION_SECONDS` | 3600 | IP ban duration (1 hour), 0 = permanent |
-| `ACCOUNT_LOCK_DURATION_SECONDS` | 3600 | Account lock duration (1 hour), 0 = manual unlock only |
-| `HEAD_ADMIN_ROLE_NAME` | head | Role name for head administrators |
+| Variable                        | Default | Description                                            |
+| ------------------------------- | ------- | ------------------------------------------------------ |
+| `MAX_FAILED_ATTEMPTS`           | 5       | Number of failed attempts before triggering protection |
+| `TIME_WINDOW_SECONDS`           | 900     | Time window (15 min) for counting failed attempts      |
+| `IP_BAN_DURATION_SECONDS`       | 3600    | IP ban duration (1 hour), 0 = permanent                |
+| `ACCOUNT_LOCK_DURATION_SECONDS` | 3600    | Account lock duration (1 hour), 0 = manual unlock only |
+| `HEAD_ADMIN_ROLE_NAME`          | head    | Role name for head administrators                      |
 
 ## Database Schema
 
@@ -63,6 +63,7 @@ HEAD_ADMIN_ROLE_NAME=head
 The implementation adds three new database structures:
 
 #### `failed_logins` Table
+
 ```sql
 CREATE TABLE failed_logins (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -79,6 +80,7 @@ CREATE TABLE failed_logins (
 ```
 
 #### `ip_bans` Table
+
 ```sql
 CREATE TABLE ip_bans (
   id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -96,6 +98,7 @@ CREATE TABLE ip_bans (
 ```
 
 #### `users` Table Extensions
+
 ```sql
 ALTER TABLE users ADD COLUMN locked_until TIMESTAMP NULL;
 ALTER TABLE users ADD COLUMN locked_reason VARCHAR(255) NULL;
@@ -107,6 +110,7 @@ ALTER TABLE users ADD INDEX idx_locked_until (locked_until);
 ### Core Classes
 
 #### `FailedLoginTracker`
+
 - Records failed login attempts
 - Tracks attempt counts per account and IP
 - Handles account locking logic
@@ -114,6 +118,7 @@ ALTER TABLE users ADD INDEX idx_locked_until (locked_until);
 - Provides admin functions for account management
 
 #### `IpBanManager`
+
 - Manages IP address bans
 - Checks ban status with expiration handling
 - Provides proper IP detection with proxy support
@@ -121,6 +126,7 @@ ALTER TABLE users ADD INDEX idx_locked_until (locked_until);
 - Provides admin functions for IP management
 
 #### `AdminSecurityController`
+
 - REST API endpoints for security management
 - Provides admin interface for viewing and managing security events
 - Handles authentication and authorization for security functions
@@ -128,6 +134,7 @@ ALTER TABLE users ADD INDEX idx_locked_until (locked_until);
 ### Security Flow
 
 #### Login Process
+
 1. **IP Ban Check**: Before any authentication, check if source IP is banned
 2. **Rate Limiting**: Apply standard rate limiting (existing functionality)
 3. **Authentication**: Attempt user authentication
@@ -142,6 +149,7 @@ ALTER TABLE users ADD INDEX idx_locked_until (locked_until);
    - Continue with normal 2FA flow
 
 #### Security Checks
+
 - **Account Lock Check**: Verify account is not locked before authentication
 - **IP Ban Check**: Block requests from banned IPs at the earliest stage
 - **Time Window**: Only count attempts within the configured time window
@@ -165,6 +173,7 @@ POST /admin/security/cleanup-expired-bans - Clean up expired bans (head admin on
 ### Example API Usage
 
 #### Unlock Account
+
 ```bash
 curl -X POST /admin/security/unlock-account \
   -H "Content-Type: application/json" \
@@ -172,6 +181,7 @@ curl -X POST /admin/security/unlock-account \
 ```
 
 #### Remove IP Ban
+
 ```bash
 curl -X POST /admin/security/remove-ip-ban \
   -H "Content-Type: application/json" \
@@ -179,6 +189,7 @@ curl -X POST /admin/security/remove-ip-ban \
 ```
 
 #### Get Security Stats
+
 ```bash
 curl -X GET /admin/security/stats
 ```
@@ -239,6 +250,7 @@ php backend/vendor/bin/phpunit tests/Integration/SecurityFlowTest.php
 ### Alerts and Monitoring
 
 Consider setting up alerts for:
+
 - High number of failed login attempts
 - Multiple IP bans in a short time period
 - Repeated attempts from banned IPs
@@ -282,6 +294,7 @@ Enable debug mode in your configuration to get detailed error messages during de
 ### Log Locations
 
 Security events are logged to:
+
 - **Audit Logs**: `audit_logs` table in database
 - **Failed Logins**: `failed_logins` table in database
 - **Application Logs**: PHP error logs for system errors
