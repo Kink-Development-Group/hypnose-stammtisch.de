@@ -35,6 +35,7 @@ use HypnoseStammtisch\Controllers\EventsController;
 use HypnoseStammtisch\Controllers\ContactController;
 use HypnoseStammtisch\Controllers\CalendarController;
 use HypnoseStammtisch\Controllers\FormController;
+use HypnoseStammtisch\Controllers\StammtischLocationController;
 use HypnoseStammtisch\Utils\Response;
 
 // Load configuration
@@ -119,6 +120,10 @@ function route(string $method, array $segments): void
         handleCalendarRoutes($method, $action, $id);
         break;
 
+      case 'stammtisch-locations':
+        handleStammtischLocationRoutes($method, $action, $id);
+        break;
+
       default:
         Response::error('Endpoint not found', 404);
     }
@@ -152,7 +157,10 @@ function handleApiInfo(): void
         'GET /calendar/feed' => 'Get ICS calendar feed',
         'GET /calendar/feed/{token}' => 'Get private ICS calendar feed',
         'GET /calendar/meta' => 'Get calendar metadata',
-        'GET /calendar/event/{id}/ics' => 'Get ICS for single event'
+        'GET /calendar/event/{id}/ics' => 'Get ICS for single event',
+        'GET /stammtisch-locations' => 'Get all published stammtisch locations',
+        'GET /stammtisch-locations/meta' => 'Get stammtisch location metadata',
+        'GET /stammtisch-locations/{id}' => 'Get single stammtisch location by ID'
       ],
       'documentation' => Config::get('app.url') . '/docs',
       'support' => 'support@hypnose-stammtisch.de'
@@ -203,14 +211,14 @@ function handleEventsRoutes(string $method, ?string $action, ?string $id): void
   } elseif ($method === 'PUT') {
     if (is_numeric($action)) {
       // PUT /events/{id} (future admin feature)
-      $controller->update((int)$action);
+      $controller->update($action);
     } else {
       Response::error('Invalid events endpoint', 404);
     }
   } elseif ($method === 'DELETE') {
     if (is_numeric($action)) {
       // DELETE /events/{id} (future admin feature)
-      $controller->destroy((int)$action);
+      $controller->destroy($action);
     } else {
       Response::error('Invalid events endpoint', 404);
     }
@@ -282,6 +290,29 @@ function handleCalendarRoutes(string $method, ?string $action, ?string $id): voi
       }
     } else {
       Response::error('Invalid calendar endpoint', 404);
+    }
+  } else {
+    Response::error('Method not allowed', 405);
+  }
+}
+
+// Handle stammtisch location routes
+function handleStammtischLocationRoutes(string $method, ?string $action, ?string $id): void
+{
+  $controller = new StammtischLocationController();
+
+  if ($method === 'GET') {
+    if (!$action) {
+      // GET /stammtisch-locations
+      $controller->getPublished();
+    } elseif ($action === 'meta') {
+      // GET /stammtisch-locations/meta
+      $controller->getMeta();
+    } elseif ($action) {
+      // GET /stammtisch-locations/{id}
+      $controller->getById($action);
+    } else {
+      Response::error('Invalid stammtisch-locations endpoint', 404);
     }
   } else {
     Response::error('Method not allowed', 405);

@@ -9,6 +9,7 @@
   import Home from "./pages/Home.svelte";
   import Imprint from "./pages/Imprint.svelte";
   import LearningResources from "./pages/LearningResources.svelte";
+  import Map from "./pages/Map.svelte";
   import NotFound from "./pages/NotFound.svelte";
   import Privacy from "./pages/Privacy.svelte";
   import Resources from "./pages/Resources.svelte";
@@ -20,6 +21,7 @@
   import AdminLogin from "./pages/admin/AdminLogin.svelte";
   import AdminMessagesGuarded from "./pages/admin/AdminMessagesGuarded.svelte";
   import AdminProfileGuarded from "./pages/admin/AdminProfileGuarded.svelte";
+  import AdminStammtischLocationsGuarded from "./pages/admin/AdminStammtischLocationsGuarded.svelte";
   import AdminUsersGuarded from "./pages/admin/AdminUsersGuarded.svelte";
   // Import components
   import EventModal from "./components/calendar/EventModal.svelte";
@@ -37,11 +39,13 @@
     "/admin/events": AdminEventsGuarded,
     "/admin/messages": AdminMessagesGuarded,
     "/admin/users": AdminUsersGuarded,
+    "/admin/stammtisch-locations": AdminStammtischLocationsGuarded,
     "/admin/profile": AdminProfileGuarded,
     // Regular routes
     "/": Home,
     "/events": Events,
     "/events/:id": Events, // Will show event modal
+    "/map": Map,
     "/about": About,
     "/resources": Resources,
     "/resources/safety-guide": SafetyGuide,
