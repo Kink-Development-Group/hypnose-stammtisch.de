@@ -127,7 +127,14 @@
       aria-modal="true"
       aria-labelledby="mobile-details-title"
     >
-      <div class="modal-overlay" on:click={closeMobileDetails}></div>
+      <div
+        class="modal-overlay"
+        role="button"
+        tabindex="0"
+        on:click={closeMobileDetails}
+        on:keydown={(e) => e.key === "Escape" && closeMobileDetails()}
+        aria-label="Overlay schließen"
+      ></div>
       <div class="modal-content">
         <LocationDetails />
         <button
