@@ -19,6 +19,8 @@ class SecurityLockoutIntegrationTest extends TestCase
   private static $testUserId;
   private static $testHeadAdminId;
   private static $testIP = '192.168.1.100';
+  private static $testUserPassword;
+  private static $testAdminPassword;
 
   public static function setUpBeforeClass(): void
   {
@@ -28,6 +30,10 @@ class SecurityLockoutIntegrationTest extends TestCase
     $_ENV['IP_BAN_DURATION_SECONDS'] = '600'; // 10 minutes
     $_ENV['ACCOUNT_LOCK_DURATION_SECONDS'] = '600'; // 10 minutes
     $_ENV['HEAD_ADMIN_ROLE_NAME'] = 'head';
+
+    // Generate secure test passwords using environment variables or random generation
+    self::$testUserPassword = $_ENV['TEST_USER_PASSWORD'] ?? bin2hex(random_bytes(16));
+    self::$testAdminPassword = $_ENV['TEST_ADMIN_PASSWORD'] ?? bin2hex(random_bytes(16));
 
     Config::load();
 
@@ -41,19 +47,30 @@ class SecurityLockoutIntegrationTest extends TestCase
     self::cleanupTestData();
   }
 
+  /**
+   * Get secure test password for user type
+   *
+   * @param string $userType 'user' or 'admin'
+   * @return string Secure test password
+   */
+  private static function getTestPassword(string $userType): string
+  {
+    return $userType === 'admin' ? self::$testAdminPassword : self::$testUserPassword;
+  }
+
   private static function createTestUsers(): void
   {
-    // Create normal test user
+    // Create normal test user with secure password
     Database::execute(
       'INSERT INTO users (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
-      ['test_user', 'test@example.com', password_hash('password123', PASSWORD_DEFAULT), 'user', 1]
+      ['test_user', 'test@example.com', password_hash(self::$testUserPassword, PASSWORD_DEFAULT), 'user', 1]
     );
     self::$testUserId = Database::lastInsertId();
 
-    // Create head admin test user
+    // Create head admin test user with secure password
     Database::execute(
       'INSERT INTO users (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
-      ['test_head_admin', 'admin@example.com', password_hash('admin123', PASSWORD_DEFAULT), 'head', 1]
+      ['test_head_admin', 'admin@example.com', password_hash(self::$testAdminPassword, PASSWORD_DEFAULT), 'head', 1]
     );
     self::$testHeadAdminId = Database::lastInsertId();
   }
@@ -234,8 +251,8 @@ class SecurityLockoutIntegrationTest extends TestCase
     // Lock the account
     FailedLoginTracker::lockAccount(self::$testUserId, 'Test lock');
 
-    // Try to authenticate
-    $result = AdminAuth::authenticate('test@example.com', 'password123', self::$testIP);
+    // Try to authenticate using the secure test password
+    $result = AdminAuth::authenticate('test@example.com', self::$testUserPassword, self::$testIP);
 
     // Should fail due to locked account
     $this->assertFalse($result['success']);

@@ -12,6 +12,7 @@ dist/
 .env.local
 .env.production
 .env.development
+.env.test
 
 # Logs
 logs
@@ -92,7 +93,6 @@ tmp/
 temp/
 
 # Editor directories and files
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -122,6 +122,10 @@ vendor/
 debug_*.php
 test_*.php
 temp_*.php
+
+# PHPUnit
+.phpunit.cache/
+tests/reports/
 
 # Package managers
 package-lock.json

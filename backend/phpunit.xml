@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         cacheDirectory=".phpunit.cache"
+         colors="true"
+         beStrictAboutOutputDuringTests="true"
+         beStrictAboutTestsThatDoNotTestAnything="true"
+         beStrictAboutTodoAnnotatedTests="true"
+         failOnRisky="true"
+         failOnWarning="true"
+         stopOnFailure="false"
+         testdox="false">
+
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+        <exclude>
+            <directory>src/Views</directory>
+        </exclude>
+    </source>
+
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="DB_CONNECTION" value="sqlite"/>
+        <env name="DB_DATABASE" value=":memory:"/>
+        <env name="CACHE_DRIVER" value="array"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="QUEUE_DRIVER" value="sync"/>
+
+        <!-- Security test configuration -->
+        <env name="MAX_FAILED_ATTEMPTS" value="3"/>
+        <env name="TIME_WINDOW_SECONDS" value="300"/>
+        <env name="IP_BAN_DURATION_SECONDS" value="600"/>
+        <env name="ACCOUNT_LOCK_DURATION_SECONDS" value="600"/>
+        <env name="HEAD_ADMIN_ROLE_NAME" value="head"/>
+
+        <!-- Test credentials (optional - will auto-generate if not set) -->
+        <!-- <env name="TEST_USER_PASSWORD" value="SecureTestPassword123!"/> -->
+        <!-- <env name="TEST_ADMIN_PASSWORD" value="SecureAdminTestPassword456!"/> -->
+    </php>
+
+    <logging>
+        <testdoxHtml outputFile="tests/reports/testdox.html"/>
+        <testdoxText outputFile="tests/reports/testdox.txt"/>
+        <junit outputFile="tests/reports/junit.xml"/>
+    </logging>
+
+</phpunit>
