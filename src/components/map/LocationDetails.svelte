@@ -59,7 +59,7 @@
         window.open(value, "_blank");
         break;
       case "telegram":
-        window.open(`https://t.me/${value.replace("@", "")}`, "_blank");
+        window.open(`https://fetlife.com/${value.replace("@", "")}`, "_blank");
         break;
       case "discord":
         // Discord links would need specific handling
