@@ -9,7 +9,7 @@
     filteredLocations,
     isMapLoading,
     selectedLocation,
-  } from "../stores/api-map";
+  } from "../stores/api-map-locations";
 
   let showMobileDetails = false;
 

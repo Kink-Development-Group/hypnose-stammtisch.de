@@ -5,6 +5,7 @@
 export interface StammtischLocation {
   id: string;
   name: string;
+  slug?: string;
   city: string;
   region: string; // Bundesland/Kanton
   country: "DE" | "AT" | "CH";
@@ -15,18 +16,24 @@ export interface StammtischLocation {
   description: string;
   contact: {
     email?: string;
+    phone?: string;
     website?: string;
     telegram?: string;
     discord?: string;
   };
   meetingInfo: {
-    frequency: string; // e.g., "Jeden 2. Samstag im Monat"
-    location: string; // Meeting venue
+    frequency?: string; // e.g., "Jeden 2. Samstag im Monat"
+    location?: string; // Meeting venue
+    address?: string; // Full address
     nextMeeting?: string; // Next meeting date if known
   };
   tags: string[]; // e.g., ['anfängerfreundlich', 'erfahren', 'praxis', 'theorie']
   isActive: boolean;
-  lastUpdated: string; // ISO date string
+  status: "draft" | "published" | "archived";
+  createdBy?: number;
+  createdByUsername?: string;
+  createdAt?: string;
+  lastUpdated?: string; // ISO date string
 }
 
 export interface MapViewport {

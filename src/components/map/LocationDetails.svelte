@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { closeLocationDetails, selectedLocation } from "../../stores/api-map";
+  import {
+    closeLocationDetails,
+    selectedLocation,
+  } from "../../stores/api-map-locations";
   import type { StammtischLocation } from "../../types/stammtisch";
 
   export let location: StammtischLocation | null = null;
@@ -218,9 +221,11 @@
             {currentLocation.isActive ? "🟢 Aktiv" : "🔴 Inaktiv"}
           </span>
           <span class="last-updated">
-            Letzte Aktualisierung: {new Date(
-              currentLocation.lastUpdated,
-            ).toLocaleDateString("de-DE")}
+            Letzte Aktualisierung: {currentLocation.lastUpdated
+              ? new Date(currentLocation.lastUpdated).toLocaleDateString(
+                  "de-DE",
+                )
+              : "Unbekannt"}
           </span>
         </div>
       </section>

@@ -8,7 +8,7 @@
     mapViewport,
     openLocationDetails,
     updateMapViewport,
-  } from "../../stores/api-map";
+  } from "../../stores/api-map-locations";
   import type { StammtischLocation } from "../../types/stammtisch";
 
   let mapContainer: HTMLDivElement;

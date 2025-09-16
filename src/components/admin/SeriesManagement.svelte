@@ -166,7 +166,7 @@
         <div class="text-xs text-gray-500">Keine Overrides vorhanden.</div>
       {:else}
         <ul class="text-xs divide-y divide-gray-200 border rounded bg-white">
-          {#each overrides as ov (ov.instance_date)}
+          {#each overrides as ov (ov.instance_date || ov.id || Math.random())}
             <li class="px-2 py-1 flex justify-between items-center gap-3">
               <div class="flex flex-col">
                 <span class="font-medium"
@@ -222,7 +222,7 @@
         <div class="text-xs text-gray-500">Keine EXDATEs definiert.</div>
       {:else}
         <ul class="text-xs divide-y divide-gray-200 border rounded bg-white">
-          {#each exdates as d (d.title)}
+          {#each exdates as d (d)}
             <li class="px-2 py-1 flex justify-between items-center">
               <span>{d}</span>
               <button
