@@ -295,7 +295,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 100;
+    z-index: 200;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -314,7 +314,7 @@
 
   .modal-content {
     position: relative;
-    z-index: 101;
+    z-index: 201;
     width: 100%;
     max-width: 500px;
     max-height: 90vh;

@@ -360,6 +360,7 @@
       0 4px 6px -1px rgba(0, 0, 0, 0.1),
       0 2px 4px -1px rgba(0, 0, 0, 0.06);
     background-color: #f3f4f6;
+    z-index: 1;
   }
 
   .map-loading {
@@ -532,5 +533,19 @@
       system-ui,
       -apple-system,
       sans-serif;
+    z-index: 1 !important;
+  }
+
+  /* Ensure map controls don't interfere with overlays */
+  :global(.leaflet-control-container) {
+    z-index: 10 !important;
+  }
+
+  :global(.leaflet-popup-pane) {
+    z-index: 20 !important;
+  }
+
+  :global(.leaflet-tooltip-pane) {
+    z-index: 15 !important;
   }
 </style>
