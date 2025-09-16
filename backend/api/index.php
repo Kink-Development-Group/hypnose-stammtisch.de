@@ -308,7 +308,7 @@ function handleStammtischLocationRoutes(string $method, ?string $action, ?string
     } elseif ($action === 'meta') {
       // GET /stammtisch-locations/meta
       $controller->getMeta();
-    } elseif ($action && is_numeric($action)) {
+    } elseif ($action) {
       // GET /stammtisch-locations/{id}
       $controller->getById($action);
     } else {
