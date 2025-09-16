@@ -268,7 +268,7 @@
 
   function toggleLocationSelection(locationId: string) {
     if (selectedLocations.includes(locationId)) {
-      selectedLocations = selectedLocations.filter(id => id !== locationId);
+      selectedLocations = selectedLocations.filter((id) => id !== locationId);
     } else {
       selectedLocations = [...selectedLocations, locationId];
     }
