@@ -128,9 +128,9 @@ temp_*.php
 tests/reports/
 
 # Package managers
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
+bun.lockb
 
 # Build artifacts
 *.tgz
