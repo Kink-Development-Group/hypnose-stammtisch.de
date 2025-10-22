@@ -48,4 +48,4 @@ jobs:
           password: ${{ secrets.SFTP_PASS }}
           protocol: "ftps"
           local-dir: "./dist/"
-          server-dir: ${{ secrets.SFTP_REMOTE_DIR }}/dist/
+          server-dir: ${{ secrets.SFTP_REMOTE_DIR }}
