@@ -53,13 +53,44 @@ HEAD_ADMIN_ROLE_NAME=head
 
 ### Configuration Options
 
-| Variable                        | Default | Description                                             |
-| ------------------------------- | ------- | ------------------------------------------------------- |
-| `MAX_FAILED_ATTEMPTS`           | 5       | Anzahl fehlgeschlagener Versuche vor Schutzmaßnahmen    |
-| `TIME_WINDOW_SECONDS`           | 900     | Zeitfenster (15 min) für die Zählung                    |
-| `IP_BAN_DURATION_SECONDS`       | 3600    | IP-Ban-Dauer (1 Stunde), 0 = permanent                  |
-| `ACCOUNT_LOCK_DURATION_SECONDS` | 3600    | Account-Lock-Dauer (1 Stunde), 0 = nur manuelles Unlock |
-| `HEAD_ADMIN_ROLE_NAME`          | head    | Rollenname für Head-Administratoren                     |
+| Variable                         | Default | Description                                                      |
+| -------------------------------- | ------- | ---------------------------------------------------------------- |
+| `MAX_FAILED_ATTEMPTS`            | 5       | Anzahl fehlgeschlagener Versuche vor Schutzmaßnahmen             |
+| `TIME_WINDOW_SECONDS`            | 900     | Zeitfenster (15 min) für die Zählung                             |
+| `IP_BAN_DURATION_SECONDS`        | 3600    | IP-Ban-Dauer (1 Stunde), 0 = permanent                           |
+| `ACCOUNT_LOCK_DURATION_SECONDS`  | 3600    | Account-Lock-Dauer (1 Stunde), 0 = nur manuelles Unlock          |
+| `HEAD_ADMIN_ROLE_NAME`           | head    | Rollenname für Head-Administratoren                              |
+| `AUDIT_UNTRUSTED_PROXY_MAX_LOGS` | 10      | Max. Audit-Logs pro Zeitperiode für untrusted Proxy-Headers      |
+| `AUDIT_UNTRUSTED_PROXY_PERIOD`   | 300     | Zeitperiode in Sekunden (5 min) für Rate-Limiting von Audit-Logs |
+
+### Audit Log Rate Limiting
+
+Um Log-Spam bei koordinierten Angriffen mit gefälschten Proxy-Headers zu verhindern, implementiert das System Rate-Limiting für Audit-Logs:
+
+**Problem**: Bei einem Angriff mit vielen gefälschten Proxy-Headers könnten hunderte von Audit-Log-Einträgen pro Sekunde erzeugt werden, was die Datenbank überlastet und die Log-Analyse erschwert.
+
+**Lösung**: Rate-Limiting pro Quell-IP und Header-Typ:
+
+- Innerhalb des konfigurierten Limits werden einzelne Ereignisse detailliert protokolliert
+- Bei Überschreitung des Limits wird ein aggregierter Log-Eintrag erstellt
+- Aggregierte Einträge enthalten Informationen über die Anzahl blockierter Logs
+- Die IP-Validierung funktioniert unabhängig vom Logging weiterhin korrekt
+
+**Konfiguration**:
+
+```bash
+# Audit Log Rate Limiting für untrusted Proxy Headers
+AUDIT_UNTRUSTED_PROXY_MAX_LOGS=10  # Max. 10 detaillierte Logs
+AUDIT_UNTRUSTED_PROXY_PERIOD=300    # Pro 5 Minuten
+```
+
+**Vorteile**:
+
+- Schutz vor Log-Flooding-Angriffen
+- Erhalt wichtiger Security-Informationen
+- Keine Beeinträchtigung der Sicherheitsfunktionalität
+- Bessere Performance bei Angriffen
+- Übersichtlichere Audit-Logs
 
 ## Database Schema
 

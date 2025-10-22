@@ -28,6 +28,14 @@ return [
     // IP validation and proxy settings
     'allow_private_ips' => filter_var($_ENV['ALLOW_PRIVATE_IPS'] ?? false, FILTER_VALIDATE_BOOLEAN),
     'trusted_proxies' => array_filter(array_map('trim', explode(',', $_ENV['TRUSTED_PROXIES'] ?? ''))),
+
+    // Audit log rate limiting for security events
+    'audit_log_rate_limit' => [
+      'untrusted_proxy_header' => [
+        'max_logs' => (int)($_ENV['AUDIT_UNTRUSTED_PROXY_MAX_LOGS'] ?? 10),
+        'period_seconds' => (int)($_ENV['AUDIT_UNTRUSTED_PROXY_PERIOD'] ?? 300), // 5 minutes
+      ],
+    ],
   ],
 
   'calendar' => [

@@ -252,16 +252,8 @@ class IpBanManager
             $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
             if (!self::isIPInRanges($remoteAddr, $trustedProxies)) {
               // Don't trust forwarded headers from untrusted sources
-              AuditLogger::log(
-                'security.untrusted_proxy_header',
-                'ip_validation',
-                $ip,
-                [
-                  'header' => $header,
-                  'remote_addr' => $remoteAddr,
-                  'trusted_proxies' => $trustedProxies
-                ]
-              );
+              // Use rate-limited audit logging to prevent log spam during attacks
+              self::logUntrustedProxyHeaderRateLimited($ip, $header, $remoteAddr, $trustedProxies);
               continue;
             }
           }
@@ -305,6 +297,61 @@ class IpBanManager
     );
 
     return '0.0.0.0';
+  }
+
+  /**
+   * Log untrusted proxy header with rate limiting to prevent log spam
+   */
+  private static function logUntrustedProxyHeaderRateLimited(
+    string $ip,
+    string $header,
+    string $remoteAddr,
+    array $trustedProxies
+  ): void {
+    // Get rate limit configuration
+    $rateLimitConfig = Config::get('security.audit_log_rate_limit.untrusted_proxy_header');
+    $maxLogs = $rateLimitConfig['max_logs'] ?? 10;
+    $periodSeconds = $rateLimitConfig['period_seconds'] ?? 300;
+
+    // Create a rate limit key based on remote address and header
+    // This groups attempts by the actual source IP
+    $rateLimitKey = "audit:untrusted_proxy:{$remoteAddr}:{$header}";
+
+    $rateLimit = RateLimiter::attempt($rateLimitKey, $maxLogs, $periodSeconds);
+
+    if ($rateLimit['allowed']) {
+      // Log individual event if within rate limit
+      AuditLogger::log(
+        'security.untrusted_proxy_header',
+        'ip_validation',
+        $ip,
+        [
+          'header' => $header,
+          'remote_addr' => $remoteAddr,
+          'trusted_proxies' => $trustedProxies,
+          'rate_limit_remaining' => $rateLimit['remaining']
+        ]
+      );
+    } else {
+      // Rate limit exceeded - log an aggregated warning once per period
+      $aggregateKey = "audit:untrusted_proxy_aggregate:{$remoteAddr}";
+      $aggregateLimit = RateLimiter::attempt($aggregateKey, 1, $periodSeconds);
+
+      if ($aggregateLimit['allowed']) {
+        AuditLogger::log(
+          'security.untrusted_proxy_header_rate_limited',
+          'ip_validation',
+          $remoteAddr,
+          [
+            'message' => 'Multiple untrusted proxy header attempts detected',
+            'max_logs_per_period' => $maxLogs,
+            'period_seconds' => $periodSeconds,
+            'rate_limit_reset' => $rateLimit['reset'],
+            'source_ip' => $remoteAddr
+          ]
+        );
+      }
+    }
   }
 
   /**

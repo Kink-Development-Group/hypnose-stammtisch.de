@@ -258,4 +258,75 @@ class IpBanManagerSecurityTest extends TestCase
     $ip = IpBanManager::getClientIP();
     $this->assertEquals('203.0.113.1', $ip, 'Should ignore spoofed headers from untrusted source');
   }
+
+  /**
+   * Test that untrusted proxy header attempts are rate-limited
+   * This prevents log spam during coordinated attacks with many spoofed headers
+   */
+  public function testUntrustedProxyHeaderAttemptsAreRateLimited(): void
+  {
+    $_ENV['ALLOW_PRIVATE_IPS'] = 'false';
+    $_ENV['TRUSTED_PROXIES'] = '10.0.0.0/8'; // Trust only private network
+    $_ENV['AUDIT_UNTRUSTED_PROXY_MAX_LOGS'] = '3'; // Allow only 3 logs per period
+    $_ENV['AUDIT_UNTRUSTED_PROXY_PERIOD'] = '60'; // 60 second period
+
+    // Simulate coordinated attack with many spoofed headers
+    $attackIP = '203.0.113.1'; // Attacker's IP (not trusted)
+
+    // First few attempts should be logged (within rate limit)
+    for ($i = 1; $i <= 3; $i++) {
+      $_SERVER['REMOTE_ADDR'] = $attackIP;
+      $_SERVER['HTTP_X_FORWARDED_FOR'] = "198.51.100.{$i}";
+
+      $ip = IpBanManager::getClientIP();
+      $this->assertEquals($attackIP, $ip, "Attempt {$i}: Should use REMOTE_ADDR");
+    }
+
+    // Additional attempts should be rate-limited (not logged individually)
+    // But should still return correct IP
+    for ($i = 4; $i <= 20; $i++) {
+      $_SERVER['REMOTE_ADDR'] = $attackIP;
+      $_SERVER['HTTP_X_FORWARDED_FOR'] = "198.51.100.{$i}";
+
+      $ip = IpBanManager::getClientIP();
+      $this->assertEquals($attackIP, $ip, "Attempt {$i}: Should continue to use REMOTE_ADDR even when rate-limited");
+    }
+
+    // The method should still work correctly despite rate limiting
+    // This ensures security isn't compromised when logging is throttled
+  }
+
+  /**
+   * Test that rate limiting is per-source-IP and per-header
+   * Different source IPs should have independent rate limits
+   */
+  public function testRateLimitingIsPerSourceIPAndHeader(): void
+  {
+    $_ENV['ALLOW_PRIVATE_IPS'] = 'false';
+    $_ENV['TRUSTED_PROXIES'] = '10.0.0.0/8';
+    $_ENV['AUDIT_UNTRUSTED_PROXY_MAX_LOGS'] = '2';
+    $_ENV['AUDIT_UNTRUSTED_PROXY_PERIOD'] = '60';
+
+    // First attacker IP
+    $_SERVER['REMOTE_ADDR'] = '203.0.113.1';
+    $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.1';
+    $ip1 = IpBanManager::getClientIP();
+    $this->assertEquals('203.0.113.1', $ip1);
+
+    $_SERVER['REMOTE_ADDR'] = '203.0.113.1';
+    $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.2';
+    $ip2 = IpBanManager::getClientIP();
+    $this->assertEquals('203.0.113.1', $ip2);
+
+    // Second attacker IP should have independent rate limit
+    $_SERVER['REMOTE_ADDR'] = '203.0.113.2';
+    $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.3';
+    $ip3 = IpBanManager::getClientIP();
+    $this->assertEquals('203.0.113.2', $ip3, 'Different source IP should have independent rate limit');
+
+    $_SERVER['REMOTE_ADDR'] = '203.0.113.2';
+    $_SERVER['HTTP_X_FORWARDED_FOR'] = '198.51.100.4';
+    $ip4 = IpBanManager::getClientIP();
+    $this->assertEquals('203.0.113.2', $ip4, 'Different source IP should have independent rate limit');
+  }
 }

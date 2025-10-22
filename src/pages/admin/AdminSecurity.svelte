@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { push } from "svelte-spa-router";
+  import { SvelteSet } from "svelte/reactivity";
   import User from "../../classes/User";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import SecurityCard from "../../components/admin/security/SecurityCard.svelte";
@@ -20,11 +21,11 @@
   let isCleanupSubmitting = false;
   let isRefreshingAll = false;
 
-  let unlockingIds = new Set<string>();
-  let unbanningIps = new Set<string>();
+  let unlockingIds = new SvelteSet<string>();
+  let unbanningIps = new SvelteSet<string>();
 
-  const updateSet = (set: Set<string>, value: string, add: boolean) => {
-    const next = new Set(set);
+  const updateSet = (set: SvelteSet<string>, value: string, add: boolean) => {
+    const next = new SvelteSet(set);
     if (add) {
       next.add(value);
     } else {
@@ -361,7 +362,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white">
-                {#each $adminSecurity.failedLogins as record}
+                {#each $adminSecurity.failedLogins as record (record.id)}
                   <tr>
                     <td class="px-4 py-3 text-sm text-gray-900">
                       {record.usernameEntered ?? "-"}
@@ -457,7 +458,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white">
-                {#each $adminSecurity.lockedAccounts as account}
+                {#each $adminSecurity.lockedAccounts as account (account.id)}
                   <tr>
                     <td class="px-4 py-3 text-sm text-gray-900"
                       >{account.username}</td
@@ -555,7 +556,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 bg-white">
-                {#each $adminSecurity.ipBans as ban}
+                {#each $adminSecurity.ipBans as ban (ban.id)}
                   <tr class:opacity-60={ban.isExpired}>
                     <td class="px-4 py-3 text-sm text-gray-900"
                       >{ban.ipAddress}</td
