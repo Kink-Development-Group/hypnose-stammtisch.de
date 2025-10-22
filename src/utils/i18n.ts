@@ -39,7 +39,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "adminSecurity.ipBans.create.ip": "IP-Adresse",
     "adminSecurity.ipBans.create.reason": "Begründung",
     "adminSecurity.ipBans.create.submit": "IP sperren",
-    "adminSecurity.ipBans.create.ipPlaceholder": "z.\u202fB. 203.0.113.42",
+    "adminSecurity.ipBans.create.ipPlaceholder": "z. B. 203.0.113.42",
     "adminSecurity.ipBans.create.reasonPlaceholder": "Verdächtige Aktivität",
     "adminSecurity.maintenance.cleanup": "Abgelaufene Sperren bereinigen",
     "adminSecurity.notifications.unlockSuccess":
