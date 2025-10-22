@@ -150,18 +150,18 @@ class Response
     /**
      * Send success response with standard format
      */
-    public static function success(mixed $data = null, string $message = 'Success'): void
-    {
+    public static function success(
+        mixed $data = null,
+        string $message = 'Success',
+        int $statusCode = 200
+    ): void {
         $response = [
             'success' => true,
-            'message' => $message
+            'message' => $message,
+            'data' => $data,
         ];
 
-        if ($data !== null) {
-            $response['data'] = $data;
-        }
-
-        self::json($response);
+        self::json($response, $statusCode);
     }
 
     /**

@@ -8,11 +8,9 @@
   import Events from "./pages/Events.svelte";
   import Home from "./pages/Home.svelte";
   import Imprint from "./pages/Imprint.svelte";
-  import LearningResources from "./pages/LearningResources.svelte";
   import Map from "./pages/Map.svelte";
   import NotFound from "./pages/NotFound.svelte";
   import Privacy from "./pages/Privacy.svelte";
-  import Resources from "./pages/Resources.svelte";
   import Faq from "./pages/ResourcesFaq.svelte";
   import SafetyGuide from "./pages/ResourcesSafetyGuide.svelte";
   import SubmitEvent from "./pages/SubmitEvent.svelte";
@@ -29,6 +27,7 @@
   import Footer from "./components/layout/Footer.svelte";
   import Header from "./components/layout/Header.svelte";
   // Import stores
+  import LearningResources from "./pages/LearningResources.svelte";
   import { selectedEvent, showEventModal } from "./stores/calendar";
   import { transformApiEvent } from "./utils/eventTransform";
 
@@ -49,10 +48,9 @@
     "/events/:id": Events, // Will show event modal
     "/map": Map,
     "/about": About,
-    "/resources": Resources,
-    "/resources/safety-guide": SafetyGuide,
-    "/resources/faq": Faq,
-    "/learning-resources": LearningResources,
+    "/ressourcen": LearningResources,
+    "/ressourcen/safety-guide": SafetyGuide,
+    "/resouressourcenrces/faq": Faq,
     "/code-of-conduct": CodeOfConduct,
     "/contact": Contact,
     "/privacy": Privacy,
