@@ -83,7 +83,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "adminSecurity.stats.uniqueIps": "Unique IPs (24h)",
     "adminSecurity.failedLogins.title": "Failed login attempts",
     "adminSecurity.failedLogins.description":
-      "Analyse failed logins to uncover suspicious activity patterns.",
+      "Analyze failed logins to uncover suspicious activity patterns.",
     "adminSecurity.failedLogins.empty": "No failed logins found.",
     "adminSecurity.lockedAccounts.title": "Locked user accounts",
     "adminSecurity.lockedAccounts.description":
