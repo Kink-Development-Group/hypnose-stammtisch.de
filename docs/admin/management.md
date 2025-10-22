@@ -1,3 +1,8 @@
+---
+description: Verwaltung der Administratoren-Rollen und Head-Admin-Funktionen.
+outline: deep
+---
+
 # Admin-Management-System
 
 ## Übersicht
@@ -13,7 +18,7 @@ Das Admin-Management-System ermöglicht es "Head"-Admins, andere Admin-Benutzer 
 ### 1. Datenbankstruktur
 
 - `users` Tabelle mit erweiterten Rollen (admin, moderator, head)
-- Sichere Passwort-Speicherung mit password_hash()
+- Sichere Passwort-Speicherung mit `password_hash()`
 - Benutzer-Status (aktiv/inaktiv)
 - Zeitstempel für Erstellung und Aktualisierung
 
@@ -21,12 +26,12 @@ Das Admin-Management-System ermöglicht es "Head"-Admins, andere Admin-Benutzer 
 
 - **AdminUsersController**: Vollständiges CRUD für Admin-Benutzer
 - Endpunkte:
-  - `GET /api/admin/users` - Alle Benutzer auflisten
-  - `POST /api/admin/users` - Neuen Benutzer erstellen
-  - `GET /api/admin/users/{id}` - Spezifischen Benutzer anzeigen
-  - `PUT /api/admin/users/{id}` - Benutzer aktualisieren
-  - `DELETE /api/admin/users/{id}` - Benutzer löschen
-  - `GET /api/admin/users/permissions` - Berechtigungen prüfen
+  - `GET /api/admin/users` – Alle Benutzer auflisten
+  - `POST /api/admin/users` – Neuen Benutzer erstellen
+  - `GET /api/admin/users/{id}` – Spezifischen Benutzer anzeigen
+  - `PUT /api/admin/users/{id}` – Benutzer aktualisieren
+  - `DELETE /api/admin/users/{id}` – Benutzer löschen
+  - `GET /api/admin/users/permissions` – Berechtigungen prüfen
 
 ### 3. Frontend-Komponente
 
@@ -69,7 +74,7 @@ Ein Standard Head-Admin wurde erstellt:
 
 ### 1. Login als Head-Admin
 
-1. Besuchen Sie <http://localhost:5174/admin/login>
+1. Besuchen Sie `http://localhost:5174/admin/login`
 2. Melden Sie sich mit den obigen Anmeldedaten an
 3. Navigieren Sie zu "Admin-Benutzer" in der Seitenleiste
 
@@ -167,11 +172,11 @@ Gibt die Berechtigungen des aktuellen Benutzers zurück.
 
 ## Sicherheitshinweise
 
-1. **Starke Passwörter**: Verwenden Sie immer starke, einzigartige Passwörter
-2. **Regelmäßige Updates**: Überprüfen Sie regelmäßig die Benutzerkonten
-3. **Minimale Berechtigungen**: Vergeben Sie nur die minimal notwendigen Rollen
-4. **Audit-Trail**: Überwachen Sie die Admin-Aktivitäten
-5. **Backup**: Erstellen Sie regelmäßige Datensicherungen der Benutzerdaten
+1. **Starke Passwörter**: Verwenden Sie immer starke, einzigartige Passwörter.
+2. **Regelmäßige Updates**: Überprüfen Sie regelmäßig die Benutzerkonten.
+3. **Minimale Berechtigungen**: Vergeben Sie nur die minimal notwendigen Rollen.
+4. **Audit-Trail**: Überwachen Sie die Admin-Aktivitäten.
+5. **Backup**: Erstellen Sie regelmäßige Datensicherungen der Benutzerdaten.
 
 ## Troubleshooting
 
@@ -179,9 +184,9 @@ Gibt die Berechtigungen des aktuellen Benutzers zurück.
 
 **Ursache**:
 
-- Sie loggen sich mit einem Benutzer ein, der die Rolle "admin" oder "moderator" hat
-- Nur Benutzer mit der Rolle "head" können andere Admin-Benutzer verwalten
-- Die Navigation zeigt die "Admin-Benutzer"-Option jetzt nur noch für Head-Admins an
+- Sie loggen sich mit einem Benutzer ein, der die Rolle "admin" oder "moderator" hat.
+- Nur Benutzer mit der Rolle "head" können andere Admin-Benutzer verwalten.
+- Die Navigation zeigt die "Admin-Benutzer"-Option jetzt nur noch für Head-Admins an.
 
 **Lösung**:
 
@@ -195,15 +200,15 @@ Gibt die Berechtigungen des aktuellen Benutzers zurück.
    php cli/cli.php admin update --id=2 --role=head
    ```
 
-3. **WICHTIG**: Die "Admin-Benutzer"-Navigation ist jetzt nur noch für Head-Admins sichtbar
+3. **WICHTIG**: Die "Admin-Benutzer"-Navigation ist jetzt nur noch für Head-Admins sichtbar.
 
 ### Problem: Kann nicht auf Benutzerverwaltung zugreifen
 
-- **Lösung**: Stellen Sie sicher, dass Sie als Head-Admin angemeldet sind
+- **Lösung**: Stellen Sie sicher, dass Sie als Head-Admin angemeldet sind.
 
 ### Problem: "Head admin role required" Fehler
 
-- **Lösung**: Nur Benutzer mit der Rolle "head" können auf diese Funktion zugreifen
+- **Lösung**: Nur Benutzer mit der Rolle "head" können auf diese Funktion zugreifen.
 
 ### Problem: Kann Standard-Admin nicht erstellen
 
@@ -217,16 +222,16 @@ php backend/setup_users.php
 
 ### Backend
 
-- `backend/src/Controllers/AdminUsersController.php` - Haupt-Controller
-- `backend/migrations/005_add_head_admin_role.sql` - Datenbank-Migration
-- `backend/setup_users.php` - Setup-Skript für Benutzer-Tabelle
+- `backend/src/Controllers/AdminUsersController.php` – Haupt-Controller
+- `backend/migrations/005_add_head_admin_role.sql` – Datenbank-Migration
+- `backend/setup_users.php` – Setup-Skript für Benutzer-Tabelle
 
 ### Frontend
 
-- `src/components/admin/AdminUsers.svelte` - Haupt-Komponente
-- `src/pages/admin/AdminUsersPage.svelte` - Seiten-Wrapper
-- `src/components/admin/AdminLayout.svelte` - Navigation erweitert
+- `src/components/admin/AdminUsers.svelte` – Haupt-Komponente
+- `src/pages/admin/AdminUsersPage.svelte` – Seiten-Wrapper
+- `src/components/admin/AdminLayout.svelte` – Navigation erweitert
 
 ### API-Routes
 
-- `backend/api/admin.php` - API-Router erweitert um Benutzer-Endpunkte
+- `backend/api/admin.php` – API-Router erweitert um Benutzer-Endpunkte

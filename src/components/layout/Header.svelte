@@ -17,14 +17,9 @@
     },
     { href: "/about", label: "Über uns", ariaLabel: "Zur Über-uns-Seite" },
     {
-      href: "/learning-resources",
+      href: "/ressourcen",
       label: "Lernressourcen",
       ariaLabel: "Zu den Lern- und Wissensquellen",
-    },
-    {
-      href: "/resources",
-      label: "Leitfäden",
-      ariaLabel: "Zu den Sicherheitsleitfäden und Ressourcen",
     },
     {
       href: "/code-of-conduct",

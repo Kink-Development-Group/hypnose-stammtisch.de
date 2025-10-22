@@ -10,9 +10,18 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Database\Database;
+use HypnoseStammtisch\Utils\SqlStatementParser;
+use Random\Randomizer;
 
 // Load configuration
 Config::load(__DIR__ . '/..');
+
+if (!function_exists('random_int')) {
+  function random_int(int $min, int $max): int
+  {
+    return rand($min, $max);
+  }
+}
 
 function runMigrations(): void
 {
@@ -69,28 +78,7 @@ function runMigrations(): void
       echo "Executing migration {$version}...\n";
 
       $sql = file_get_contents($file);
-
-      // Split by Semicolon (naiv) und bereinige führende Kommentarzeilen je Statement
-      $rawChunks = array_map('trim', explode(';', $sql));
-      $statements = [];
-      foreach ($rawChunks as $chunk) {
-        if ($chunk === '') {
-          continue;
-        }
-        $lines = preg_split('/\r?\n/', $chunk);
-        $filtered = [];
-        foreach ($lines as $ln) {
-          // Entferne reine Kommentarzeilen (beginnend mit -- oder leer)
-          if (preg_match('/^\s*--/', $ln)) {
-            continue;
-          }
-          $filtered[] = $ln;
-        }
-        $clean = trim(implode("\n", $filtered));
-        if ($clean !== '') {
-          $statements[] = $clean;
-        }
-      }
+      $statements = SqlStatementParser::parse($sql);
 
       try {
         $useTx = count($statements) > 0;
@@ -206,7 +194,7 @@ function seedDatabase(): void
     $existingToken = Database::fetchOne("SELECT id FROM calendar_feed_tokens WHERE name = ?", ['Default Public Feed']);
 
     if (!$existingToken) {
-      $token = hash('sha256', 'default_public_feed_' . time() . random_int(1000, 9999));
+      $token = hash('sha256', 'default_public_feed_' . time() . \random_int(1000, 9999));
       Database::execute(
         "INSERT INTO calendar_feed_tokens (token, name, description, access_level) VALUES (?, ?, ?, ?)",
         [$token, 'Default Public Feed', 'Default public calendar feed token', 'public']
