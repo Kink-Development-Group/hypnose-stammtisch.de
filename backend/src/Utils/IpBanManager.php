@@ -226,11 +226,11 @@ class IpBanManager
     $allowPrivateIPs = Config::get('security.allow_private_ips') ?? false;
 
     // Always validate basic IP format first
-    $baseValidationFlags = FILTER_VALIDATE_IP;
+    $baseValidationFilter = FILTER_VALIDATE_IP;
 
     // For public-facing applications, exclude private/reserved ranges by default
     // Only allow them if explicitly configured
-    $publicValidationFlags = $baseValidationFlags | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
+    $publicValidationFlags = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE;
 
     foreach ($ipHeaders as $header) {
       if (!empty($_SERVER[$header])) {
@@ -243,7 +243,7 @@ class IpBanManager
           }
 
           // First check if it's a valid IP at all
-          if (!filter_var($ip, $baseValidationFlags)) {
+          if (!filter_var($ip, $baseValidationFilter)) {
             continue;
           }
 
@@ -269,12 +269,12 @@ class IpBanManager
           // Check if private IPs are allowed
           if ($allowPrivateIPs) {
             // Allow private IPs if explicitly configured
-            if (filter_var($ip, $baseValidationFlags)) {
+            if (filter_var($ip, $baseValidationFilter)) {
               return $ip;
             }
           } else {
             // Default: exclude private and reserved ranges
-            if (filter_var($ip, $publicValidationFlags)) {
+            if (filter_var($ip, $baseValidationFilter, $publicValidationFlags)) {
               return $ip;
             }
           }
@@ -286,9 +286,9 @@ class IpBanManager
     $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
     // Validate the fallback IP
-    if ($allowPrivateIPs && filter_var($remoteAddr, $baseValidationFlags)) {
+    if ($allowPrivateIPs && filter_var($remoteAddr, $baseValidationFilter)) {
       return $remoteAddr;
-    } elseif (!$allowPrivateIPs && filter_var($remoteAddr, $publicValidationFlags)) {
+    } elseif (!$allowPrivateIPs && filter_var($remoteAddr, $baseValidationFilter, $publicValidationFlags)) {
       return $remoteAddr;
     }
 

@@ -21,6 +21,7 @@
   import AdminLogin from "./pages/admin/AdminLogin.svelte";
   import AdminMessagesGuarded from "./pages/admin/AdminMessagesGuarded.svelte";
   import AdminProfileGuarded from "./pages/admin/AdminProfileGuarded.svelte";
+  import AdminSecurityGuarded from "./pages/admin/AdminSecurityGuarded.svelte";
   import AdminStammtischLocationsGuarded from "./pages/admin/AdminStammtischLocationsGuarded.svelte";
   import AdminUsersGuarded from "./pages/admin/AdminUsersGuarded.svelte";
   // Import components
@@ -38,6 +39,7 @@
     "/admin/login": AdminLogin,
     "/admin/events": AdminEventsGuarded,
     "/admin/messages": AdminMessagesGuarded,
+    "/admin/security": AdminSecurityGuarded,
     "/admin/users": AdminUsersGuarded,
     "/admin/stammtisch-locations": AdminStammtischLocationsGuarded,
     "/admin/profile": AdminProfileGuarded,
