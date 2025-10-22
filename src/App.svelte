@@ -50,7 +50,7 @@
     "/about": About,
     "/ressourcen": LearningResources,
     "/ressourcen/safety-guide": SafetyGuide,
-    "/resouressourcenrces/faq": Faq,
+    "/ressourcen/faq": Faq,
     "/code-of-conduct": CodeOfConduct,
     "/contact": Contact,
     "/privacy": Privacy,
