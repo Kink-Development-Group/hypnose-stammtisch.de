@@ -60,6 +60,7 @@ HEAD_ADMIN_ROLE_NAME=head
 | `IP_BAN_DURATION_SECONDS`        | 3600    | IP-Ban-Dauer (1 Stunde), 0 = permanent                           |
 | `ACCOUNT_LOCK_DURATION_SECONDS`  | 3600    | Account-Lock-Dauer (1 Stunde), 0 = nur manuelles Unlock          |
 | `HEAD_ADMIN_ROLE_NAME`           | head    | Rollenname für Head-Administratoren                              |
+| `SETUP_TOKEN` / `INSTALL_TOKEN`  | –       | Geheimtoken für das geschützte `setup.php` im Produktionsmodus   |
 | `AUDIT_UNTRUSTED_PROXY_MAX_LOGS` | 10      | Max. Audit-Logs pro Zeitperiode für untrusted Proxy-Headers      |
 | `AUDIT_UNTRUSTED_PROXY_PERIOD`   | 300     | Zeitperiode in Sekunden (5 min) für Rate-Limiting von Audit-Logs |
 
