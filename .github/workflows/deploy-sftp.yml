@@ -39,12 +39,13 @@ jobs:
           sed -i "s|MAIL_FROM_ADDRESS=.*|MAIL_FROM_ADDRESS=${{ secrets.MAIL_FROM_ADDRESS }}|" .env
           sed -i "s|CALENDAR_FEED_TOKEN=.*|CALENDAR_FEED_TOKEN=${{ secrets.CALENDAR_FEED_TOKEN }}|" .env
 
-      - name: Deploy to SFTP
-        uses: appleboy/scp-action@v0.1.7
+      - name: Deploy via FTP Deploy Action
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
-          host: ${{ secrets.SFTP_HOST }}
+          server: ${{ secrets.SFTP_HOST }}
           port: ${{ secrets.SFTP_PORT }}
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASS }}
-          source: "./dist/**"
-          target: ${{ secrets.SFTP_REMOTE_DIR }}/dist
+          protocol: "sftp"
+          local-dir: "./dist"
+          server-dir: ${{ secrets.SFTP_REMOTE_DIR }}/dist
