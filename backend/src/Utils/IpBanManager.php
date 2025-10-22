@@ -437,6 +437,9 @@ class IpBanManager
       $maskBytes .= chr($byte);
     }
 
+    if (strlen($ipBinary) !== strlen($maskBytes)) {
+      return '';
+    }
     return $ipBinary & $maskBytes;
   }
 }
