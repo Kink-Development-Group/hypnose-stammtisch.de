@@ -87,7 +87,8 @@ For detailed documentation, see `backend/README_SECURITY.md`
 
 ### Voraussetzungen
 
-- Node.js 18+ mit npm
+- bun oder Node.js 20+
+- Volta oder nvm für Node.js Version Management
 - PHP 8.1+
 - MySQL 8.0+ oder MariaDB 10.6+
 - Composer
@@ -104,7 +105,7 @@ cd hypnose-stammtisch.de
 1. **Frontend Setup**
 
 ```bash
-npm install
+bun install
 ```
 
 1. **Backend Setup**
@@ -136,7 +137,7 @@ cp backend/.env.example backend/.env
 
 ```bash
 # Frontend Development Server (Port 5173)
-npm run dev
+bun run dev
 
 # Backend Development Server (Port 8080)
 cd backend
@@ -221,7 +222,7 @@ backend/
 
 ```bash
 # Automated Accessibility Tests
-npm run test:a11y
+bun run test:a11y
 
 # Manual Testing Checklist
 # - Keyboard-only Navigation
@@ -236,23 +237,23 @@ npm run test:a11y
 
 ```bash
 # Alle Tests ausführen
-npm test
+bun test
 
 # Accessibility Tests
-npm run test:a11y
+bun run test:a11y
 
 # E2E Tests
-npm run test:e2e
+bun run test:e2e
 
 # Unit Tests
-npm run test:unit
+bun run test:unit
 ```
 
 ### Coverage Reports
 
 ```bash
 # Test Coverage generieren
-npm run test:coverage
+bun run test:coverage
 ```
 
 ## 📦 Build & Deployment
@@ -261,7 +262,7 @@ npm run test:coverage
 
 ```bash
 # Frontend Build
-npm run build
+bun run build
 
 # Backend für Production vorbereiten
 cd backend
