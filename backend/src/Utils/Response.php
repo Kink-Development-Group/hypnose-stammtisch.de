@@ -158,8 +158,10 @@ class Response
         $response = [
             'success' => true,
             'message' => $message,
-            'data' => $data,
         ];
+        if ($data !== null) {
+            $response['data'] = $data;
+        }
 
         self::json($response, $statusCode);
     }
