@@ -47,5 +47,5 @@ jobs:
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASS }}
           protocol: "ftps"
-          local-dir: "./dist"
-          server-dir: ${{ secrets.SFTP_REMOTE_DIR }}/dist
+          local-dir: "./dist/"
+          server-dir: ${{ secrets.SFTP_REMOTE_DIR }}/dist/
