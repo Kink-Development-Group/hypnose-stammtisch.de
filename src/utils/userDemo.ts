@@ -161,7 +161,10 @@ export function demonstrateValidation() {
 
     User.fromApiData(invalidData);
   } catch (error) {
-    console.log("Validation correctly failed for invalid data:", error instanceof Error ? error.message : String(error));
+    console.log(
+      "Validation correctly failed for invalid data:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 

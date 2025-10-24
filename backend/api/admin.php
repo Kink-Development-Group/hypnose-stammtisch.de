@@ -13,7 +13,9 @@ use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Controllers\AdminAuthController;
 use HypnoseStammtisch\Controllers\AdminEventsController;
 use HypnoseStammtisch\Controllers\AdminMessagesController;
+use HypnoseStammtisch\Controllers\AdminStammtischLocationController;
 use HypnoseStammtisch\Controllers\AdminUsersController;
+use HypnoseStammtisch\Controllers\AdminSecurityController;
 use HypnoseStammtisch\Controllers\UserController;
 use HypnoseStammtisch\Utils\Response;
 
@@ -250,6 +252,86 @@ try {
       $id = $matches[1];
       if ($method === 'GET') {
         AdminMessagesController::getResponses($id);
+        return;
+      }
+    }
+  }
+
+  // Route stammtisch-locations endpoints (for head admins and admins)
+  if (str_starts_with($path, '/stammtisch-locations')) {
+    if ($path === '/stammtisch-locations') {
+      if ($method === 'GET') {
+        AdminStammtischLocationController::index();
+        return;
+      } elseif ($method === 'POST') {
+        AdminStammtischLocationController::create();
+        return;
+      }
+    } elseif ($path === '/stammtisch-locations/stats') {
+      if ($method === 'GET') {
+        AdminStammtischLocationController::stats();
+        return;
+      }
+    } elseif ($path === '/stammtisch-locations/bulk-status') {
+      if ($method === 'POST') {
+        AdminStammtischLocationController::bulkUpdateStatus();
+        return;
+      }
+    } elseif (preg_match('#^/stammtisch-locations/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+      $id = (string)$matches[1];
+      if ($method === 'GET') {
+        AdminStammtischLocationController::show($id);
+        return;
+      } elseif ($method === 'PUT') {
+        AdminStammtischLocationController::update($id);
+        return;
+      } elseif ($method === 'DELETE') {
+        AdminStammtischLocationController::delete($id);
+        return;
+      }
+    }
+  }
+
+  // Route security endpoints
+  if (str_starts_with($path, '/security')) {
+    if ($path === '/security/failed-logins') {
+      if ($method === 'GET') {
+        AdminSecurityController::getFailedLogins();
+        return;
+      }
+    } elseif ($path === '/security/ip-bans') {
+      if ($method === 'GET') {
+        AdminSecurityController::getIPBans();
+        return;
+      }
+    } elseif ($path === '/security/unlock-account') {
+      if ($method === 'POST') {
+        AdminSecurityController::unlockAccount();
+        return;
+      }
+    } elseif ($path === '/security/remove-ip-ban') {
+      if ($method === 'POST') {
+        AdminSecurityController::removeIPBan();
+        return;
+      }
+    } elseif ($path === '/security/ban-ip') {
+      if ($method === 'POST') {
+        AdminSecurityController::banIP();
+        return;
+      }
+    } elseif ($path === '/security/locked-accounts') {
+      if ($method === 'GET') {
+        AdminSecurityController::getLockedAccounts();
+        return;
+      }
+    } elseif ($path === '/security/stats') {
+      if ($method === 'GET') {
+        AdminSecurityController::getSecurityStats();
+        return;
+      }
+    } elseif ($path === '/security/cleanup-expired-bans') {
+      if ($method === 'POST') {
+        AdminSecurityController::cleanupExpiredBans();
         return;
       }
     }

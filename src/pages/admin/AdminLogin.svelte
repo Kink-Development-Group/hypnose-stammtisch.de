@@ -316,7 +316,7 @@
           <div
             class="grid grid-cols-2 gap-2 font-mono text-sm bg-white p-4 rounded border"
           >
-            {#each state.backupCodes as c}
+            {#each state.backupCodes as c (c)}
               <div class="px-2 py-1 bg-gray-100 rounded select-all">{c}</div>
             {/each}
           </div>

@@ -47,7 +47,7 @@
 </script>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-  {#each safetyPrinciples as principle}
+  {#each safetyPrinciples as principle (principle.title)}
     <div class="card">
       <div class="flex items-start space-x-4">
         <div class="text-4xl flex-shrink-0" aria-hidden="true">
@@ -61,7 +61,7 @@
             {principle.description}
           </p>
           <ul class="space-y-2">
-            {#each principle.details as detail}
+            {#each principle.details as detail (detail)}
               <li class="flex items-start text-sm text-smoke-400">
                 <svg
                   class="w-4 h-4 text-consent mr-2 mt-0.5 flex-shrink-0"

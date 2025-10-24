@@ -127,7 +127,7 @@
             </div>
 
             <div class="space-y-4">
-              {#each [{ icon: "🎯", title: "Event-Teilnahme", description: "Anmeldung und Fragen zu kommenden Events" }, { icon: "🎪", title: "Event-Organisation", description: "Eigene Events planen und durchführen" }, { icon: "🤝", title: "Kooperationen", description: "Partnerschaften und Zusammenarbeit" }, { icon: "💡", title: "Feedback", description: "Verbesserungen und Anregungen" }, { icon: "🛠️", title: "Support", description: "Technische Hilfe und Plattform-Fragen" }] as topic}
+              {#each [{ icon: "🎯", title: "Event-Teilnahme", description: "Anmeldung und Fragen zu kommenden Events" }, { icon: "🎪", title: "Event-Organisation", description: "Eigene Events planen und durchführen" }, { icon: "🤝", title: "Kooperationen", description: "Partnerschaften und Zusammenarbeit" }, { icon: "💡", title: "Feedback", description: "Verbesserungen und Anregungen" }, { icon: "🛠️", title: "Support", description: "Technische Hilfe und Plattform-Fragen" }] as topic (topic.title)}
                 <div
                   class="flex items-center p-3 rounded-lg bg-charcoal-700/50 hover:bg-charcoal-600/50 transition-colors duration-300 group"
                 >

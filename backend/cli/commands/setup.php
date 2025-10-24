@@ -11,6 +11,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 
 use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Database\Database;
+use HypnoseStammtisch\Utils\SqlStatementParser;
 
 Config::load(__DIR__ . '/../..');
 
@@ -299,9 +300,16 @@ class SetupCommand
   private function executeMigrationSQL(string $sql, string $version, string $filename): void
   {
     // Split SQL into statements
-    $statements = array_filter(explode(';', $sql), fn($stmt) => !empty(trim($stmt)));
+    $statements = SqlStatementParser::parse($sql);
 
-    Database::beginTransaction();
+    $transactionStarted = false;
+    if (!empty($statements) && !Database::inTransaction()) {
+      try {
+        $transactionStarted = Database::beginTransaction();
+      } catch (Throwable $e) {
+        $transactionStarted = false;
+      }
+    }
 
     try {
       foreach ($statements as $statement) {
@@ -311,15 +319,26 @@ class SetupCommand
         }
       }
 
-      // Record migration
-      Database::execute(
-        "INSERT INTO migrations (version, description) VALUES (?, ?)",
-        [$version, "Migration from file: {$filename}"]
+      // Record migration (only if not already tracked)
+      $alreadyRecorded = Database::fetchOne(
+        "SELECT version FROM migrations WHERE version = ?",
+        [$version]
       );
 
-      Database::commit();
+      if (!$alreadyRecorded) {
+        Database::execute(
+          "INSERT INTO migrations (version, description) VALUES (?, ?)",
+          [$version, "Migration from file: {$filename}"]
+        );
+      }
+
+      if ($transactionStarted && Database::inTransaction()) {
+        Database::commit();
+      }
     } catch (Exception $e) {
-      Database::rollback();
+      if ($transactionStarted && Database::inTransaction()) {
+        Database::rollback();
+      }
       throw new RuntimeException("Migration {$version} failed: " . $e->getMessage());
     }
   }
@@ -421,7 +440,9 @@ class SetupCommand
         $tables = ['users', 'events', 'contact_submissions', 'migrations'];
         foreach ($tables as $table) {
           $exists = Database::fetchOne("SHOW TABLES LIKE '{$table}'");
-          if (!$exists) return false;
+          if (!$exists) {
+            return ['status' => 'fail', 'message' => "Missing table: {$table}"];
+          }
         }
         return true;
       },
@@ -430,12 +451,31 @@ class SetupCommand
         return !empty($admin);
       },
       'Configuration loaded' => function () {
-        return !empty($_ENV['DB_HOST']) && !empty($_ENV['DB_DATABASE']);
+        $hasEnvHost = !empty($_ENV['DB_HOST']);
+        $hasEnvName = !empty($_ENV['DB_DATABASE'] ?? $_ENV['DB_NAME'] ?? null);
+
+        if ($hasEnvHost && $hasEnvName) {
+          return true;
+        }
+
+        $configHost = Config::get('db.host');
+        $configName = Config::get('db.name');
+
+        if (!empty($configHost) && !empty($configName)) {
+          return [
+            'status' => 'warning',
+            'message' => 'Environment variables missing; using default configuration values. Update your .env file.',
+          ];
+        }
+
+        return ['status' => 'fail', 'message' => 'Database configuration missing. Check your .env file.'];
       },
       'Required directories exist' => function () {
         $dirs = ['logs', 'cache', 'temp', 'uploads'];
         foreach ($dirs as $dir) {
-          if (!is_dir(__DIR__ . '/../../' . $dir)) return false;
+          if (!is_dir(__DIR__ . '/../../' . $dir)) {
+            return ['status' => 'fail', 'message' => "Missing directory: {$dir}"];
+          }
         }
         return true;
       },
@@ -446,11 +486,36 @@ class SetupCommand
     foreach ($checks as $check => $test) {
       try {
         $result = call_user_func($test);
-        $status = $result ? 'OK' : 'FAIL';
-        $color = $result ? 'success' : 'error';
-        $this->output("  {$check}: {$status}", $color);
 
-        if (!$result) {
+        $status = 'OK';
+        $color = 'success';
+        $message = null;
+        $didFail = false;
+
+        if (is_array($result)) {
+          $state = strtolower($result['status'] ?? 'ok');
+          $message = $result['message'] ?? null;
+
+          if ($state === 'warning') {
+            $status = 'WARN';
+            $color = 'warning';
+          } elseif (in_array($state, ['fail', 'error'], true)) {
+            $status = 'FAIL';
+            $color = 'error';
+            $didFail = true;
+          }
+        } else {
+          $isSuccess = (bool) $result;
+          if (!$isSuccess) {
+            $status = 'FAIL';
+            $color = 'error';
+            $didFail = true;
+          }
+        }
+
+        $this->output("  {$check}: {$status}" . ($message ? " - {$message}" : ''), $color);
+
+        if ($didFail) {
           $allPassed = false;
         }
       } catch (Exception $e) {

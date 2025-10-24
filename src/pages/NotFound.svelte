@@ -86,8 +86,8 @@
         </div>
       </a>
 
-      <!-- Resources -->
-      <a href="/resources" use:link class="card-hover group">
+      <!-- ressourcen -->
+      <a href="/ressourcen" use:link class="card-hover group">
         <div class="card">
           <div class="text-4xl mb-4">📚</div>
           <h3

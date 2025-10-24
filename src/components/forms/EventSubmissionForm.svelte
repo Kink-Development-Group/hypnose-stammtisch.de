@@ -848,7 +848,7 @@
             role="group"
             aria-labelledby="event-tags"
           >
-            {#each availableTags as tag}
+            {#each availableTags as tag, index (index)}
               <button
                 type="button"
                 on:click={() => addTag(tag)}
@@ -870,7 +870,7 @@
 
         {#if formData.tags.length > 0}
           <div class="flex flex-wrap gap-2">
-            {#each formData.tags as tag}
+            {#each formData.tags as tag (tag)}
               <span
                 class="inline-flex items-center px-3 py-1 text-sm bg-accent-600 text-charcoal-900 rounded-full"
               >

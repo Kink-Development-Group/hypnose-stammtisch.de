@@ -393,7 +393,7 @@
       </p>
 
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/resources" use:link class="btn btn-outline">
+        <a href="/ressourcen" use:link class="btn btn-outline">
           Weitere Ressourcen
         </a>
         <a href="/contact" use:link class="btn btn-primary">

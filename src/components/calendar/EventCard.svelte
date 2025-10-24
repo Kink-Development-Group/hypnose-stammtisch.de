@@ -180,7 +180,7 @@
   <!-- Tags -->
   {#if event.tags.length > 0}
     <div class="flex flex-wrap gap-2 mb-4">
-      {#each event.tags.slice(0, 3) as tag}
+      {#each event.tags.slice(0, 3) as tag (tag)}
         <span class="badge {getTagColor(tag)}">
           {tag}
         </span>

@@ -66,7 +66,7 @@
 
     <!-- Event Series Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {#each eventSeries as series}
+      {#each eventSeries as series (series.title)}
         <div class="card hover:shadow-glow transition-all duration-300 group">
           <!-- Header -->
           <div class="mb-4">
@@ -125,7 +125,7 @@
           <!-- Formats -->
           <div class="mb-4">
             <ul class="space-y-1">
-              {#each series.formats as format}
+              {#each series.formats as format (format)}
                 <li class="text-sm text-smoke-400 flex items-start">
                   <span class="text-accent-400 mr-2 flex-shrink-0">•</span>
                   {format}
@@ -136,7 +136,7 @@
 
           <!-- Tags -->
           <div class="flex flex-wrap gap-2 mb-4">
-            {#each series.tags as tag}
+            {#each series.tags as tag (tag)}
               <span class="badge badge-outline text-xs">
                 {tag}
               </span>

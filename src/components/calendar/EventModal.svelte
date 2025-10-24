@@ -258,7 +258,7 @@
               {event.title}
             </h2>
             <div class="flex flex-wrap gap-2">
-              {#each event.tags as tag}
+              {#each event.tags as tag (tag)}
                 <span
                   class="px-2 py-1 text-xs font-medium bg-primary-600 text-smoke-50 rounded-full"
                 >

@@ -2,6 +2,8 @@
 
 Eine moderne, barrierefreie Webanwendung für die Hypnose-Community mit Kalender-Funktionalität, Event-Management und RRULE-Unterstützung.
 
+[![CodeFactor](https://www.codefactor.io/repository/github/kink-development-group/hypnose-stammtisch.de/badge/dev)](https://www.codefactor.io/repository/github/kink-development-group/hypnose-stammtisch.de/overview/dev)
+
 ## 📋 Projektübersicht
 
 ### Funktionen
@@ -43,11 +45,52 @@ Eine moderne, barrierefreie Webanwendung für die Hypnose-Community mit Kalender
 - **@axe-core/playwright** - Accessibility Testing
 - **ESLint + Prettier** - Code-Qualität
 
-## 🚀 Quick Start
+## �️ Security Features
+
+### Account Lockout & IP Blocking
+
+Comprehensive protection against brute-force attacks:
+
+- **Automatic account lockout** after repeated failed login attempts
+- **IP banning** for suspicious activities
+- **Head-admin protection**: Head admin accounts are not locked (only IP is banned)
+- **Complete audit logging** of all security-relevant events
+- **Admin tools** for management and monitoring
+- **GDPR compliant** with configurable retention periods
+
+**Configuration (.env):**
+
+```env
+MAX_FAILED_ATTEMPTS=5              # Max failed attempts before lockout
+TIME_WINDOW_SECONDS=900            # Time window for counting (15 minutes)
+IP_BAN_DURATION_SECONDS=3600       # IP ban duration (1 hour, 0 = permanent)
+ACCOUNT_LOCK_DURATION_SECONDS=3600 # Account lock duration (1 hour, 0 = manual)
+HEAD_ADMIN_ROLE_NAME=head          # Role name for head admin
+```
+
+**CLI Tools:**
+
+```bash
+# Security statistics
+php cli/commands/security.php stats
+
+# Manage IP bans and account locks
+php cli/commands/security.php list-bans
+php cli/commands/security.php unlock user@example.com
+php cli/commands/security.php unban 192.168.1.100
+
+# Automated maintenance
+php scripts/security_maintenance.php all
+```
+
+For detailed documentation, see `backend/README_SECURITY.md`
+
+## 🗂️ Project Structure
 
 ### Voraussetzungen
 
-- Node.js 18+ mit npm
+- bun oder Node.js 20+
+- Volta oder nvm für Node.js Version Management
 - PHP 8.1+
 - MySQL 8.0+ oder MariaDB 10.6+
 - Composer
@@ -64,7 +107,7 @@ cd hypnose-stammtisch.de
 1. **Frontend Setup**
 
 ```bash
-npm install
+bun install
 ```
 
 1. **Backend Setup**
@@ -96,7 +139,7 @@ cp backend/.env.example backend/.env
 
 ```bash
 # Frontend Development Server (Port 5173)
-npm run dev
+bun run dev
 
 # Backend Development Server (Port 8080)
 cd backend
@@ -181,7 +224,7 @@ backend/
 
 ```bash
 # Automated Accessibility Tests
-npm run test:a11y
+bun run test:a11y
 
 # Manual Testing Checklist
 # - Keyboard-only Navigation
@@ -196,23 +239,23 @@ npm run test:a11y
 
 ```bash
 # Alle Tests ausführen
-npm test
+bun test
 
 # Accessibility Tests
-npm run test:a11y
+bun run test:a11y
 
 # E2E Tests
-npm run test:e2e
+bun run test:e2e
 
 # Unit Tests
-npm run test:unit
+bun run test:unit
 ```
 
 ### Coverage Reports
 
 ```bash
 # Test Coverage generieren
-npm run test:coverage
+bun run test:coverage
 ```
 
 ## 📦 Build & Deployment
@@ -221,7 +264,7 @@ npm run test:coverage
 
 ```bash
 # Frontend Build
-npm run build
+bun run build
 
 # Backend für Production vorbereiten
 cd backend

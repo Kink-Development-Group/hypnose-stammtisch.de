@@ -322,7 +322,7 @@
                 <span>{passwordStrength}/6</span>
               </div>
               <div class="grid grid-cols-6 gap-1">
-                {#each Array(6) as _, i}
+                {#each Array(6) as _, i (i)}
                   <div
                     class="h-1.5 rounded-full transition-colors duration-300 {i <
                     passwordStrength

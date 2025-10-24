@@ -371,6 +371,7 @@ class AdminUsersController
     $permissions = [
       'can_manage_users' => $user['role'] === 'head',
       'can_manage_events' => in_array($user['role'], ['head', 'admin', 'event_manager']),
+      'can_manage_security' => in_array($user['role'], ['head', 'admin']),
       'can_view_messages' => in_array($user['role'], ['head', 'admin', 'moderator']),
       'role' => $user['role']
     ];

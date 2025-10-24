@@ -8,6 +8,9 @@ RewriteEngine On
 RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^(.*)$ index.php [QSA,L]
 
+# Friendly shortcut for calendar feed subscriptions
+RewriteRule ^calendar\.ics$ calendar/feed [QSA,L]
+
 # Route all API requests to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

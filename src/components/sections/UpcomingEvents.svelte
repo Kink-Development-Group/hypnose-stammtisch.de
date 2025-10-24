@@ -14,7 +14,7 @@
   {#if $isLoading}
     <!-- Loading skeleton -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {#each Array(6) as _}
+      {#each Array(6) as _, index (index)}
         <div class="card animate-pulse">
           <div class="h-6 bg-charcoal-700 rounded mb-4"></div>
           <div class="h-4 bg-charcoal-700 rounded mb-2"></div>

@@ -19,10 +19,10 @@
 <section class="container mx-auto px-4 mt-16 mb-24">
   <div class="flex flex-wrap gap-4">
     <a href="/events" use:link class="btn btn-outline">Zurück zu Events</a>
-    <a href="/resources/safety-guide" use:link class="btn btn-outline"
+    <a href="/ressourcen/safety-guide" use:link class="btn btn-outline"
       >Safety Guide</a
     >
-    <a href="/resources/faq" use:link class="btn btn-outline">FAQ</a>
+    <a href="/ressourcen/faq" use:link class="btn btn-outline">FAQ</a>
     <a href="/contact" use:link class="btn btn-outline">Kontakt</a>
   </div>
 </section>

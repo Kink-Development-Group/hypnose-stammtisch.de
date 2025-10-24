@@ -34,13 +34,13 @@
   <p>Ja, schreibe uns – wir können Eventdaten aktualisieren.</p>
   <h2>Gibt es Richtlinien für Sicherheit?</h2>
   <p>
-    Ja, siehe den <a href="/resources/safety-guide" use:link>Safety Guide</a>.
+    Ja, siehe den <a href="/ressourcen/safety-guide" use:link>Safety Guide</a>.
   </p>
 </section>
 
 <section class="container mx-auto px-4 mt-12 mb-24 flex flex-wrap gap-4">
   <a href="/submit-event" use:link class="btn btn-outline">Event einreichen</a>
-  <a href="/resources/safety-guide" use:link class="btn btn-outline"
+  <a href="/ressourcen/safety-guide" use:link class="btn btn-outline"
     >Safety Guide</a
   >
   <a href="/events" use:link class="btn btn-outline">Events</a>

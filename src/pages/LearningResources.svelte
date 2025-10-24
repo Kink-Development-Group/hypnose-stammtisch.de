@@ -775,7 +775,7 @@
   <!-- Navigation Footer -->
   <nav class="text-center" aria-label="Seiten-Navigation">
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <a href="/resources" use:link class="btn btn-outline">
+      <a href="/ressourcen" use:link class="btn btn-outline">
         🛡️ Zu den Sicherheitsleitfäden
       </a>
       <a href="/code-of-conduct" use:link class="btn btn-outline">

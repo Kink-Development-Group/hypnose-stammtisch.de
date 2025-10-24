@@ -304,6 +304,7 @@ class AdminAuthStore {
           user,
           loading: false,
         }));
+      } else if (result.data && result.data.twofa_pending) {
         // Keep user on 2FA verification screen
         adminAuthState.update((state) => ({
           ...state,

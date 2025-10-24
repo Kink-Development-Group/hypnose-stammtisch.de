@@ -56,13 +56,13 @@
   <h2>Verweise</h2>
   <p>
     Siehe auch unseren <a href="/code-of-conduct" use:link>Verhaltenskodex</a>
-    und die <a href="/resources/faq" use:link>FAQ</a>.
+    und die <a href="/ressourcen/faq" use:link>FAQ</a>.
   </p>
 </section>
 
 <section class="container mx-auto px-4 mt-12 mb-24 flex flex-wrap gap-4">
   <a href="/submit-event" use:link class="btn btn-outline">Event einreichen</a>
-  <a href="/resources/faq" use:link class="btn btn-outline">FAQ</a>
+  <a href="/ressourcen/faq" use:link class="btn btn-outline">FAQ</a>
   <a href="/events" use:link class="btn btn-outline">Events</a>
   <a href="/contact" use:link class="btn btn-outline">Kontakt</a>
 </section>

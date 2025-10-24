@@ -18,17 +18,51 @@ declare(strict_types=1);
  * - Sicher nach Produktion anpassen: APP_ENV, APP_DEBUG=false, starke Passwörter / Secrets.
  */
 
+// Enable error reporting for debugging
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/vendor/autoload.php';
 
 use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Database\Database;
 
-Config::load(__DIR__);
+// Check if .env exists
+if (!file_exists(__DIR__ . '/.env')) {
+  http_response_code(500);
+  header('Content-Type: application/json');
+  echo json_encode([
+    'success' => false,
+    'error' => '.env file not found',
+    'path' => __DIR__ . '/.env',
+    'dir_contents' => array_values(array_diff(scandir(__DIR__), ['.', '..']))
+  ]);
+  exit;
+}
+
+try {
+  Config::load(__DIR__);
+} catch (Throwable $e) {
+  http_response_code(500);
+  header('Content-Type: application/json');
+  echo json_encode([
+    'success' => false,
+    'error' => 'Failed to load config: ' . $e->getMessage(),
+    'trace' => $e->getTraceAsString()
+  ]);
+  exit;
+}
 
 $IS_CLI = php_sapi_name() === 'cli';
 $LOG = [];
 $SUCCESS = true;
 $ADMIN_CREATED = false;
+
+if (!$IS_CLI) {
+  // Capture any direct output from included scripts (e.g., migrations)
+  ob_start();
+}
 
 // Optionen parsen (CLI oder Web Query)
 $options = [
@@ -121,6 +155,11 @@ try {
   $name = Config::get('db.name');
   $user = Config::get('db.user');
   $pass = Config::get('db.pass');
+
+  // Debug output for web requests
+  if (!$IS_CLI) {
+    out('Database Config: host=' . $host . ', port=' . $port . ', name=' . $name . ', user=' . $user, 'info');
+  }
 
   try {
     out('Prüfe ob Datenbank existiert ...', 'info');
@@ -251,6 +290,19 @@ try {
 }
 
 if (!$IS_CLI) {
+  $bufferedOutput = '';
+  if (ob_get_level() > 0) {
+    $bufferedOutput = trim((string)ob_get_clean());
+  }
+  if ($bufferedOutput !== '') {
+    foreach (preg_split('/\r?\n/', $bufferedOutput) as $line) {
+      $line = trim($line);
+      if ($line === '') {
+        continue;
+      }
+      $LOG[] = ['level' => 'debug', 'message' => $line];
+    }
+  }
   header('Content-Type: application/json');
   echo json_encode([
     'success' => $SUCCESS,

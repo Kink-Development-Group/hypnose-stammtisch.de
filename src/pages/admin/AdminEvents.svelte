@@ -406,7 +406,7 @@
             </div>
           {:else}
             <ul class="divide-y divide-gray-200">
-              {#each events as event}
+              {#each events as event (event.title)}
                 <li class="px-6 py-4">
                   <div class="flex items-center justify-between">
                     <div class="flex-1">
@@ -481,7 +481,7 @@
             </div>
           {:else}
             <ul class="divide-y divide-gray-200">
-              {#each series as seriesItem}
+              {#each series as seriesItem (seriesItem.title)}
                 <li class="px-6 py-4">
                   <div class="flex items-center justify-between">
                     <div class="flex-1">
@@ -616,7 +616,7 @@
             class="mt-4 flex flex-wrap gap-2 text-xs"
             aria-label="Formularbereiche"
           >
-            {#each ["basis", "zeit", "ort", "erweitert"] as sec}
+            {#each ["basis", "zeit", "ort", "erweitert"] as sec, index (index)}
               <button
                 type="button"
                 class="px-3 py-1 rounded-full border {activeSection === sec
@@ -644,7 +644,7 @@
                 >Bitte korrigieren:</strong
               >
               <ul class="list-disc ml-5 space-y-0.5">
-                {#each formErrors as err}<li>{err}</li>{/each}
+                {#each formErrors as err, index (index)}<li>{err}</li>{/each}
               </ul>
             </div>
           {/if}
@@ -734,7 +734,7 @@
                     class="block text-sm font-medium text-gray-700">Tags</label
                   >
                   <div class="mt-1 flex flex-wrap gap-2">
-                    {#each newEvent.tags as t}
+                    {#each newEvent.tags as t (t.title)}
                       <span
                         class="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center gap-1"
                         >{t}<button

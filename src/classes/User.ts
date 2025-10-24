@@ -141,6 +141,13 @@ export default class User {
   }
 
   /**
+   * Check if user has access to security management features.
+   */
+  canManageSecurity(): boolean {
+    return this.role === Role.HEADADMIN || this.role === Role.ADMIN;
+  }
+
+  /**
    * Get formatted last login date
    */
   getFormattedLastLogin(): string {

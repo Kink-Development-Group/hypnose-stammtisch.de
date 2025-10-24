@@ -102,6 +102,24 @@ class Database
     }
 
     /**
+     * Get last insert ID
+     */
+    public static function lastInsertId(): string|false
+    {
+        return self::getConnection()->lastInsertId();
+    }
+
+    /**
+     * Execute an INSERT statement and return the last insert ID
+     * This is safer than execute() + lastInsertId() as it's atomic
+     */
+    public static function insertAndGetId(string $sql, array $params = []): string|false
+    {
+        self::execute($sql, $params);
+        return self::lastInsertId();
+    }
+
+    /**
      * Begin transaction
      */
     public static function beginTransaction(): bool
