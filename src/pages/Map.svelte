@@ -194,7 +194,7 @@
     </h2>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <a href="/events" use:link class="link-card"> 📅 Events </a>
-      <a href="/resources/safety-guide" use:link class="link-card">
+      <a href="/ressourcen/safety-guide" use:link class="link-card">
         🛡️ Sicherheit
       </a>
       <a href="/code-of-conduct" use:link class="link-card">

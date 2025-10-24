@@ -100,7 +100,7 @@
       >
         📅 Kalender abonnieren
       </a>
-      <a href="/resources/safety-guide" use:link class="btn btn-ghost">
+      <a href="/ressourcen/safety-guide" use:link class="btn btn-ghost">
         🛡️ Sicherheitsleitfaden
       </a>
     </div>

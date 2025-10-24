@@ -44,7 +44,7 @@
       ],
       action: {
         text: "Sicherheitsleitfaden",
-        href: "/resources/safety-guide",
+        href: "/ressourcen/safety-guide",
       },
     },
     {
@@ -188,7 +188,7 @@
     </div>
 
     <div class="text-center mt-6">
-      <a href="/resources/faq" use:link class="btn btn-outline">
+      <a href="/ressourcen/faq" use:link class="btn btn-outline">
         Alle FAQs anzeigen
       </a>
     </div>
