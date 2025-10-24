@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HypnoseStammtisch\Middleware;
 
+use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Utils\Response;
 
@@ -18,20 +19,33 @@ class AdminAuth
   public static function startSession(): void
   {
     if (session_status() === PHP_SESSION_NONE) {
-      // Set session cookie parameters before starting session
-      session_set_cookie_params([
-        'lifetime' => 3600 * 8, // 8 hours
+      $sessionLifetime = (int)Config::get('session.lifetime', 3600 * 8);
+
+      $sessionName = Config::get('session.name', 'hypnose_session');
+      if (session_name() !== $sessionName) {
+        session_name($sessionName);
+      }
+
+      $cookieParams = [
+        'lifetime' => $sessionLifetime,
         'path' => '/',
-        'domain' => 'localhost',
-        'secure' => false, // Set to false for local development
+        'secure' => self::shouldUseSecureCookies(),
         'httponly' => true,
-        'samesite' => 'Lax' // Changed from 'Strict' to 'Lax' for cross-origin
-      ]);
+        'samesite' => 'Lax'
+      ];
+
+      $cookieDomain = self::determineCookieDomain();
+      if ($cookieDomain !== null) {
+        $cookieParams['domain'] = $cookieDomain;
+      }
+
+      // Set session cookie parameters before starting session
+      session_set_cookie_params($cookieParams);
 
       session_start([
         'use_strict_mode' => true,
-        'cookie_lifetime' => 3600 * 8, // 8 hours
-        'gc_maxlifetime' => 3600 * 8, // Match cookie lifetime
+        'cookie_lifetime' => $sessionLifetime,
+        'gc_maxlifetime' => $sessionLifetime,
         'gc_probability' => 1,
         'gc_divisor' => 100,
       ]);
@@ -102,14 +116,14 @@ class AdminAuth
         $email,
         $ipAddress
       );
-      
+
       return ['success' => false, 'message' => 'Invalid credentials'];
     }
 
     // Check if account is locked
     if (\HypnoseStammtisch\Utils\FailedLoginTracker::isAccountLocked((int)$user['id'])) {
       return [
-        'success' => false, 
+        'success' => false,
         'message' => 'Account is temporarily locked due to security reasons'
       ];
     }
@@ -151,30 +165,14 @@ class AdminAuth
 
     // Clear the session cookie by setting it to expire in the past
     if (isset($_COOKIE[session_name()])) {
-      setcookie(
-        session_name(),
-        '',
-        time() - 3600,
-        '/',
-        'localhost',
-        false,
-        true
-      );
+      setcookie(session_name(), '', self::cookieOptions(time() - 3600));
     }
 
     // Also clear any additional admin-specific cookies if they exist
     $adminCookies = ['admin_session', 'admin_token', 'admin_remember'];
     foreach ($adminCookies as $cookieName) {
       if (isset($_COOKIE[$cookieName])) {
-        setcookie(
-          $cookieName,
-          '',
-          time() - 3600,
-          '/',
-          'localhost',
-          false,
-          true
-        );
+        setcookie($cookieName, '', self::cookieOptions(time() - 3600));
       }
     }
   }
@@ -254,8 +252,98 @@ class AdminAuth
   {
     self::startSession();
     if (!isset($_SESSION['csrf_token'])) {
-      $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+      $_SESSION['csrf_token'] = bin2hex(self::secureRandomBytes(32));
     }
     return $_SESSION['csrf_token'];
+  }
+
+  /** Determine the cookie domain for session handling */
+  private static function determineCookieDomain(): ?string
+  {
+    $domain = $_ENV['SESSION_DOMAIN'] ?? null;
+
+    if (!$domain) {
+      $appUrl = Config::get('app.url', '');
+      if (is_string($appUrl) && $appUrl !== '') {
+        $domain = parse_url($appUrl, PHP_URL_HOST) ?: null;
+      }
+
+      if (!$domain && isset($_SERVER['HTTP_HOST'])) {
+        $domain = $_SERVER['HTTP_HOST'];
+      }
+    }
+
+    if (!$domain) {
+      return null;
+    }
+
+    $domain = strtolower(preg_replace('/:\d+$/', '', trim((string)$domain)) ?? '');
+    $domain = preg_replace('/^www\./', '', $domain);
+
+    if ($domain === '' || $domain === 'localhost' || $domain === '127.0.0.1') {
+      return null;
+    }
+
+    return $domain;
+  }
+
+  /** Decide whether session cookies must be marked as secure */
+  private static function shouldUseSecureCookies(): bool
+  {
+    if (isset($_ENV['SESSION_SECURE'])) {
+      return filter_var($_ENV['SESSION_SECURE'], FILTER_VALIDATE_BOOLEAN);
+    }
+
+    $host = $_SERVER['HTTP_HOST'] ?? (parse_url(Config::get('app.url', ''), PHP_URL_HOST) ?: '');
+    if ($host === 'localhost' || $host === '127.0.0.1') {
+      return false;
+    }
+
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+      return true;
+    }
+
+    $scheme = parse_url(Config::get('app.url', ''), PHP_URL_SCHEME);
+    return $scheme === 'https';
+  }
+
+  /** Build consistent cookie options for setcookie operations */
+  private static function cookieOptions(?int $expires = null): array
+  {
+    $options = [
+      'path' => '/',
+      'secure' => self::shouldUseSecureCookies(),
+      'httponly' => true,
+      'samesite' => 'Lax',
+    ];
+
+    $domain = self::determineCookieDomain();
+    if ($domain !== null) {
+      $options['domain'] = $domain;
+    }
+
+    if ($expires !== null) {
+      $options['expires'] = $expires;
+    }
+
+    return $options;
+  }
+
+  /** Provide a secure source of random bytes with graceful fallback */
+  private static function secureRandomBytes(int $length): string
+  {
+    if (function_exists('random_bytes')) {
+      return (string) \call_user_func('random_bytes', $length);
+    }
+
+    if (function_exists('openssl_random_pseudo_bytes')) {
+      $strong = false;
+      $bytes = \openssl_random_pseudo_bytes($length, $strong);
+      if ($bytes !== false && $strong) {
+        return $bytes;
+      }
+    }
+
+    throw new \RuntimeException('No suitable CSPRNG available for session token generation');
   }
 }
