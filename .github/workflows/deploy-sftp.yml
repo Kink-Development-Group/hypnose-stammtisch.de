@@ -3,7 +3,7 @@ name: Build and Deploy to SFTP
 on:
   push:
     branches:
-      - main
+      - dev
 
 jobs:
   build-and-deploy:
@@ -15,7 +15,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "25"
 
       - name: Install dependencies
         run: npm ci
@@ -23,12 +23,16 @@ jobs:
       - name: Build project
         run: npm run build:all
 
-      - name: Deploy to SFTP
-        uses: appleboy/scp-action@v0.1.7
+      - name: Create .env file from secret
+        run: echo "${{ secrets.ENV }}" > dist/.env
+
+      - name: Deploy via FTP Deploy Action
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
-          host: ${{ secrets.SFTP_HOST }}
+          server: ${{ secrets.SFTP_HOST }}
           port: ${{ secrets.SFTP_PORT }}
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASS }}
-          source: "./dist/**"
-          target: ${{ secrets.SFTP_REMOTE_DIR }}
+          protocol: "ftps"
+          local-dir: "./dist/"
+          server-dir: ${{ secrets.SFTP_REMOTE_DIR }}

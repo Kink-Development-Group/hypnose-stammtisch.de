@@ -67,7 +67,7 @@
 
 <div class="space-y-8">
   {#if events.length > 0}
-    {#each sortedDateKeys as dateKey}
+    {#each sortedDateKeys as dateKey (dateKey)}
       <section aria-labelledby="date-{dateKey}">
         <!-- Date header -->
         <header class="mb-4">

@@ -77,9 +77,14 @@
       <UpcomingEvents />
 
       <div class="text-center mt-12">
-        <a href="/events" use:link class="btn btn-primary text-lg px-8 py-3">
-          Alle Events anzeigen
-        </a>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="/events" use:link class="btn btn-primary text-lg px-8 py-3">
+            📅 Alle Events anzeigen
+          </a>
+          <a href="/map" use:link class="btn btn-outline text-lg px-8 py-3">
+            🗺️ Stammtisch-Karte
+          </a>
+        </div>
       </div>
     </div>
   </section>
