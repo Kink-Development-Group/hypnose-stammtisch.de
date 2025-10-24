@@ -2,9 +2,11 @@
   RewriteEngine On
   RewriteBase /
 
-  # Allow API, calendar export, and well-known resources to pass through
+  # Route calendar subscriptions to backend API feed
+  RewriteRule ^calendar\.ics$ api/calendar/feed [QSA,L]
+
+  # Allow API and well-known resources to pass through
   RewriteCond %{REQUEST_URI} ^/api/ [OR]
-  RewriteCond %{REQUEST_URI} ^/calendar\.ics$ [OR]
   RewriteCond %{REQUEST_URI} ^/\.well-known/
   RewriteRule ^ - [L]
 
