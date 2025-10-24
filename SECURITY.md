@@ -120,14 +120,6 @@ We welcome good‑faith testing within these boundaries:
 If you discover exposed secrets, notify us immediately and do not attempt to use
 them.
 
-## PGP Key
-
-If you prefer encrypted email, use the following PGP key:
-
-- User: Security Team <info@hypnose-stammtisch.de>
-- Fingerprint: 1234 5678 9ABC DEF0 1234  5678 9ABC DEF0 1234 5678
-- Key: https://hypnose-stammtisch.de/pgp/security.asc
-
 ## Contact
 
 - Security: info@hypnose-stammtisch.de
