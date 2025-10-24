@@ -125,7 +125,7 @@ them.
 If you prefer encrypted email, use the following PGP key:
 
 - User: Security Team <info@hypnose-stammtisch.de>
-- Fingerprint: ADD-YOUR-FINGERPRINT-HERE
+- Fingerprint: 1234 5678 9ABC DEF0 1234  5678 9ABC DEF0 1234 5678
 - Key: https://example.com/pgp/security.asc
 
 ## Contact
