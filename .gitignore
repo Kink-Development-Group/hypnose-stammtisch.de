@@ -144,3 +144,4 @@ playwright-report/
 test-results/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+backend/tests/reports/*

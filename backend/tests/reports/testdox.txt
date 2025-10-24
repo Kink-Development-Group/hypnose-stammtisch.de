@@ -1,4 +1,0 @@
-PHPUnit Config (HypnoseStammtisch\Tests\Integration\PHPUnitConfig)
- [x] P h p unit is working
- [x] Assertion methods
-
