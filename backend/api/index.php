@@ -86,6 +86,14 @@ $path = preg_replace('#^/api#', '', $path);
 // Remove leading/trailing slashes
 $path = trim($path, '/');
 
+// Support direct calendar feed requests via /calendar.ics for calendar subscriptions
+if ($path === 'calendar.ics') {
+  $calendarController = new CalendarController();
+  $token = $_GET['token'] ?? null;
+  $calendarController->feed($token);
+  return;
+}
+
 // Split path into segments
 $segments = $path ? explode('/', $path) : [];
 
