@@ -2,6 +2,8 @@
 
 Eine moderne, barrierefreie Webanwendung für die Hypnose-Community mit Kalender-Funktionalität, Event-Management und RRULE-Unterstützung.
 
+[![CodeFactor](https://www.codefactor.io/repository/github/kink-development-group/hypnose-stammtisch.de/badge/dev)](https://www.codefactor.io/repository/github/kink-development-group/hypnose-stammtisch.de/overview/dev)
+
 ## 📋 Projektübersicht
 
 ### Funktionen
