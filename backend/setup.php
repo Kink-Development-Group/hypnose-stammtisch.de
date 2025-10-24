@@ -59,6 +59,11 @@ $LOG = [];
 $SUCCESS = true;
 $ADMIN_CREATED = false;
 
+if (!$IS_CLI) {
+  // Capture any direct output from included scripts (e.g., migrations)
+  ob_start();
+}
+
 // Optionen parsen (CLI oder Web Query)
 $options = [
   'seed' => true,
@@ -285,6 +290,19 @@ try {
 }
 
 if (!$IS_CLI) {
+  $bufferedOutput = '';
+  if (ob_get_level() > 0) {
+    $bufferedOutput = trim((string)ob_get_clean());
+  }
+  if ($bufferedOutput !== '') {
+    foreach (preg_split('/\r?\n/', $bufferedOutput) as $line) {
+      $line = trim($line);
+      if ($line === '') {
+        continue;
+      }
+      $LOG[] = ['level' => 'debug', 'message' => $line];
+    }
+  }
   header('Content-Type: application/json');
   echo json_encode([
     'success' => $SUCCESS,
