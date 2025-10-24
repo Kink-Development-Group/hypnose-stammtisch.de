@@ -60,10 +60,26 @@ const migrationsDir = join(backendDir, "migrations");
 if (existsSync(migrationsDir)) {
   const targetMig = join(distDir, "migrations");
   ensureDir(targetMig);
-  ["001_initial_schema.sql", "migrate.php", "README.md"].forEach((f) => {
-    const p = join(migrationsDir, f);
-    if (existsSync(p)) copyFileSync(p, join(targetMig, f));
+
+  const migrationEntries = readdirSync(migrationsDir, {
+    withFileTypes: true,
   });
+
+  for (const entry of migrationEntries) {
+    if (!entry.isFile()) {
+      continue;
+    }
+
+    const filename = entry.name;
+    const sourcePath = join(migrationsDir, filename);
+    const targetPath = join(targetMig, filename);
+
+    if (filename.endsWith(".sql")) {
+      copyFileSync(sourcePath, targetPath);
+    } else if (filename === "migrate.php" || filename === "README.md") {
+      copyFileSync(sourcePath, targetPath);
+    }
+  }
   // .htaccess zum Schutz (falls Apache, verhindert Download der SQL Files)
   try {
     writeFileSync(
