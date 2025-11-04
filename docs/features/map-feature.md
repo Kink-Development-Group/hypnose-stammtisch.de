@@ -53,6 +53,9 @@ src/components/map/
 ```text
 src/stores/map.ts           # Zustand und Filterlogik
 src/types/stammtisch.ts     # TypeScript-Typen
+src/classes/CountryMetadata # Länder-Metadaten und i18n Labels
+src/classes/StammtischLocationFactory # Normalisiert API-Payloads über Zod
+src/classes/StammtischLocationCache   # localStorage Cache für schnelle Reloads
 ```
 
 ### Seiten
@@ -109,7 +112,10 @@ Die Karte ist über die Hauptnavigation unter "Karte" erreichbar und in das best
 
 - Daten werden statisch ausgeliefert (kein SSR-Zugriff auf Kalenderdaten).
 - Leaflet wird lazy geladen, um SSR-Konflikte zu vermeiden.
-- Marker sind optimiert, um Performance zu sichern.
+- Marker werden nur bei Datenänderungen neu gerendert und nutzen ein wiederverwendetes Icon.
+- Ländergrenzen werden via GeoJSON lazy geladen und clientseitig gecached.
+- Stammtisch-Daten werden im Browser zwischengespeichert (stale-while-revalidate).
+- Alle Texte sind vollständig über das i18n-System (`src/utils/i18n.ts`) lokalisierbar.
 
 ## Erweiterungsmöglichkeiten
 

@@ -10,13 +10,40 @@
     isMapLoading,
     selectedLocation,
   } from "../stores/api-map-locations";
+  import { t } from "../utils/i18n";
 
+  const isBrowser = typeof window !== "undefined";
   let showMobileDetails = false;
+  let isMobileViewport = false;
 
-  // Handle mobile responsiveness for location details
-  $: if ($selectedLocation && window.innerWidth < 768) {
-    showMobileDetails = true;
+  const howToSteps = [
+    "map.info.howTo.step1",
+    "map.info.howTo.step2",
+    "map.info.howTo.step3",
+    "map.info.howTo.step4",
+  ];
+
+  const relatedLinks = [
+    { href: "/events", labelKey: "map.related.events", icon: "📅" },
+    {
+      href: "/ressourcen/safety-guide",
+      labelKey: "map.related.safety",
+      icon: "🛡️",
+    },
+    {
+      href: "/code-of-conduct",
+      labelKey: "map.related.codeOfConduct",
+      icon: "📋",
+    },
+    { href: "/about", labelKey: "map.related.about", icon: "👥" },
+  ] as const;
+
+  function updateViewportState(): void {
+    if (!isBrowser) return;
+    isMobileViewport = window.innerWidth < 768;
   }
+
+  $: showMobileDetails = Boolean($selectedLocation && isMobileViewport);
 
   function closeMobileDetails() {
     showMobileDetails = false;
@@ -24,58 +51,78 @@
   }
 
   onMount(() => {
-    // Add CSS for Leaflet
-    const leafletCSS = document.createElement("link");
-    leafletCSS.rel = "stylesheet";
-    leafletCSS.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    leafletCSS.integrity =
-      "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
-    leafletCSS.crossOrigin = "";
-    document.head.appendChild(leafletCSS);
+    if (!isBrowser) {
+      return;
+    }
+
+    updateViewportState();
+    window.addEventListener("resize", updateViewportState);
+
+    let stylesheet = document.querySelector<HTMLLinkElement>(
+      'link[data-leaflet="true"]',
+    );
+    let appended = false;
+
+    if (!stylesheet) {
+      stylesheet = document.createElement("link");
+      stylesheet.rel = "stylesheet";
+      stylesheet.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      stylesheet.integrity =
+        "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+      stylesheet.crossOrigin = "";
+      stylesheet.dataset.leaflet = "true";
+      document.head.appendChild(stylesheet);
+      appended = true;
+    }
 
     return () => {
-      // Cleanup when component is destroyed
-      document.head.removeChild(leafletCSS);
+      window.removeEventListener("resize", updateViewportState);
+      if (appended && stylesheet?.parentNode) {
+        stylesheet.parentNode.removeChild(stylesheet);
+      }
     };
   });
+
+  $: locationCount = $filteredLocations.length;
+  $: locationCountText =
+    locationCount === 1
+      ? t("map.footer.single", { values: { count: locationCount } })
+      : t("map.footer.plural", { values: { count: locationCount } });
+
+  $: pageTitle = t("map.meta.title");
+  $: pageDescription = t("map.meta.description");
+  $: pageKeywords = t("map.meta.keywords");
 </script>
 
 <svelte:head>
-  <title>Stammtisch-Karte - Hypnose Stammtisch</title>
-  <meta
-    name="description"
-    content="Interaktive Karte aller Hypnose-Stammtische in Deutschland, Österreich und der Schweiz. Finde Stammtische in deiner Nähe."
-  />
-  <meta
-    name="keywords"
-    content="Hypnose Stammtisch, Karte, Deutschland, Österreich, Schweiz, DACH, Standorte, Treffen"
-  />
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
+  <meta name="keywords" content={pageKeywords} />
 </svelte:head>
 
 <div class="container mx-auto px-4 py-8">
   <!-- Page Header -->
   <header class="text-center mb-8">
     <h1 class="text-4xl md:text-5xl font-display font-bold text-smoke-50 mb-4">
-      🗺️ Stammtisch-Standorte
+      {t("map.hero.headline")}
     </h1>
     <p class="text-xl text-smoke-300 max-w-3xl mx-auto mb-6">
-      Entdecke Hypnose-Stammtische in der DACH-Region. Finde Gleichgesinnte in
-      deiner Nähe und werde Teil unserer Community.
+      {t("map.hero.lead")}
     </p>
 
     <!-- Quick Stats -->
     <div class="stats-bar">
       <div class="stat-item">
-        <span class="stat-number">{$filteredLocations.length}</span>
-        <span class="stat-label">Standorte</span>
+        <span class="stat-number">{locationCount}</span>
+        <span class="stat-label">{t("map.stats.locationsLabel")}</span>
       </div>
       <div class="stat-item">
         <span class="stat-number">🇩🇪 🇦🇹 🇨🇭</span>
-        <span class="stat-label">DACH-Region</span>
+        <span class="stat-label">{t("map.stats.regionLabel")}</span>
       </div>
       <div class="stat-item">
         <span class="stat-number">🔄</span>
-        <span class="stat-label">Live-Updates</span>
+        <span class="stat-label">{t("map.stats.liveUpdatesLabel")}</span>
       </div>
     </div>
   </header>
@@ -111,11 +158,7 @@
 
     <!-- Location Count -->
     <div class="map-footer">
-      <p class="text-sm text-smoke-400">
-        {$filteredLocations.length}
-        {$filteredLocations.length === 1 ? "Stammtisch" : "Stammtische"}
-        auf der Karte
-      </p>
+      <p class="text-sm text-smoke-400">{locationCountText}</p>
     </div>
   </section>
 
@@ -140,9 +183,9 @@
         <button
           class="mobile-close-btn"
           on:click={closeMobileDetails}
-          aria-label="Details schließen"
+          aria-label={t("map.details.close")}
         >
-          Schließen
+          {t("map.details.close")}
         </button>
       </div>
     </div>
@@ -154,31 +197,27 @@
       <!-- How to Use -->
       <div class="info-card">
         <h2 class="text-2xl font-display font-semibold text-smoke-50 mb-4">
-          🎯 So nutzt du die Karte
+          {t("map.info.howTo.title")}
         </h2>
         <ul class="space-y-2 text-smoke-300">
-          <li>• Klicke auf die Markierungen für Details</li>
-          <li>• Nutze die Filter für gezieltes Suchen</li>
-          <li>• Zoom in die Karte für bessere Übersicht</li>
-          <li>• Kontaktiere Stammtische direkt über die Details</li>
+          {#each howToSteps as step}
+            <li>• {t(step)}</li>
+          {/each}
         </ul>
       </div>
 
       <!-- Add Location -->
       <div class="info-card">
         <h2 class="text-2xl font-display font-semibold text-smoke-50 mb-4">
-          ➕ Stammtisch hinzufügen
+          {t("map.info.add.title")}
         </h2>
-        <p class="text-smoke-300 mb-4">
-          Dein Stammtisch fehlt auf der Karte? Oder möchtest du einen neuen
-          gründen?
-        </p>
+        <p class="text-smoke-300 mb-4">{t("map.info.add.description")}</p>
         <div class="flex flex-col sm:flex-row gap-3">
           <a href="/contact" use:link class="btn btn-primary">
-            📧 Kontakt aufnehmen
+            {t("map.info.add.contactButton")}
           </a>
           <a href="/submit-event" use:link class="btn btn-outline">
-            📅 Event einreichen
+            {t("map.info.add.submitButton")}
           </a>
         </div>
       </div>
@@ -190,17 +229,15 @@
     <h2
       class="text-2xl font-display font-semibold text-smoke-50 mb-6 text-center"
     >
-      🔗 Weitere Ressourcen
+      {t("map.related.title")}
     </h2>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <a href="/events" use:link class="link-card"> 📅 Events </a>
-      <a href="/ressourcen/safety-guide" use:link class="link-card">
-        🛡️ Sicherheit
-      </a>
-      <a href="/code-of-conduct" use:link class="link-card">
-        📋 Verhaltenskodex
-      </a>
-      <a href="/about" use:link class="link-card"> 👥 Über uns </a>
+      {#each relatedLinks as item}
+        <a href={item.href} use:link class="link-card">
+          {item.icon}
+          {t(item.labelKey)}
+        </a>
+      {/each}
     </div>
   </section>
 </div>
@@ -404,4 +441,3 @@
     }
   }
 </style>
-

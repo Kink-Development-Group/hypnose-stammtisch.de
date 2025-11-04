@@ -1,25 +1,49 @@
 <script lang="ts">
+  import type { CountryInfo } from "../../classes/CountryMetadata";
+  import { CountryMetadata } from "../../classes/CountryMetadata";
+  import { CountryCode } from "../../enums/countryCode";
   import {
     availableRegions,
     availableTags,
+    locationsMeta,
     mapFilter,
     resetMapFilters,
     toggleCountryFilter,
     toggleRegionFilter,
     toggleTagFilter,
   } from "../../stores/api-map-locations";
+  import { t } from "../../utils/i18n";
 
   let isExpanded = false;
 
-  function toggleFilter() {
+  const toggleFilter = () => {
     isExpanded = !isExpanded;
-  }
+  };
 
-  const countries = [
-    { code: "DE", name: "Deutschland", flag: "🇩🇪" },
-    { code: "AT", name: "Österreich", flag: "🇦🇹" },
-    { code: "CH", name: "Schweiz", flag: "🇨🇭" },
-  ];
+  $: countryOptions =
+    $locationsMeta.countries.length > 0
+      ? $locationsMeta.countries
+      : CountryMetadata.getSupportedCountries();
+
+  $: totalCountries = countryOptions.length;
+
+  $: missingCountries =
+    totalCountries > $mapFilter.countries.length
+      ? totalCountries - $mapFilter.countries.length
+      : 0;
+
+  $: activeFilterCount =
+    missingCountries +
+    $mapFilter.regions.length +
+    $mapFilter.tags.length +
+    ($mapFilter.activeOnly ? 0 : 1);
+
+  const getCountryLabel = (country: CountryInfo): string =>
+    CountryMetadata.getDisplayName(country.code, country.name);
+
+  const handleCountryToggle = (country: CountryInfo): void => {
+    toggleCountryFilter(country.code as CountryCode);
+  };
 </script>
 
 <div class="map-filters">
@@ -30,16 +54,14 @@
     aria-expanded={isExpanded}
     aria-controls="filter-panel"
   >
-    🔍 Filter
+    🔍 {t("map.filter.toggle")}
     <span class="toggle-icon" class:rotate={isExpanded}>▼</span>
   </button>
 
   <!-- Active Filter Count -->
-  {#if $mapFilter.regions.length > 0 || $mapFilter.tags.length > 0 || $mapFilter.countries.length < 3}
+  {#if activeFilterCount > 0}
     <span class="filter-count">
-      {$mapFilter.regions.length +
-        $mapFilter.tags.length +
-        (3 - $mapFilter.countries.length)} aktiv
+      {t("map.filter.activeCount", { values: { count: activeFilterCount } })}
     </span>
   {/if}
 
@@ -49,22 +71,24 @@
       id="filter-panel"
       class="filter-panel"
       role="region"
-      aria-label="Filter-Optionen"
+      aria-label={t("map.filter.aria.panel")}
     >
       <!-- Country Filters -->
       <div class="filter-section">
-        <h3 class="filter-title">Länder</h3>
+        <h3 class="filter-title">{t("map.filter.section.countries")}</h3>
         <div class="filter-grid">
-          {#each countries as country (country.name)}
+          {#each countryOptions as country (country.code)}
             <label class="filter-checkbox">
               <input
                 type="checkbox"
-                checked={$mapFilter.countries.includes(country.code)}
-                on:change={() => toggleCountryFilter(country.code)}
+                checked={$mapFilter.countries.includes(
+                  country.code as CountryCode,
+                )}
+                on:change={() => handleCountryToggle(country)}
               />
               <span class="checkbox-label">
                 {country.flag}
-                {country.name}
+                {getCountryLabel(country)}
               </span>
             </label>
           {/each}
@@ -74,7 +98,7 @@
       <!-- Region Filters -->
       {#if $availableRegions.length > 0}
         <div class="filter-section">
-          <h3 class="filter-title">Regionen</h3>
+          <h3 class="filter-title">{t("map.filter.section.regions")}</h3>
           <div class="filter-grid">
             {#each $availableRegions as region (region)}
               <label class="filter-checkbox">
@@ -93,7 +117,7 @@
       <!-- Tag Filters -->
       {#if $availableTags.length > 0}
         <div class="filter-section">
-          <h3 class="filter-title">Tags</h3>
+          <h3 class="filter-title">{t("map.filter.section.tags")}</h3>
           <div class="filter-tags">
             {#each $availableTags as tag (tag)}
               <button
@@ -101,6 +125,7 @@
                 class:active={$mapFilter.tags.includes(tag)}
                 on:click={() => toggleTagFilter(tag)}
                 aria-pressed={$mapFilter.tags.includes(tag)}
+                aria-label={t("map.filter.tagToggle", { values: { tag } })}
               >
                 {tag}
               </button>
@@ -113,14 +138,14 @@
       <div class="filter-section">
         <label class="filter-checkbox">
           <input type="checkbox" bind:checked={$mapFilter.activeOnly} />
-          <span class="checkbox-label">Nur aktive Stammtische anzeigen</span>
+          <span class="checkbox-label">{t("map.filter.activeOnly")}</span>
         </label>
       </div>
 
       <!-- Reset Button -->
       <div class="filter-actions">
         <button class="btn btn-secondary" on:click={resetMapFilters}>
-          Filter zurücksetzen
+          {t("map.filter.reset")}
         </button>
       </div>
     </div>

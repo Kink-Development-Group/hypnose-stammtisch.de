@@ -1,6 +1,9 @@
 <script lang="ts">
-  import type { Map } from "leaflet";
+  import type { GeoJsonObject } from "geojson";
+  import type { Map, Marker } from "leaflet";
   import { onDestroy, onMount } from "svelte";
+  import { CountryMetadata } from "../../classes/CountryMetadata";
+  import { CountryCode } from "../../enums/countryCode";
   import {
     filteredStammtischLocations,
     isLoadingLocations,
@@ -10,11 +13,23 @@
     updateMapViewport,
   } from "../../stores/api-map-locations";
   import type { StammtischLocation } from "../../types/stammtisch";
+  import { t } from "../../utils/i18n";
+
+  type LeafletNamespace = typeof import("leaflet");
+  type DivIcon = import("leaflet").DivIcon;
 
   let mapContainer: HTMLDivElement;
-  let map: Map;
-  let markers: any[] = [];
-  let L: typeof import("leaflet");
+  let map: Map | null = null;
+  let markers: Marker[] = [];
+  let L: LeafletNamespace;
+  let stammtischIcon: DivIcon | null = null;
+
+  const geoJsonCache = new Map<string, GeoJsonObject>();
+  const COUNTRY_BOUNDARY_FILES: Record<CountryCode, string> = {
+    [CountryCode.GERMANY]: "germany",
+    [CountryCode.AUSTRIA]: "austria",
+    [CountryCode.SWITZERLAND]: "switzerland",
+  };
 
   // Props
   export let height: string = "500px";
@@ -24,17 +39,7 @@
     // Dynamically import Leaflet to avoid SSR issues
     L = await import("leaflet");
 
-    // Fix for default marker icons in Leaflet with bundlers
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-      iconUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-      shadowUrl:
-        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-    });
-
+    configureLeafletIcons();
     initializeMap();
 
     // Listen for custom events from popup buttons
@@ -47,7 +52,9 @@
   onDestroy(() => {
     if (map) {
       map.remove();
+      map = null;
     }
+    markers = [];
     // Remove event listener
     mapContainer?.removeEventListener(
       "show-details",
@@ -55,8 +62,25 @@
     );
   });
 
-  function initializeMap() {
-    if (!mapContainer || !L) return;
+  function configureLeafletIcons(): void {
+    if (!L) return;
+
+    const iconProto = L.Icon.Default.prototype as Record<string, unknown>;
+    if (iconProto && "_getIconUrl" in iconProto) {
+      delete (iconProto as { _getIconUrl?: unknown })._getIconUrl;
+    }
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl:
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+      iconUrl:
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+      shadowUrl:
+        "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+    });
+  }
+
+  function initializeMap(): void {
+    if (!mapContainer || !L || map) return;
 
     const viewport = $mapViewport;
 
@@ -89,7 +113,7 @@
     }).addTo(map);
 
     // Add DACH region highlight overlay
-    addDachRegionHighlight();
+    void addDachRegionHighlight();
 
     // Update viewport store when map moves
     map.on("moveend", () => {
@@ -105,76 +129,95 @@
     updateMarkers($filteredStammtischLocations);
   }
 
-  function addDachRegionHighlight() {
+  async function addDachRegionHighlight(): Promise<void> {
     if (!map || !L) return;
 
-    // GeoJSON-basierte DACH-Länder Darstellung
-    const countryStyles = {
-      DE: { color: "#1f77b4", fillColor: "#1f77b4", fillOpacity: 0.15 }, // Blau für Deutschland
-      AT: { color: "#d62728", fillColor: "#d62728", fillOpacity: 0.15 }, // Rot für Österreich
-      CH: { color: "#2ca02c", fillColor: "#2ca02c", fillOpacity: 0.15 }, // Grün für Schweiz
+    const countryStyles: Record<
+      CountryCode,
+      { color: string; fillColor: string; fillOpacity: number }
+    > = {
+      [CountryCode.GERMANY]: {
+        color: "#1f77b4",
+        fillColor: "#1f77b4",
+        fillOpacity: 0.15,
+      },
+      [CountryCode.AUSTRIA]: {
+        color: "#d62728",
+        fillColor: "#d62728",
+        fillOpacity: 0.15,
+      },
+      [CountryCode.SWITZERLAND]: {
+        color: "#2ca02c",
+        fillColor: "#2ca02c",
+        fillOpacity: 0.15,
+      },
     };
 
     const baseStyle = {
       weight: 2,
       opacity: 0.8,
-      interactive: false, // Keine Interaktion mit den Ländergrenzen
+      interactive: false,
     };
 
-    // Lade authentische OSM GeoJSON-Dateien für die DACH-Länder
-    const loadCountryBoundaries = async () => {
-      try {
-        const countries = {
-          germany: "DE",
-          austria: "AT",
-          switzerland: "CH",
-        };
-        const geoJsonLayers: any[] = [];
-
-        for (const [filename, isoCode] of Object.entries(countries)) {
-          const response = await fetch(`/data/${filename}.geojson`);
-          if (!response.ok) {
-            console.warn(`Could not load ${filename}.geojson`);
-            continue;
+    try {
+      const layers = await Promise.all(
+        Object.entries(COUNTRY_BOUNDARY_FILES).map(async ([code, filename]) => {
+          const geoJson = await loadCountryBoundary(filename);
+          if (!geoJson) {
+            return null;
           }
 
-          const geoJsonData = await response.json();
+          return L.geoJSON(geoJson, {
+            style: () => ({
+              ...baseStyle,
+              ...countryStyles[code as CountryCode],
+            }),
+          }).addTo(map!);
+        }),
+      );
 
-          // Erstelle GeoJSON Layer mit Styling
-          const layer = L.geoJSON(geoJsonData, {
-            style: (_feature) => {
-              // Verwende das ISO-Code aus unserem Mapping
-              return {
-                ...baseStyle,
-                ...countryStyles[isoCode as keyof typeof countryStyles],
-              };
-            },
-          }).addTo(map);
-
-          geoJsonLayers.push(layer);
-        }
-
-        console.log(`✅ Loaded ${geoJsonLayers.length} country boundaries`);
-      } catch (error) {
-        console.error("Error loading country boundaries:", error);
-        // Fallback zu vereinfachten Polygonen falls GeoJSON nicht lädt
+      if (!layers.some((layer) => layer)) {
         addFallbackRegions();
       }
-    };
+    } catch (error) {
+      console.error("Error loading country boundaries:", error);
+      addFallbackRegions();
+    }
+  }
 
-    loadCountryBoundaries();
+  async function loadCountryBoundary(
+    filename: string,
+  ): Promise<GeoJsonObject | null> {
+    if (geoJsonCache.has(filename)) {
+      return geoJsonCache.get(filename) ?? null;
+    }
+
+    try {
+      const response = await fetch(`/data/${filename}.geojson`, {
+        cache: "force-cache",
+      });
+
+      if (!response.ok) {
+        console.warn(`Could not load ${filename}.geojson`);
+        return null;
+      }
+
+      const data = (await response.json()) as GeoJsonObject;
+      geoJsonCache.set(filename, data);
+      return data;
+    } catch (error) {
+      console.error(`Error loading geojson for ${filename}:`, error);
+      return null;
+    }
   }
 
   // Fallback-Funktion mit vereinfachten Polygonen
   function addFallbackRegions() {
     if (!map || !L) return;
 
-    console.log("Using fallback simplified boundaries");
-
     // Sehr vereinfachte aber erkennbare Ländergrenzen als Fallback
     const fallbackRegions = [
       {
-        name: "Deutschland",
         color: "#1f77b4",
         coords: [
           [54.983, 5.866] as [number, number],
@@ -185,7 +228,6 @@
         ],
       },
       {
-        name: "Österreich",
         color: "#d62728",
         coords: [
           [49.021, 9.531] as [number, number],
@@ -196,7 +238,6 @@
         ],
       },
       {
-        name: "Schweiz",
         color: "#2ca02c",
         coords: [
           [47.808, 5.956] as [number, number],
@@ -216,49 +257,31 @@
         fillColor: region.color,
         fillOpacity: 0.15,
         interactive: false,
-      }).addTo(map);
+      }).addTo(map!);
     });
   }
-  function updateMarkers(locations: StammtischLocation[]) {
+  function updateMarkers(locations: StammtischLocation[]): void {
     if (!map || !L) return;
 
-    // Clear existing markers
-    markers.forEach((marker: any) => map.removeLayer(marker));
-    markers.length = 0;
+    markers.forEach((marker) => marker.remove());
+    markers = [];
 
-    // Custom pin icon for stammtische
-    const stammtischIcon = L.divIcon({
-      html: `
-        <div class="stammtisch-marker">
-          <div class="marker-pin">
-            <div class="marker-icon">📍</div>
-          </div>
-          <div class="marker-shadow"></div>
-        </div>
-      `,
-      className: "custom-stammtisch-marker",
-      iconSize: [30, 40],
-      iconAnchor: [15, 40],
-      popupAnchor: [0, -40],
-    });
+    const icon = ensureStammtischIcon();
 
-    // Add markers for current locations
     locations.forEach((location) => {
       const marker = L.marker(
         [location.coordinates.lat, location.coordinates.lng],
         {
-          icon: stammtischIcon,
+          icon,
         },
-      ).addTo(map);
+      ).addTo(map!);
 
-      // Create popup content
       const popupContent = createPopupContent(location);
       marker.bindPopup(popupContent, {
         maxWidth: 300,
         className: "stammtisch-popup",
       });
 
-      // Handle marker click
       marker.on("click", () => {
         openLocationDetails(location);
       });
@@ -267,40 +290,93 @@
     });
   }
 
+  function ensureStammtischIcon(): DivIcon {
+    if (!stammtischIcon && L) {
+      stammtischIcon = L.divIcon({
+        html: `
+          <div class="stammtisch-marker">
+            <div class="marker-pin">
+              <div class="marker-icon">📍</div>
+            </div>
+            <div class="marker-shadow"></div>
+          </div>
+        `,
+        className: "custom-stammtisch-marker",
+        iconSize: [30, 40],
+        iconAnchor: [15, 40],
+        popupAnchor: [0, -40],
+      });
+    }
+
+    return stammtischIcon!;
+  }
+
   function createPopupContent(location: StammtischLocation): string {
-    const countryFlag = getCountryFlag(location.country);
-    const tags = location.tags
-      .map((tag) => `<span class="tag">${tag}</span>`)
-      .join(" ");
+    const countryInfo = CountryMetadata.getCountryInfo(location.country);
+    const tagsHtml = location.tags
+      .map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`)
+      .join("");
+
+    const locationText = escapeHtml(
+      t("map.popup.location", {
+        values: {
+          city: location.city,
+          region: location.region,
+        },
+      }),
+    );
+
+    const meetingFrequency =
+      location.meetingInfo.frequency &&
+      location.meetingInfo.frequency.length > 0
+        ? location.meetingInfo.frequency
+        : t("map.details.frequencyUnknown");
+
+    const frequencyText = escapeHtml(
+      t("map.popup.frequency", {
+        values: { frequency: meetingFrequency },
+      }),
+    );
+
+    const buttonLabel = escapeHtml(t("map.popup.more"));
+    const locationName = escapeHtml(location.name);
+    const locationId = escapeForJsString(location.id);
 
     return `
       <div class="popup-content">
         <h3 class="popup-title">
-          ${countryFlag} ${location.name}
+          ${countryInfo.flag} ${locationName}
         </h3>
         <p class="popup-location">
-          📍 ${location.city}, ${location.region}
+          ${locationText}
         </p>
         <p class="popup-frequency">
-          🗓️ ${location.meetingInfo.frequency}
+          ${frequencyText}
         </p>
         <div class="popup-tags">
-          ${tags}
+          ${tagsHtml}
         </div>
-        <button class="popup-button" onclick="this.dispatchEvent(new CustomEvent('show-details', { bubbles: true, detail: '${location.id}' }))">
-          Mehr Details →
+        <button class="popup-button" onclick="this.dispatchEvent(new CustomEvent('show-details', { bubbles: true, detail: '${locationId}' }))">
+          ${buttonLabel}
         </button>
       </div>
     `;
   }
 
-  function getCountryFlag(country: string): string {
-    const flags: Record<string, string> = {
-      DE: "🇩🇪",
-      AT: "🇦🇹",
-      CH: "🇨🇭",
-    };
-    return flags[country] || "🏁";
+  function escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function escapeForJsString(value: string): string {
+    return value
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"')
+      .replace(/'/g, "\\'");
   }
 
   // React to store changes
@@ -343,27 +419,29 @@
   class="map-container {className}"
   style="height: {height}; min-height: 400px;"
   role="application"
-  aria-label="Interaktive Karte mit Stammtisch-Standorten"
+  aria-label={t("map.view.aria")}
   tabindex="-1"
 >
   <!-- Loading indicators -->
   {#if !map}
-    <div class="map-loading">
+    <div class="map-loading" role="status" aria-live="polite">
       <div class="loading-spinner"></div>
-      <p>Karte wird geladen...</p>
+      <p>{t("map.loading.map")}</p>
     </div>
   {:else if $isLoadingLocations}
-    <div class="locations-loading">
+    <div class="locations-loading" role="status" aria-live="polite">
       <div class="loading-spinner small"></div>
-      <span>Stammtische werden geladen...</span>
+      <span>{t("map.loading.locations")}</span>
     </div>
   {/if}
 
   <!-- Error indicator -->
   {#if $locationsError}
-    <div class="locations-error">
+    <div class="locations-error" role="alert" aria-live="assertive">
       <span class="error-icon">⚠️</span>
-      <span>Fehler beim Laden der Stammtische: {$locationsError}</span>
+      <span>
+        {t("map.loading.error", { values: { message: $locationsError } })}
+      </span>
     </div>
   {/if}
 </div>
