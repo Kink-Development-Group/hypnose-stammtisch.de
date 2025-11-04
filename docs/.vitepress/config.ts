@@ -23,7 +23,13 @@ export default defineConfig({
       },
       { text: "Features", link: "/features/map-feature" },
       { text: "Backend", link: "/backend/database-api-enhancement" },
-      { text: "Benutzerstruktur", link: "/architecture/user-structure" },
+      {
+        text: "Entwicklung",
+        items: [
+          { text: "Code-Qualität", link: "/development/code-quality" },
+          { text: "Benutzerstruktur", link: "/architecture/user-structure" },
+        ],
+      },
     ],
     sidebar: {
       "/admin/": [
@@ -64,6 +70,17 @@ export default defineConfig({
           text: "Architektur",
           items: [
             { text: "Benutzerstruktur", link: "/architecture/user-structure" },
+          ],
+        },
+      ],
+      "/development/": [
+        {
+          text: "Entwicklung",
+          items: [
+            {
+              text: "Code-Qualitätsstandards",
+              link: "/development/code-quality",
+            },
           ],
         },
       ],
