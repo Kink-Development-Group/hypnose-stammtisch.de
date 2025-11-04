@@ -17,6 +17,7 @@ use HypnoseStammtisch\Controllers\AdminStammtischLocationController;
 use HypnoseStammtisch\Controllers\AdminUsersController;
 use HypnoseStammtisch\Controllers\AdminSecurityController;
 use HypnoseStammtisch\Controllers\UserController;
+use HypnoseStammtisch\Controllers\PasswordResetController;
 use HypnoseStammtisch\Utils\Response;
 
 // Load configuration
@@ -72,6 +73,22 @@ try {
   }
   if ($path === '/auth/2fa/backup-codes/status' && $method === 'GET') {
     AdminAuthController::twofaBackupStatus();
+    return;
+  }
+
+  // Password reset endpoints (no authentication required)
+  if ($path === '/auth/password-reset/request' && $method === 'POST') {
+    PasswordResetController::requestReset();
+    return;
+  }
+  
+  if ($path === '/auth/password-reset/verify' && $method === 'GET') {
+    PasswordResetController::verifyToken();
+    return;
+  }
+  
+  if ($path === '/auth/password-reset/reset' && $method === 'POST') {
+    PasswordResetController::resetPassword();
     return;
   }
 

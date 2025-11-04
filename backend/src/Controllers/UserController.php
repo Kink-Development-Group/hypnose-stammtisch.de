@@ -9,7 +9,7 @@ use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\AuditLogger;
 use HypnoseStammtisch\Utils\Validator;
-use PHPMailer\PHPMailer\PHPMailer;
+use HypnoseStammtisch\Utils\EmailService;
 use HypnoseStammtisch\Config\Config;
 
 class UserController
@@ -178,30 +178,6 @@ class UserController
 
   private static function sendEmailChangeConfirmation(?string $oldEmail, string $newEmail, string $token): void
   {
-    try {
-      $confirmUrl = Config::get('app.url', 'https://hypnose-stammtisch.de') . '/api/admin/users/confirm-email?token=' . urlencode($token);
-      $mail = new PHPMailer(true);
-      if (Config::get('mail.smtp_enabled', false)) {
-        $mail->isSMTP();
-        $mail->Host = Config::get('mail.smtp_host');
-        $mail->SMTPAuth = true;
-        $mail->Username = Config::get('mail.smtp_username');
-        $mail->Password = Config::get('mail.smtp_password');
-        $mail->SMTPSecure = Config::get('mail.smtp_encryption', 'tls');
-        $mail->Port = Config::get('mail.smtp_port', 587);
-      }
-      $mail->setFrom(Config::get('mail.from_email', 'noreply@hypnose-stammtisch.de'), Config::get('mail.from_name', 'Hypnose Stammtisch'));
-      $mail->addAddress($newEmail);
-      if ($oldEmail && $oldEmail !== $newEmail) {
-        $mail->addCC($oldEmail);
-      }
-      $mail->isHTML(true);
-      $mail->Subject = 'E-Mail Änderung bestätigen';
-      $mail->Body = '<p>Bitte bestätige die Änderung deiner E-Mail-Adresse.</p><p><a href="' . htmlspecialchars($confirmUrl, ENT_QUOTES) . '">E-Mail jetzt bestätigen</a></p><p>Falls du das nicht warst, ignoriere diese Nachricht.</p>';
-      $mail->AltBody = 'Bitte bestätige die Änderung deiner E-Mail-Adresse: ' . $confirmUrl;
-      $mail->send();
-    } catch (\Throwable $e) {
-      error_log('Failed to send email change confirmation: ' . $e->getMessage());
-    }
+    EmailService::sendEmailChangeConfirmation($oldEmail, $newEmail, $token);
   }
 }
