@@ -121,6 +121,17 @@ Falls du Nginx verwendest, nutze die bereitgestellte `nginx.conf.example` als Ba
 - `GET /api/calendar/event/{id}/ics` - ICS für einzelnes Event
 - `GET /api/calendar/meta` - Calendar-Metadaten
 
+### Admin Authentication & Password Reset
+
+- `POST /api/admin/auth/login` - Admin login
+- `POST /api/admin/auth/logout` - Admin logout
+- `GET /api/admin/auth/status` - Check authentication status
+- `POST /api/admin/auth/password-reset/request` - Request password reset via email
+- `GET /api/admin/auth/password-reset/verify?token={token}` - Verify reset token
+- `POST /api/admin/auth/password-reset/reset` - Reset password with token
+
+See [Password Reset Documentation](../docs/features/password-reset.md) for detailed usage.
+
 ## Sicherheit
 
 ### Produktions-Checklist
