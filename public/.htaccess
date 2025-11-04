@@ -1,0 +1,20 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Route calendar subscriptions to backend API feed
+  RewriteRule ^calendar\.ics$ api/calendar/feed [QSA,L]
+
+  # Allow API and well-known resources to pass through
+  RewriteCond %{REQUEST_URI} ^/api/ [OR]
+  RewriteCond %{REQUEST_URI} ^/\.well-known/
+  RewriteRule ^ - [L]
+
+  # Serve existing files and directories directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Fallback all other requests to index.html so the SPA can handle routing
+  RewriteRule ^ index.html [L]
+</IfModule>
