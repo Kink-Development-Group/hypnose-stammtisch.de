@@ -10,7 +10,7 @@
     isMapLoading,
     selectedLocation,
   } from "../stores/api-map-locations";
-  import { t } from "../utils/i18n";
+  import { locale, t } from "../utils/i18n";
 
   const isBrowser = typeof window !== "undefined";
   let showMobileDetails = false;
@@ -89,9 +89,9 @@
       ? t("map.footer.single", { values: { count: locationCount } })
       : t("map.footer.plural", { values: { count: locationCount } });
 
-  $: pageTitle = t("map.meta.title");
-  $: pageDescription = t("map.meta.description");
-  $: pageKeywords = t("map.meta.keywords");
+  $: pageTitle = t("map.meta.title", { locale: $locale });
+  $: pageDescription = t("map.meta.description", { locale: $locale });
+  $: pageKeywords = t("map.meta.keywords", { locale: $locale });
 </script>
 
 <svelte:head>
@@ -200,7 +200,7 @@
           {t("map.info.howTo.title")}
         </h2>
         <ul class="space-y-2 text-smoke-300">
-          {#each howToSteps as step}
+          {#each howToSteps as step (step)}
             <li>• {t(step)}</li>
           {/each}
         </ul>
@@ -232,7 +232,7 @@
       {t("map.related.title")}
     </h2>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {#each relatedLinks as item}
+      {#each relatedLinks as item (item.href)}
         <a href={item.href} use:link class="link-card">
           {item.icon}
           {t(item.labelKey)}
