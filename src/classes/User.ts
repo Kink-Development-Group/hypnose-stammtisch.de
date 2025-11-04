@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { Role } from "../enums/role";
+import { formatDateTime, t } from "../utils/i18n";
 
 /**
  * Zod validation schema for user data.
@@ -160,7 +161,7 @@ export default class User {
   /**
    * Get the localized display name for the user's role.
    *
-   * @returns Human-readable role name in German
+   * @returns Human-readable role name
    *
    * @example
    * ```typescript
@@ -168,21 +169,20 @@ export default class User {
    * ```
    *
    * @remarks
-   * Currently returns German strings. Should be migrated to i18n system.
-   * @todo Integrate with i18n.ts for multi-language support
+   * Uses the i18n system for multi-language support.
    */
   getRoleDisplayName(): string {
     switch (this.role) {
       case Role.HEADADMIN:
-        return "Head Admin";
+        return t("role.headAdmin");
       case Role.ADMIN:
-        return "Administrator";
+        return t("role.admin");
       case Role.MODERATOR:
-        return "Moderator";
+        return t("role.moderator");
       case Role.EVENTMANAGER:
-        return "Event-Manager";
+        return t("role.eventManager");
       default:
-        return "Unbekannt";
+        return t("role.unknown");
     }
   }
 
@@ -301,7 +301,7 @@ export default class User {
   /**
    * Get formatted last login timestamp.
    *
-   * @returns Localized datetime string or "Nie" if never logged in
+   * @returns Localized datetime string or "Nie"/"Never" if never logged in
    *
    * @example
    * ```typescript
@@ -309,18 +309,11 @@ export default class User {
    * ```
    *
    * @remarks
-   * Uses German locale (de-DE) for formatting.
-   * @todo Integrate with i18n system for locale-aware formatting
+   * Uses the i18n system for locale-aware formatting.
    */
   getFormattedLastLogin(): string {
-    if (!this.last_login) return "Nie";
-    return this.last_login.toLocaleDateString("de-DE", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    if (!this.last_login) return t("datetime.never");
+    return formatDateTime(this.last_login);
   }
 
   /**
@@ -334,11 +327,10 @@ export default class User {
    * ```
    *
    * @remarks
-   * Uses German locale (de-DE) for formatting.
-   * @todo Integrate with i18n system for locale-aware formatting
+   * Uses the i18n system for locale-aware formatting.
    */
   getFormattedCreatedAt(): string {
-    return this.created_at.toLocaleDateString("de-DE", {
+    return formatDateTime(this.created_at, {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",

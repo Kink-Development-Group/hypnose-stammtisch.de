@@ -97,7 +97,7 @@
   <!-- Filter section -->
   <div class="bg-charcoal-800 border border-charcoal-700 rounded-lg p-6">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-smoke-50">Filter</h3>
+      <h2 class="text-lg font-semibold text-smoke-50">Filter</h2>
       <button
         class="btn btn-ghost text-sm"
         on:click={handleClearFilters}
@@ -213,7 +213,7 @@
               tag,
             )
               ? 'badge-accent'
-              : 'badge-primary opacity-60 hover:opacity-100'}"
+              : 'badge-primary opacity-70 hover:opacity-100'}"
             on:click={() => toggleTag(tag)}
             aria-pressed={$eventFilters.tags.includes(tag)}
           >

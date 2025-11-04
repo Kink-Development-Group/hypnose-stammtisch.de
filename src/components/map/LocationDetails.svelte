@@ -1,70 +1,119 @@
 <script lang="ts">
+  import { CountryMetadata } from "../../classes/CountryMetadata";
+  import { CountryCode } from "../../enums/countryCode";
   import {
     closeLocationDetails,
     selectedLocation,
   } from "../../stores/api-map-locations";
   import type { StammtischLocation } from "../../types/stammtisch";
+  import { formatDateTime, t } from "../../utils/i18n";
 
   export let location: StammtischLocation | null = null;
 
-  // Use provided location or store value
   $: currentLocation = location || $selectedLocation;
 
-  function handleClose() {
+  type ContactChannel = keyof StammtischLocation["contact"];
+
+  function handleClose(): void {
     closeLocationDetails();
   }
 
-  function getCountryName(country: string): string {
-    const countries: Record<string, string> = {
-      DE: "Deutschland",
-      AT: "Österreich",
-      CH: "Schweiz",
-    };
-    return countries[country] || country;
+  function getCountryFlag(country: CountryCode): string {
+    return CountryMetadata.getCountryInfo(country).flag;
   }
 
-  function getCountryFlag(country: string): string {
-    const flags: Record<string, string> = {
-      DE: "🇩🇪",
-      AT: "🇦🇹",
-      CH: "🇨🇭",
-    };
-    return flags[country] || "🏁";
+  function getCountryName(country: CountryCode): string {
+    return CountryMetadata.getDisplayName(country);
   }
 
   function formatNextMeeting(dateString: string | undefined): string {
-    if (!dateString) return "Noch nicht bekannt";
-
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString("de-DE", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return "Ungültiges Datum";
+    if (!dateString) {
+      return t("map.details.nextMeetingUnknown");
     }
+
+    const date = new Date(dateString);
+    if (Number.isNaN(date.valueOf())) {
+      return t("map.details.nextMeetingInvalid");
+    }
+
+    return formatDateTime(date, {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
-  function handleContactClick(type: string, value: string) {
+  function getLastUpdatedLabel(target: StammtischLocation): string {
+    if (!target.lastUpdated) {
+      return t("map.details.lastUpdatedUnknown");
+    }
+
+    const date = new Date(target.lastUpdated);
+    if (Number.isNaN(date.valueOf())) {
+      return t("map.details.lastUpdatedUnknown");
+    }
+
+    return formatDateTime(date, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  }
+
+  function handleContactClick(
+    type: ContactChannel,
+    value: string | undefined,
+  ): void {
+    if (!value) return;
+
     switch (type) {
       case "email":
         window.open(`mailto:${value}`);
         break;
-      case "website":
-        window.open(value, "_blank");
+      case "website": {
+        const href = value.startsWith("http") ? value : `https://${value}`;
+        window.open(href, "_blank", "noopener");
         break;
-      case "telegram":
-        window.open(`https://fetlife.com/${value.replace("@", "")}`, "_blank");
+      }
+      case "phone":
+        window.open(`tel:${value}`);
         break;
+      case "telegram": {
+        const handle = value.replace(/^@/, "");
+        window.open(`https://t.me/${handle}`, "_blank", "noopener");
+        break;
+      }
       case "discord":
-        // Discord links would need specific handling
-        navigator.clipboard?.writeText(value);
-        alert(`Discord-Handle kopiert: ${value}`);
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard
+            .writeText(value)
+            .then(() => {
+              window.alert?.(
+                t("map.details.contact.discordCopied", {
+                  values: { handle: value },
+                }),
+              );
+            })
+            .catch(() => {
+              window.alert?.(
+                t("map.details.contact.copyFallback", {
+                  values: { handle: value },
+                }),
+              );
+            });
+        } else {
+          window.prompt?.(
+            t("map.details.contact.copyFallback", {
+              values: { handle: value },
+            }),
+            value,
+          );
+        }
+        break;
+      default:
         break;
     }
   }
@@ -85,9 +134,13 @@
           {currentLocation.name}
         </h2>
         <p class="location-subtitle">
-          📍 {currentLocation.city}, {currentLocation.region}, {getCountryName(
-            currentLocation.country,
-          )}
+          {t("map.details.locationSummary", {
+            values: {
+              city: currentLocation.city,
+              region: currentLocation.region,
+              country: getCountryName(currentLocation.country),
+            },
+          })}
         </p>
       </div>
 
@@ -95,7 +148,7 @@
         <button
           class="close-button"
           on:click={handleClose}
-          aria-label="Details schließen"
+          aria-label={t("map.details.close")}
         >
           ✕
         </button>
@@ -106,7 +159,7 @@
     <div class="details-content">
       <!-- Description -->
       <section class="content-section">
-        <h3 class="section-title">Über diesen Stammtisch</h3>
+        <h3 class="section-title">{t("map.details.aboutTitle")}</h3>
         <p id="location-description" class="description">
           {currentLocation.description}
         </p>
@@ -114,23 +167,27 @@
 
       <!-- Meeting Info -->
       <section class="content-section">
-        <h3 class="section-title">📅 Treffen</h3>
+        <h3 class="section-title">{t("map.details.meetingsTitle")}</h3>
         <div class="meeting-info">
           <div class="info-item">
-            <span class="info-label">Häufigkeit:</span>
-            <span class="info-value"
-              >{currentLocation.meetingInfo.frequency}</span
-            >
+            <span class="info-label">{t("map.details.labels.frequency")}:</span>
+            <span class="info-value">
+              {currentLocation.meetingInfo.frequency ??
+                t("map.details.frequencyUnknown")}
+            </span>
           </div>
           <div class="info-item">
-            <span class="info-label">Ort:</span>
-            <span class="info-value"
-              >{currentLocation.meetingInfo.location}</span
-            >
+            <span class="info-label">{t("map.details.labels.location")}:</span>
+            <span class="info-value">
+              {currentLocation.meetingInfo.location ??
+                t("map.details.locationUnknown")}
+            </span>
           </div>
           {#if currentLocation.meetingInfo.nextMeeting}
             <div class="info-item">
-              <span class="info-label">Nächstes Treffen:</span>
+              <span class="info-label">
+                {t("map.details.labels.nextMeeting")}:
+              </span>
               <span class="info-value next-meeting">
                 {formatNextMeeting(currentLocation.meetingInfo.nextMeeting)}
               </span>
@@ -142,7 +199,7 @@
       <!-- Tags -->
       {#if currentLocation.tags.length > 0}
         <section class="content-section">
-          <h3 class="section-title">🏷️ Charakteristika</h3>
+          <h3 class="section-title">{t("map.details.tagsTitle")}</h3>
           <div class="tags">
             {#each currentLocation.tags as tag (tag)}
               <span class="tag">{tag}</span>
@@ -154,18 +211,15 @@
       <!-- Contact Info -->
       {#if Object.values(currentLocation.contact).some((v) => v)}
         <section class="content-section">
-          <h3 class="section-title">💬 Kontakt</h3>
+          <h3 class="section-title">{t("map.details.contactTitle")}</h3>
           <div class="contact-info">
             {#if currentLocation.contact.email}
               <button
                 class="contact-button email"
                 on:click={() =>
-                  handleContactClick(
-                    "email",
-                    currentLocation.contact.email || "",
-                  )}
+                  handleContactClick("email", currentLocation.contact.email)}
               >
-                📧 E-Mail schreiben
+                📧 {t("map.details.contact.email")}
               </button>
             {/if}
 
@@ -175,10 +229,20 @@
                 on:click={() =>
                   handleContactClick(
                     "website",
-                    currentLocation.contact.website || "",
+                    currentLocation.contact.website,
                   )}
               >
-                🌐 Website besuchen
+                🌐 {t("map.details.contact.website")}
+              </button>
+            {/if}
+
+            {#if currentLocation.contact.phone}
+              <button
+                class="contact-button phone"
+                on:click={() =>
+                  handleContactClick("phone", currentLocation.contact.phone)}
+              >
+                📞 {t("map.details.contact.phone")}
               </button>
             {/if}
 
@@ -188,10 +252,13 @@
                 on:click={() =>
                   handleContactClick(
                     "telegram",
-                    currentLocation.contact.telegram || "",
+                    currentLocation.contact.telegram,
                   )}
               >
-                📱 FetLife: {currentLocation.contact.telegram}
+                📱
+                {t("map.details.contact.telegram", {
+                  values: { handle: currentLocation.contact.telegram },
+                })}
               </button>
             {/if}
 
@@ -201,10 +268,13 @@
                 on:click={() =>
                   handleContactClick(
                     "discord",
-                    currentLocation.contact.discord || "",
+                    currentLocation.contact.discord,
                   )}
               >
-                🎮 Discord: {currentLocation.contact.discord}
+                🎮
+                {t("map.details.contact.discord", {
+                  values: { handle: currentLocation.contact.discord },
+                })}
               </button>
             {/if}
           </div>
@@ -218,14 +288,14 @@
             class="status-indicator"
             class:active={currentLocation.isActive}
           >
-            {currentLocation.isActive ? "🟢 Aktiv" : "🔴 Inaktiv"}
+            {currentLocation.isActive
+              ? t("map.details.status.active")
+              : t("map.details.status.inactive")}
           </span>
           <span class="last-updated">
-            Letzte Aktualisierung: {currentLocation.lastUpdated
-              ? new Date(currentLocation.lastUpdated).toLocaleDateString(
-                  "de-DE",
-                )
-              : "Unbekannt"}
+            {t("map.details.lastUpdated", {
+              values: { date: getLastUpdatedLabel(currentLocation) },
+            })}
           </span>
         </div>
       </section>

@@ -1,5 +1,6 @@
 import User from "../classes/User";
 import { Role } from "../enums/role";
+import { formatDateTime, t } from "../utils/i18n";
 
 /**
  * Static utility class providing helper functions for User objects.
@@ -50,7 +51,7 @@ export class UserHelpers {
    * Get localized display name for a role.
    *
    * @param role - Role enum value or string representation
-   * @returns Human-readable role name in German
+   * @returns Human-readable role name
    *
    * @example
    * ```typescript
@@ -60,25 +61,24 @@ export class UserHelpers {
    *
    * @remarks
    * Accepts both Role enum values and string representations for flexibility.
-   * Currently returns German strings.
-   * @todo Integrate with i18n system for multi-language support
+   * Uses the i18n system for multi-language support.
    */
   static getRoleDisplayName(role: Role | string): string {
     switch (role) {
       case Role.HEADADMIN:
       case "head":
-        return "Head Admin";
+        return t("role.headAdmin");
       case Role.ADMIN:
       case "admin":
-        return "Administrator";
+        return t("role.admin");
       case Role.MODERATOR:
       case "moderator":
-        return "Moderator";
+        return t("role.moderator");
       case Role.EVENTMANAGER:
       case "event_manager":
-        return "Event-Manager";
+        return t("role.eventManager");
       default:
-        return "Unbekannt";
+        return t("role.unknown");
     }
   }
 
@@ -122,7 +122,7 @@ export class UserHelpers {
    * Format a date for display.
    *
    * @param date - Date object, ISO string, or null
-   * @returns Localized datetime string or "Nie" if null
+   * @returns Localized datetime string or "Nie"/"Never" if null
    *
    * @example
    * ```typescript
@@ -132,21 +132,13 @@ export class UserHelpers {
    * ```
    *
    * @remarks
-   * Uses German locale (de-DE) for formatting.
-   * @todo Integrate with i18n system for locale-aware formatting
+   * Uses the i18n system for locale-aware formatting.
    */
   static formatDate(date: Date | string | null): string {
-    if (!date) return "Nie";
+    if (!date) return t("datetime.never");
 
     const dateObj = typeof date === "string" ? new Date(date) : date;
-
-    return dateObj.toLocaleDateString("de-DE", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return formatDateTime(dateObj);
   }
 
   /**

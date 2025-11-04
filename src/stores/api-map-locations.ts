@@ -1,11 +1,21 @@
 import { derived, writable } from "svelte/store";
+import type { CountryInfo } from "../classes/CountryMetadata";
+import { CountryMetadata } from "../classes/CountryMetadata";
+import { StammtischLocationCache } from "../classes/StammtischLocationCache";
+import { StammtischLocationFactory } from "../classes/StammtischLocationFactory";
+import { CountryCode } from "../enums/countryCode";
+import { LocationStatus } from "../enums/locationStatus";
 import type {
   MapFilter,
   MapViewport,
   StammtischLocation,
+  StammtischLocationMeta,
 } from "../types/stammtisch";
 
-// API-based store for stammtisch locations
+const isBrowser = typeof window !== "undefined";
+const DEFAULT_COUNTRY_CODES = CountryMetadata.getDefaultCountryCodes();
+
+// API-based store for Stammtisch locations
 export const allStammtischLocations = writable<StammtischLocation[]>([]);
 export const locationsLoading = writable<boolean>(false);
 export const locationsError = writable<string>("");
@@ -18,28 +28,19 @@ export const mapViewport = writable<MapViewport>({
 
 // Filter store
 export const mapFilter = writable<MapFilter>({
-  countries: ["DE", "AT", "CH"], // Default: all DACH countries
+  countries: [...DEFAULT_COUNTRY_CODES],
   regions: [],
   tags: [],
   activeOnly: true,
 });
 
 // Location metadata for filters
-export const locationsMeta = writable<{
-  regions: string[];
-  tags: string[];
-  countries: Array<{ code: string; name: string; flag: string }>;
-}>({
+export const locationsMeta = writable<StammtischLocationMeta>({
   regions: [],
   tags: [],
-  countries: [
-    { code: "DE", name: "Deutschland", flag: "🇩🇪" },
-    { code: "AT", name: "Österreich", flag: "🇦🇹" },
-    { code: "CH", name: "Schweiz", flag: "🇨🇭" },
-  ],
+  countries: CountryMetadata.getSupportedCountries(),
 });
 
-// Legacy exports for backward compatibility
 export const availableRegions = derived(
   locationsMeta,
   ($meta) => $meta.regions,
@@ -59,9 +60,8 @@ export const isLoadingLocations = derived(
 // Filtered locations based on current filter settings
 export const filteredStammtischLocations = derived(
   [allStammtischLocations, mapFilter],
-  ([$locations, $filter]) => {
-    return $locations.filter((location) => {
-      // Filter by countries
+  ([$locations, $filter]) =>
+    $locations.filter((location) => {
       if (
         $filter.countries.length > 0 &&
         !$filter.countries.includes(location.country)
@@ -69,7 +69,6 @@ export const filteredStammtischLocations = derived(
         return false;
       }
 
-      // Filter by regions
       if (
         $filter.regions.length > 0 &&
         !$filter.regions.includes(location.region)
@@ -77,7 +76,6 @@ export const filteredStammtischLocations = derived(
         return false;
       }
 
-      // Filter by tags
       if ($filter.tags.length > 0) {
         const hasMatchingTag = $filter.tags.some((tag) =>
           location.tags.includes(tag),
@@ -87,29 +85,21 @@ export const filteredStammtischLocations = derived(
         }
       }
 
-      // Filter by active status
       if ($filter.activeOnly && !location.isActive) {
         return false;
       }
 
-      // Only show published locations for public users
-      if (location.status !== "published") {
-        return false;
-      }
-
-      return true;
-    });
-  },
+      return location.status === LocationStatus.PUBLISHED;
+    }),
 );
 
-// Derived store for location count by filters
 export const filteredLocations = derived(
   filteredStammtischLocations,
   ($filteredLocations) => $filteredLocations,
 );
 
 /**
- * Load stammtisch locations from API
+ * Load Stammtisch locations from the backend and update the cache.
  */
 export async function loadStammtischLocations(): Promise<void> {
   try {
@@ -118,6 +108,7 @@ export async function loadStammtischLocations(): Promise<void> {
 
     const response = await fetch("/api/stammtisch-locations", {
       credentials: "same-origin",
+      cache: "no-cache",
     });
 
     if (!response.ok) {
@@ -125,18 +116,18 @@ export async function loadStammtischLocations(): Promise<void> {
     }
 
     const result = await response.json();
-    if (result.success) {
-      allStammtischLocations.set(result.data || []);
-    } else {
+    if (!result.success) {
       throw new Error(result.message || "Failed to load locations");
     }
+
+    const normalized = StammtischLocationFactory.fromApiArray(result.data);
+    allStammtischLocations.set(normalized);
+    StammtischLocationCache.saveLocations(normalized);
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Error loading stammtisch locations:", error);
+    console.error("Error loading Stammtisch locations:", error);
     locationsError.set(errorMessage);
-    // Set empty array on error
-    allStammtischLocations.set([]);
   } finally {
     locationsLoading.set(false);
     isMapLoading.set(false);
@@ -144,27 +135,34 @@ export async function loadStammtischLocations(): Promise<void> {
 }
 
 /**
- * Load location metadata for filters
+ * Load filter metadata and persist a cached copy for faster warm starts.
  */
 export async function loadStammtischLocationsMeta(): Promise<void> {
   try {
     const response = await fetch("/api/stammtisch-locations/meta", {
       credentials: "same-origin",
+      cache: "no-cache",
     });
 
-    if (response.ok) {
-      const result = await response.json();
-      if (result.success) {
-        locationsMeta.set(result.data);
-      }
+    if (!response.ok) {
+      return;
     }
+
+    const result = await response.json();
+    if (!result.success) {
+      return;
+    }
+
+    const normalized = normalizeMeta(result.data);
+    locationsMeta.set(normalized);
+    StammtischLocationCache.saveMeta(normalized);
   } catch (error) {
-    console.error("Error loading location metadata:", error);
+    console.error("Error loading Stammtisch metadata:", error);
   }
 }
 
 /**
- * Get stammtisch location by ID
+ * Fetch a single location by id and normalize the payload.
  */
 export async function getStammtischLocationById(
   id: string,
@@ -172,6 +170,7 @@ export async function getStammtischLocationById(
   try {
     const response = await fetch(`/api/stammtisch-locations/${id}`, {
       credentials: "same-origin",
+      cache: "no-cache",
     });
 
     if (!response.ok) {
@@ -179,86 +178,144 @@ export async function getStammtischLocationById(
     }
 
     const result = await response.json();
-    return result.success ? result.data : null;
+    if (!result.success) {
+      return null;
+    }
+
+    return StammtischLocationFactory.fromApi(result.data);
   } catch (error) {
-    console.error("Error fetching location by ID:", error);
+    console.error("Error fetching Stammtisch location:", error);
     return null;
   }
 }
 
-// Helper functions
-export function openLocationDetails(location: StammtischLocation) {
+/**
+ * Open the details drawer for a given location.
+ */
+export function openLocationDetails(location: StammtischLocation): void {
   selectedLocation.set(location);
 }
 
-export function closeLocationDetails() {
+/**
+ * Close the details drawer.
+ */
+export function closeLocationDetails(): void {
   selectedLocation.set(null);
 }
 
-export function updateMapViewport(viewport: Partial<MapViewport>) {
+/**
+ * Persist the current map viewport so that re-renders keep context.
+ */
+export function updateMapViewport(viewport: Partial<MapViewport>): void {
   mapViewport.update((current) => ({
     ...current,
     ...viewport,
   }));
 }
 
-export function toggleCountryFilter(country: string) {
+/**
+ * Toggle a country filter entry.
+ */
+export function toggleCountryFilter(country: CountryCode): void {
   mapFilter.update((filter) => {
-    const countries = [...filter.countries];
-    const index = countries.indexOf(country);
-
-    if (index > -1) {
-      countries.splice(index, 1);
-    } else {
-      countries.push(country);
-    }
+    const exists = filter.countries.includes(country);
+    const countries = exists
+      ? filter.countries.filter((entry) => entry !== country)
+      : [...filter.countries, country];
 
     return { ...filter, countries };
   });
 }
 
-export function toggleRegionFilter(region: string) {
+/**
+ * Toggle a region filter entry.
+ */
+export function toggleRegionFilter(region: string): void {
   mapFilter.update((filter) => {
-    const regions = [...filter.regions];
-    const index = regions.indexOf(region);
-
-    if (index > -1) {
-      regions.splice(index, 1);
-    } else {
-      regions.push(region);
-    }
+    const exists = filter.regions.includes(region);
+    const regions = exists
+      ? filter.regions.filter((entry) => entry !== region)
+      : [...filter.regions, region];
 
     return { ...filter, regions };
   });
 }
 
-export function toggleTagFilter(tag: string) {
+/**
+ * Toggle a tag filter entry.
+ */
+export function toggleTagFilter(tag: string): void {
   mapFilter.update((filter) => {
-    const tags = [...filter.tags];
-    const index = tags.indexOf(tag);
-
-    if (index > -1) {
-      tags.splice(index, 1);
-    } else {
-      tags.push(tag);
-    }
+    const exists = filter.tags.includes(tag);
+    const tags = exists
+      ? filter.tags.filter((entry) => entry !== tag)
+      : [...filter.tags, tag];
 
     return { ...filter, tags };
   });
 }
 
-export function resetMapFilters() {
+/**
+ * Reset filters to their defaults.
+ */
+export function resetMapFilters(): void {
   mapFilter.set({
-    countries: ["DE", "AT", "CH"],
+    countries: [...DEFAULT_COUNTRY_CODES],
     regions: [],
     tags: [],
     activeOnly: true,
   });
 }
 
-// Auto-load data when store is first imported
-if (typeof window !== "undefined") {
-  // Only load in browser
-  loadStammtischLocations();
-  loadStammtischLocationsMeta();
+function normalizeMeta(data: unknown): StammtischLocationMeta {
+  const payload = (data ?? {}) as Partial<StammtischLocationMeta> & {
+    countries?: Array<Partial<CountryInfo> & { code?: string }>;
+  };
+
+  const regions = Array.isArray(payload.regions)
+    ? uniqueStrings(payload.regions)
+    : [];
+
+  const tags = Array.isArray(payload.tags) ? uniqueStrings(payload.tags) : [];
+
+  const countries = Array.isArray(payload.countries)
+    ? payload.countries
+        .map((country) => CountryMetadata.resolveInfo(country))
+        .filter((entry): entry is CountryInfo => Boolean(entry))
+    : [];
+
+  return {
+    regions,
+    tags,
+    countries:
+      countries.length > 0
+        ? countries
+        : CountryMetadata.getSupportedCountries(),
+  };
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(
+    new Set(
+      values
+        .map((value) => (typeof value === "string" ? value.trim() : ""))
+        .filter((value): value is string => value.length > 0),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+}
+
+if (isBrowser) {
+  const cachedLocations = StammtischLocationCache.loadLocations();
+  if (cachedLocations && cachedLocations.length > 0) {
+    allStammtischLocations.set(cachedLocations);
+    isMapLoading.set(false);
+  }
+
+  const cachedMeta = StammtischLocationCache.loadMeta();
+  if (cachedMeta) {
+    locationsMeta.set(cachedMeta);
+  }
+
+  void loadStammtischLocations();
+  void loadStammtischLocationsMeta();
 }

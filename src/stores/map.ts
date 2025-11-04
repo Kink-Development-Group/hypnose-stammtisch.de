@@ -1,4 +1,6 @@
 import { derived, writable } from "svelte/store";
+import { CountryCode } from "../enums/countryCode";
+import { LocationStatus } from "../enums/locationStatus";
 import type {
   MapFilter,
   MapViewport,
@@ -13,7 +15,7 @@ const sampleLocations: StammtischLocation[] = [
     name: "Hypnose Stammtisch Berlin",
     city: "Berlin",
     region: "Berlin",
-    country: "DE",
+    country: CountryCode.GERMANY,
     coordinates: { lat: 52.52, lng: 13.405 },
     description:
       "Monatlicher Stammtisch für alle Interessierten der Hypnose in Berlin. Sowohl Anfänger als auch erfahrene Hypnotiseure sind willkommen.",
@@ -28,6 +30,7 @@ const sampleLocations: StammtischLocation[] = [
     },
     tags: ["anfängerfreundlich", "praxis", "theorie"],
     isActive: true,
+    status: LocationStatus.PUBLISHED,
     lastUpdated: "2025-09-15T00:00:00Z",
   },
   {
@@ -35,7 +38,7 @@ const sampleLocations: StammtischLocation[] = [
     name: "München Hypnose Circle",
     city: "München",
     region: "Bayern",
-    country: "DE",
+    country: CountryCode.GERMANY,
     coordinates: { lat: 48.1351, lng: 11.582 },
     description:
       "Praxisorientierte Treffen mit Fokus auf moderne Hypnosetechniken und Sicherheitspraktiken.",
@@ -49,6 +52,7 @@ const sampleLocations: StammtischLocation[] = [
     },
     tags: ["erfahren", "praxis", "sicherheit"],
     isActive: true,
+    status: LocationStatus.PUBLISHED,
     lastUpdated: "2025-09-10T00:00:00Z",
   },
   {
@@ -56,7 +60,7 @@ const sampleLocations: StammtischLocation[] = [
     name: "Hypnose Hamburg Nord",
     city: "Hamburg",
     region: "Hamburg",
-    country: "DE",
+    country: CountryCode.GERMANY,
     coordinates: { lat: 53.5511, lng: 9.9937 },
     description:
       "Entspannte Atmosphäre für Austausch und praktische Übungen in der Hansestadt.",
@@ -70,6 +74,7 @@ const sampleLocations: StammtischLocation[] = [
     },
     tags: ["anfängerfreundlich", "entspannt", "community"],
     isActive: true,
+    status: LocationStatus.PUBLISHED,
     lastUpdated: "2025-09-12T00:00:00Z",
   },
   {
@@ -77,7 +82,7 @@ const sampleLocations: StammtischLocation[] = [
     name: "Kölner Hypnose Initiative",
     city: "Köln",
     region: "Nordrhein-Westfalen",
-    country: "DE",
+    country: CountryCode.GERMANY,
     coordinates: { lat: 50.9375, lng: 6.9603 },
     description:
       "Interdisziplinärer Austausch zwischen Therapeuten, Coaches und Hobby-Hypnotiseuren.",
@@ -90,6 +95,7 @@ const sampleLocations: StammtischLocation[] = [
     },
     tags: ["therapeutisch", "coaching", "fachlich"],
     isActive: true,
+    status: LocationStatus.PUBLISHED,
     lastUpdated: "2025-09-08T00:00:00Z",
   },
 
@@ -99,7 +105,7 @@ const sampleLocations: StammtischLocation[] = [
     name: "Wiener Hypnose Runde",
     city: "Wien",
     region: "Wien",
-    country: "AT",
+    country: CountryCode.AUSTRIA,
     coordinates: { lat: 48.2082, lng: 16.3738 },
     description:
       "Traditioneller Stammtisch mit Fokus auf klassische und moderne Hypnosetechniken.",
@@ -113,6 +119,7 @@ const sampleLocations: StammtischLocation[] = [
     },
     tags: ["traditionell", "klassisch", "modern"],
     isActive: true,
+    status: LocationStatus.PUBLISHED,
     lastUpdated: "2025-09-14T00:00:00Z",
   },
   {
@@ -120,7 +127,7 @@ const sampleLocations: StammtischLocation[] = [
     name: "Salzburg Hypnose Kreis",
     city: "Salzburg",
     region: "Salzburg",
-    country: "AT",
+    country: CountryCode.AUSTRIA,
     coordinates: { lat: 47.8095, lng: 13.055 },
     description:
       "Gemütliche Runde für alle, die sich für Hypnose und Bewusstseinsarbeit interessieren.",
@@ -134,6 +141,7 @@ const sampleLocations: StammtischLocation[] = [
     },
     tags: ["bewusstsein", "spirituell", "community"],
     isActive: true,
+    status: LocationStatus.PUBLISHED,
     lastUpdated: "2025-09-11T00:00:00Z",
   },
 
@@ -143,7 +151,7 @@ const sampleLocations: StammtischLocation[] = [
     name: "Zürich Hypnose Meetup",
     city: "Zürich",
     region: "Zürich",
-    country: "CH",
+    country: CountryCode.SWITZERLAND,
     coordinates: { lat: 47.3769, lng: 8.5417 },
     description:
       "Internationaler Stammtisch (DE/EN) mit Fokus auf Hypnose in therapeutischen Kontexten.",
@@ -157,6 +165,7 @@ const sampleLocations: StammtischLocation[] = [
     },
     tags: ["international", "therapeutisch", "mehrsprachig"],
     isActive: true,
+    status: LocationStatus.PUBLISHED,
     lastUpdated: "2025-09-13T00:00:00Z",
   },
   {
@@ -164,7 +173,7 @@ const sampleLocations: StammtischLocation[] = [
     name: "Berner Hypnose Gesellschaft",
     city: "Bern",
     region: "Bern",
-    country: "CH",
+    country: CountryCode.SWITZERLAND,
     coordinates: { lat: 46.9481, lng: 7.4474 },
     description:
       "Wissenschaftlich orientierte Gruppe mit Fokus auf Forschung und praktische Anwendung.",
@@ -177,6 +186,7 @@ const sampleLocations: StammtischLocation[] = [
     },
     tags: ["wissenschaftlich", "forschung", "akademisch"],
     isActive: true,
+    status: LocationStatus.PUBLISHED,
     lastUpdated: "2025-09-09T00:00:00Z",
   },
 ];
@@ -191,7 +201,11 @@ export const mapViewport = writable<MapViewport>({
 });
 
 export const mapFilter = writable<MapFilter>({
-  countries: ["DE", "AT", "CH"],
+  countries: [
+    CountryCode.GERMANY,
+    CountryCode.AUSTRIA,
+    CountryCode.SWITZERLAND,
+  ],
   regions: [],
   tags: [],
   activeOnly: true,
@@ -268,9 +282,10 @@ export function updateMapViewport(viewport: Partial<MapViewport>) {
   mapViewport.update((current) => ({ ...current, ...viewport }));
 }
 
-export function toggleCountryFilter(country: string) {
+export function toggleCountryFilter(country: CountryCode) {
   mapFilter.update((current) => {
-    const countries = current.countries.includes(country)
+    const exists = current.countries.includes(country);
+    const countries = exists
       ? current.countries.filter((c) => c !== country)
       : [...current.countries, country];
     return { ...current, countries };
@@ -297,7 +312,11 @@ export function toggleTagFilter(tag: string) {
 
 export function resetMapFilters() {
   mapFilter.set({
-    countries: ["DE", "AT", "CH"],
+    countries: [
+      CountryCode.GERMANY,
+      CountryCode.AUSTRIA,
+      CountryCode.SWITZERLAND,
+    ],
     regions: [],
     tags: [],
     activeOnly: true,

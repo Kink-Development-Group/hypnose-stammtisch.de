@@ -18,6 +18,7 @@
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
     "fetch:boundaries": "node scripts/fetch-dach-boundaries.js",
+    "fonts:download": "node scripts/download-fonts.js",
     "install:backend": "cd backend && composer install",
     "backend:install:prod": "cd backend && composer install --no-dev --optimize-autoloader",
     "setup": "npminstall && npm run install:backend && npm run setup:backend",
@@ -61,6 +62,7 @@
     "concurrently": "^8.2.2",
     "eslint": "^9.38.0",
     "eslint-plugin-svelte": "^3.12.5",
+    "google-webfonts-helper": "^0.0.1-security",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "prettier-plugin-svelte": "^3.4.0",
@@ -87,6 +89,6 @@
     "zod": "^4.1.12"
   },
   "volta": {
-    "node": "25.0.0"
+    "node": "25.1.0"
   }
 }

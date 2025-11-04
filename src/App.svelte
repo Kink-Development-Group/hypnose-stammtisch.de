@@ -118,13 +118,13 @@
   });
 </script>
 
-<main id="main-content" class="min-h-screen bg-charcoal-900 text-smoke-50">
+<div id="app-wrapper" class="min-h-screen bg-charcoal-900 text-smoke-50">
   <Header />
 
-  <!-- Main content area with proper landmarks -->
-  <div role="main" class="flex-1">
+  <!-- Main content area -->
+  <main id="main-content" class="flex-1">
     <svelte:component this={router} {routes} />
-  </div>
+  </main>
 
   <Footer />
 
@@ -132,7 +132,7 @@
   {#if $showEventModal}
     <EventModal />
   {/if}
-</main>
+</div>
 
 <style>
   /* Global app styles */
@@ -151,7 +151,7 @@
     flex-direction: column;
   }
 
-  main {
+  #app-wrapper {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
