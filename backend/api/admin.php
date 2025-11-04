@@ -257,7 +257,7 @@ try {
     }
   }
 
-  // Route stammtisch-locations endpoints (for head admins and admins)
+  // Route stammtisch-locations endpoints (for head admins, admins, and event managers)
   if (str_starts_with($path, '/stammtisch-locations')) {
     if ($path === '/stammtisch-locations') {
       if ($method === 'GET') {

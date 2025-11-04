@@ -12,20 +12,20 @@ use HypnoseStammtisch\Utils\Validator;
 
 /**
  * Admin Stammtisch Location Management Controller
- * Accessible by head admins and regular admins
+ * Accessible by head admins, admins, and event managers
  */
 class AdminStammtischLocationController
 {
   /**
-   * Check if current user is authorized (head admin or admin)
+   * Check if current user is authorized (head admin, admin, or event manager)
    */
   private static function requireLocationAdmin(): void
   {
     AdminAuth::requireAuth();
 
     $user = AdminAuth::getCurrentUser();
-    if (!$user || !in_array($user['role'], ['head', 'admin'])) {
-      Response::error('Insufficient permissions. Head admin or admin role required.', 403);
+    if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
+      Response::error('Insufficient permissions. Head admin, admin, or event manager role required.', 403);
       exit;
     }
   }

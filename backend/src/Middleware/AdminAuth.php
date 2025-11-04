@@ -13,6 +13,13 @@ use HypnoseStammtisch\Utils\Response;
  */
 class AdminAuth
 {
+  /** Roles definitions for permission checks. */
+  public const HEAD_ADMIN_ROLES = ['head'];
+  public const SECURITY_MANAGEMENT_ROLES = ['head', 'admin'];
+  public const MESSAGE_MANAGEMENT_ROLES = ['head', 'admin', 'moderator'];
+  public const EVENT_MANAGEMENT_ROLES = ['head', 'admin', 'event_manager'];
+  public const EVENT_MANAGER_ONLY_ROLES = ['event_manager'];
+
   /**
    * Start secure session if not already started
    */
@@ -92,6 +99,18 @@ class AdminAuth
     }
 
     return $user ?: null;
+  }
+
+  /**
+   * Determine if a user belongs to one of the allowed roles.
+   */
+  public static function userHasRole(?array $user, array $allowedRoles): bool
+  {
+    if (!$user || !isset($user['role'])) {
+      return false;
+    }
+
+    return in_array($user['role'], $allowedRoles, true);
   }
 
   /**

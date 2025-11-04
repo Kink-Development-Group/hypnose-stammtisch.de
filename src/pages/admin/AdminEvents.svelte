@@ -399,23 +399,27 @@
         <h2 class="text-lg font-medium text-gray-900 mb-4">
           Einzelveranstaltungen
         </h2>
-        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div
+          class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+        >
           {#if events.length === 0}
             <div class="p-6 text-center text-gray-500">
               Keine Einzelveranstaltungen vorhanden
             </div>
           {:else}
             <ul class="divide-y divide-gray-200">
-              {#each events as event (event.title)}
-                <li class="px-6 py-4">
-                  <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                      <div class="flex items-center space-x-3">
+              {#each events as event (event.id || event.title)}
+                <li class="px-4 py-4 sm:px-6">
+                  <div
+                    class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div class="flex-1 space-y-2">
+                      <div class="flex flex-wrap items-center gap-2">
                         <h3 class="text-sm font-medium text-gray-900">
                           {event.title}
                         </h3>
                         <span
-                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getStatusBadge(
+                          class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {getStatusBadge(
                             event.status,
                           )}"
                         >
@@ -423,33 +427,33 @@
                         </span>
                         {#if event.is_featured}
                           <span
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
+                            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800"
                           >
                             Featured
                           </span>
                         {/if}
                       </div>
-                      <div class="mt-1 text-sm text-gray-600">
+                      <div class="text-sm text-gray-600">
                         {formatDate(event.start_datetime)} - {formatDate(
                           event.end_datetime,
                         )}
                       </div>
-                      <div class="mt-1 text-sm text-gray-500">
+                      <div class="text-sm text-gray-500">
                         {event.category} • {event.location_type} • {event.difficulty_level}
                       </div>
                     </div>
 
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center gap-2 sm:self-start">
                       <button
                         on:click={() => openEditModal(event, "event")}
-                        class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        class="rounded-lg border border-blue-100 px-3 py-1 text-sm font-medium text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
                       >
                         Bearbeiten
                       </button>
                       {#if canDelete(event)}
                         <button
                           on:click={() => (deleteConfirm = event)}
-                          class="text-red-600 hover:text-red-800 text-sm font-medium"
+                          class="rounded-lg border border-red-100 px-3 py-1 text-sm font-medium text-red-600 transition hover:border-red-200 hover:bg-red-50"
                         >
                           Löschen
                         </button>
@@ -474,54 +478,58 @@
         <h2 class="text-lg font-medium text-gray-900 mb-4">
           Veranstaltungsreihen
         </h2>
-        <div class="bg-white shadow overflow-hidden sm:rounded-md">
+        <div
+          class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+        >
           {#if series.length === 0}
             <div class="p-6 text-center text-gray-500">
               Keine Veranstaltungsreihen vorhanden
             </div>
           {:else}
             <ul class="divide-y divide-gray-200">
-              {#each series as seriesItem (seriesItem.title)}
-                <li class="px-6 py-4">
-                  <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                      <div class="flex items-center space-x-3">
+              {#each series as seriesItem (seriesItem.id || seriesItem.title)}
+                <li class="px-4 py-4 sm:px-6">
+                  <div
+                    class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div class="flex-1 space-y-2">
+                      <div class="flex flex-wrap items-center gap-2">
                         <h3 class="text-sm font-medium text-gray-900">
                           {seriesItem.title}
                         </h3>
                         <span
-                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getStatusBadge(
+                          class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {getStatusBadge(
                             seriesItem.status,
                           )}"
                         >
                           {seriesItem.status}
                         </span>
                         <span
-                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
+                          class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-800"
                         >
                           Serie
                         </span>
                       </div>
-                      <div class="mt-1 text-sm text-gray-600">
+                      <div class="text-sm text-gray-600 break-all">
                         {seriesItem.rrule}
                       </div>
-                      <div class="mt-1 text-sm text-gray-500">
+                      <div class="text-sm text-gray-500">
                         Ab {seriesItem.start_date} • {seriesItem.generated_events_count ||
                           0} generierte Events
                       </div>
                     </div>
 
-                    <div class="flex items-center space-x-2">
+                    <div class="flex items-center gap-2 sm:self-start">
                       <button
                         on:click={() => openEditModal(seriesItem, "series")}
-                        class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        class="rounded-lg border border-blue-100 px-3 py-1 text-sm font-medium text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
                       >
                         Bearbeiten
                       </button>
                       {#if canDelete(seriesItem)}
                         <button
                           on:click={() => (deleteConfirm = seriesItem)}
-                          class="text-red-600 hover:text-red-800 text-sm font-medium"
+                          class="rounded-lg border border-red-100 px-3 py-1 text-sm font-medium text-red-600 transition hover:border-red-200 hover:bg-red-50"
                         >
                           Löschen
                         </button>
@@ -734,7 +742,7 @@
                     class="block text-sm font-medium text-gray-700">Tags</label
                   >
                   <div class="mt-1 flex flex-wrap gap-2">
-                    {#each newEvent.tags as t (t.title)}
+                    {#each newEvent.tags as t (t)}
                       <span
                         class="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center gap-1"
                         >{t}<button

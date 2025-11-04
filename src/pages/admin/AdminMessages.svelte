@@ -221,23 +221,64 @@
 
 <AdminLayout>
   <div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900">Nachrichten</h1>
-      <p class="mt-1 text-sm text-gray-600">
-        Verwalten Sie Kontaktformular-Nachrichten
-      </p>
-    </div>
+    <header
+      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div>
+        <h1 class="text-3xl font-semibold tracking-tight text-slate-800">
+          Nachrichten
+        </h1>
+        <p class="mt-1 text-sm text-slate-600">
+          Verfolgen und beantworten Sie eingehende Kontaktanfragen.
+        </p>
+      </div>
+      <button
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50"
+        on:click={loadMessages}
+        title="Nachrichten neu laden"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M4 4v4h4M20 20v-4h-4"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M5.64 18.36A9 9 0 1118.36 5.64 9 9 0 015.64 18.36z"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        Aktualisieren
+      </button>
+    </header>
 
     {#if error}
-      <div class="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-        <div class="text-red-800">{error}</div>
-        <button
-          on:click={() => (error = "")}
-          class="mt-2 text-red-600 text-sm underline"
-        >
-          Schließen
-        </button>
+      <div
+        class="rounded-xl border border-red-200 bg-red-50/90 p-4 text-sm text-red-800 shadow-sm"
+        role="alert"
+      >
+        <div class="flex items-start gap-2">
+          <svg class="mt-0.5 h-5 w-5 text-red-500" viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M12 2a10 10 0 1010 10A10.011 10.011 0 0012 2zm1 14h-2v-2h2zm0-4h-2V7h2z"
+            />
+          </svg>
+          <div class="flex-1">
+            <p class="font-medium">{error}</p>
+            <button
+              on:click={() => (error = "")}
+              class="mt-2 inline-flex items-center text-xs font-semibold text-red-700 underline-offset-2 hover:underline"
+            >
+              Ausblenden
+            </button>
+          </div>
+        </div>
       </div>
     {/if}
 
