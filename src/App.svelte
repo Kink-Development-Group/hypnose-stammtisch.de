@@ -139,23 +139,22 @@
       }
     };
 
-    // Listen for route changes
-    window.addEventListener("routeEvent", handleRouteChanged as EventListener);
-
-    return () => {
-      window.removeEventListener(
-        "routeEvent",
-        handleRouteChanged as EventListener,
-      );
-    };
+    // Listen for route changes - svelte-spa-router emits 'conditionsFailed' and 'routeLoaded'
+    window.addEventListener("hashchange", () => {
+      // Create a custom event similar to what the handler expects
+      const customEvent = new CustomEvent("routeChange", {
+        detail: { location: window.location.hash.replace("#", "") },
+      });
+      handleRouteChanged(customEvent);
+    });
   });
 </script>
 
 <div id="app-wrapper" class="min-h-screen bg-charcoal-900 text-smoke-50">
   <Header />
 
-  <!-- Main content area -->
-  <main id="main-content" class="flex-1">
+  <!-- Main content area with padding-top to account for fixed header -->
+  <main id="main-content" class="flex-1 pt-20">
     <svelte:component this={router} {routes} />
   </main>
 

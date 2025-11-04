@@ -44,7 +44,7 @@
   ></div>
 
   <!-- Content -->
-  <div class="relative z-10 text-center px-4 max-w-5xl mx-auto">
+  <div class="relative z-10 text-center px-4 max-w-5xl mx-auto mt-20">
     <!-- Logo -->
     <div class="mb-8 flex justify-center">
       <BrandLogo
