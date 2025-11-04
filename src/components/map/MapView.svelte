@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { GeoJsonObject } from "geojson";
-  import type { Map, Marker } from "leaflet";
+  import { Map as LeafletMap, Marker } from "leaflet";
   import { onDestroy, onMount } from "svelte";
   import { CountryMetadata } from "../../classes/CountryMetadata";
   import { CountryCode } from "../../enums/countryCode";
@@ -19,7 +19,7 @@
   type DivIcon = import("leaflet").DivIcon;
 
   let mapContainer: HTMLDivElement;
-  let map: Map | null = null;
+  let map: LeafletMap | null = null;
   let markers: Marker[] = [];
   let L: LeafletNamespace;
   let stammtischIcon: DivIcon | null = null;
@@ -65,7 +65,10 @@
   function configureLeafletIcons(): void {
     if (!L) return;
 
-    const iconProto = L.Icon.Default.prototype as Record<string, unknown>;
+    const iconProto = L.Icon.Default.prototype as unknown as Record<
+      string,
+      unknown
+    >;
     if (iconProto && "_getIconUrl" in iconProto) {
       delete (iconProto as { _getIconUrl?: unknown })._getIconUrl;
     }
@@ -117,8 +120,11 @@
 
     // Update viewport store when map moves
     map.on("moveend", () => {
-      const center = map.getCenter();
-      const zoom = map.getZoom();
+      const currentMap = map;
+      if (!currentMap) return;
+
+      const center = currentMap.getCenter();
+      const zoom = currentMap.getZoom();
       updateMapViewport({
         center: { lat: center.lat, lng: center.lng },
         zoom,
