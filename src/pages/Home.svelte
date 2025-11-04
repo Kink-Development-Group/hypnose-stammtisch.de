@@ -58,7 +58,7 @@
   <meta property="og:url" content="https://hypnose-stammtisch.de/" />
 </svelte:head>
 
-<main class="min-h-screen">
+<div class="min-h-screen">
   <!-- Hero Section -->
   <Hero />
 
@@ -283,4 +283,4 @@
       </div>
     </div>
   </section>
-</main>
+</div>

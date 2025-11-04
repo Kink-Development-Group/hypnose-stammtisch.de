@@ -10,7 +10,7 @@
   />
 </svelte:head>
 
-<main class="container mx-auto px-4 py-16 max-w-4xl text-center">
+<div class="container mx-auto px-4 py-16 max-w-4xl text-center">
   <!-- 404 Hero -->
   <div class="mb-12">
     <!-- Large 404 Text -->
@@ -240,4 +240,5 @@
       />
     </svg>
   </div>
-</main>
+</div>
+

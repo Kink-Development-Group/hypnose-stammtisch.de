@@ -133,11 +133,11 @@
                 >
                   <span class="text-2xl mr-3">{topic.icon}</span>
                   <div>
-                    <h4
+                    <h3
                       class="font-semibold text-smoke-50 text-sm group-hover:text-accent-400 transition-colors"
                     >
                       {topic.title}
-                    </h4>
+                    </h3>
                     <p class="text-smoke-400 text-xs">{topic.description}</p>
                   </div>
                 </div>

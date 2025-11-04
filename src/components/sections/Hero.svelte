@@ -116,9 +116,9 @@
     >
       <div class="space-y-2">
         <div class="text-consent text-2xl mb-2" aria-hidden="true">✓</div>
-        <h3 class="text-lg font-semibold text-smoke-50">
+        <p class="text-lg font-semibold text-smoke-50">
           Einverständnis-zentriert
-        </h3>
+        </p>
         <p class="text-smoke-300 text-sm">
           Alle Aktivitäten basieren auf ausdrücklichem und informiertem
           Einverständnis
@@ -127,9 +127,7 @@
 
       <div class="space-y-2">
         <div class="text-accent-400 text-2xl mb-2" aria-hidden="true">🤝</div>
-        <h3 class="text-lg font-semibold text-smoke-50">
-          Community-fokussiert
-        </h3>
+        <p class="text-lg font-semibold text-smoke-50">Community-fokussiert</p>
         <p class="text-smoke-300 text-sm">
           Eine unterstützende Gemeinschaft für Lernende aller Erfahrungsstufen
         </p>
@@ -139,9 +137,7 @@
         <div class="text-secondary-400 text-2xl mb-2" aria-hidden="true">
           🛡️
         </div>
-        <h3 class="text-lg font-semibold text-smoke-50">
-          Sicher & Respektvoll
-        </h3>
+        <p class="text-lg font-semibold text-smoke-50">Sicher & Respektvoll</p>
         <p class="text-smoke-300 text-sm">
           Klare Grenzen und professionelle Standards für alle Veranstaltungen
         </p>

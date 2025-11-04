@@ -52,6 +52,15 @@
     return days;
   })();
 
+  // Group month days into weeks for proper ARIA grid structure
+  $: monthWeeks = (() => {
+    const weeks = [];
+    for (let i = 0; i < monthDays.length; i += 7) {
+      weeks.push(monthDays.slice(i, i + 7));
+    }
+    return weeks;
+  })();
+
   // Generate week days for week view
   $: weekDays = (() => {
     if (view !== "week") return [];
@@ -281,54 +290,58 @@
         {/each}
       </div>
 
-      <!-- Calendar days -->
-      {#each monthDays as day (day.date)}
-        <div
-          class="calendar-day min-h-[120px] p-2 border border-charcoal-700 {day.isCurrentMonth
-            ? 'bg-charcoal-800'
-            : 'bg-charcoal-900 opacity-50'} {day.isToday
-            ? 'ring-2 ring-accent-400'
-            : ''} hover:bg-charcoal-700 transition-colors"
-          role="gridcell"
-          tabindex="0"
-          aria-label="{dayjs(day.date).format('DD. MMMM YYYY')}{day.events
-            .length > 0
-            ? `, ${day.events.length} Event${day.events.length !== 1 ? 's' : ''}`
-            : ''}"
-        >
-          <!-- Day number -->
-          <div class="text-right mb-2">
-            <span
-              class="text-sm {day.isToday
-                ? 'bg-accent-400 text-charcoal-900 w-6 h-6 rounded-full inline-flex items-center justify-center font-medium'
-                : day.isCurrentMonth
-                  ? 'text-smoke-200'
-                  : 'text-smoke-500'}"
+      <!-- Calendar weeks and days -->
+      {#each monthWeeks as week, weekIndex (weekIndex)}
+        <div class="contents" role="row">
+          {#each week as day (day.date)}
+            <div
+              class="calendar-day min-h-[120px] p-2 border border-charcoal-700 {day.isCurrentMonth
+                ? 'bg-charcoal-800'
+                : 'bg-charcoal-900 opacity-50'} {day.isToday
+                ? 'ring-2 ring-accent-400'
+                : ''} hover:bg-charcoal-700 transition-colors"
+              role="gridcell"
+              tabindex="0"
+              aria-label="{dayjs(day.date).format('DD. MMMM YYYY')}{day.events
+                .length > 0
+                ? `, ${day.events.length} Event${day.events.length !== 1 ? 's' : ''}`
+                : ''}"
             >
-              {day.dayNumber}
-            </span>
-          </div>
-
-          <!-- Events -->
-          <div class="space-y-1">
-            {#each day.events.slice(0, 3) as event (event.id)}
-              <button
-                class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded truncate hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-400"
-                on:click={() => handleEventClick(event)}
-                title="{event.title} - {dayjs(event.startDate).format(
-                  'HH:mm',
-                )} Uhr"
-              >
-                {event.title}
-              </button>
-            {/each}
-
-            {#if day.events.length > 3}
-              <div class="text-xs text-smoke-400 px-2">
-                +{day.events.length - 3} weitere
+              <!-- Day number -->
+              <div class="text-right mb-2">
+                <span
+                  class="text-sm {day.isToday
+                    ? 'bg-accent-400 text-charcoal-900 w-6 h-6 rounded-full inline-flex items-center justify-center font-medium'
+                    : day.isCurrentMonth
+                      ? 'text-smoke-200'
+                      : 'text-smoke-500'}"
+                >
+                  {day.dayNumber}
+                </span>
               </div>
-            {/if}
-          </div>
+
+              <!-- Events -->
+              <div class="space-y-1">
+                {#each day.events.slice(0, 3) as event (event.id)}
+                  <button
+                    class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded truncate hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-400"
+                    on:click={() => handleEventClick(event)}
+                    title="{event.title} - {dayjs(event.startDate).format(
+                      'HH:mm',
+                    )} Uhr"
+                  >
+                    {event.title}
+                  </button>
+                {/each}
+
+                {#if day.events.length > 3}
+                  <div class="text-xs text-smoke-400 px-2">
+                    +{day.events.length - 3} weitere
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/each}
         </div>
       {/each}
     </div>

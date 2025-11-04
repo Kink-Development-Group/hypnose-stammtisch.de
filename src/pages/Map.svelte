@@ -52,7 +52,7 @@
   />
 </svelte:head>
 
-<main class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8">
   <!-- Page Header -->
   <header class="text-center mb-8">
     <h1 class="text-4xl md:text-5xl font-display font-bold text-smoke-50 mb-4">
@@ -203,7 +203,7 @@
       <a href="/about" use:link class="link-card"> 👥 Über uns </a>
     </div>
   </section>
-</main>
+</div>
 
 <style>
   .stats-bar {
@@ -404,3 +404,4 @@
     }
   }
 </style>
+

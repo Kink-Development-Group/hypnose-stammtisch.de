@@ -76,7 +76,7 @@
   />
 </svelte:head>
 
-<main class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8">
   <!-- Page header -->
   <header class="mb-8">
     <h1 class="text-4xl md:text-5xl font-display font-bold text-smoke-50 mb-4">
@@ -221,9 +221,10 @@
       </div>
     </div>
   {/if}
-</main>
+</div>
 
 <!-- Event Modal -->
 {#if $showEventModal}
   <EventModal />
 {/if}
+
