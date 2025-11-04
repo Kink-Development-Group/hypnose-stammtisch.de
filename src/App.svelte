@@ -11,6 +11,7 @@
   import Map from "./pages/Map.svelte";
   import NotFound from "./pages/NotFound.svelte";
   import Privacy from "./pages/Privacy.svelte";
+  import Resources from "./pages/Resources.svelte";
   import Faq from "./pages/ResourcesFaq.svelte";
   import SafetyGuide from "./pages/ResourcesSafetyGuide.svelte";
   import SubmitEvent from "./pages/SubmitEvent.svelte";
@@ -48,7 +49,9 @@
     "/events/:id": Events, // Will show event modal
     "/map": Map,
     "/about": About,
+    "/learning-resources": LearningResources,
     "/ressourcen": LearningResources,
+    "/resources": Resources,
     "/ressourcen/safety-guide": SafetyGuide,
     "/ressourcen/faq": Faq,
     "/code-of-conduct": CodeOfConduct,

@@ -17,7 +17,7 @@
     },
     { href: "/about", label: "Über uns", ariaLabel: "Zur Über-uns-Seite" },
     {
-      href: "/ressourcen",
+      href: "/learning-resources",
       label: "Lernressourcen",
       ariaLabel: "Zu den Lern- und Wissensquellen",
     },

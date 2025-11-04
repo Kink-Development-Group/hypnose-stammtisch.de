@@ -12,7 +12,7 @@
     ],
     community: [
       { href: "/about", label: "Über uns" },
-      { href: "/ressourcen", label: "Ressourcen" },
+      { href: "/resources", label: "Ressourcen" },
       { href: "/contact", label: "Kontakt" },
     ],
     social: [

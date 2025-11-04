@@ -25,33 +25,231 @@
 
   <!-- Introduction -->
   <div class="mb-12 p-6 bg-charcoal-800 rounded-lg border border-charcoal-600">
-    <div class="text-center mb-6">
-      <div class="text-4xl mb-4">🧠✨</div>
-      <h2 class="text-2xl font-display font-semibold text-smoke-50 mb-4">
+    <div class="text-center mb-4">
+      <div class="text-4xl mb-3">🧠✨</div>
+      <h2 class="text-2xl font-display font-semibold text-smoke-50 mb-3">
         Kuratiert von der Community
       </h2>
     </div>
-    <p class="text-smoke-300 mb-4 text-center">
-      Diese Sammlung an Ressourcen zum Lernen und Auseinandersetzen mit dem
-      Thema Hypnose/Kinky Hypnose wurde und wird vom Team des Hamburger
-      Hypnose-Munches zusammengetragen und kuratiert.
-    </p>
-    <p class="text-smoke-300 mb-4 text-center">
-      Wir arbeiten ständig an der Verbesserung und freuen uns immer über weitere
-      Quellen!
-    </p>
-    <p class="text-smoke-400 text-sm text-center">
-      Weitere Quellen können immer an <a
-        href="mailto:support@hypnose-stammtisch.de"
-        class="text-accent hover:text-accent-light transition-colors"
-        >support@hypnose-stammtisch.de</a
-      > eingeschickt werden!
+    <p class="text-smoke-300 text-center mb-3">
+      Diese Sammlung wird vom Team des Hamburger Hypnose-Munches gepflegt und
+      ständig erweitert. Hast du Vorschläge? Schreib uns an
+      <a
+        href="mailto:support@hypnose-stammtisch.de?subject=Neue%20Lernressource"
+        class="text-accent hover:text-accent-light transition-colors underline"
+      >
+        support@hypnose-stammtisch.de
+      </a>
     </p>
   </div>
 
+  <!-- Safety & Contraindications Section -->
+  <section id="safety" class="mb-16" aria-labelledby="safety-heading">
+    <div class="card bg-caution/10 border-caution/30">
+      <div class="flex items-center mb-6">
+        <div class="text-4xl mr-4">⚕️</div>
+        <h2
+          id="safety-heading"
+          class="text-3xl font-display font-semibold text-smoke-50"
+        >
+          Sicherheit & Kontraindikationen
+        </h2>
+      </div>
+
+      <div class="prose prose-invert max-w-none">
+        <p class="text-smoke-300 leading-relaxed mb-6">
+          Hypnose ist ein wissenschaftlich anerkanntes und bei fachgerechter
+          Anwendung sehr sicheres Verfahren. Dennoch gibt es bestimmte Zustände
+          und Umstände, bei denen von einer Hypnose abzuraten ist oder diese nur
+          mit besonderer Vorsicht und durch speziell qualifizierte Fachpersonen
+          (z.B. Psychotherapeuten, Ärzte) durchgeführt werden darf.
+        </p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <!-- Absolute Kontraindikationen -->
+          <div
+            class="bg-boundaries/10 border border-boundaries/30 rounded-lg p-6"
+          >
+            <h3
+              class="text-xl font-semibold text-boundaries mb-4 flex items-center"
+            >
+              <span class="mr-2">🚫</span>
+              Absolute Kontraindikationen
+            </h3>
+            <p class="text-sm text-smoke-300 mb-4">
+              Hier sollte Hypnose grundsätzlich nicht angewendet werden:
+            </p>
+            <ul class="space-y-3 text-sm text-smoke-300">
+              <li class="flex items-start">
+                <span class="text-boundaries mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50">Akute Psychosen:</strong>
+                  Schizophrenie, schwere wahnhafte Störungen oder akute manische
+                  Phasen. Die hypnotische Trance könnte die Realitätswahrnehmung
+                  weiter stören.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-boundaries mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50">Paranoide Störungen:</strong>
+                  Hypnose kann als manipulativer Kontrollverlust erlebt werden und
+                  die Symptomatik verstärken.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-boundaries mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50"
+                    >Dissoziative Identitätsstörung:</strong
+                  >
+                  Unsachgemäße Anwendung kann zu weiterer Destabilisierung führen.
+                  Erfordert hochspezialisierte Kenntnisse.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-boundaries mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50">Akute Suizidalität:</strong>
+                  Krisenintervention und Sicherung haben oberste Priorität. Hypnose
+                  ist nicht das Mittel der ersten Wahl.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-boundaries mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50">Alkohol-/Drogeneinfluss:</strong
+                  >
+                  Klare Wahrnehmung und Kooperationsfähigkeit sind unerlässlich.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-boundaries mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50">Fehlende Bereitschaft:</strong>
+                  Hypnose funktioniert nicht gegen den Willen einer Person. Eine
+                  Anwendung wäre sinnlos und unethisch.
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Relative Kontraindikationen -->
+          <div class="bg-caution/10 border border-caution/30 rounded-lg p-6">
+            <h3
+              class="text-xl font-semibold text-caution mb-4 flex items-center"
+            >
+              <span class="mr-2">⚠️</span>
+              Relative Kontraindikationen
+            </h3>
+            <p class="text-sm text-smoke-300 mb-4">
+              Besondere Vorsicht geboten – nur durch erfahrene Therapeuten:
+            </p>
+            <ul class="space-y-3 text-sm text-smoke-300">
+              <li class="flex items-start">
+                <span class="text-caution mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50">Schwere Depressionen:</strong>
+                  Regressive Techniken könnten den Zustand verschlimmern. Erst Stabilisierung
+                  anstreben.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-caution mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50">Epilepsie:</strong>
+                  Theoretisches Risiko von Anfallsauslösung. Nur nach Rücksprache
+                  mit Neurologen.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-caution mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50"
+                    >Borderline-Persönlichkeitsstörung:</strong
+                  >
+                  Risiko der Destabilisierung. Erfordert stabilen therapeutischen
+                  Rahmen.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-caution mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50"
+                    >Schwere Herz-Kreislauf-Erkrankungen:</strong
+                  >
+                  Intensive emotionale Abreaktionen könnten körperlich belasten.
+                </div>
+              </li>
+              <li class="flex items-start">
+                <span class="text-caution mr-2 mt-0.5">•</span>
+                <div>
+                  <strong class="text-smoke-50"
+                    >Kognitive Einschränkungen:</strong
+                  >
+                  Bei Demenz oder stark eingeschränkter Intelligenz ist die Fähigkeit
+                  zur Konzentration oft nicht gegeben.
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Wichtiger Hinweis -->
+        <div
+          class="bg-primary-400/10 border border-primary-400/30 rounded-lg p-6"
+        >
+          <h3
+            class="text-lg font-semibold text-primary-400 mb-3 flex items-center"
+          >
+            <span class="mr-2">💡</span>
+            Wichtiger Hinweis zur Qualifikation
+          </h3>
+          <div class="space-y-3 text-sm text-smoke-300">
+            <p>
+              Die wichtigste Voraussetzung für eine sichere Anwendung ist die
+              <strong class="text-smoke-50"
+                >Qualifikation des Hypnotiseurs/Therapeuten</strong
+              >. Ein verantwortungsvoller Anwender wird immer eine sorgfältige
+              Anamnese und Diagnostik durchführen, um mögliche
+              Kontraindikationen zu erkennen.
+            </p>
+            <p>
+              <strong class="text-smoke-50"
+                >Für unsere Community-Events gilt:</strong
+              >
+              Wir praktizieren <em>Freizeithypnose</em> und keine Therapie. Bei gesundheitlichen
+              Vorbelastungen solltest du immer vorher mit qualifizierten Fachpersonen
+              sprechen. Informiere die Event-Moderatoren über relevante Vorerkrankungen.
+            </p>
+            <p class="text-xs text-smoke-400 italic">
+              Diese Liste dient der allgemeinen Information und ersetzt keine
+              ärztliche oder psychotherapeutische Abklärung. Vor Beginn einer
+              Hypnosetherapie sollte immer ein ausführliches Vorgespräch mit
+              einer qualifizierten Fachperson stattfinden.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="/ressourcen/safety-guide" use:link class="btn btn-outline">
+            🛡️ Sicherheitsleitfaden
+          </a>
+          <a href="/ressourcen/faq" use:link class="btn btn-outline">
+            ❓ Häufige Fragen
+          </a>
+          <a href="/code-of-conduct" use:link class="btn btn-outline">
+            📋 Verhaltenskodex
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Quick Navigation -->
   <nav class="mb-12" aria-label="Lernressourcen-Navigation">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <a href="#safety" class="btn btn-outline text-center"> ⚕️ Sicherheit </a>
       <a href="#german-resources" class="btn btn-outline text-center">
         🇩🇪 Deutsche Ressourcen
       </a>
@@ -775,7 +973,7 @@
   <!-- Navigation Footer -->
   <nav class="text-center" aria-label="Seiten-Navigation">
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <a href="/ressourcen" use:link class="btn btn-outline">
+      <a href="/resources" use:link class="btn btn-outline">
         🛡️ Zu den Sicherheitsleitfäden
       </a>
       <a href="/code-of-conduct" use:link class="btn btn-outline">
@@ -814,4 +1012,3 @@
     left: 100%;
   }
 </style>
-
