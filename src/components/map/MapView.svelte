@@ -368,14 +368,24 @@
       </div>
     `;
   }
+  let escapeDiv: HTMLDivElement | null = null;
 
   function escapeHtml(value: string): string {
-    return value
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+    if (typeof document === "undefined") {
+      return value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    if (!escapeDiv) {
+      escapeDiv = document.createElement("div");
+    }
+
+    escapeDiv.textContent = value;
+    return escapeDiv.innerHTML;
   }
 
   function escapeForJsString(value: string): string {
