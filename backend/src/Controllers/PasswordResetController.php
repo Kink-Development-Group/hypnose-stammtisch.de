@@ -366,11 +366,13 @@ class PasswordResetController
      */
     public static function cleanupExpiredTokens(): int
     {
-        $deleted = Database::execute(
+        $statement = Database::execute(
             'DELETE FROM password_reset_tokens 
              WHERE expires_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) 
              OR (used_at IS NOT NULL AND used_at < DATE_SUB(NOW(), INTERVAL 24 HOUR))'
         );
+
+        $deleted = $statement->rowCount();
 
         if ($deleted > 0) {
             AuditLogger::log('password_reset.cleanup', null, null, [
