@@ -99,12 +99,15 @@
     if (key === "Escape" || key === "Esc") {
       event.preventDefault();
       closeMobileNav();
+      return;
     }
-  }
 
-  function handleOverlayKeyup(event: KeyboardEvent) {
-    const { key } = event;
-    if (key === "Enter" || key === " ") {
+    if (
+      key === "Enter" ||
+      key === " " ||
+      key === "Space" ||
+      key === "Spacebar"
+    ) {
       event.preventDefault();
       closeMobileNav();
     }
@@ -149,7 +152,7 @@
         class="fixed inset-0 z-40 flex lg:hidden"
         role="dialog"
         aria-modal="true"
-        tabindex="-1"
+        tabindex="0"
         bind:this={mobileNavDialog}
         on:keydown={handleOverlayKeydown}
       >
@@ -159,7 +162,6 @@
           role="button"
           tabindex="0"
           aria-label="Navigation schließen"
-          on:keyup={handleOverlayKeyup}
           on:keydown={handleOverlayKeydown}
         ></div>
         <div
