@@ -117,7 +117,7 @@
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
-            {#each item.icon as path (path)}
+            {#each item.icon as path, index (`${item.key}-${index}`)}
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"

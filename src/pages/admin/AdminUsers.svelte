@@ -258,8 +258,8 @@
   }
 
   function resetForm() {
-    clearFormFields();
     editingUser = null;
+    applyFormDefaults();
     showCreateForm = false;
     error = "";
     success = "";

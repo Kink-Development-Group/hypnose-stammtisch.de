@@ -95,7 +95,16 @@
   }
 
   function handleOverlayKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape" || event.key === "Esc") {
+    const { key } = event;
+    if (key === "Escape" || key === "Esc") {
+      event.preventDefault();
+      closeMobileNav();
+    }
+  }
+
+  function handleOverlayKeyup(event: KeyboardEvent) {
+    const { key } = event;
+    if (key === "Enter" || key === " ") {
       event.preventDefault();
       closeMobileNav();
     }
@@ -150,6 +159,7 @@
           role="button"
           tabindex="0"
           aria-label="Navigation schließen"
+          on:keyup={handleOverlayKeyup}
           on:keydown={handleOverlayKeydown}
         ></div>
         <div

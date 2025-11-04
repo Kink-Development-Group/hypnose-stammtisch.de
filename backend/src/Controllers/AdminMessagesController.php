@@ -21,7 +21,7 @@ class AdminMessagesController
   {
     AdminAuth::requireAuth();
     $user = AdminAuth::getCurrentUser();
-    if (!$user || !in_array($user['role'], ['head', 'admin', 'moderator'], true)) {
+    if (!AdminAuth::userHasRole($user, AdminAuth::MESSAGE_MANAGEMENT_ROLES)) {
       Response::error('Insufficient permissions for messages', 403);
       exit;
     }

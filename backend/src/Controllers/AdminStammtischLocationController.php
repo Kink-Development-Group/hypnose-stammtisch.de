@@ -24,7 +24,7 @@ class AdminStammtischLocationController
     AdminAuth::requireAuth();
 
     $user = AdminAuth::getCurrentUser();
-    if (!$user || !in_array($user['role'], ['head', 'admin', 'event_manager'], true)) {
+    if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
       Response::error('Insufficient permissions. Head admin, admin, or event manager role required.', 403);
       exit;
     }

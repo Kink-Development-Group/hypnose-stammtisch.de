@@ -64,7 +64,7 @@ class AdminEventsController
     AdminAuth::requireAuth();
     // Only head, admin, or event role may create
     $user = AdminAuth::getCurrentUser();
-    if (!$user || !in_array($user['role'], ['head', 'admin', 'event_manager'])) {
+    if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
       Response::error('Insufficient permissions to create events', 403);
       return;
     }
@@ -92,7 +92,7 @@ class AdminEventsController
   {
     AdminAuth::requireAuth();
     $user = AdminAuth::getCurrentUser();
-    if (!$user || !in_array($user['role'], ['head', 'admin', 'event_manager'])) {
+    if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
       Response::error('Insufficient permissions to update events', 403);
       return;
     }
@@ -620,7 +620,7 @@ class AdminEventsController
   {
     AdminAuth::requireAuth();
     $user = AdminAuth::getCurrentUser();
-    if (!$user || !in_array($user['role'], ['head', 'admin', 'event_manager'])) {
+    if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
       Response::error('Insufficient permissions', 403);
       return;
     }

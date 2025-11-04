@@ -369,10 +369,10 @@ class AdminUsersController
     $user = AdminAuth::getCurrentUser();
 
     $permissions = [
-      'can_manage_users' => $user['role'] === 'head',
-      'can_manage_events' => in_array($user['role'], ['head', 'admin', 'event_manager']),
-      'can_manage_security' => in_array($user['role'], ['head', 'admin']),
-      'can_view_messages' => in_array($user['role'], ['head', 'admin', 'moderator']),
+      'can_manage_users' => AdminAuth::userHasRole($user, AdminAuth::HEAD_ADMIN_ROLES),
+      'can_manage_events' => AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES),
+      'can_manage_security' => AdminAuth::userHasRole($user, AdminAuth::SECURITY_MANAGEMENT_ROLES),
+      'can_view_messages' => AdminAuth::userHasRole($user, AdminAuth::MESSAGE_MANAGEMENT_ROLES),
       'role' => $user['role']
     ];
 

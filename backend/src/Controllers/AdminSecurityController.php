@@ -31,6 +31,36 @@ use HypnoseStammtisch\Utils\IpBanManager;
 class AdminSecurityController
 {
     /**
+     * Ensure the current user has security management permissions.
+     */
+    private static function requireSecurityManagementPermission(): array
+    {
+        AdminAuth::requireAuth();
+
+        $currentUser = AdminAuth::getCurrentUser();
+        if (!AdminAuth::userHasRole($currentUser, AdminAuth::SECURITY_MANAGEMENT_ROLES)) {
+            Response::error('Insufficient permissions', 403);
+        }
+
+        return $currentUser;
+    }
+
+    /**
+     * Ensure the current user is a head admin.
+     */
+    private static function requireHeadAdmin(): array
+    {
+        AdminAuth::requireAuth();
+
+        $currentUser = AdminAuth::getCurrentUser();
+        if (!AdminAuth::userHasRole($currentUser, AdminAuth::HEAD_ADMIN_ROLES)) {
+            Response::error('Insufficient permissions - head admin only', 403);
+        }
+
+        return $currentUser;
+    }
+
+    /**
      * Retrieve paginated failed login history (Admin endpoint)
      *
      * Returns a list of recent failed login attempts with details about the account,
@@ -47,16 +77,7 @@ class AdminSecurityController
      */
     public static function getFailedLogins(): void
     {
-        if (!AdminAuth::isAuthenticated()) {
-            Response::error('Unauthorized', 401);
-            return;
-        }
-
-        $currentUser = AdminAuth::getCurrentUser();
-        if (!$currentUser || !in_array($currentUser['role'], ['head', 'admin'])) {
-            Response::error('Insufficient permissions', 403);
-            return;
-        }
+        self::requireSecurityManagementPermission();
 
         $page = (int)($_GET['page'] ?? 1);
         $limit = min((int)($_GET['limit'] ?? 50), 100);
@@ -93,16 +114,7 @@ class AdminSecurityController
      */
     public static function getIPBans(): void
     {
-        if (!AdminAuth::isAuthenticated()) {
-            Response::error('Unauthorized', 401);
-            return;
-        }
-
-        $currentUser = AdminAuth::getCurrentUser();
-        if (!$currentUser || !in_array($currentUser['role'], ['head', 'admin'])) {
-            Response::error('Insufficient permissions', 403);
-            return;
-        }
+        self::requireSecurityManagementPermission();
 
         $page = (int)($_GET['page'] ?? 1);
         $limit = min((int)($_GET['limit'] ?? 50), 100);
@@ -148,16 +160,7 @@ class AdminSecurityController
             return;
         }
 
-        if (!AdminAuth::isAuthenticated()) {
-            Response::error('Unauthorized', 401);
-            return;
-        }
-
-        $currentUser = AdminAuth::getCurrentUser();
-        if (!$currentUser || !in_array($currentUser['role'], ['head', 'admin'])) {
-            Response::error('Insufficient permissions', 403);
-            return;
-        }
+        $currentUser = self::requireSecurityManagementPermission();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $accountId = (int)($input['account_id'] ?? 0);
@@ -209,16 +212,7 @@ class AdminSecurityController
             return;
         }
 
-        if (!AdminAuth::isAuthenticated()) {
-            Response::error('Unauthorized', 401);
-            return;
-        }
-
-        $currentUser = AdminAuth::getCurrentUser();
-        if (!$currentUser || !in_array($currentUser['role'], ['head', 'admin'])) {
-            Response::error('Insufficient permissions', 403);
-            return;
-        }
+        $currentUser = self::requireSecurityManagementPermission();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $ipAddress = trim($input['ip_address'] ?? '');
@@ -270,16 +264,7 @@ class AdminSecurityController
             return;
         }
 
-        if (!AdminAuth::isAuthenticated()) {
-            Response::error('Unauthorized', 401);
-            return;
-        }
-
-        $currentUser = AdminAuth::getCurrentUser();
-        if (!$currentUser || !in_array($currentUser['role'], ['head', 'admin'])) {
-            Response::error('Insufficient permissions', 403);
-            return;
-        }
+        $currentUser = self::requireSecurityManagementPermission();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $ipAddress = trim($input['ip_address'] ?? '');
@@ -318,16 +303,7 @@ class AdminSecurityController
      */
     public static function getLockedAccounts(): void
     {
-        if (!AdminAuth::isAuthenticated()) {
-            Response::error('Unauthorized', 401);
-            return;
-        }
-
-        $currentUser = AdminAuth::getCurrentUser();
-        if (!$currentUser || !in_array($currentUser['role'], ['head', 'admin'])) {
-            Response::error('Insufficient permissions', 403);
-            return;
-        }
+        self::requireSecurityManagementPermission();
 
         $lockedAccounts = Database::fetchAll(
             'SELECT id, username, email, role, locked_until, locked_reason, created_at
@@ -358,16 +334,7 @@ class AdminSecurityController
      */
     public static function getSecurityStats(): void
     {
-        if (!AdminAuth::isAuthenticated()) {
-            Response::error('Unauthorized', 401);
-            return;
-        }
-
-        $currentUser = AdminAuth::getCurrentUser();
-        if (!$currentUser || !in_array($currentUser['role'], ['head', 'admin'])) {
-            Response::error('Insufficient permissions', 403);
-            return;
-        }
+        self::requireSecurityManagementPermission();
 
         // Get stats for the last 24 hours
         $since24h = date('Y-m-d H:i:s', time() - 86400);
@@ -414,16 +381,7 @@ class AdminSecurityController
             return;
         }
 
-        if (!AdminAuth::isAuthenticated()) {
-            Response::error('Unauthorized', 401);
-            return;
-        }
-
-        $currentUser = AdminAuth::getCurrentUser();
-        if (!$currentUser || $currentUser['role'] !== 'head') {
-            Response::error('Insufficient permissions - head admin only', 403);
-            return;
-        }
+        self::requireHeadAdmin();
 
         $cleaned = IpBanManager::cleanupExpiredBans();
 
