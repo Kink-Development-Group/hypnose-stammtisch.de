@@ -143,6 +143,16 @@
                 </div>
               {/each}
             </div>
+
+            <div class="mt-6 pt-6 border-t border-charcoal-600">
+              <a
+                href="/ressourcen/faq"
+                use:link
+                class="btn btn-outline w-full text-sm"
+              >
+                Alle FAQs ansehen
+              </a>
+            </div>
           </div>
 
           <!-- Community Guidelines -->

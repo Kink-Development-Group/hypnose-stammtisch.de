@@ -154,7 +154,7 @@
   <Header />
 
   <!-- Main content area with padding-top to account for fixed header -->
-  <main id="main-content" class="flex-1 pt-20">
+  <main id="main-content" class="flex-1 pt-20 mt-6">
     <svelte:component this={router} {routes} />
   </main>
 

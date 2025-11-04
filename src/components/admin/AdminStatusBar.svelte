@@ -46,10 +46,10 @@
 </script>
 
 <div
-  class="flex items-center space-x-4 text-sm text-gray-600 bg-white rounded-lg px-4 py-2 shadow-sm border"
+  class="flex h-16 items-center space-x-5 text-sm text-gray-600 bg-white px-4 py-2 shadow-sm border"
 >
   <!-- Auto-Update Status -->
-  <div class="flex items-center space-x-2">
+  <div class="flex items-center space-x-3">
     <button
       on:click={toggleAutoUpdate}
       class="flex items-center space-x-1 hover:text-blue-600 transition-colors"
