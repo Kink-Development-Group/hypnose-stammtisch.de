@@ -5,270 +5,309 @@
   import { adminAuth } from "../../stores/admin";
   import { UserHelpers } from "../../utils/userHelpers";
   import BrandLogo from "../ui/BrandLogo.svelte";
+  import AdminNavigationLinks from "./AdminNavigationLinks.svelte";
   import AdminNotifications from "./AdminNotifications.svelte";
   import AdminStatusBar from "./AdminStatusBar.svelte";
+
+  type PermissionState = ReturnType<typeof UserHelpers.getPermissions>;
 
   let isAuthenticated = false;
   let currentUser: User | null = null;
   let currentPath = "";
-  let permissions: any = {};
+  let permissions: PermissionState = {
+    can_manage_events: false,
+    can_manage_messages: false,
+    can_manage_users: false,
+    can_manage_security: false,
+  };
+  let isNavOpen = false;
 
-  onMount(async () => {
-    // Initialize with loading state
+  $: roleDisplayName = currentUser
+    ? UserHelpers.getRoleDisplayName(currentUser.role)
+    : "";
+  $: roleBadgeClass = currentUser
+    ? UserHelpers.getRoleBadgeClass(currentUser.role)
+    : "";
+
+  function updateCurrentPath() {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash?.replace(/^#/, "");
+    currentPath = hash || window.location.pathname || "";
+  }
+
+  onMount(() => {
     isAuthenticated = false;
     currentUser = null;
-    permissions = {};
+    permissions = {
+      can_manage_events: false,
+      can_manage_messages: false,
+      can_manage_users: false,
+      can_manage_security: false,
+    };
 
-    // Check authentication status
-    console.log("AdminLayout: Checking authentication status...");
-    const status = await adminAuth.checkStatus();
+    let popHandler: (() => void) | null = null;
+    let isActive = true;
 
-    console.log("AdminLayout: Auth status result:", status);
+    const initialize = async () => {
+      const status = await adminAuth.checkStatus();
 
-    if (!status.success) {
-      console.log("AdminLayout: Authentication failed, redirecting to login");
-      isAuthenticated = false;
-      push("/admin/login");
-      return;
+      if (!status.success || !isActive) {
+        if (!status.success) {
+          push("/admin/login");
+        }
+        return;
+      }
+
+      isAuthenticated = true;
+      currentUser = User.fromApiData(status.data);
+      permissions = UserHelpers.getPermissions(currentUser);
+      updateCurrentPath();
+    };
+
+    initialize();
+
+    if (typeof window !== "undefined") {
+      popHandler = () => updateCurrentPath();
+      window.addEventListener("hashchange", popHandler);
+      window.addEventListener("popstate", popHandler);
     }
 
-    console.log("AdminLayout: Authentication successful, setting up admin UI");
-    isAuthenticated = true;
-    currentUser = User.fromApiData(status.data);
+    return () => {
+      isActive = false;
 
-    // Use UserHelpers to get permissions
-    permissions = UserHelpers.getPermissions(currentUser);
-
-    // Track current path for navigation highlighting
-    currentPath = window.location.hash.substring(1) || window.location.pathname;
-
-    console.log("AdminLayout: Setup complete", { currentUser, permissions });
+      if (popHandler && typeof window !== "undefined") {
+        window.removeEventListener("hashchange", popHandler);
+        window.removeEventListener("popstate", popHandler);
+      }
+    };
   });
+
+  function closeMobileNav() {
+    isNavOpen = false;
+  }
+
+  function handleNavigate() {
+    closeMobileNav();
+    updateCurrentPath();
+  }
 
   async function handleLogout() {
     await adminAuth.logout();
 
-    // Force a complete cleanup and redirect
+    closeMobileNav();
     isAuthenticated = false;
     currentUser = null;
-    permissions = {};
+    permissions = {
+      can_manage_events: false,
+      can_manage_messages: false,
+      can_manage_users: false,
+      can_manage_security: false,
+    };
 
-    // Force page reload to clear any cached state
     if (typeof window !== "undefined") {
       window.location.href = "/admin/login";
     } else {
       push("/admin/login");
     }
   }
-
-  $: currentPath =
-    typeof window !== "undefined" ? window.location.pathname : "";
 </script>
 
 {#if isAuthenticated}
-  <div class="min-h-screen bg-gray-100">
-    <!-- Navigation Header -->
-    <nav class="bg-white shadow-sm border-b">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center space-x-3">
-            <BrandLogo size="sm" />
-            <h1 class="text-xl font-semibold text-gray-900">
-              Hypnose-Stammtisch.de - Admin
-            </h1>
+  <div class="min-h-screen bg-slate-50 text-slate-900">
+    <a
+      href="#main-content"
+      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-lg focus-visible:bg-white focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-blue-600 focus-visible:shadow-lg"
+      >Zum Inhalt springen</a
+    >
+
+    {#if isNavOpen}
+      <div class="fixed inset-0 z-40 flex lg:hidden" role="dialog" aria-modal="true">
+        <div
+          class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+          on:click={closeMobileNav}
+        ></div>
+        <div
+          class="relative ml-auto flex h-full w-72 max-w-xs flex-col bg-white shadow-2xl"
+        >
+          <div class="flex items-center justify-between border-b px-4 py-4">
+            <div class="flex items-center gap-2">
+              <BrandLogo size="sm" />
+              <div>
+                <p class="text-sm font-semibold text-slate-900">
+                  {currentUser?.username || "Admin"}
+                </p>
+                {#if roleDisplayName}
+                  <span
+                    class={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${roleBadgeClass}`}
+                    >{roleDisplayName}</span
+                  >
+                {/if}
+              </div>
+            </div>
+            <button
+              type="button"
+              class="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              on:click={closeMobileNav}
+              aria-label="Navigation schließen"
+            >
+              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M6.707 4.293a1 1 0 00-1.414 1.414L8.586 9.999l-3.293 3.293a1 1 0 001.414 1.414l3.293-3.293 3.293 3.293a1 1 0 001.414-1.414l-3.293-3.293 3.293-3.293A1 1 0 0013.293 4.293L10 7.586 6.707 4.293z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
           </div>
 
-          <div class="flex items-center space-x-4">
-            <!-- Admin Status Bar -->
-            <AdminStatusBar />
+          <div class="flex-1 overflow-y-auto px-4 py-4">
+            <AdminNavigationLinks
+              {currentPath}
+              {permissions}
+              onNavigate={handleNavigate}
+            />
+          </div>
 
-            <!-- Debug Information -->
-            <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              Role: {currentUser?.role || "unknown"} | Users: {permissions.can_manage_users
-                ? "Yes"
-                : "No"} | Events: {permissions.can_manage_events ? "Yes" : "No"}
-              | Security: {permissions.can_manage_security ? "Yes" : "No"}
-            </div>
-
-            <span class="text-sm text-gray-600">
-              Angemeldet als: <strong>{currentUser?.username}</strong>
-            </span>
+          <div class="border-t px-4 py-3">
             <a
               href="/admin/profile"
               use:link
-              class="text-sm text-blue-600 hover:underline">Profil</a
+              class="flex items-center justify-center rounded-lg border border-blue-100 px-3 py-2 text-sm font-medium text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
+              on:click={handleNavigate}
+              >Profil öffnen</a
             >
-            <button
-              on:click={handleLogout}
-              class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
-            >
-              Abmelden
-            </button>
           </div>
         </div>
       </div>
-    </nav>
+    {/if}
 
-    <div class="flex">
-      <!-- Sidebar -->
-      <aside class="w-64 bg-white shadow-sm min-h-screen">
-        <nav class="mt-5 px-2">
-          {#if permissions.can_manage_events}
-            <a
-              href="/admin/events"
-              use:link
-              class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
-              '/admin/events'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-50'}"
+    <header class="border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div
+        class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8"
+      >
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:hidden"
+            on:click={() => (isNavOpen = true)}
+            aria-label="Navigation öffnen"
+          >
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              <svg
-                class="mr-4 h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              Veranstaltungen
-            </a>
-          {/if}
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
+          </button>
 
-          {#if permissions.can_manage_messages}
-            <a
-              href="/admin/messages"
-              use:link
-              class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
-              '/admin/messages'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-50'}"
-            >
-              <svg
-                class="mr-4 h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              Nachrichten
-            </a>
-          {/if}
+          <BrandLogo size="sm" />
+          <div class="hidden sm:flex flex-col">
+            <span class="text-sm font-semibold text-slate-900">
+              Hypnose-Stammtisch.de
+            </span>
+            <span class="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Adminbereich
+            </span>
+          </div>
+        </div>
 
-          {#if permissions.can_manage_events}
-            <a
-              href="/admin/stammtisch-locations"
-              use:link
-              class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
-              '/admin/stammtisch-locations'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-50'}"
-            >
-              <svg
-                class="mr-4 h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+        <div class="flex items-center gap-2 sm:gap-3">
+          <div class="flex flex-col items-end leading-tight">
+            <span class="text-sm font-semibold text-slate-700">
+              {currentUser?.username}
+            </span>
+            {#if roleDisplayName}
+              <span
+                class={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${roleBadgeClass}`}
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              Stammtisch-Standorte
-            </a>
-          {/if}
+                {roleDisplayName}
+              </span>
+            {/if}
+          </div>
 
-          {#if permissions.can_manage_users}
-            <a
-              href="/admin/users"
-              use:link
-              class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
-              '/admin/users'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-50'}"
-            >
-              <svg
-                class="mr-4 h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                />
-              </svg>
-              Admin-Benutzer
-            </a>
-          {/if}
+          <a
+            href="/admin/profile"
+            use:link
+            class="hidden sm:inline-flex items-center rounded-lg border border-blue-100 px-3 py-2 text-sm font-medium text-blue-600 transition hover:border-blue-200 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          >
+            Profil
+          </a>
 
-          {#if permissions.can_manage_security}
-            <a
-              href="/admin/security"
-              use:link
-              class="group flex items-center px-2 py-2 text-base leading-6 font-medium rounded-md transition-colors {currentPath ===
-              '/admin/security'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-50'}"
-            >
-              <svg
-                class="mr-4 h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 11c1.657 0 3-1.567 3-3.5S13.657 4 12 4 9 5.567 9 7.5 10.343 11 12 11zm0 0v8m-6 3h12a2 2 0 002-2v-3.586a1 1 0 00-.293-.707l-5-5a1 1 0 00-1.414 0l-5 5A1 1 0 006 18.414V22a2 2 0 002 2z"
-                />
-              </svg>
-              Sicherheit
-            </a>
+          <button
+            on:click={handleLogout}
+            class="inline-flex items-center rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+          >
+            Abmelden
+          </button>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-200">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <AdminStatusBar className="border-0 px-0" dense />
+        </div>
+      </div>
+    </header>
+
+    <div
+      class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:flex-row lg:px-8"
+    >
+      <aside class="order-2 hidden lg:order-1 lg:block lg:w-64 lg:flex-shrink-0">
+        <div
+          class="sticky top-28 space-y-6 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur"
+        >
+          <AdminNavigationLinks {currentPath} {permissions} />
+          {#if currentUser}
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Angemeldet als
+              </p>
+              <p class="mt-1 text-sm font-semibold text-slate-700">
+                {currentUser.username}
+              </p>
+              {#if roleDisplayName}
+                <span
+                  class={`mt-2 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${roleBadgeClass}`}
+                >
+                  {roleDisplayName}
+                </span>
+              {/if}
+            </div>
           {/if}
-        </nav>
+        </div>
       </aside>
 
-      <!-- Main Content -->
-      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
-        <div class="container mx-auto px-6 py-8">
+      <main
+        id="main-content"
+        class="order-1 min-h-[60vh] flex-1 lg:order-2"
+        tabindex="-1"
+      >
+        <div
+          class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur sm:p-6"
+        >
           <slot />
         </div>
       </main>
     </div>
 
-    <!-- Admin Notifications -->
     <AdminNotifications />
   </div>
 {:else}
-  <div class="min-h-screen bg-gray-100 flex items-center justify-center">
-    <div class="bg-white p-8 rounded-lg shadow-md">
+  <div class="flex min-h-screen items-center justify-center bg-slate-50">
+    <div class="rounded-xl border border-slate-200 bg-white p-8 shadow-lg">
       <div
-        class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"
+        class="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"
       ></div>
-      <p class="mt-4 text-gray-600 text-center">Überprüfe Anmeldestatus...</p>
+      <p class="mt-4 text-center text-sm text-slate-600">
+        Überprüfe Anmeldestatus ...
+      </p>
     </div>
   </div>
 {/if}
