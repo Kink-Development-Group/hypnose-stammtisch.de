@@ -120,21 +120,41 @@ class DevelopmentCommand
   {
     $port = $this->options['port'] ?? 8000;
     $host = $this->options['host'] ?? 'localhost';
+    $documentRoot = __DIR__ . '/../../api';
+    $router = $documentRoot . '/router.php';
 
     $this->output("Starting development server...", 'info');
     $this->output("Server: http://{$host}:{$port}", 'success');
-    $this->output("Document root: " . __DIR__ . '/../../api', 'info');
+    $this->output("Document root: {$documentRoot}", 'info');
     $this->output("Press Ctrl+C to stop", 'info');
 
-    // Start PHP built-in server
+    if (!file_exists($router)) {
+      $this->output('Router script missing at ' . $router, 'error');
+      exit(1);
+    }
+
+    // Start PHP built-in server with router to mirror .htaccess behavior
     $command = sprintf(
-      'php -S %s:%s -t %s',
-      escapeshellarg($host),
-      escapeshellarg((string)$port),
-      escapeshellarg(__DIR__ . '/../../api')
+      'php -S %s -t %s %s',
+      $this->escapeForShell($host . ':' . $port),
+      $this->escapeForShell($documentRoot),
+      $this->escapeForShell($router)
     );
 
     system($command);
+  }
+
+  /**
+   * Escape shell arguments cross-platform (CMD vs. POSIX)
+   */
+  private function escapeForShell(string $value): string
+  {
+    if (DIRECTORY_SEPARATOR === '\\') {
+      // Windows cmd.exe uses double quotes for escaping
+      return "\"" . str_replace("\"", "\"\"", $value) . "\"";
+    }
+
+    return escapeshellarg($value);
   }
 
   private function runTests(): void
