@@ -249,19 +249,51 @@
   <!-- Quick Navigation -->
   <nav class="mb-12" aria-label="Lernressourcen-Navigation">
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-      <a href="#safety" class="btn btn-outline text-center"> ⚕️ Sicherheit </a>
-      <a href="#german-resources" class="btn btn-outline text-center">
+      <button
+        onclick={() =>
+          document
+            .getElementById("safety")
+            ?.scrollIntoView({ behavior: "smooth" })}
+        class="btn btn-outline text-center"
+      >
+        ⚕️ Sicherheit
+      </button>
+      <button
+        onclick={() =>
+          document
+            .getElementById("german-resources")
+            ?.scrollIntoView({ behavior: "smooth" })}
+        class="btn btn-outline text-center"
+      >
         🇩🇪 Deutsche Ressourcen
-      </a>
-      <a href="#english-resources" class="btn btn-outline text-center">
+      </button>
+      <button
+        onclick={() =>
+          document
+            .getElementById("english-resources")
+            ?.scrollIntoView({ behavior: "smooth" })}
+        class="btn btn-outline text-center"
+      >
         🇺🇸 English Resources
-      </a>
-      <a href="#interactive-tools" class="btn btn-outline text-center">
+      </button>
+      <button
+        onclick={() =>
+          document
+            .getElementById("interactive-tools")
+            ?.scrollIntoView({ behavior: "smooth" })}
+        class="btn btn-outline text-center"
+      >
         🛠️ Tools & Interaktiv
-      </a>
-      <a href="#community-contribute" class="btn btn-outline text-center">
-        🤝 Community beitragen
-      </a>
+      </button>
+      <button
+        onclick={() =>
+          document
+            .getElementById("community-contribute")
+            ?.scrollIntoView({ behavior: "smooth" })}
+        class="btn btn-outline text-center"
+      >
+        🤝 Zur Community beitragen
+      </button>
     </div>
   </nav>
 
@@ -946,7 +978,7 @@
         id="community-contribute-heading"
         class="text-3xl font-display font-semibold text-smoke-50 mb-6"
       >
-        Community beitragen
+        Zur Community beitragen
       </h2>
       <p class="text-smoke-300 mb-6 max-w-2xl mx-auto">
         Diese Sammlung lebt von der Community! Hast du eine großartige Ressource

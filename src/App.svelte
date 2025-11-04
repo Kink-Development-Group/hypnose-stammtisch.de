@@ -65,6 +65,15 @@
 
   // Handle deep linking to events
   onMount(() => {
+    // Scroll to top on initial load (unless there's a hash anchor)
+    const initialHash = window.location.hash;
+    const hasAnchor =
+      initialHash.split("#").length > 2 || initialHash.match(/#[^/]/);
+
+    if (!hasAnchor) {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+
     // Automatic redirect from non-hash URLs to hash URLs for consistency
     const currentPath = window.location.pathname;
     if (currentPath !== "/" && !window.location.hash) {
@@ -77,8 +86,29 @@
       return;
     }
 
+    // Scroll to top on route change (unless navigating to a hash anchor)
     const handleRouteChanged = (event: CustomEvent) => {
       const path = event.detail.location;
+
+      // Extract the full hash from the URL
+      const fullHash = window.location.hash;
+
+      // Check if we're navigating to an anchor within the current page
+      // Format: #/page#anchor or just #anchor
+      const isHashAnchor =
+        fullHash.includes("#") &&
+        (fullHash.split("#").length > 2 ||
+          (path && path.includes("#") && !path.startsWith("/")));
+
+      // Scroll to top for normal page navigation (but not for in-page anchors)
+      if (!isHashAnchor) {
+        // Use setTimeout to ensure the route has changed before scrolling
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 0);
+      }
+
+      // Handle event modal deep linking
       const eventMatch = path.match(/^\/events\/(\d+)$/);
 
       if (eventMatch) {
