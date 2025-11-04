@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { link, push } from "svelte-spa-router";
   import User from "../../classes/User";
   import { adminAuth } from "../../stores/admin";
@@ -21,6 +21,7 @@
     can_manage_security: false,
   };
   let isNavOpen = false;
+  let mobileNavDialog: HTMLDivElement | null = null;
 
   $: roleDisplayName = currentUser
     ? UserHelpers.getRoleDisplayName(currentUser.role)
@@ -33,6 +34,13 @@
     if (typeof window === "undefined") return;
     const hash = window.location.hash?.replace(/^#/, "");
     currentPath = hash || window.location.pathname || "";
+  }
+
+  $: if (isNavOpen) {
+    void (async () => {
+      await tick();
+      mobileNavDialog?.focus();
+    })();
   }
 
   onMount(() => {
@@ -86,6 +94,13 @@
     isNavOpen = false;
   }
 
+  function handleOverlayKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape" || event.key === "Esc") {
+      event.preventDefault();
+      closeMobileNav();
+    }
+  }
+
   function handleNavigate() {
     closeMobileNav();
     updateCurrentPath();
@@ -121,10 +136,21 @@
     >
 
     {#if isNavOpen}
-      <div class="fixed inset-0 z-40 flex lg:hidden" role="dialog" aria-modal="true">
+      <div
+        class="fixed inset-0 z-40 flex lg:hidden"
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
+        bind:this={mobileNavDialog}
+        on:keydown={handleOverlayKeydown}
+      >
         <div
           class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
           on:click={closeMobileNav}
+          role="button"
+          tabindex="0"
+          aria-label="Navigation schließen"
+          on:keydown={handleOverlayKeydown}
         ></div>
         <div
           class="relative ml-auto flex h-full w-72 max-w-xs flex-col bg-white shadow-2xl"
@@ -173,8 +199,7 @@
               href="/admin/profile"
               use:link
               class="flex items-center justify-center rounded-lg border border-blue-100 px-3 py-2 text-sm font-medium text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
-              on:click={handleNavigate}
-              >Profil öffnen</a
+              on:click={handleNavigate}>Profil öffnen</a
             >
           </div>
         </div>
@@ -212,7 +237,9 @@
             <span class="text-sm font-semibold text-slate-900">
               Hypnose-Stammtisch.de
             </span>
-            <span class="text-xs font-medium uppercase tracking-wide text-slate-500">
+            <span
+              class="text-xs font-medium uppercase tracking-wide text-slate-500"
+            >
               Adminbereich
             </span>
           </div>
@@ -259,14 +286,22 @@
     <div
       class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 lg:flex-row lg:px-8"
     >
-      <aside class="order-2 hidden lg:order-1 lg:block lg:w-64 lg:flex-shrink-0">
+      <aside
+        class="order-2 hidden lg:order-1 lg:block lg:w-64 lg:flex-shrink-0"
+      >
         <div
           class="sticky top-28 space-y-6 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur"
         >
-          <AdminNavigationLinks {currentPath} {permissions} />
+          <AdminNavigationLinks
+            {currentPath}
+            {permissions}
+            onNavigate={handleNavigate}
+          />
           {#if currentUser}
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p
+                class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+              >
                 Angemeldet als
               </p>
               <p class="mt-1 text-sm font-semibold text-slate-700">

@@ -125,7 +125,7 @@
         clip-rule="evenodd"
       />
     </svg>
-    <span class="font-semibold">Zuletzt {lastUpdateTime}</span>
+    <span class="font-semibold">Zuletzt aktualisiert: {lastUpdateTime}</span>
   </div>
 
   <!-- Manual Refresh Button -->

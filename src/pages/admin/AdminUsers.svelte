@@ -229,24 +229,18 @@
 
   function startEdit(user: User) {
     editingUser = user;
-    formData = {
-      username: user.username,
-      email: user.email,
-      password: "", // Don't prefill password
-      role: user.role,
-      is_active: user.is_active,
-    };
+    applyFormDefaults(user);
     showCreateForm = true;
   }
 
-  function clearFormFields() {
-    if (editingUser) {
+  function applyFormDefaults(user: User | null = null) {
+    if (user) {
       formData = {
-        username: editingUser.username,
-        email: editingUser.email,
-        password: "",
-        role: editingUser.role,
-        is_active: editingUser.is_active,
+        username: user.username,
+        email: user.email,
+        password: "", // Don't prefill password
+        role: user.role,
+        is_active: user.is_active,
       };
     } else {
       formData = {
@@ -257,6 +251,10 @@
         is_active: true,
       };
     }
+  }
+
+  function clearFormFields() {
+    applyFormDefaults(editingUser);
   }
 
   function resetForm() {
@@ -302,13 +300,7 @@
           on:click={() => {
             showCreateForm = true;
             editingUser = null;
-            formData = {
-              username: "",
-              email: "",
-              password: "",
-              role: Role.ADMIN,
-              is_active: true,
-            };
+            applyFormDefaults();
             error = "";
             success = "";
           }}
