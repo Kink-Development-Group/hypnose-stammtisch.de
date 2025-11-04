@@ -11,6 +11,17 @@ export type Locale = "de" | "en";
  */
 const translations: Record<Locale, Record<string, string>> = {
   de: {
+    // Role names
+    "role.headAdmin": "Head Admin",
+    "role.admin": "Administrator",
+    "role.moderator": "Moderator",
+    "role.eventManager": "Event-Manager",
+    "role.unknown": "Unbekannt",
+
+    // Date/Time
+    "datetime.never": "Nie",
+
+    // Admin Security
     "adminSecurity.title": "Sicherheitsverwaltung",
     "adminSecurity.subtitle":
       "Überwache fehlgeschlagene Logins, IP-Sperren und gesperrte Konten.",
@@ -72,6 +83,17 @@ const translations: Record<Locale, Record<string, string>> = {
     "adminSecurity.form.invalidIp": "Ungültige IP-Adresse.",
   },
   en: {
+    // Role names
+    "role.headAdmin": "Head Admin",
+    "role.admin": "Administrator",
+    "role.moderator": "Moderator",
+    "role.eventManager": "Event Manager",
+    "role.unknown": "Unknown",
+
+    // Date/Time
+    "datetime.never": "Never",
+
+    // Admin Security
     "adminSecurity.title": "Security Management",
     "adminSecurity.subtitle":
       "Monitor failed logins, IP bans, and locked user accounts.",

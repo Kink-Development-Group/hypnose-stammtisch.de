@@ -8,12 +8,32 @@ use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Config\Config;
 
 /**
- * Handles IP banning and management
+ * Manages IP address banning for brute-force protection and security enforcement
+ *
+ * Provides comprehensive IP ban management including automatic ban duration handling,
+ * ban expiration checks, and administrative ban management. Integrates with the
+ * AuditLogger for full security event tracking.
+ *
+ * @package HypnoseStammtisch\Utils
+ * @see FailedLoginTracker For automatic IP ban triggering
+ * @see AuditLogger For security event logging
+ * @see Config For ban duration and trusted proxy configuration
  */
 class IpBanManager
 {
   /**
-   * Ban an IP address
+   * Ban an IP address with optional automatic expiration
+   *
+   * Creates a new IP ban or updates an existing one with the same IP address.
+   * Ban duration is controlled by the security.ip_ban_duration_seconds config value.
+   * Set to 0 for permanent bans. Logs all ban events via AuditLogger.
+   *
+   * @param string $ipAddress The IP address to ban (IPv4 or IPv6)
+   * @param string $reason Human-readable reason for the ban (e.g., "Brute force attack detected")
+   * @param int|null $bannedBy User ID of the administrator who created the ban, or null for automatic bans
+   * @return void
+   * @see isIPBanned() To check if an IP is currently banned
+   * @see removeIPBan() To manually remove a ban
    */
   public static function banIP(string $ipAddress, string $reason, ?int $bannedBy = null): void
   {
@@ -51,7 +71,16 @@ class IpBanManager
   }
 
   /**
-   * Check if an IP is currently banned
+   * Check if an IP address is currently banned
+   *
+   * Verifies whether an IP is under an active ban and automatically marks
+   * expired bans as inactive. This method should be called before processing
+   * any sensitive operations from a client IP.
+   *
+   * @param string $ipAddress The IP address to check (IPv4 or IPv6)
+   * @return bool True if the IP is currently banned, false otherwise
+   * @see checkIPBanMiddleware() For request-level ban checking
+   * @see getBanDetails() To retrieve full ban information
    */
   public static function isIPBanned(string $ipAddress): bool
   {
@@ -85,7 +114,14 @@ class IpBanManager
   }
 
   /**
-   * Get ban details for an IP
+   * Retrieve detailed information about an active IP ban
+   *
+   * Returns comprehensive ban information including the ban reason, who created it,
+   * and when it expires. Only retrieves active bans.
+   *
+   * @param string $ipAddress The IP address to look up (IPv4 or IPv6)
+   * @return array|null Associative array with ban details including 'reason', 'banned_by_username', 'created_at', 'expires_at', or null if no active ban exists
+   * @see isIPBanned() To check ban status without retrieving details
    */
   public static function getBanDetails(string $ipAddress): ?array
   {
@@ -99,7 +135,16 @@ class IpBanManager
   }
 
   /**
-   * Manually remove IP ban (admin function)
+   * Manually remove an active IP ban (administrative function)
+   *
+   * Marks an active IP ban as inactive, effectively unbanning the IP address.
+   * This operation is logged via AuditLogger with the administrator who performed it.
+   * Use this to lift automatic bans or correct false positives.
+   *
+   * @param string $ipAddress The IP address to unban (IPv4 or IPv6)
+   * @param int|null $removedBy User ID of the administrator removing the ban
+   * @return bool True if a ban was removed, false if no active ban existed
+   * @see banIP() To create a new ban
    */
   public static function removeIPBan(string $ipAddress, ?int $removedBy = null): bool
   {
@@ -123,7 +168,15 @@ class IpBanManager
   }
 
   /**
-   * Get list of active IP bans (admin function)
+   * Retrieve a paginated list of currently active IP bans (administrative function)
+   *
+   * Returns active bans ordered by creation date (newest first) with optional
+   * pagination support. Includes the username of the administrator who created each ban.
+   *
+   * @param int $limit Maximum number of bans to return (default: 100)
+   * @param int $offset Number of records to skip for pagination (default: 0)
+   * @return array Array of associative arrays, each containing ban details including 'ip_address', 'reason', 'banned_by_username', 'created_at', 'expires_at'
+   * @see getAllBans() To retrieve both active and inactive bans
    */
   public static function getActiveBans(int $limit = 100, int $offset = 0): array
   {
@@ -139,7 +192,15 @@ class IpBanManager
   }
 
   /**
-   * Get all IP bans (including inactive) for audit (admin function)
+   * Retrieve a paginated list of all IP bans including inactive ones (administrative audit function)
+   *
+   * Returns complete ban history ordered by creation date (newest first) with optional
+   * pagination support. Useful for security audits and historical ban analysis.
+   *
+   * @param int $limit Maximum number of bans to return (default: 100)
+   * @param int $offset Number of records to skip for pagination (default: 0)
+   * @return array Array of associative arrays, each containing ban details including 'ip_address', 'reason', 'banned_by_username', 'is_active', 'created_at', 'expires_at'
+   * @see getActiveBans() To retrieve only currently active bans
    */
   public static function getAllBans(int $limit = 100, int $offset = 0): array
   {
@@ -154,7 +215,14 @@ class IpBanManager
   }
 
   /**
-   * Clean up expired bans (maintenance function)
+   * Mark all expired IP bans as inactive (maintenance function)
+   *
+   * Scans for IP bans where the expiration date has passed and marks them as inactive.
+   * This cleanup task should be run periodically (e.g., via cron job) to maintain
+   * database hygiene. Logs cleanup operations via AuditLogger.
+   *
+   * @return int Number of expired bans that were cleaned up
+   * @see isIPBanned() For automatic expiration checks on individual IPs
    */
   public static function cleanupExpiredBans(): int
   {
@@ -178,7 +246,16 @@ class IpBanManager
   }
 
   /**
-   * Check IP ban before processing request (middleware function)
+   * Check IP ban status for middleware/request processing
+   *
+   * Comprehensive IP ban check suitable for use in request middleware.
+   * Returns structured information about the ban status and logs access
+   * attempts from banned IPs for security monitoring.
+   *
+   * @param string $ipAddress The IP address to check (IPv4 or IPv6)
+   * @return array Associative array with 'blocked' (bool) key and optional 'reason' and 'ban_details' if blocked
+   * @see isIPBanned() For simpler boolean ban check
+   * @see getClientIP() To obtain the client's IP address with proxy support
    */
   public static function checkIPBanMiddleware(string $ipAddress): ?array
   {
@@ -206,7 +283,23 @@ class IpBanManager
   }
 
   /**
-   * Get client IP address with proper proxy handling and security validation
+   * Get the client's real IP address with comprehensive proxy handling and security validation
+   *
+   * Intelligently detects the client's IP address while handling common proxy headers
+   * (Cloudflare, load balancers, reverse proxies). Validates trusted proxy sources
+   * to prevent header spoofing attacks. Filters out private/reserved IP ranges
+   * unless explicitly allowed in configuration.
+   *
+   * Priority order: CF-Connecting-IP → X-Forwarded-For → REMOTE_ADDR
+   *
+   * Security features:
+   * - Validates all IP addresses for correct format
+   * - Checks trusted proxy configuration before accepting forwarded headers
+   * - Excludes private/reserved IP ranges by default (configurable)
+   * - Rate-limited audit logging for untrusted proxy attempts
+   *
+   * @return string The client's IP address, or '0.0.0.0' if validation fails
+   * @see checkIPBanMiddleware() To use the detected IP for ban checking
    */
   public static function getClientIP(): string
   {
@@ -300,7 +393,19 @@ class IpBanManager
   }
 
   /**
-   * Log untrusted proxy header with rate limiting to prevent log spam
+   * Log untrusted proxy header attempts with rate limiting to prevent log spam
+   *
+   * When an IP address is provided via a proxy header (e.g., X-Forwarded-For) but
+   * the request originates from an untrusted proxy, this method logs the attempt
+   * with intelligent rate limiting. This prevents log flooding during attacks while
+   * maintaining visibility of suspicious activity.
+   *
+   * @param string $ip The IP address claimed in the forwarded header
+   * @param string $header The name of the HTTP header (e.g., 'HTTP_X_FORWARDED_FOR')
+   * @param string $remoteAddr The actual remote address that sent the request
+   * @param array $trustedProxies List of trusted proxy IP ranges from configuration
+   * @return void
+   * @see getClientIP() For the main IP detection logic
    */
   private static function logUntrustedProxyHeaderRateLimited(
     string $ip,
@@ -355,7 +460,15 @@ class IpBanManager
   }
 
   /**
-   * Check if an IP address is within specified CIDR ranges
+   * Check if an IP address matches any of the specified CIDR ranges
+   *
+   * Iterates through multiple CIDR ranges and returns true if the IP
+   * matches any of them. Supports both IPv4 and IPv6 addresses.
+   *
+   * @param string $ip The IP address to check (IPv4 or IPv6)
+   * @param array $ranges Array of CIDR ranges (e.g., ['192.168.1.0/24', '10.0.0.0/8'])
+   * @return bool True if the IP is within any of the specified ranges
+   * @see isIPInRange() For single range checking
    */
   private static function isIPInRanges(string $ip, array $ranges): bool
   {
@@ -368,7 +481,15 @@ class IpBanManager
   }
 
   /**
-   * Check if an IP is within a CIDR range
+   * Check if an IP address is within a specific CIDR range
+   *
+   * Performs precise CIDR range matching with support for both IPv4 and IPv6.
+   * Validates input formats and ensures IP version consistency (IPv4 vs IPv6).
+   *
+   * @param string $ip The IP address to check (IPv4 or IPv6)
+   * @param string $range The CIDR range (e.g., '192.168.1.0/24' or '2001:db8::/32') or a single IP
+   * @return bool True if the IP is within the specified range
+   * @see isIPInRanges() To check against multiple ranges
    */
   private static function isIPInRange(string $ip, string $range): bool
   {
@@ -419,7 +540,15 @@ class IpBanManager
   }
 
   /**
-   * Get network address for CIDR calculations
+   * Calculate the network address from an IP and netmask for CIDR comparisons
+   *
+   * Applies a subnet mask to a binary IP address to extract the network portion.
+   * This is used internally for CIDR range matching calculations.
+   *
+   * @param string $ipBinary Binary representation of the IP address (from inet_pton)
+   * @param int $netmask The subnet mask length (0-32 for IPv4, 0-128 for IPv6)
+   * @return string Binary representation of the network address, or empty string on error
+   * @see isIPInRange() For the primary CIDR matching logic
    */
   private static function getNetworkAddress(string $ipBinary, int $netmask): string
   {

@@ -12,12 +12,38 @@ use HypnoseStammtisch\Utils\FailedLoginTracker;
 use HypnoseStammtisch\Utils\IpBanManager;
 
 /**
- * Admin security management controller
+ * Administrative security management controller
+ *
+ * Provides REST API endpoints for administrators to manage security features including:
+ * - Failed login history monitoring
+ * - IP ban management (view, create, remove)
+ * - Account lock management (view, unlock)
+ * - Security statistics and reporting
+ * - Maintenance operations (cleanup expired bans)
+ *
+ * All endpoints require Head Admin or Admin role authentication.
+ *
+ * @package HypnoseStammtisch\Controllers
+ * @see FailedLoginTracker For failed login data management
+ * @see IpBanManager For IP ban operations
+ * @see AdminAuth For authentication verification
  */
 class AdminSecurityController
 {
     /**
-     * Get failed login history
+     * Retrieve paginated failed login history (Admin endpoint)
+     *
+     * Returns a list of recent failed login attempts with details about the account,
+     * IP address, and timestamp. Supports pagination via query parameters.
+     *
+     * Query parameters:
+     * - page: Page number (default: 1)
+     * - limit: Results per page, max 100 (default: 50)
+     *
+     * Required permissions: Head Admin or Admin
+     *
+     * @return void Outputs JSON response with failed_logins array and pagination info
+     * @see FailedLoginTracker::getFailedLoginHistory()
      */
     public static function getFailedLogins(): void
     {
@@ -49,7 +75,21 @@ class AdminSecurityController
     }
 
     /**
-     * Get IP ban list
+     * Retrieve paginated IP ban list (Admin endpoint)
+     *
+     * Returns a list of IP bans with details about the banned IP, reason, ban creator,
+     * and expiration date. Can show only active bans or all bans including inactive ones.
+     *
+     * Query parameters:
+     * - page: Page number (default: 1)
+     * - limit: Results per page, max 100 (default: 50)
+     * - show_all: Include inactive bans (true/false, default: false)
+     *
+     * Required permissions: Head Admin or Admin
+     *
+     * @return void Outputs JSON response with ip_bans array and pagination info
+     * @see IpBanManager::getActiveBans()
+     * @see IpBanManager::getAllBans()
      */
     public static function getIPBans(): void
     {
@@ -87,7 +127,19 @@ class AdminSecurityController
     }
 
     /**
-     * Unlock user account
+     * Unlock a locked user account (Admin endpoint)
+     *
+     * Removes the account lock from a user who has been locked due to failed login attempts.
+     * The operation is logged via AuditLogger with the administrator who performed the unlock.
+     *
+     * Request body (JSON):
+     * - account_id: User ID to unlock (required, integer)
+     *
+     * Required permissions: Head Admin or Admin
+     * HTTP method: POST
+     *
+     * @return void Outputs JSON response with success message and unlocked account details
+     * @see FailedLoginTracker::unlockAccount()
      */
     public static function unlockAccount(): void
     {
@@ -135,7 +187,20 @@ class AdminSecurityController
     }
 
     /**
-     * Remove IP ban
+     * Remove an active IP ban (Admin endpoint)
+     *
+     * Lifts an IP ban, allowing the IP address to access the system again.
+     * The operation is logged via AuditLogger with the administrator who removed the ban.
+     * Validates IP address format before processing.
+     *
+     * Request body (JSON):
+     * - ip_address: IP address to unban (required, valid IPv4 or IPv6)
+     *
+     * Required permissions: Head Admin or Admin
+     * HTTP method: POST
+     *
+     * @return void Outputs JSON response with success message or 404 if ban not found
+     * @see IpBanManager::removeIPBan()
      */
     public static function removeIPBan(): void
     {
@@ -182,7 +247,21 @@ class AdminSecurityController
     }
 
     /**
-     * Manually ban IP address
+     * Manually ban an IP address (Admin endpoint)
+     *
+     * Creates a new IP ban with a custom reason. The ban duration is controlled by
+     * the security.ip_ban_duration_seconds configuration value. Validates IP address
+     * format before processing. The operation is logged via AuditLogger.
+     *
+     * Request body (JSON):
+     * - ip_address: IP address to ban (required, valid IPv4 or IPv6)
+     * - reason: Reason for the ban (optional, default: "Manual ban by admin")
+     *
+     * Required permissions: Head Admin or Admin
+     * HTTP method: POST
+     *
+     * @return void Outputs JSON response with success message and ban details
+     * @see IpBanManager::banIP()
      */
     public static function banIP(): void
     {
@@ -227,7 +306,15 @@ class AdminSecurityController
     }
 
     /**
-     * Get locked accounts
+     * Retrieve list of currently locked user accounts (Admin endpoint)
+     *
+     * Returns all user accounts that are currently locked due to failed login attempts.
+     * Includes accounts with permanent locks and those with time-based locks that haven't
+     * yet expired.
+     *
+     * Required permissions: Head Admin or Admin
+     *
+     * @return void Outputs JSON response with locked_accounts array containing id, username, email, role, locked_until, locked_reason, created_at
      */
     public static function getLockedAccounts(): void
     {
@@ -243,8 +330,8 @@ class AdminSecurityController
         }
 
         $lockedAccounts = Database::fetchAll(
-            'SELECT id, username, email, role, locked_until, locked_reason, created_at 
-             FROM users 
+            'SELECT id, username, email, role, locked_until, locked_reason, created_at
+             FROM users
              WHERE locked_until IS NOT NULL AND (locked_until > NOW() OR locked_until = "0000-00-00 00:00:00")
              ORDER BY locked_until DESC'
         );
@@ -255,7 +342,19 @@ class AdminSecurityController
     }
 
     /**
-     * Get security statistics
+     * Retrieve security statistics dashboard (Admin endpoint)
+     *
+     * Provides aggregated security metrics for the last 24 hours including:
+     * - Total failed login attempts
+     * - Number of unique IPs with failed logins
+     * - Count of active IP bans
+     * - Count of locked user accounts
+     *
+     * Useful for security monitoring and threat assessment.
+     *
+     * Required permissions: Head Admin or Admin
+     *
+     * @return void Outputs JSON response with statistics object containing failed_logins_24h, active_ip_bans, locked_accounts, unique_ips_failed_24h
      */
     public static function getSecurityStats(): void
     {
@@ -278,15 +377,15 @@ class AdminSecurityController
                 'SELECT COUNT(*) as count FROM failed_logins WHERE created_at >= ?',
                 [$since24h]
             )['count'] ?? 0,
-            
+
             'active_ip_bans' => Database::fetchOne(
                 'SELECT COUNT(*) as count FROM ip_bans WHERE is_active = 1'
             )['count'] ?? 0,
-            
+
             'locked_accounts' => Database::fetchOne(
                 'SELECT COUNT(*) as count FROM users WHERE locked_until IS NOT NULL AND (locked_until > NOW() OR locked_until = "0000-00-00 00:00:00")'
             )['count'] ?? 0,
-            
+
             'unique_ips_failed_24h' => Database::fetchOne(
                 'SELECT COUNT(DISTINCT ip_address) as count FROM failed_logins WHERE created_at >= ?',
                 [$since24h]
@@ -297,7 +396,16 @@ class AdminSecurityController
     }
 
     /**
-     * Clean up expired bans (maintenance endpoint)
+     * Clean up expired IP bans (Maintenance endpoint - Head Admin only)
+     *
+     * Marks all expired IP bans as inactive to maintain database hygiene.
+     * This is a maintenance operation that should be run periodically.
+     *
+     * Required permissions: Head Admin only (restricted)
+     * HTTP method: POST
+     *
+     * @return void Outputs JSON response with cleanup message and count of cleaned bans
+     * @see IpBanManager::cleanupExpiredBans()
      */
     public static function cleanupExpiredBans(): void
     {
