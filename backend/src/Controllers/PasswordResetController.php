@@ -14,11 +14,11 @@ use HypnoseStammtisch\Config\Config;
 
 /**
  * Password Reset Controller
- * 
+ *
  * Handles password reset functionality for admin users via email.
  * Implements secure token-based password reset flow with rate limiting,
  * audit logging, and comprehensive security measures.
- * 
+ *
  * @package HypnoseStammtisch\Controllers
  */
 class PasswordResetController
@@ -40,12 +40,12 @@ class PasswordResetController
 
     /**
      * Request password reset
-     * 
+     *
      * Initiates the password reset process by generating a token
      * and sending an email to the user with reset instructions.
-     * 
+     *
      * POST /api/admin/auth/password-reset/request
-     * 
+     *
      * @return void
      */
     public static function requestReset(): void
@@ -57,11 +57,11 @@ class PasswordResetController
 
         // Get client IP for rate limiting
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        
+
         // Rate limit password reset requests
         $rlKey = 'password_reset:' . $ip;
         $rl = RateLimiter::attempt($rlKey, self::MAX_REQUESTS_PER_IP, self::RATE_LIMIT_WINDOW);
-        
+
         if (!$rl['allowed']) {
             AuditLogger::log('password_reset.rate_limited', null, null, ['ip' => $ip]);
             Response::error(
@@ -74,7 +74,7 @@ class PasswordResetController
 
         // Parse and validate input
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
-        
+
         $validator = new Validator($input);
         $validator->required(['email']);
         $validator->email('email');
@@ -99,7 +99,7 @@ class PasswordResetController
                 'email' => $email,
                 'ip' => $ip
             ]);
-            
+
             // Still return success to prevent user enumeration
             Response::success(
                 null,
@@ -114,7 +114,7 @@ class PasswordResetController
                 'email' => $email,
                 'ip' => $ip
             ]);
-            
+
             // Return generic success message for security
             Response::success(
                 null,
@@ -131,10 +131,10 @@ class PasswordResetController
 
         // Generate secure token
         $token = bin2hex(random_bytes(32)); // 64 character hex string
-        
+
         // Calculate expiration time
         $expiresAt = date('Y-m-d H:i:s', strtotime('+' . self::TOKEN_EXPIRATION_MINUTES . ' minutes'));
-        
+
         // Store token in database
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
         Database::execute(
@@ -173,11 +173,11 @@ class PasswordResetController
 
     /**
      * Verify password reset token
-     * 
+     *
      * Validates that a password reset token is valid and not expired.
-     * 
+     *
      * GET /api/admin/auth/password-reset/verify?token={token}
-     * 
+     *
      * @return void
      */
     public static function verifyToken(): void
@@ -234,12 +234,12 @@ class PasswordResetController
 
     /**
      * Reset password with token
-     * 
+     *
      * Completes the password reset process by validating the token
      * and updating the user's password.
-     * 
+     *
      * POST /api/admin/auth/password-reset/reset
-     * 
+     *
      * @return void
      */
     public static function resetPassword(): void
@@ -254,7 +254,7 @@ class PasswordResetController
 
         // Parse and validate input
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
-        
+
         $validator = new Validator($input);
         $validator->required(['token', 'password']);
 
@@ -358,10 +358,10 @@ class PasswordResetController
 
     /**
      * Clean up expired tokens (maintenance task)
-     * 
+     *
      * Removes expired and used tokens older than 24 hours from the database.
      * This should be called periodically via a cron job or maintenance script.
-     * 
+     *
      * @return int Number of deleted tokens
      */
     public static function cleanupExpiredTokens(): int

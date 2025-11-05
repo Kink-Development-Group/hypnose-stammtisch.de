@@ -39,6 +39,7 @@ The password reset feature provides a secure, token-based flow for admin users w
 **Endpoint:** `POST /api/admin/auth/password-reset/request`
 
 **Request Body:**
+
 ```json
 {
   "email": "admin@example.com"
@@ -46,6 +47,7 @@ The password reset feature provides a secure, token-based flow for admin users w
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -60,6 +62,7 @@ The password reset feature provides a secure, token-based flow for admin users w
 **Endpoint:** `GET /api/admin/auth/password-reset/verify?token={token}`
 
 **Response (Valid Token):**
+
 ```json
 {
   "success": true,
@@ -71,6 +74,7 @@ The password reset feature provides a secure, token-based flow for admin users w
 ```
 
 **Response (Invalid/Expired Token):**
+
 ```json
 {
   "success": false,
@@ -84,6 +88,7 @@ The password reset feature provides a secure, token-based flow for admin users w
 **Endpoint:** `POST /api/admin/auth/password-reset/reset`
 
 **Request Body:**
+
 ```json
 {
   "token": "64-character-hex-token",
@@ -92,6 +97,7 @@ The password reset feature provides a secure, token-based flow for admin users w
 ```
 
 **Response (Success):**
+
 ```json
 {
   "success": true,
@@ -103,6 +109,7 @@ The password reset feature provides a secure, token-based flow for admin users w
 ```
 
 **Response (Invalid Token):**
+
 ```json
 {
   "success": false,
@@ -135,6 +142,7 @@ The password reset feature provides a secure, token-based flow for admin users w
 ### Audit Logging
 
 All password reset events are logged:
+
 - `password_reset.requested` - Password reset was requested
 - `password_reset.unknown_email` - Request for non-existent email
 - `password_reset.inactive_account` - Request for inactive account
@@ -165,12 +173,12 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
   ip_address VARCHAR(45) NULL,
   user_agent VARCHAR(255) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  
+
   INDEX idx_token (token),
   INDEX idx_user_id (user_id),
   INDEX idx_expires_at (expires_at),
   INDEX idx_used_at (used_at),
-  
+
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 ```
@@ -213,6 +221,7 @@ PasswordResetController::cleanupExpiredTokens();
 ```
 
 This method:
+
 - Removes tokens expired more than 24 hours ago
 - Removes used tokens older than 24 hours
 - Returns the number of deleted tokens
@@ -221,6 +230,7 @@ This method:
 **Recommended Schedule:** Daily via cron job
 
 Example cron configuration:
+
 ```bash
 # Daily at 3 AM
 0 3 * * * cd /path/to/backend && php -r "require 'vendor/autoload.php'; \HypnoseStammtisch\Controllers\PasswordResetController::cleanupExpiredTokens();"
@@ -256,7 +266,7 @@ backend/
 
 - **OOP:** Object-oriented design with clear separation of concerns
 - **DRY:** EmailService utility for reusable email functionality
-- **TSDoc:** Comprehensive documentation for all methods
+- **PHPDoc:** Comprehensive documentation for all methods
 - **i18n:** German language support in all user-facing messages
 - **Security:** Multiple layers of protection against attacks
 

@@ -132,7 +132,7 @@ class ICSGenerator
         }
 
         // Status
-        $status = match($event['status'] ?? 'published') {
+        $status = match ($event['status'] ?? 'published') {
             'cancelled' => 'CANCELLED',
             'draft' => 'TENTATIVE',
             default => 'CONFIRMED'
