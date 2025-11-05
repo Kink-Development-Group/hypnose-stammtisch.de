@@ -20,7 +20,7 @@
     "format:frontend": "npm run format:frontend:code && npm run format:frontend:svelte",
     "format:frontend:code": "prettier --write \"{src,tests,docs,scripts}/**/*.{js,ts,json,md,css,scss}\"",
     "format:frontend:svelte": "prettier --write \"src/**/*.svelte\" --plugin prettier-plugin-svelte",
-    "format:php": "cd backend && composer exec phpcbf -- --standard=PSR12 --runtime-set ignore_errors_on_exit 1 --runtime-set ignore_warnings_on_exit 1 src/",
+    "format:php": "cd backend && composer exec phpcbf -- --standard=phpcs.xml --runtime-set ignore_errors_on_exit 1 --runtime-set ignore_warnings_on_exit 1 || exit 0",
     "fetch:boundaries": "node scripts/fetch-dach-boundaries.js",
     "fonts:download": "node scripts/download-fonts.js",
     "install:backend": "cd backend && composer install",

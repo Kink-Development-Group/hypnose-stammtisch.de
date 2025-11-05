@@ -120,7 +120,9 @@ class IpBanManager
    * and when it expires. Only retrieves active bans.
    *
    * @param string $ipAddress The IP address to look up (IPv4 or IPv6)
-   * @return array|null Associative array with ban details including 'reason', 'banned_by_username', 'created_at', 'expires_at', or null if no active ban exists
+   * @return array|null Associative array with ban details including 'reason',
+   *                    'banned_by_username', 'created_at', 'expires_at', or null
+   *                    if no active ban exists
    * @see isIPBanned() To check ban status without retrieving details
    */
     public static function getBanDetails(string $ipAddress): ?array
@@ -175,7 +177,9 @@ class IpBanManager
    *
    * @param int $limit Maximum number of bans to return (default: 100)
    * @param int $offset Number of records to skip for pagination (default: 0)
-   * @return array Array of associative arrays, each containing ban details including 'ip_address', 'reason', 'banned_by_username', 'created_at', 'expires_at'
+   * @return array Array of associative arrays, each containing ban details
+   *               including 'ip_address', 'reason', 'banned_by_username',
+   *               'created_at', 'expires_at'
    * @see getAllBans() To retrieve both active and inactive bans
    */
     public static function getActiveBans(int $limit = 100, int $offset = 0): array
@@ -199,7 +203,9 @@ class IpBanManager
    *
    * @param int $limit Maximum number of bans to return (default: 100)
    * @param int $offset Number of records to skip for pagination (default: 0)
-   * @return array Array of associative arrays, each containing ban details including 'ip_address', 'reason', 'banned_by_username', 'is_active', 'created_at', 'expires_at'
+   * @return array Array of associative arrays, each containing ban details
+   *               including 'ip_address', 'reason', 'banned_by_username',
+   *               'is_active', 'created_at', 'expires_at'
    * @see getActiveBans() To retrieve only currently active bans
    */
     public static function getAllBans(int $limit = 100, int $offset = 0): array
