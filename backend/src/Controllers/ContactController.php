@@ -155,6 +155,8 @@ class ContactController
      */
     private function generateEmailBody(array $data, string $contactId): string
     {
+        $appName = Config::get('app.name', 'Hypnose Stammtisch');
+
         return "
         Neue Kontaktanfrage #{$contactId}
 
@@ -167,7 +169,7 @@ class ContactController
         " . $data['message'] . "
 
         ---
-        Diese E-Mail wurde automatisch vom Hypnose Stammtisch Kontaktformular generiert.
+        Diese E-Mail wurde automatisch vom {$appName} Kontaktformular generiert.
         ";
     }
 
@@ -176,10 +178,13 @@ class ContactController
      */
     private function sendMail(string $to, string $subject, string $body, string $replyTo = '', string $replyToName = ''): bool
     {
+        $appName = Config::get('app.name', 'Hypnose Stammtisch');
+        $fromName = Config::get('mail.from_name', $appName);
+
         $headers = [
-            'From: ' . Config::get('mail.from_name') . ' <' . Config::get('mail.from_address') . '>',
+            'From: ' . $fromName . ' <' . Config::get('mail.from_address') . '>',
             'Content-Type: text/plain; charset=UTF-8',
-            'X-Mailer: Hypnose Stammtisch Backend'
+            'X-Mailer: ' . $appName . ' Backend'
         ];
 
         if ($replyTo) {

@@ -20,6 +20,14 @@ use Carbon\Carbon;
 class FormController
 {
   /**
+   * Get the configured application name with a fallback for branding emails.
+   */
+    private function getAppName(): string
+    {
+        return Config::get('app.name', 'Hypnose Stammtisch');
+    }
+
+  /**
    * Submit new event for review
    * POST /api/forms/submit-event
    */
@@ -487,7 +495,7 @@ class FormController
             $mail = $this->createMailer();
 
             $mail->addAddress($data['organizer_email'], $data['organizer_name']);
-            $mail->Subject = 'Event-Einreichung erhalten - Hypnose Stammtisch';
+            $mail->Subject = 'Event-Einreichung erhalten - ' . $this->getAppName();
 
             $mail->Body = $this->getEventConfirmationEmailTemplate($data);
             $mail->AltBody = strip_tags($mail->Body);
@@ -507,7 +515,7 @@ class FormController
             $mail = $this->createMailer();
 
             $mail->addAddress($data['email'], $data['name']);
-            $mail->Subject = 'Nachricht erhalten - Hypnose Stammtisch';
+            $mail->Subject = 'Nachricht erhalten - ' . $this->getAppName();
 
             $mail->Body = $this->getContactConfirmationEmailTemplate($data);
             $mail->AltBody = strip_tags($mail->Body);
@@ -586,9 +594,10 @@ class FormController
             $mail->Port = Config::get('mail.smtp_port', 587);
         }
 
+        $appName = $this->getAppName();
         $mail->setFrom(
             Config::get('mail.from_email', 'noreply@hypnose-stammtisch.de'),
-            Config::get('mail.from_name', 'Hypnose Stammtisch')
+            Config::get('mail.from_name', $appName)
         );
 
         $mail->isHTML(true);
@@ -602,6 +611,8 @@ class FormController
    */
     private function getEventConfirmationEmailTemplate(array $data): string
     {
+        $appName = htmlspecialchars($this->getAppName(), ENT_QUOTES, 'UTF-8');
+
         return "
         <h2>Vielen Dank für Ihre Event-Einreichung!</h2>
 
@@ -621,7 +632,7 @@ class FormController
         <p>Bei Fragen können Sie sich jederzeit an uns wenden.</p>
 
         <p>Herzliche Grüße<br>
-        Das Hypnose Stammtisch Team</p>
+    Das {$appName} Team</p>
         ";
     }
 
@@ -630,6 +641,8 @@ class FormController
    */
     private function getContactConfirmationEmailTemplate(array $data): string
     {
+        $appName = htmlspecialchars($this->getAppName(), ENT_QUOTES, 'UTF-8');
+
         return "
         <h2>Nachricht erhalten</h2>
 
@@ -642,7 +655,7 @@ class FormController
         <p>{$data['message']}</p>
 
         <p>Herzliche Grüße<br>
-        Das Hypnose Stammtisch Team</p>
+    Das {$appName} Team</p>
         ";
     }
 

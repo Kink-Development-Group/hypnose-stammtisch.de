@@ -111,9 +111,11 @@ class CalendarController
     private function generateIcsContent(array $events): string
     {
         $timezone = Config::get('calendar.timezone', 'Europe/Berlin');
-        $prodId = '-//Hypnose Stammtisch//Calendar Feed//DE';
-        $calName = 'Hypnose Stammtisch';
-        $calDesc = 'Events der Hypnose Stammtisch Community';
+        $appName = Config::get('app.name', 'Hypnose Stammtisch');
+        $sanitizedAppName = str_replace(["\r", "\n"], '', $appName);
+        $prodId = '-//' . $sanitizedAppName . '//Calendar Feed//DE';
+        $calName = $sanitizedAppName;
+        $calDesc = 'Events der ' . $sanitizedAppName . ' Community';
 
         $ics = [
         'BEGIN:VCALENDAR',

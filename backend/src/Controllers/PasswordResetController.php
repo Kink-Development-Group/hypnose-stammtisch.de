@@ -10,7 +10,14 @@ use HypnoseStammtisch\Utils\Validator;
 use HypnoseStammtisch\Utils\RateLimiter;
 use HypnoseStammtisch\Utils\AuditLogger;
 use HypnoseStammtisch\Utils\EmailService;
-use HypnoseStammtisch\Config\Config;
+use RuntimeException;
+
+use function bin2hex;
+use function call_user_func;
+use function function_exists;
+use function hash;
+use function is_string;
+use function openssl_random_pseudo_bytes;
 
 /**
  * Password Reset Controller
@@ -37,6 +44,14 @@ class PasswordResetController
      * Rate limit time window in seconds (15 minutes)
      */
     private const RATE_LIMIT_WINDOW = 900;
+
+    private const GENERIC_RESET_RESPONSE =
+    'Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde eine E-Mail mit Anweisungen '
+        . 'zum Zurücksetzen des Passworts gesendet.';
+
+    private const SUCCESSFUL_RESET_MESSAGE =
+    'Ihr Passwort wurde erfolgreich zurückgesetzt. Sie können sich jetzt '
+        . 'mit Ihrem neuen Passwort anmelden.';
 
     /**
      * Request password reset
@@ -101,10 +116,7 @@ class PasswordResetController
             ]);
 
             // Still return success to prevent user enumeration
-            Response::success(
-                null,
-                'Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde eine E-Mail mit Anweisungen zum Zurücksetzen des Passworts gesendet.'
-            );
+            Response::success(null, self::GENERIC_RESET_RESPONSE);
             return;
         }
 
@@ -116,10 +128,7 @@ class PasswordResetController
             ]);
 
             // Return generic success message for security
-            Response::success(
-                null,
-                'Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde eine E-Mail mit Anweisungen zum Zurücksetzen des Passworts gesendet.'
-            );
+            Response::success(null, self::GENERIC_RESET_RESPONSE);
             return;
         }
 
@@ -130,7 +139,8 @@ class PasswordResetController
         );
 
         // Generate secure token
-        $token = bin2hex(random_bytes(32)); // 64 character hex string
+        $token = self::generateResetToken();
+        $tokenHash = hash('sha256', $token);
 
         // Calculate expiration time
         $expiresAt = date('Y-m-d H:i:s', strtotime('+' . self::TOKEN_EXPIRATION_MINUTES . ' minutes'));
@@ -138,9 +148,9 @@ class PasswordResetController
         // Store token in database
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
         Database::execute(
-            'INSERT INTO password_reset_tokens (user_id, token, expires_at, ip_address, user_agent) 
+            'INSERT INTO password_reset_tokens (user_id, token, expires_at, ip_address, user_agent)
              VALUES (?, ?, ?, ?, ?)',
-            [$user['id'], $token, $expiresAt, $ip, $userAgent]
+            [$user['id'], $tokenHash, $expiresAt, $ip, $userAgent]
         );
 
         // Send password reset email
@@ -165,10 +175,7 @@ class PasswordResetController
         }
 
         // Always return success message (even if email fails)
-        Response::success(
-            null,
-            'Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde eine E-Mail mit Anweisungen zum Zurücksetzen des Passworts gesendet.'
-        );
+        Response::success(null, self::GENERIC_RESET_RESPONSE);
     }
 
     /**
@@ -200,13 +207,7 @@ class PasswordResetController
             return;
         }
 
-        // Check if token exists and is valid
-        $resetToken = Database::fetchOne(
-            'SELECT id, user_id, expires_at, used_at 
-             FROM password_reset_tokens 
-             WHERE token = ?',
-            [$token]
-        );
+        $resetToken = self::findPasswordResetToken($token);
 
         if (!$resetToken) {
             Response::error('Token nicht gefunden oder ungültig', 404);
@@ -280,13 +281,7 @@ class PasswordResetController
             return;
         }
 
-        // Fetch token details
-        $resetToken = Database::fetchOne(
-            'SELECT id, user_id, expires_at, used_at 
-             FROM password_reset_tokens 
-             WHERE token = ?',
-            [$token]
-        );
+        $resetToken = self::findPasswordResetToken($token);
 
         if (!$resetToken) {
             AuditLogger::log('password_reset.invalid_token', null, null, ['ip' => $ip]);
@@ -350,10 +345,67 @@ class PasswordResetController
             'ip' => $ip
         ]);
 
-        Response::success(
-            ['success' => true],
-            'Ihr Passwort wurde erfolgreich zurückgesetzt. Sie können sich jetzt mit Ihrem neuen Passwort anmelden.'
+        Response::success(['success' => true], self::SUCCESSFUL_RESET_MESSAGE);
+    }
+
+    private static function findPasswordResetToken(string $token): ?array
+    {
+        $tokenHash = hash('sha256', $token);
+
+        $resetToken = Database::fetchOne(
+            'SELECT id, user_id, expires_at, used_at
+             FROM password_reset_tokens
+             WHERE token = ?',
+            [$tokenHash]
         );
+
+        if ($resetToken) {
+            return $resetToken;
+        }
+
+        $legacyToken = Database::fetchOne(
+            'SELECT id, user_id, expires_at, used_at
+             FROM password_reset_tokens
+             WHERE token = ?',
+            [$token]
+        );
+
+        if ($legacyToken) {
+            Database::execute(
+                'UPDATE password_reset_tokens SET token = ? WHERE id = ?',
+                [$tokenHash, $legacyToken['id']]
+            );
+            $legacyToken['token'] = $tokenHash;
+
+            return $legacyToken;
+        }
+
+        return null;
+    }
+
+    private static function generateResetToken(): string
+    {
+        return bin2hex(self::getRandomBytes(32));
+    }
+
+    private static function getRandomBytes(int $length): string
+    {
+        if (function_exists('random_bytes')) {
+            $bytes = call_user_func('random_bytes', $length);
+            if (is_string($bytes)) {
+                return $bytes;
+            }
+        }
+
+        if (function_exists('openssl_random_pseudo_bytes')) {
+            $strong = false;
+            $bytes = openssl_random_pseudo_bytes($length, $strong);
+            if ($bytes !== false && $strong === true) {
+                return $bytes;
+            }
+        }
+
+        throw new RuntimeException('Secure random bytes generator not available');
     }
 
     /**
@@ -367,8 +419,8 @@ class PasswordResetController
     public static function cleanupExpiredTokens(): int
     {
         $statement = Database::execute(
-            'DELETE FROM password_reset_tokens 
-             WHERE expires_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) 
+            'DELETE FROM password_reset_tokens
+             WHERE expires_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)
              OR (used_at IS NOT NULL AND used_at < DATE_SUB(NOW(), INTERVAL 24 HOUR))'
         );
 

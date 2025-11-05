@@ -2,7 +2,7 @@
 
 return [
   'app' => [
-    'name' => 'Hypnose Stammtisch',
+    'name' => $_ENV['APP_NAME'] ?? 'Hypnose Stammtisch',
     'version' => '1.0.0',
     'environment' => $_ENV['APP_ENV'] ?? 'production',
     'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),

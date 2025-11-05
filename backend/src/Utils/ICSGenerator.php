@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HypnoseStammtisch\Utils;
 
 use Carbon\Carbon;
+use HypnoseStammtisch\Config\Config;
 
 /**
  * ICS Calendar generation utility
@@ -14,6 +15,14 @@ use Carbon\Carbon;
 class ICSGenerator
 {
     private const DOMAIN = 'hypnose-stammtisch.de';
+
+    /**
+     * Retrieve the configured application name with fallback for ICS metadata.
+     */
+    private static function getAppName(): string
+    {
+        return Config::get('app.name', 'Hypnose Stammtisch');
+    }
 
     /**
      * Generate ICS content for a single event
@@ -39,15 +48,17 @@ class ICSGenerator
     private static function createICSContent(array $events): string
     {
         $lines = [];
+        $appName = self::getAppName();
+        $escapedAppName = self::escapeValue($appName);
 
         // Calendar header
         $lines[] = 'BEGIN:VCALENDAR';
         $lines[] = 'VERSION:2.0';
-        $lines[] = 'PRODID:-//Hypnose Stammtisch//Calendar 1.0//DE';
+        $lines[] = 'PRODID:-//' . $escapedAppName . '//Calendar 1.0//DE';
         $lines[] = 'CALSCALE:GREGORIAN';
         $lines[] = 'METHOD:PUBLISH';
-        $lines[] = 'X-WR-CALNAME:Hypnose Stammtisch Events';
-        $lines[] = 'X-WR-CALDESC:Community calendar for hypnosis meetups and workshops';
+        $lines[] = 'X-WR-CALNAME:' . self::escapeValue($appName . ' Events');
+        $lines[] = 'X-WR-CALDESC:' . self::escapeValue($appName . ' community calendar for hypnosis meetups and workshops');
         $lines[] = 'X-WR-TIMEZONE:Europe/Berlin';
 
         // Timezone definition

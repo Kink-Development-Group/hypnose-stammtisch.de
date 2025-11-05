@@ -30,6 +30,8 @@ class Config
             $dotenv->load();
         }
 
+        $appName = $_ENV['APP_NAME'] ?? 'Hypnose Stammtisch';
+
         self::$config = [
       // Database
         'db' => [
@@ -48,6 +50,7 @@ class Config
 
       // Application
         'app' => [
+        'name' => $appName,
         'env' => $_ENV['APP_ENV'] ?? 'production',
         'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
         'url' => $_ENV['APP_URL'] ?? 'https://hypnose-stammtisch.de',
@@ -77,7 +80,7 @@ class Config
         'password' => $_ENV['MAIL_PASSWORD'] ?? '',
         'encryption' => $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
         'from_address' => $_ENV['MAIL_FROM_ADDRESS'] ?? 'info@hypnose-stammtisch.de',
-        'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'Hypnose Stammtisch',
+        'from_name' => $_ENV['MAIL_FROM_NAME'] ?? $appName,
         ],
 
       // Contact Form
