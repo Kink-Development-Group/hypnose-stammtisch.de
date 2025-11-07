@@ -21,7 +21,16 @@ class ICSGenerator
      */
     private static function getAppName(): string
     {
-        return Config::get('app.name', 'Hypnose Stammtisch');
+        $appName = (string) Config::get('app.name', 'Hypnose Stammtisch');
+        $appName = preg_replace("/[\x00-\x1F\x7F]+/u", ' ', $appName ?? '');
+        $appName = preg_replace('/\s+/', ' ', $appName ?? '');
+        $appName = trim((string) $appName);
+
+        if ($appName === '') {
+            return 'Hypnose Stammtisch';
+        }
+
+        return $appName;
     }
 
     /**
@@ -50,6 +59,10 @@ class ICSGenerator
         $lines = [];
         $appName = self::getAppName();
         $escapedAppName = self::escapeValue($appName);
+        $calendarDescription = sprintf(
+            '%s community calendar for hypnosis meetups and workshops',
+            $appName
+        );
 
         // Calendar header
         $lines[] = 'BEGIN:VCALENDAR';
@@ -58,7 +71,7 @@ class ICSGenerator
         $lines[] = 'CALSCALE:GREGORIAN';
         $lines[] = 'METHOD:PUBLISH';
         $lines[] = 'X-WR-CALNAME:' . self::escapeValue($appName . ' Events');
-        $lines[] = 'X-WR-CALDESC:' . self::escapeValue($appName . ' community calendar for hypnosis meetups and workshops');
+        $lines[] = 'X-WR-CALDESC:' . self::escapeValue($calendarDescription);
         $lines[] = 'X-WR-TIMEZONE:Europe/Berlin';
 
         // Timezone definition
