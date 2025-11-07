@@ -184,11 +184,20 @@ class Config
     /**
      * Convenience accessor for the application name with optional sanitization.
      */
-    public static function getAppName(bool $stripNewlines = false): string
+    public static function getAppName(bool $sanitize = false): string
     {
         $name = self::get('app.name', 'Hypnose Stammtisch');
 
-        return $stripNewlines ? self::removeLineBreaks($name) : $name;
+        if (!$sanitize) {
+            return $name;
+        }
+
+        $name = self::removeLineBreaks($name);
+        $name = preg_replace("/[\x00-\x1F\x7F]+/u", ' ', $name ?? '');
+        $name = preg_replace('/\s+/', ' ', $name ?? '');
+        $name = trim((string) $name);
+
+        return $name !== '' ? $name : 'Hypnose Stammtisch';
     }
 
     /**

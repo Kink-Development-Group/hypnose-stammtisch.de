@@ -21,10 +21,10 @@ class EmailService
   /**
    * Retrieve the application name from configuration with a sensible fallback.
    */
-  private static function getAppName(): string
-  {
-    return Config::getAppName();
-  }
+    private static function getAppName(): string
+    {
+        return Config::getAppName();
+    }
 
   /**
    * Create and configure a PHPMailer instance
@@ -32,33 +32,33 @@ class EmailService
    * @return PHPMailer Configured PHPMailer instance
    * @throws Exception If PHPMailer initialization fails
    */
-  private static function createMailer(): PHPMailer
-  {
-    $mail = new PHPMailer(true);
+    private static function createMailer(): PHPMailer
+    {
+        $mail = new PHPMailer(true);
 
-    // Configure SMTP if enabled
-    if (Config::get('mail.smtp_enabled', false)) {
-      $mail->isSMTP();
-      $mail->Host = Config::get('mail.smtp_host');
-      $mail->SMTPAuth = true;
-      $mail->Username = Config::get('mail.smtp_username');
-      $mail->Password = Config::get('mail.smtp_password');
-      $mail->SMTPSecure = Config::get('mail.smtp_encryption', 'tls');
-      $mail->Port = Config::get('mail.smtp_port', 587);
+      // Configure SMTP if enabled
+        if (Config::get('mail.smtp_enabled', false)) {
+            $mail->isSMTP();
+            $mail->Host = Config::get('mail.smtp_host');
+            $mail->SMTPAuth = true;
+            $mail->Username = Config::get('mail.smtp_username');
+            $mail->Password = Config::get('mail.smtp_password');
+            $mail->SMTPSecure = Config::get('mail.smtp_encryption', 'tls');
+            $mail->Port = Config::get('mail.smtp_port', 587);
+        }
+
+      // Set default sender
+        $appName = self::getAppName();
+        $mail->setFrom(
+            Config::get('mail.from_email', 'noreply@hypnose-stammtisch.de'),
+            Config::get('mail.from_name', $appName)
+        );
+
+      // Use HTML by default
+        $mail->isHTML(true);
+
+        return $mail;
     }
-
-    // Set default sender
-    $appName = self::getAppName();
-    $mail->setFrom(
-      Config::get('mail.from_email', 'noreply@hypnose-stammtisch.de'),
-      Config::get('mail.from_name', $appName)
-    );
-
-    // Use HTML by default
-    $mail->isHTML(true);
-
-    return $mail;
-  }
 
   /**
    * Send password reset email
@@ -69,44 +69,44 @@ class EmailService
    * @param int $expirationMinutes Token expiration time in minutes
    * @return bool True if email was sent successfully
    */
-  public static function sendPasswordResetEmail(
-    string $recipientEmail,
-    string $recipientName,
-    string $resetToken,
-    int $expirationMinutes = 60
-  ): bool {
-    try {
-      $mail = self::createMailer();
+    public static function sendPasswordResetEmail(
+        string $recipientEmail,
+        string $recipientName,
+        string $resetToken,
+        int $expirationMinutes = 60
+    ): bool {
+        try {
+            $mail = self::createMailer();
 
-      // Add recipient
-      $mail->addAddress($recipientEmail, $recipientName);
+          // Add recipient
+            $mail->addAddress($recipientEmail, $recipientName);
 
-      // Build reset URL
-      $baseUrl = Config::get('app.url', 'https://hypnose-stammtisch.de');
-      $resetUrl = $baseUrl . '/admin/reset-password?token=' . urlencode($resetToken);
+          // Build reset URL
+            $baseUrl = Config::get('app.url', 'https://hypnose-stammtisch.de');
+            $resetUrl = $baseUrl . '/admin/reset-password?token=' . urlencode($resetToken);
 
-      // Email subject
-      $appName = self::getAppName();
-      $mail->Subject = 'Passwort zurücksetzen - ' . $appName . ' Admin';
+          // Email subject
+            $appName = self::getAppName();
+            $mail->Subject = 'Passwort zurücksetzen - ' . $appName . ' Admin';
 
-      // HTML body with i18n German text
-      $mail->Body = self::getPasswordResetEmailHtml($recipientName, $resetUrl, $expirationMinutes);
+          // HTML body with i18n German text
+            $mail->Body = self::getPasswordResetEmailHtml($recipientName, $resetUrl, $expirationMinutes);
 
-      // Plain text alternative
-      $mail->AltBody = self::getPasswordResetEmailText($recipientName, $resetUrl, $expirationMinutes);
+          // Plain text alternative
+            $mail->AltBody = self::getPasswordResetEmailText($recipientName, $resetUrl, $expirationMinutes);
 
-      // Send email
-      $mail->send();
+          // Send email
+            $mail->send();
 
-      return true;
-    } catch (Exception $e) {
-      error_log('Failed to send password reset email: ' . $e->getMessage());
-      return false;
-    } catch (\Throwable $e) {
-      error_log('Unexpected error sending password reset email: ' . $e->getMessage());
-      return false;
+            return true;
+        } catch (Exception $e) {
+            error_log('Failed to send password reset email: ' . $e->getMessage());
+            return false;
+        } catch (\Throwable $e) {
+            error_log('Unexpected error sending password reset email: ' . $e->getMessage());
+            return false;
+        }
     }
-  }
 
   /**
    * Get HTML template for password reset email
@@ -116,16 +116,16 @@ class EmailService
    * @param int $expirationMinutes Token expiration time in minutes
    * @return string HTML email body
    */
-  private static function getPasswordResetEmailHtml(
-    string $recipientName,
-    string $resetUrl,
-    int $expirationMinutes
-  ): string {
-    $escapedName = htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8');
-    $escapedUrl = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
-    $appName = htmlspecialchars(self::getAppName(), ENT_QUOTES, 'UTF-8');
+    private static function getPasswordResetEmailHtml(
+        string $recipientName,
+        string $resetUrl,
+        int $expirationMinutes
+    ): string {
+        $escapedName = htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8');
+        $escapedUrl = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
+        $appName = htmlspecialchars(self::getAppName(), ENT_QUOTES, 'UTF-8');
 
-    return <<<HTML
+        return <<<HTML
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -161,7 +161,7 @@ class EmailService
 </body>
 </html>
 HTML;
-  }
+    }
 
   /**
    * Get plain text template for password reset email
@@ -171,14 +171,14 @@ HTML;
    * @param int $expirationMinutes Token expiration time in minutes
    * @return string Plain text email body
    */
-  private static function getPasswordResetEmailText(
-    string $recipientName,
-    string $resetUrl,
-    int $expirationMinutes
-  ): string {
-    $appName = self::getAppName();
+    private static function getPasswordResetEmailText(
+        string $recipientName,
+        string $resetUrl,
+        int $expirationMinutes
+    ): string {
+        $appName = self::getAppName();
 
-    return <<<TEXT
+        return <<<TEXT
 Passwort zurücksetzen - {$appName} Admin
 
 Hallo {$recipientName},
@@ -197,7 +197,7 @@ Ihr Passwort bleibt unverändert und sicher.
 ---
 © 2025 {$appName}. Alle Rechte vorbehalten.
 TEXT;
-  }
+    }
 
   /**
    * Get HTML template for email change confirmation
@@ -206,15 +206,15 @@ TEXT;
    * @param string $newEmail New email address
    * @return string HTML email body
    */
-  private static function getEmailChangeConfirmationHtml(
-    string $confirmUrl,
-    string $newEmail
-  ): string {
-    $escapedUrl = htmlspecialchars($confirmUrl, ENT_QUOTES, 'UTF-8');
-    $escapedEmail = htmlspecialchars($newEmail, ENT_QUOTES, 'UTF-8');
-    $appName = htmlspecialchars(self::getAppName(), ENT_QUOTES, 'UTF-8');
+    private static function getEmailChangeConfirmationHtml(
+        string $confirmUrl,
+        string $newEmail
+    ): string {
+        $escapedUrl = htmlspecialchars($confirmUrl, ENT_QUOTES, 'UTF-8');
+        $escapedEmail = htmlspecialchars($newEmail, ENT_QUOTES, 'UTF-8');
+        $appName = htmlspecialchars(self::getAppName(), ENT_QUOTES, 'UTF-8');
 
-    return <<<HTML
+        return <<<HTML
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -249,7 +249,7 @@ TEXT;
 </body>
 </html>
 HTML;
-  }
+    }
 
   /**
    * Get plain text template for email change confirmation
@@ -258,13 +258,13 @@ HTML;
    * @param string $newEmail New email address
    * @return string Plain text email body
    */
-  private static function getEmailChangeConfirmationText(
-    string $confirmUrl,
-    string $newEmail
-  ): string {
-    $appName = self::getAppName();
+    private static function getEmailChangeConfirmationText(
+        string $confirmUrl,
+        string $newEmail
+    ): string {
+        $appName = self::getAppName();
 
-    return <<<TEXT
+        return <<<TEXT
 E-Mail-Adresse bestätigen - {$appName}
 
 Du hast angefragt, deine Admin-E-Mail-Adresse auf {$newEmail} zu ändern.
@@ -279,7 +279,7 @@ In diesem Fall bleibt deine bisherige E-Mail-Adresse unverändert.
 ---
 © 2025 {$appName}. Alle Rechte vorbehalten.
 TEXT;
-  }
+    }
 
   /**
    * Send email change confirmation
@@ -289,46 +289,46 @@ TEXT;
    * @param string $confirmationToken Email change confirmation token
    * @return bool True if email was sent successfully
    */
-  public static function sendEmailChangeConfirmation(
-    ?string $oldEmail,
-    string $newEmail,
-    string $confirmationToken
-  ): bool {
-    try {
-      $mail = self::createMailer();
+    public static function sendEmailChangeConfirmation(
+        ?string $oldEmail,
+        string $newEmail,
+        string $confirmationToken
+    ): bool {
+        try {
+            $mail = self::createMailer();
 
-      // Add recipient
-      $mail->addAddress($newEmail);
+          // Add recipient
+            $mail->addAddress($newEmail);
 
-      // Add CC to old email if provided
-      if ($oldEmail && $oldEmail !== $newEmail) {
-        $mail->addCC($oldEmail);
-      }
+          // Add CC to old email if provided
+            if ($oldEmail && $oldEmail !== $newEmail) {
+                $mail->addCC($oldEmail);
+            }
 
-      // Build confirmation URL
-      $baseUrl = Config::get('app.url', 'https://hypnose-stammtisch.de');
-      $confirmUrl = $baseUrl . '/api/admin/users/confirm-email?token=' . urlencode($confirmationToken);
+          // Build confirmation URL
+            $baseUrl = Config::get('app.url', 'https://hypnose-stammtisch.de');
+            $confirmUrl = $baseUrl . '/api/admin/users/confirm-email?token=' . urlencode($confirmationToken);
 
-      // Email subject
-      $appName = self::getAppName();
-      $mail->Subject = 'E-Mail Änderung bestätigen - ' . $appName;
+          // Email subject
+            $appName = self::getAppName();
+            $mail->Subject = 'E-Mail Änderung bestätigen - ' . $appName;
 
-      // HTML body
-      $mail->Body = self::getEmailChangeConfirmationHtml($confirmUrl, $newEmail);
+          // HTML body
+            $mail->Body = self::getEmailChangeConfirmationHtml($confirmUrl, $newEmail);
 
-      // Plain text alternative
-      $mail->AltBody = self::getEmailChangeConfirmationText($confirmUrl, $newEmail);
+          // Plain text alternative
+            $mail->AltBody = self::getEmailChangeConfirmationText($confirmUrl, $newEmail);
 
-      // Send email
-      $mail->send();
+          // Send email
+            $mail->send();
 
-      return true;
-    } catch (Exception $e) {
-      error_log('Failed to send email change confirmation: ' . $e->getMessage());
-      return false;
-    } catch (\Throwable $e) {
-      error_log('Unexpected error sending email change confirmation: ' . $e->getMessage());
-      return false;
+            return true;
+        } catch (Exception $e) {
+            error_log('Failed to send email change confirmation: ' . $e->getMessage());
+            return false;
+        } catch (\Throwable $e) {
+            error_log('Unexpected error sending email change confirmation: ' . $e->getMessage());
+            return false;
+        }
     }
-  }
 }

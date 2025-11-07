@@ -21,16 +21,7 @@ class ICSGenerator
      */
     private static function getAppName(): string
     {
-        $appName = (string) Config::get('app.name', 'Hypnose Stammtisch');
-        $appName = preg_replace("/[\x00-\x1F\x7F]+/u", ' ', $appName ?? '');
-        $appName = preg_replace('/\s+/', ' ', $appName ?? '');
-        $appName = trim((string) $appName);
-
-        if ($appName === '') {
-            return 'Hypnose Stammtisch';
-        }
-
-        return $appName;
+        return Config::getAppName(true);
     }
 
     /**
