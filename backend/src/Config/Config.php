@@ -180,4 +180,22 @@ class Config
 
         return self::$config;
     }
+
+    /**
+     * Convenience accessor for the application name with optional sanitization.
+     */
+    public static function getAppName(bool $stripNewlines = false): string
+    {
+        $name = self::get('app.name', 'Hypnose Stammtisch');
+
+        return $stripNewlines ? self::removeLineBreaks($name) : $name;
+    }
+
+    /**
+     * Remove line breaks to keep configuration values safe for headers and metadata.
+     */
+    private static function removeLineBreaks(string $value): string
+    {
+        return str_replace(["\r", "\n"], '', $value);
+    }
 }

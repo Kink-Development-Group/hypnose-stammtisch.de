@@ -17,35 +17,35 @@ use Carbon\Carbon;
  */
 class CalendarController
 {
-  /**
-   * Generate ICS calendar feed
-   * GET /api/calendar/feed
-   * GET /api/calendar/feed/{token}
-   */
+    /**
+     * Generate ICS calendar feed
+     * GET /api/calendar/feed
+     * GET /api/calendar/feed/{token}
+     */
     public function feed(string $token = null): void
     {
         try {
-          // Normalize special values that represent the public feed
+            // Normalize special values that represent the public feed
             $normalizedToken = $token !== null ? trim($token) : null;
 
             if ($normalizedToken === '' || strcasecmp($normalizedToken, 'public') === 0) {
                 $normalizedToken = null;
             }
 
-          // Validate token if provided
+            // Validate token if provided
             if ($normalizedToken && !$this->validateFeedToken($normalizedToken)) {
                 Response::json(['success' => false, 'error' => 'Invalid calendar feed token'], 403);
                 return;
             }
 
-          // Get events with expansion for recurring events
+            // Get events with expansion for recurring events
             $events = $this->getExpandedEventsForFeed();
 
-          // Generate ICS content using the new ICSGenerator
+            // Generate ICS content using the new ICSGenerator
             $filename = $normalizedToken ? 'private-calendar.ics' : 'public-calendar.ics';
             ICSGenerator::outputCalendarFeed($events, $filename);
 
-          // Update token access tracking
+            // Update token access tracking
             if ($normalizedToken) {
                 $this->updateTokenAccess($normalizedToken);
             }
@@ -55,25 +55,25 @@ class CalendarController
         }
     }
 
-  /**
-   * Get calendar metadata
-   * GET /api/calendar/meta
-   */
+    /**
+     * Get calendar metadata
+     * GET /api/calendar/meta
+     */
     public function meta(): void
     {
         try {
             $stats = $this->getCalendarStats();
 
             Response::json([
-            'success' => true,
-            'data' => [
-            'total_events' => $stats['total'],
-            'upcoming_events' => $stats['upcoming'],
-            'categories' => $stats['categories'],
-            'timezone' => Config::get('calendar.timezone', 'Europe/Berlin'),
-            'feed_url' => Config::get('app.url') . '/api/calendar/feed',
-            'last_updated' => date('c')
-            ]
+                'success' => true,
+                'data' => [
+                    'total_events' => $stats['total'],
+                    'upcoming_events' => $stats['upcoming'],
+                    'categories' => $stats['categories'],
+                    'timezone' => Config::get('calendar.timezone', 'Europe/Berlin'),
+                    'feed_url' => Config::get('app.url') . '/api/calendar/feed',
+                    'last_updated' => date('c')
+                ]
             ]);
         } catch (\Exception $e) {
             error_log("Calendar meta error: " . $e->getMessage());
@@ -81,10 +81,10 @@ class CalendarController
         }
     }
 
-  /**
-   * Generate individual event ICS
-   * GET /api/calendar/event/{id}/ics
-   */
+    /**
+     * Generate individual event ICS
+     * GET /api/calendar/event/{id}/ics
+     */
     public function eventIcs(string $id): void
     {
         try {
@@ -105,33 +105,32 @@ class CalendarController
         }
     }
 
-  /**
-   * Generate ICS content from events
-   */
+    /**
+     * Generate ICS content from events
+     */
     private function generateIcsContent(array $events): string
     {
         $timezone = Config::get('calendar.timezone', 'Europe/Berlin');
-        $appName = Config::get('app.name', 'Hypnose Stammtisch');
-        $sanitizedAppName = str_replace(["\r", "\n"], '', $appName);
-        $prodId = '-//' . $sanitizedAppName . '//Calendar Feed//DE';
-        $calName = $sanitizedAppName;
-        $calDesc = 'Events der ' . $sanitizedAppName . ' Community';
+        $appName = Config::getAppName(true);
+        $prodId = '-//' . $appName . '//Calendar Feed//DE';
+        $calName = $appName;
+        $calDesc = 'Events der ' . $appName . ' Community';
 
         $ics = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:' . $prodId,
-        'CALSCALE:GREGORIAN',
-        'METHOD:PUBLISH',
-        'X-WR-CALNAME:' . $calName,
-        'X-WR-CALDESC:' . $calDesc,
-        'X-WR-TIMEZONE:' . $timezone,
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:' . $prodId,
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+            'X-WR-CALNAME:' . $calName,
+            'X-WR-CALDESC:' . $calDesc,
+            'X-WR-TIMEZONE:' . $timezone,
         ];
 
-      // Add timezone definition
+        // Add timezone definition
         $ics = array_merge($ics, $this->getTimezoneDefinition($timezone));
 
-      // Add events
+        // Add events
         foreach ($events as $event) {
             $ics = array_merge($ics, $this->generateEventIcs($event));
         }
@@ -141,41 +140,41 @@ class CalendarController
         return implode("\r\n", $ics) . "\r\n";
     }
 
-  /**
-   * Generate ICS for single event
-   */
+    /**
+     * Generate ICS for single event
+     */
     private function generateEventIcs(Event $event): array
     {
         $timezone = Config::get('calendar.timezone', 'Europe/Berlin');
 
-      // Convert dates to UTC
+        // Convert dates to UTC
         $startDt = Carbon::createFromFormat('Y-m-d H:i:s', $event->startDatetime, $timezone);
         $endDt = Carbon::createFromFormat('Y-m-d H:i:s', $event->endDatetime, $timezone);
 
         $uid = 'event-' . $event->id . '@hypnose-stammtisch.de';
         $timestamp = Carbon::now('UTC')->format('Ymd\THis\Z');
 
-      // Location string
+        // Location string
         $location = $this->formatLocation($event);
 
-      // Description
+        // Description
         $description = $this->formatDescription($event);
 
-      // URL
+        // URL
         $url = Config::get('app.frontend_url') . '/events/' . $event->slug;
 
         $eventIcs = [
-        'BEGIN:VEVENT',
-        'UID:' . $uid,
-        'DTSTAMP:' . $timestamp,
-        'DTSTART;TZID=' . $timezone . ':' . $startDt->format('Ymd\THis'),
-        'DTEND;TZID=' . $timezone . ':' . $endDt->format('Ymd\THis'),
-        'SUMMARY:' . $this->escapeIcsValue($event->title),
-        'DESCRIPTION:' . $this->escapeIcsValue($description),
-        'URL:' . $url,
-        'CATEGORIES:' . strtoupper($event->category),
-        'STATUS:CONFIRMED',
-        'TRANSP:OPAQUE'
+            'BEGIN:VEVENT',
+            'UID:' . $uid,
+            'DTSTAMP:' . $timestamp,
+            'DTSTART;TZID=' . $timezone . ':' . $startDt->format('Ymd\THis'),
+            'DTEND;TZID=' . $timezone . ':' . $endDt->format('Ymd\THis'),
+            'SUMMARY:' . $this->escapeIcsValue($event->title),
+            'DESCRIPTION:' . $this->escapeIcsValue($description),
+            'URL:' . $url,
+            'CATEGORIES:' . strtoupper($event->category),
+            'STATUS:CONFIRMED',
+            'TRANSP:OPAQUE'
         ];
 
         if ($location) {
@@ -186,7 +185,7 @@ class CalendarController
             $eventIcs[] = 'ORGANIZER;CN=' . $this->escapeIcsValue($event->organizerName) . ':mailto:' . $event->organizerEmail;
         }
 
-      // Add recurrence rule if event is recurring
+        // Add recurrence rule if event is recurring
         if ($event->isRecurring && $event->rrule) {
             $eventIcs[] = 'RRULE:' . $event->rrule;
         }
@@ -196,40 +195,40 @@ class CalendarController
         return $eventIcs;
     }
 
-  /**
-   * Get timezone definition for ICS
-   */
+    /**
+     * Get timezone definition for ICS
+     */
     private function getTimezoneDefinition(string $timezone): array
     {
-      // Simplified timezone definition for Europe/Berlin
+        // Simplified timezone definition for Europe/Berlin
         if ($timezone === 'Europe/Berlin') {
             return [
-            'BEGIN:VTIMEZONE',
-            'TZID:Europe/Berlin',
-            'BEGIN:DAYLIGHT',
-            'TZOFFSETFROM:+0100',
-            'TZOFFSETTO:+0200',
-            'TZNAME:CEST',
-            'DTSTART:19700329T020000',
-            'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU',
-            'END:DAYLIGHT',
-            'BEGIN:STANDARD',
-            'TZOFFSETFROM:+0200',
-            'TZOFFSETTO:+0100',
-            'TZNAME:CET',
-            'DTSTART:19701025T030000',
-            'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU',
-            'END:STANDARD',
-            'END:VTIMEZONE'
+                'BEGIN:VTIMEZONE',
+                'TZID:Europe/Berlin',
+                'BEGIN:DAYLIGHT',
+                'TZOFFSETFROM:+0100',
+                'TZOFFSETTO:+0200',
+                'TZNAME:CEST',
+                'DTSTART:19700329T020000',
+                'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU',
+                'END:DAYLIGHT',
+                'BEGIN:STANDARD',
+                'TZOFFSETFROM:+0200',
+                'TZOFFSETTO:+0100',
+                'TZNAME:CET',
+                'DTSTART:19701025T030000',
+                'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU',
+                'END:STANDARD',
+                'END:VTIMEZONE'
             ];
         }
 
         return [];
     }
 
-  /**
-   * Format location for ICS
-   */
+    /**
+     * Format location for ICS
+     */
     private function formatLocation(Event $event): string
     {
         $parts = [];
@@ -249,9 +248,9 @@ class CalendarController
         return implode(', ', $parts);
     }
 
-  /**
-   * Format description for ICS
-   */
+    /**
+     * Format description for ICS
+     */
     private function formatDescription(Event $event): string
     {
         $parts = [];
@@ -272,7 +271,7 @@ class CalendarController
             $parts[] = "\n\nVorbereitung: " . $event->preparationNotes;
         }
 
-      // Add registration info
+        // Add registration info
         if ($event->requiresRegistration) {
             $parts[] = "\n\nAnmeldung erforderlich.";
 
@@ -285,24 +284,24 @@ class CalendarController
         return implode('', $parts);
     }
 
-  /**
-   * Escape values for ICS format
-   */
+    /**
+     * Escape values for ICS format
+     */
     private function escapeIcsValue(string $value): string
     {
-      // Remove HTML tags
+        // Remove HTML tags
         $value = strip_tags($value);
 
-      // Escape special characters
+        // Escape special characters
         $value = str_replace(['\\', ',', ';', "\n", "\r"], ['\\\\', '\\,', '\\;', '\\n', ''], $value);
 
-      // Limit line length (fold long lines)
+        // Limit line length (fold long lines)
         return $this->foldIcsLine($value);
     }
 
-  /**
-   * Fold long ICS lines
-   */
+    /**
+     * Fold long ICS lines
+     */
     private function foldIcsLine(string $line): string
     {
         if (strlen($line) <= 75) {
@@ -324,9 +323,9 @@ class CalendarController
         return $folded;
     }
 
-  /**
-   * Validate feed token
-   */
+    /**
+     * Validate feed token
+     */
     private function validateFeedToken(string $token): bool
     {
         $tokenData = Database::fetchOne(
@@ -338,7 +337,7 @@ class CalendarController
             return false;
         }
 
-      // Check expiration
+        // Check expiration
         if ($tokenData['expires_at'] && strtotime($tokenData['expires_at']) < time()) {
             return false;
         }
@@ -346,9 +345,9 @@ class CalendarController
         return true;
     }
 
-  /**
-   * Update token access tracking
-   */
+    /**
+     * Update token access tracking
+     */
     private function updateTokenAccess(string $token): void
     {
         Database::execute(
@@ -359,28 +358,28 @@ class CalendarController
         );
     }
 
-  /**
-   * Get calendar statistics
-   */
+    /**
+     * Get calendar statistics
+     */
     private function getCalendarStats(): array
     {
         $stats = [
-        'total' => 0,
-        'upcoming' => 0,
-        'categories' => []
+            'total' => 0,
+            'upcoming' => 0,
+            'categories' => []
         ];
 
-      // Total published events
+        // Total published events
         $total = Database::fetchOne("SELECT COUNT(*) as count FROM events WHERE status = 'published'");
         $stats['total'] = $total['count'] ?? 0;
 
-      // Upcoming events
+        // Upcoming events
         $upcoming = Database::fetchOne(
             "SELECT COUNT(*) as count FROM events WHERE status = 'published' AND start_datetime > NOW()"
         );
         $stats['upcoming'] = $upcoming['count'] ?? 0;
 
-      // Categories
+        // Categories
         $categories = Database::fetchAll(
             "SELECT category, COUNT(*) as count
              FROM events
@@ -395,9 +394,9 @@ class CalendarController
         return $stats;
     }
 
-  /**
-   * Sanitize filename
-   */
+    /**
+     * Sanitize filename
+     */
     private function sanitizeFilename(string $filename): string
     {
         $filename = preg_replace('/[^a-zA-Z0-9\-_]/', '-', $filename);
@@ -406,15 +405,15 @@ class CalendarController
         return trim($filename, '-');
     }
 
-  /**
-   * Get expanded events for calendar feed including recurring instances
-   */
+    /**
+     * Get expanded events for calendar feed including recurring instances
+     */
     private function getExpandedEventsForFeed(): array
     {
-      // Get base events for the next year
+        // Get base events for the next year
         $baseEvents = Event::getAllPublished([
-        'from_date' => date('Y-m-d', strtotime('-1 month')),
-        'to_date' => date('Y-m-d', strtotime('+1 year'))
+            'from_date' => date('Y-m-d', strtotime('-1 month')),
+            'to_date' => date('Y-m-d', strtotime('+1 year'))
         ]);
 
         $expandedEvents = [];
@@ -436,11 +435,11 @@ class CalendarController
                     $expandedEvents = array_merge($expandedEvents, $instances);
                 } catch (\Exception $e) {
                     error_log("Error expanding recurring event {$eventArray['id']}: " . $e->getMessage());
-                  // Add the base event if expansion fails
+                    // Add the base event if expansion fails
                     $expandedEvents[] = $eventArray;
                 }
             } else {
-              // Add single event
+                // Add single event
                 $expandedEvents[] = $eventArray;
             }
         }
@@ -448,9 +447,9 @@ class CalendarController
         return $expandedEvents;
     }
 
-  /**
-   * Helper function to convert event to array (handles mock objects)
-   */
+    /**
+     * Helper function to convert event to array (handles mock objects)
+     */
     private function eventToArray($event): array
     {
         if (method_exists($event, 'toArray')) {
@@ -458,7 +457,7 @@ class CalendarController
         } elseif (isset($event->toArray) && is_callable($event->toArray)) {
             return call_user_func($event->toArray);
         } else {
-          // Fallback for mock objects
+            // Fallback for mock objects
             return (array) $event;
         }
     }
