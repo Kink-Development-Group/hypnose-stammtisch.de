@@ -34,6 +34,15 @@ class Config
         $appConfig = file_exists($appConfigPath) ? require $appConfigPath : [];
         $appName = $appConfig['app']['name'] ?? $_ENV['APP_NAME'] ?? 'Hypnose Stammtisch';
 
+        $smtpEnabled = filter_var($_ENV['MAIL_SMTP_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $smtpHost = $_ENV['MAIL_HOST'] ?? '';
+        $smtpPort = (int)($_ENV['MAIL_PORT'] ?? 587);
+        $smtpUsername = $_ENV['MAIL_USERNAME'] ?? '';
+        $smtpPassword = $_ENV['MAIL_PASSWORD'] ?? '';
+        $smtpEncryption = $_ENV['MAIL_ENCRYPTION'] ?? 'tls';
+        $fromEmail = $_ENV['MAIL_FROM_ADDRESS'] ?? 'info@hypnose-stammtisch.de';
+        $fromName = $_ENV['MAIL_FROM_NAME'] ?? $appName;
+
         self::$config = [
             // Database
             'db' => [
@@ -76,13 +85,20 @@ class Config
 
             // Email
             'mail' => [
-                'host' => $_ENV['MAIL_HOST'] ?? '',
-                'port' => (int)($_ENV['MAIL_PORT'] ?? 587),
-                'username' => $_ENV['MAIL_USERNAME'] ?? '',
-                'password' => $_ENV['MAIL_PASSWORD'] ?? '',
-                'encryption' => $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
-                'from_address' => $_ENV['MAIL_FROM_ADDRESS'] ?? 'info@hypnose-stammtisch.de',
-                'from_name' => $_ENV['MAIL_FROM_NAME'] ?? $appName,
+                'smtp_enabled' => $smtpEnabled,
+                'smtp_host' => $smtpHost,
+                'smtp_port' => $smtpPort,
+                'smtp_username' => $smtpUsername,
+                'smtp_password' => $smtpPassword,
+                'smtp_encryption' => $smtpEncryption,
+                'host' => $smtpHost,
+                'port' => $smtpPort,
+                'username' => $smtpUsername,
+                'password' => $smtpPassword,
+                'encryption' => $smtpEncryption,
+                'from_email' => $fromEmail,
+                'from_address' => $fromEmail,
+                'from_name' => $fromName,
             ],
 
             // Contact Form
