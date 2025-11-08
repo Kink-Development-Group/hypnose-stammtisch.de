@@ -42,7 +42,9 @@
   </div>
 
   {#if variant === "default"}
-    <div class="mt-4 p-3 bg-boundaries/20 border-boundaries/40 rounded-lg">
+    <div
+      class="mt-4 p-3 bg-boundaries/20 border border-boundaries/40 rounded-lg"
+    >
       <p class="text-xs text-smoke-400">
         <strong>Bei akuten Notfällen:</strong>
         Wähle 112 oder wende dich an die nächste Notaufnahme.
