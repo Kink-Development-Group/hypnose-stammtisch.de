@@ -542,6 +542,7 @@ class FormController
         try {
             $adminEmail = Config::get('mail.admin_email');
             if (!$adminEmail) {
+                error_log('Admin notification skipped: admin email not configured for event submissions.');
                 return;
             }
 
@@ -567,6 +568,7 @@ class FormController
         try {
             $adminEmail = Config::get('mail.admin_email');
             if (!$adminEmail) {
+                error_log('Admin notification skipped: admin email not configured for contact submissions.');
                 return;
             }
 

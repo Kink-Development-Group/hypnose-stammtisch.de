@@ -348,6 +348,13 @@ class PasswordResetController
         Response::success(['success' => true], self::SUCCESSFUL_RESET_MESSAGE);
     }
 
+    /**
+     * Locate a password reset token and transparently migrate legacy unhashed tokens.
+     *
+     * Tokens are stored as SHA-256 hashes. For backward compatibility we also check for
+     * pre-hash tokens, upgrade them in-place to hashed form, and return the migrated record
+     * so future lookups remain secure.
+     */
     private static function findPasswordResetToken(string $token): ?array
     {
         $tokenHash = hash('sha256', $token);

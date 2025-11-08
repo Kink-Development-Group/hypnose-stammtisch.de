@@ -193,8 +193,8 @@ class Config
         }
 
         $name = self::removeLineBreaks($name);
-        $name = preg_replace("/[\x00-\x1F\x7F]+/u", ' ', $name ?? '');
-        $name = preg_replace('/\s+/', ' ', $name ?? '');
+        $name = preg_replace("/[\x00-\x1F\x7F]+/u", ' ', $name);
+        $name = preg_replace('/\s+/', ' ', $name);
         $name = trim((string) $name);
 
         return $name !== '' ? $name : 'Hypnose Stammtisch';
