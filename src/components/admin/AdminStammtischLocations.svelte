@@ -1,7 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { LocationStatus } from "../../enums/locationStatus";
+  import { CountryCode } from "../../enums/countryCode";
+  import { t } from "../../utils/i18n";
   import type { StammtischLocation } from "../../types/stammtisch";
 
+  /**
+   * Statistics interface for location data aggregation.
+   */
   interface LocationStats {
     total: number;
     published: number;
@@ -13,6 +19,30 @@
     by_region: Array<{ region: string; country: string; count: number }>;
   }
 
+  /**
+   * Form data interface matching the API contract.
+   */
+  interface LocationFormData {
+    name: string;
+    city: string;
+    region: string;
+    country: CountryCode;
+    latitude: number;
+    longitude: number;
+    description: string;
+    contact_email: string;
+    contact_phone: string;
+    contact_telegram: string;
+    contact_website: string;
+    meeting_frequency: string;
+    meeting_location: string;
+    meeting_address: string;
+    next_meeting: string;
+    tags: string[];
+    is_active: boolean;
+    status: LocationStatus;
+  }
+
   let locations: StammtischLocation[] = [];
   let stats: LocationStats | null = null;
   let loading = true;
@@ -22,11 +52,11 @@
   let selectedLocations: string[] = [];
 
   // Form state
-  let formData = {
+  let formData: LocationFormData = {
     name: "",
     city: "",
     region: "",
-    country: "DE" as "DE" | "AT" | "CH",
+    country: CountryCode.GERMANY,
     latitude: 0,
     longitude: 0,
     description: "",
@@ -38,9 +68,9 @@
     meeting_location: "",
     meeting_address: "",
     next_meeting: "",
-    tags: [] as string[],
+    tags: [],
     is_active: true,
-    status: "draft" as "draft" | "published" | "archived",
+    status: LocationStatus.DRAFT,
   };
 
   let tagInput = "";
@@ -56,9 +86,9 @@
   ];
 
   const countryOptions = [
-    { code: "DE", name: "Deutschland", flag: "🇩🇪" },
-    { code: "AT", name: "Österreich", flag: "🇦🇹" },
-    { code: "CH", name: "Schweiz", flag: "🇨🇭" },
+    { code: CountryCode.GERMANY, name: "Deutschland", flag: "🇩🇪" },
+    { code: CountryCode.AUSTRIA, name: "Österreich", flag: "🇦🇹" },
+    { code: CountryCode.SWITZERLAND, name: "Schweiz", flag: "🇨🇭" },
   ];
 
   onMount(async () => {
@@ -66,7 +96,15 @@
     await loadStats();
   });
 
-  async function loadLocations() {
+  /**
+   * Fetch all stammtisch locations from the API.
+   * @returns Promise that resolves when locations are loaded
+   */
+  /**
+   * Fetch all stammtisch locations from the API.
+   * @returns Promise that resolves when locations are loaded
+   */
+  async function loadLocations(): Promise<void> {
     try {
       loading = true;
       error = "";
@@ -96,7 +134,11 @@
     }
   }
 
-  async function loadStats() {
+  /**
+   * Fetch location statistics for the dashboard.
+   * @returns Promise that resolves when stats are loaded
+   */
+  async function loadStats(): Promise<void> {
     try {
       const response = await fetch("/api/admin/stammtisch-locations/stats", {
         credentials: "same-origin",
@@ -113,12 +155,15 @@
     }
   }
 
-  function resetForm() {
+  /**
+   * Reset form to initial empty state.
+   */
+  function resetForm(): void {
     formData = {
       name: "",
       city: "",
       region: "",
-      country: "DE",
+      country: CountryCode.GERMANY,
       latitude: 0,
       longitude: 0,
       description: "",
@@ -132,18 +177,25 @@
       next_meeting: "",
       tags: [],
       is_active: true,
-      status: "draft",
+      status: LocationStatus.DRAFT,
     };
     tagInput = "";
     editingLocation = null;
   }
 
-  function startCreate() {
+  /**
+   * Open modal for creating a new location.
+   */
+  function startCreate(): void {
     resetForm();
     showCreateForm = true;
   }
 
-  function startEdit(location: StammtischLocation) {
+  /**
+   * Open modal for editing an existing location.
+   * @param location - The location to edit
+   */
+  function startEdit(location: StammtischLocation): void {
     // Handle both coordinate structures: coordinates.lat/lng or direct latitude/longitude
     const lat = location.coordinates?.lat ?? (location as any).latitude ?? 0;
     const lng = location.coordinates?.lng ?? (location as any).longitude ?? 0;
@@ -152,7 +204,7 @@
       name: location.name,
       city: location.city,
       region: location.region,
-      country: location.country,
+      country: location.country as CountryCode,
       latitude: lat,
       longitude: lng,
       description: location.description,
@@ -166,18 +218,24 @@
       next_meeting: location.meetingInfo?.nextMeeting || "",
       tags: [...(location.tags || [])],
       is_active: location.isActive,
-      status: location.status,
+      status: location.status as LocationStatus,
     };
     editingLocation = location;
     showCreateForm = true;
   }
 
-  function cancelForm() {
+  /**
+   * Close form modal and reset state.
+   */
+  function cancelForm(): void {
     showCreateForm = false;
     resetForm();
   }
 
-  function addTag() {
+  /**
+   * Add custom tag to the location.
+   */
+  function addTag(): void {
     const tag = tagInput.trim();
     if (tag && !formData.tags.includes(tag)) {
       formData.tags = [...formData.tags, tag];
@@ -185,17 +243,29 @@
     }
   }
 
-  function removeTag(tag: string) {
+  /**
+   * Remove a tag from the location.
+   * @param tag - Tag to remove
+   */
+  function removeTag(tag: string): void {
     formData.tags = formData.tags.filter((t) => t !== tag);
   }
 
-  function addAvailableTag(tag: string) {
+  /**
+   * Add a predefined tag to the location.
+   * @param tag - Tag to add
+   */
+  function addAvailableTag(tag: string): void {
     if (!formData.tags.includes(tag)) {
       formData.tags = [...formData.tags, tag];
     }
   }
 
-  async function saveLocation() {
+  /**
+   * Save location (create or update) via API.
+   * @returns Promise that resolves when save is complete
+   */
+  async function saveLocation(): Promise<void> {
     try {
       const url = editingLocation
         ? `/api/admin/stammtisch-locations/${editingLocation.id}`
@@ -231,7 +301,12 @@
     }
   }
 
-  async function deleteLocation(location: StammtischLocation) {
+  /**
+   * Delete a location with confirmation.
+   * @param location - Location to delete
+   * @returns Promise that resolves when deletion is complete
+   */
+  async function deleteLocation(location: StammtischLocation): Promise<void> {
     if (
       !confirm(
         `Möchten Sie den Stammtisch "${location.name}" wirklich löschen?`,
@@ -266,7 +341,11 @@
     }
   }
 
-  function toggleLocationSelection(locationId: string) {
+  /**
+   * Toggle selection state of a location.
+   * @param locationId - ID of location to toggle
+   */
+  function toggleLocationSelection(locationId: string): void {
     if (selectedLocations.includes(locationId)) {
       selectedLocations = selectedLocations.filter((id) => id !== locationId);
     } else {
@@ -274,15 +353,26 @@
     }
   }
 
-  function selectAllLocations() {
+  /**
+   * Select all locations in the current view.
+   */
+  function selectAllLocations(): void {
     selectedLocations = locations.map((l) => l.id);
   }
 
-  function clearSelection() {
+  /**
+   * Clear all location selections.
+   */
+  function clearSelection(): void {
     selectedLocations = [];
   }
 
-  async function bulkUpdateStatus(status: "draft" | "published" | "archived") {
+  /**
+   * Update status for multiple selected locations.
+   * @param status - New status to apply
+   * @returns Promise that resolves when bulk update is complete
+   */
+  async function bulkUpdateStatus(status: LocationStatus): Promise<void> {
     if (selectedLocations.length === 0) {
       alert("Bitte wählen Sie mindestens einen Stammtisch aus.");
       return;
@@ -330,31 +420,46 @@
     }
   }
 
+  /**
+   * Get country flag emoji for a country code.
+   * @param country - Country code (DE, AT, CH)
+   * @returns Flag emoji string
+   */
   function getCountryFlag(country: string): string {
     const countryData = countryOptions.find((c) => c.code === country);
     return countryData ? countryData.flag : "🏁";
   }
 
+  /**
+   * Get CSS class for status badge.
+   * @param status - Location status
+   * @returns Tailwind CSS classes
+   */
   function getStatusBadgeClass(status: string): string {
     switch (status) {
-      case "published":
+      case LocationStatus.PUBLISHED:
         return "bg-green-100 text-green-800";
-      case "draft":
+      case LocationStatus.DRAFT:
         return "bg-yellow-100 text-yellow-800";
-      case "archived":
+      case LocationStatus.ARCHIVED:
         return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   }
 
+  /**
+   * Get human-readable status text.
+   * @param status - Location status
+   * @returns Localized status text
+   */
   function getStatusText(status: string): string {
     switch (status) {
-      case "published":
+      case LocationStatus.PUBLISHED:
         return "Veröffentlicht";
-      case "draft":
+      case LocationStatus.DRAFT:
         return "Entwurf";
-      case "archived":
+      case LocationStatus.ARCHIVED:
         return "Archiviert";
       default:
         return status;
@@ -419,19 +524,19 @@
         </span>
         <div class="flex space-x-2">
           <button
-            on:click={() => bulkUpdateStatus("published")}
+            on:click={() => bulkUpdateStatus(LocationStatus.PUBLISHED)}
             class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
           >
             Veröffentlichen
           </button>
           <button
-            on:click={() => bulkUpdateStatus("draft")}
+            on:click={() => bulkUpdateStatus(LocationStatus.DRAFT)}
             class="bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700"
           >
             Als Entwurf
           </button>
           <button
-            on:click={() => bulkUpdateStatus("archived")}
+            on:click={() => bulkUpdateStatus(LocationStatus.ARCHIVED)}
             class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"
           >
             Archivieren
@@ -609,170 +714,210 @@
 <!-- Create/Edit Form Modal -->
 {#if showCreateForm}
   <div
-    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    class="fixed inset-0 bg-gray-700/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50"
   >
     <div
-      class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white"
+      class="relative mx-auto mt-8 md:mt-12 border w-11/12 max-w-5xl shadow-2xl rounded-lg bg-white flex flex-col max-h-[92vh]"
     >
-      <div class="mt-3">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">
-          {editingLocation ? "Standort bearbeiten" : "Neuen Standort erstellen"}
-        </h3>
-
-        <form on:submit|preventDefault={saveLocation} class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Name -->
-            <div>
-              <label
-                for="name-input"
-                class="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Name *
-              </label>
-              <input
-                id="name-input"
-                type="text"
-                bind:value={formData.name}
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Hypnose Stammtisch Berlin"
-              />
-            </div>
-
-            <!-- City -->
-            <div>
-              <label
-                for="city-input"
-                class="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Stadt *
-              </label>
-              <input
-                id="city-input"
-                type="text"
-                bind:value={formData.city}
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Berlin"
-              />
-            </div>
-
-            <!-- Region -->
-            <div>
-              <label
-                for="region-input"
-                class="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Region/Bundesland *
-              </label>
-              <input
-                id="region-input"
-                type="text"
-                bind:value={formData.region}
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Berlin"
-              />
-            </div>
-
-            <!-- Country -->
-            <div>
-              <label
-                for="country-select"
-                class="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Land *
-              </label>
-              <select
-                id="country-select"
-                bind:value={formData.country}
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {#each countryOptions as country (country.code)}
-                  <option value={country.code}>
-                    {country.flag}
-                    {country.name}
-                  </option>
-                {/each}
-              </select>
-            </div>
-
-            <!-- Latitude -->
-            <div>
-              <label
-                for="latitude-input"
-                class="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Breitengrad *
-              </label>
-              <input
-                id="latitude-input"
-                type="number"
-                step="any"
-                bind:value={formData.latitude}
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="52.52"
-              />
-            </div>
-
-            <!-- Longitude -->
-            <div>
-              <label
-                for="longitude-input"
-                class="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Längengrad *
-              </label>
-              <input
-                id="longitude-input"
-                type="number"
-                step="any"
-                bind:value={formData.longitude}
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="13.405"
-              />
-            </div>
-          </div>
-
-          <!-- Description -->
+      <!-- Header (sticky) -->
+      <div
+        class="px-6 py-5 border-b bg-gradient-to-r from-gray-50 to-white sticky top-0 z-10 rounded-t-lg"
+      >
+        <div class="flex items-start justify-between flex-wrap gap-4">
           <div>
-            <label
-              for="description-textarea"
-              class="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Beschreibung
-            </label>
-            <textarea
-              id="description-textarea"
-              bind:value={formData.description}
-              rows="3"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Beschreibung des Stammtisches..."
-            ></textarea>
+            <h3 class="text-xl font-semibold text-gray-900 leading-tight">
+              {editingLocation
+                ? t("adminLocations.modal.titleEdit")
+                : t("adminLocations.modal.titleCreate")}
+            </h3>
           </div>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="text-xs px-2 py-1 rounded border shadow-sm hover:bg-gray-100 focus:outline-none focus:ring"
+              on:click={cancelForm}
+            >
+              {t("adminLocations.modal.close")}
+            </button>
+            <button
+              type="button"
+              class="text-xs px-2 py-1 rounded border shadow-sm hover:bg-gray-100 focus:outline-none focus:ring"
+              on:click={resetForm}
+            >
+              {t("adminLocations.modal.reset")}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable Form Content -->
+      <div class="flex-1 overflow-y-auto px-6 py-6">
+        <form on:submit|preventDefault={saveLocation} class="space-y-6">
+          <!-- Basic Information -->
+          <fieldset class="space-y-4">
+            <legend class="text-lg font-medium text-gray-900 mb-4">
+              Grundinformationen
+            </legend>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Name -->
+              <div>
+                <label
+                  for="name-input"
+                  class="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  {t("adminLocations.form.nameLabel")}
+                  <span class="text-red-600">*</span>
+                </label>
+                <input
+                  id="name-input"
+                  type="text"
+                  bind:value={formData.name}
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t("adminLocations.form.namePlaceholder")}
+                />
+              </div>
+
+              <!-- City -->
+              <div>
+                <label
+                  for="city-input"
+                  class="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  {t("adminLocations.form.cityLabel")}
+                  <span class="text-red-600">*</span>
+                </label>
+                <input
+                  id="city-input"
+                  type="text"
+                  bind:value={formData.city}
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t("adminLocations.form.cityPlaceholder")}
+                />
+              </div>
+
+              <!-- Region -->
+              <div>
+                <label
+                  for="region-input"
+                  class="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  {t("adminLocations.form.regionLabel")}
+                  <span class="text-red-600">*</span>
+                </label>
+                <input
+                  id="region-input"
+                  type="text"
+                  bind:value={formData.region}
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t("adminLocations.form.regionPlaceholder")}
+                />
+              </div>
+
+              <!-- Country -->
+              <div>
+                <label
+                  for="country-select"
+                  class="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  {t("adminLocations.form.countryLabel")}
+                  <span class="text-red-600">*</span>
+                </label>
+                <select
+                  id="country-select"
+                  bind:value={formData.country}
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {#each countryOptions as country (country.code)}
+                    <option value={country.code}>
+                      {country.flag}
+                      {country.name}
+                    </option>
+                  {/each}
+                </select>
+              </div>
+
+              <!-- Latitude -->
+              <div>
+                <label
+                  for="latitude-input"
+                  class="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  {t("adminLocations.form.latitudeLabel")}
+                  <span class="text-red-600">*</span>
+                </label>
+                <input
+                  id="latitude-input"
+                  type="number"
+                  step="any"
+                  bind:value={formData.latitude}
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t("adminLocations.form.latitudePlaceholder")}
+                />
+              </div>
+
+              <!-- Longitude -->
+              <div>
+                <label
+                  for="longitude-input"
+                  class="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  {t("adminLocations.form.longitudeLabel")}
+                  <span class="text-red-600">*</span>
+                </label>
+                <input
+                  id="longitude-input"
+                  type="number"
+                  step="any"
+                  bind:value={formData.longitude}
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t("adminLocations.form.longitudePlaceholder")}
+                />
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label
+                for="description-textarea"
+                class="block text-sm font-medium text-gray-700 mb-1"
+              >
+                {t("adminLocations.form.descriptionLabel")}
+              </label>
+              <textarea
+                id="description-textarea"
+                bind:value={formData.description}
+                rows="3"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t("adminLocations.form.descriptionPlaceholder")}
+              ></textarea>
+            </div>
+          </fieldset>
 
           <!-- Contact Information -->
-          <div class="border-t pt-4">
-            <h4 class="text-md font-medium text-gray-900 mb-3">
-              Kontaktinformationen
-            </h4>
+          <fieldset class="space-y-4">
+            <legend class="text-lg font-medium text-gray-900 mb-4">
+              {t("adminLocations.form.contactSectionTitle")}
+            </legend>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label
                   for="email-input"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  E-Mail
+                  {t("adminLocations.form.emailLabel")}
                 </label>
                 <input
                   id="email-input"
                   type="email"
                   bind:value={formData.contact_email}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="kontakt@example.com"
+                  placeholder={t("adminLocations.form.emailPlaceholder")}
                 />
               </div>
 
@@ -781,14 +926,14 @@
                   for="phone-input"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Telefon
+                  {t("adminLocations.form.phoneLabel")}
                 </label>
                 <input
                   id="phone-input"
                   type="tel"
                   bind:value={formData.contact_phone}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="+49 30 12345678"
+                  placeholder={t("adminLocations.form.phonePlaceholder")}
                 />
               </div>
 
@@ -797,14 +942,14 @@
                   for="telegram-input"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  FetLife
+                  {t("adminLocations.form.fetlifeLabel")}
                 </label>
                 <input
                   id="telegram-input"
                   type="text"
                   bind:value={formData.contact_telegram}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="@HypnoseBerlin"
+                  placeholder={t("adminLocations.form.fetlifePlaceholder")}
                 />
               </div>
 
@@ -813,38 +958,38 @@
                   for="website-input"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Website
+                  {t("adminLocations.form.websiteLabel")}
                 </label>
                 <input
                   id="website-input"
                   type="url"
                   bind:value={formData.contact_website}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="https://example.com"
+                  placeholder={t("adminLocations.form.websitePlaceholder")}
                 />
               </div>
             </div>
-          </div>
+          </fieldset>
 
           <!-- Meeting Information -->
-          <div class="border-t pt-4">
-            <h4 class="text-md font-medium text-gray-900 mb-3">
-              Treffen-Informationen
-            </h4>
+          <fieldset class="space-y-4">
+            <legend class="text-lg font-medium text-gray-900 mb-4">
+              {t("adminLocations.form.meetingSectionTitle")}
+            </legend>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label
                   for="frequency-input"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Häufigkeit
+                  {t("adminLocations.form.frequencyLabel")}
                 </label>
                 <input
                   id="frequency-input"
                   type="text"
                   bind:value={formData.meeting_frequency}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Jeden 1. Samstag im Monat"
+                  placeholder={t("adminLocations.form.frequencyPlaceholder")}
                 />
               </div>
 
@@ -853,14 +998,14 @@
                   for="location-input"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Ort
+                  {t("adminLocations.form.locationLabel")}
                 </label>
                 <input
                   id="location-input"
                   type="text"
                   bind:value={formData.meeting_location}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Kulturzentrum Mitte"
+                  placeholder={t("adminLocations.form.locationPlaceholder")}
                 />
               </div>
 
@@ -869,14 +1014,14 @@
                   for="address-input"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Adresse
+                  {t("adminLocations.form.addressLabel")}
                 </label>
                 <input
                   id="address-input"
                   type="text"
                   bind:value={formData.meeting_address}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Musterstraße 123, 10115 Berlin"
+                  placeholder={t("adminLocations.form.addressPlaceholder")}
                 />
               </div>
 
@@ -885,7 +1030,7 @@
                   for="next-meeting-input"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Nächstes Treffen
+                  {t("adminLocations.form.nextMeetingLabel")}
                 </label>
                 <input
                   id="next-meeting-input"
@@ -895,15 +1040,19 @@
                 />
               </div>
             </div>
-          </div>
+          </fieldset>
 
           <!-- Tags -->
-          <div class="border-t pt-4">
-            <h4 class="text-md font-medium text-gray-900 mb-3">Tags</h4>
+          <fieldset class="space-y-4">
+            <legend class="text-lg font-medium text-gray-900 mb-4">
+              {t("adminLocations.form.tagsSectionTitle")}
+            </legend>
 
             <!-- Available Tags -->
             <div class="mb-3">
-              <p class="text-sm text-gray-600 mb-2">Verfügbare Tags:</p>
+              <p class="text-sm text-gray-600 mb-2">
+                {t("adminLocations.form.tagsAvailable")}
+              </p>
               <div class="flex flex-wrap gap-2">
                 {#each availableTags as tag (tag)}
                   <button
@@ -926,14 +1075,14 @@
                 on:keydown={(e) =>
                   e.key === "Enter" && (e.preventDefault(), addTag())}
                 class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Neuen Tag hinzufügen..."
+                placeholder={t("adminLocations.form.tagInputPlaceholder")}
               />
               <button
                 type="button"
                 on:click={addTag}
                 class="px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded-r-md hover:bg-blue-700 hover:border-blue-700 transition-colors font-medium"
               >
-                Hinzufügen
+                {t("adminLocations.form.tagAdd")}
               </button>
             </div>
 
@@ -954,26 +1103,35 @@
                 </span>
               {/each}
             </div>
-          </div>
+          </fieldset>
 
           <!-- Status and Active -->
-          <div class="border-t pt-4">
+          <fieldset class="space-y-4">
+            <legend class="text-lg font-medium text-gray-900 mb-4">
+              Status & Sichtbarkeit
+            </legend>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label
                   for="status-select"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Status
+                  {t("adminLocations.form.statusLabel")}
                 </label>
                 <select
                   id="status-select"
                   bind:value={formData.status}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="draft">Entwurf</option>
-                  <option value="published">Veröffentlicht</option>
-                  <option value="archived">Archiviert</option>
+                  <option value={LocationStatus.DRAFT}>
+                    {t("adminLocations.form.statusDraft")}
+                  </option>
+                  <option value={LocationStatus.PUBLISHED}>
+                    {t("adminLocations.form.statusPublished")}
+                  </option>
+                  <option value={LocationStatus.ARCHIVED}>
+                    {t("adminLocations.form.statusArchived")}
+                  </option>
                 </select>
               </div>
 
@@ -988,29 +1146,41 @@
                   for="is_active"
                   class="ml-2 text-sm font-medium text-gray-700"
                 >
-                  Aktiv
+                  {t("adminLocations.form.isActiveLabel")}
                 </label>
               </div>
             </div>
-          </div>
-
-          <!-- Form Actions -->
-          <div class="flex justify-end space-x-3 pt-4 border-t">
-            <button
-              type="button"
-              on:click={cancelForm}
-              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Abbrechen
-            </button>
-            <button
-              type="submit"
-              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              {editingLocation ? "Aktualisieren" : "Erstellen"}
-            </button>
-          </div>
+          </fieldset>
         </form>
+      </div>
+
+      <!-- Footer (sticky) -->
+      <div
+        class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-between items-center rounded-b-lg gap-4"
+      >
+        <div class="text-xs text-gray-400">
+          <span class="text-red-600">*</span> = {t(
+            "adminLocations.form.required",
+          )}
+        </div>
+        <div class="flex gap-3">
+          <button
+            type="button"
+            on:click={cancelForm}
+            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            {t("adminLocations.form.cancel")}
+          </button>
+          <button
+            type="submit"
+            on:click={saveLocation}
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            {editingLocation
+              ? t("adminLocations.form.update")
+              : t("adminLocations.form.create")}
+          </button>
+        </div>
       </div>
     </div>
   </div>
