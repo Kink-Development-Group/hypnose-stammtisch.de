@@ -227,4 +227,3 @@
 {#if $showEventModal}
   <EventModal />
 {/if}
-

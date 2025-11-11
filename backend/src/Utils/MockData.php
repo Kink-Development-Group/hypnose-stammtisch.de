@@ -223,12 +223,12 @@ class MockData
         $events = self::getEvents();
 
         // Filter for upcoming events
-        $upcoming = array_filter($events, function($event) {
+        $upcoming = array_filter($events, function ($event) {
             return strtotime($event['start_date']) >= strtotime('today');
         });
 
         // Sort by start date
-        usort($upcoming, function($a, $b) {
+        usort($upcoming, function ($a, $b) {
             return strtotime($a['start_date']) - strtotime($b['start_date']);
         });
 
@@ -243,13 +243,13 @@ class MockData
         $events = self::getEvents();
 
         // Filter for featured and upcoming events
-        $featured = array_filter($events, function($event) {
+        $featured = array_filter($events, function ($event) {
             return $event['is_featured'] &&
                    strtotime($event['start_date']) >= strtotime('today');
         });
 
         // Sort by start date
-        usort($featured, function($a, $b) {
+        usort($featured, function ($a, $b) {
             return strtotime($a['start_date']) - strtotime($b['start_date']);
         });
 
@@ -281,14 +281,14 @@ class MockData
 
         // Filter for upcoming events only
         if (!empty($params['upcoming_only'])) {
-            $events = array_filter($events, function($event) {
+            $events = array_filter($events, function ($event) {
                 return strtotime($event['start_date']) >= strtotime('today');
             });
         }
 
         // Filter for featured events only
         if (!empty($params['featured_only'])) {
-            $events = array_filter($events, function($event) {
+            $events = array_filter($events, function ($event) {
                 return $event['is_featured'] &&
                        strtotime($event['start_date']) >= strtotime('today');
             });
@@ -296,14 +296,14 @@ class MockData
 
         // Filter by category
         if (!empty($params['category'])) {
-            $events = array_filter($events, function($event) use ($params) {
+            $events = array_filter($events, function ($event) use ($params) {
                 return $event['category'] === $params['category'];
             });
         }
 
         // Filter by tag
         if (!empty($params['tag'])) {
-            $events = array_filter($events, function($event) use ($params) {
+            $events = array_filter($events, function ($event) use ($params) {
                 $tags = explode(',', $event['tags']);
                 return in_array($params['tag'], array_map('trim', $tags));
             });
@@ -311,7 +311,7 @@ class MockData
 
         // Filter by location (search in location and address)
         if (!empty($params['location'])) {
-            $events = array_filter($events, function($event) use ($params) {
+            $events = array_filter($events, function ($event) use ($params) {
                 $searchTerm = strtolower($params['location']);
                 return strpos(strtolower($event['location']), $searchTerm) !== false ||
                        ($event['address'] && strpos(strtolower($event['address']), $searchTerm) !== false);
@@ -321,14 +321,14 @@ class MockData
         // Filter by date range
         if (!empty($params['from'])) {
             $fromDate = $params['from'];
-            $events = array_filter($events, function($event) use ($fromDate) {
+            $events = array_filter($events, function ($event) use ($fromDate) {
                 return $event['start_date'] >= $fromDate;
             });
         }
 
         if (!empty($params['to'])) {
             $toDate = $params['to'];
-            $events = array_filter($events, function($event) use ($toDate) {
+            $events = array_filter($events, function ($event) use ($toDate) {
                 return $event['start_date'] <= $toDate;
             });
         }
@@ -336,20 +336,20 @@ class MockData
         // Alternative date filters (for compatibility with Event model)
         if (!empty($params['from_date'])) {
             $fromDate = $params['from_date'];
-            $events = array_filter($events, function($event) use ($fromDate) {
+            $events = array_filter($events, function ($event) use ($fromDate) {
                 return ($event['start_date'] . ' ' . $event['start_time']) >= $fromDate;
             });
         }
 
         if (!empty($params['to_date'])) {
             $toDate = $params['to_date'];
-            $events = array_filter($events, function($event) use ($toDate) {
+            $events = array_filter($events, function ($event) use ($toDate) {
                 return ($event['start_date'] . ' ' . $event['start_time']) <= $toDate;
             });
         }
 
         // Sort by start date
-        usort($events, function($a, $b) {
+        usort($events, function ($a, $b) {
             return strtotime($a['start_date'] . ' ' . $a['start_time']) -
                    strtotime($b['start_date'] . ' ' . $b['start_time']);
         });
@@ -403,7 +403,7 @@ class MockData
             $event->updated_at = $data['updated_at'];
 
             // Add toArray method to the mock object
-            $event->toArray = function() use ($data) {
+            $event->toArray = function () use ($data) {
                 return [
                     'id' => $data['id'],
                     'title' => $data['title'],

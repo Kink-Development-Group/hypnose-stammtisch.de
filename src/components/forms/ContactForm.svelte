@@ -378,8 +378,8 @@
             target="_blank"
             rel="noopener">Datenschutzerklärung</a
           >
-          gelesen und stimme der Verarbeitung meiner Daten zum Zweck der
-          Bearbeitung meiner Anfrage zu.
+          gelesen und stimme der Verarbeitung meiner Daten zum Zweck der Bearbeitung
+          meiner Anfrage zu.
           <span class="text-boundaries" aria-label="Pflichtfeld">*</span>
         </span>
       </label>

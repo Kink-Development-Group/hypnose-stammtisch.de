@@ -153,7 +153,9 @@ class RRuleProcessor
         $candidate = [];
         foreach ($lines as $line) {
             $line = trim($line);
-            if ($line === '') continue;
+            if ($line === '') {
+                continue;
+            }
             if (stripos($line, 'DTSTART:') === 0) {
                 // ignore DTSTART line
                 continue;

@@ -53,7 +53,8 @@ class Event
         public string $imageUrl = '',
         public ?string $createdAt = null,
         public ?string $updatedAt = null
-    ) {}
+    ) {
+    }
 
     /**
      * Get all published events

@@ -11,152 +11,200 @@ use Dotenv\Dotenv;
  */
 class Config
 {
-  private static array $config = [];
-  private static bool $loaded = false;
+    private static array $config = [];
+    private static bool $loaded = false;
 
-  /**
-   * Load configuration from environment file
-   */
-  public static function load(string $path = null): void
-  {
-    if (self::$loaded) {
-      return;
+    /**
+     * Load configuration from environment file
+     */
+    public static function load(string $path = null): void
+    {
+        if (self::$loaded) {
+            return;
+        }
+
+        $path = $path ?: dirname(__DIR__);
+
+        if (file_exists($path . '/.env')) {
+            $dotenv = Dotenv::createImmutable($path);
+            $dotenv->load();
+        }
+
+        $appConfigPath = $path . '/config/app.php';
+        $appConfig = file_exists($appConfigPath) ? require $appConfigPath : [];
+        $appName = $appConfig['app']['name'] ?? $_ENV['APP_NAME'] ?? 'Hypnose Stammtisch';
+
+        $smtpEnabled = filter_var($_ENV['MAIL_SMTP_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $smtpHost = $_ENV['MAIL_HOST'] ?? '';
+        $smtpPort = (int)($_ENV['MAIL_PORT'] ?? 587);
+        $smtpUsername = $_ENV['MAIL_USERNAME'] ?? '';
+        $smtpPassword = $_ENV['MAIL_PASSWORD'] ?? '';
+        $smtpEncryption = $_ENV['MAIL_ENCRYPTION'] ?? 'tls';
+        $fromEmail = $_ENV['MAIL_FROM_ADDRESS'] ?? 'info@hypnose-stammtisch.de';
+        $fromName = $_ENV['MAIL_FROM_NAME'] ?? $appName;
+
+        self::$config = [
+            // Database
+            'db' => [
+                'host' => $_ENV['DB_HOST'] ?? 'localhost',
+                'port' => (int)($_ENV['DB_PORT'] ?? 3306),
+                'name' => $_ENV['DB_NAME'] ?? 'hypnose_stammtisch',
+                'user' => $_ENV['DB_USER'] ?? 'root',
+                'pass' => $_ENV['DB_PASS'] ?? '',
+                'charset' => 'utf8mb4',
+                'options' => [
+                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                    \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                    \PDO::ATTR_EMULATE_PREPARES => false,
+                ]
+            ],
+
+            // Application
+            'app' => [
+                'name' => $appName,
+                'env' => $_ENV['APP_ENV'] ?? 'production',
+                'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'url' => $_ENV['APP_URL'] ?? 'https://hypnose-stammtisch.de',
+                'frontend_url' => $_ENV['FRONTEND_URL'] ?? 'https://hypnose-stammtisch.de',
+                'timezone' => $_ENV['CALENDAR_TIMEZONE'] ?? 'Europe/Berlin',
+            ],
+
+            // Security
+            'security' => [
+                'jwt_secret' => $_ENV['JWT_SECRET'] ?? '',
+                'csrf_token_name' => $_ENV['CSRF_TOKEN_NAME'] ?? 'csrf_token',
+                'session_lifetime' => (int)($_ENV['SESSION_LIFETIME'] ?? 3600),
+
+                // Failed login protection
+                'max_failed_attempts' => (int)($_ENV['MAX_FAILED_ATTEMPTS'] ?? 5),
+                'time_window_seconds' => (int)($_ENV['TIME_WINDOW_SECONDS'] ?? 900), // 15 minutes
+                'ip_ban_duration_seconds' => (int)($_ENV['IP_BAN_DURATION_SECONDS'] ?? 3600), // 1 hour, 0 = permanent
+                'account_lock_duration_seconds' => (int)($_ENV['ACCOUNT_LOCK_DURATION_SECONDS'] ?? 3600), // 1 hour, 0 = manual unlock
+                'head_admin_role_name' => $_ENV['HEAD_ADMIN_ROLE_NAME'] ?? 'head',
+            ],
+
+            // Email
+            'mail' => [
+                'smtp_enabled' => $smtpEnabled,
+                'smtp_host' => $smtpHost,
+                'smtp_port' => $smtpPort,
+                'smtp_username' => $smtpUsername,
+                'smtp_password' => $smtpPassword,
+                'smtp_encryption' => $smtpEncryption,
+                'host' => $smtpHost,
+                'port' => $smtpPort,
+                'username' => $smtpUsername,
+                'password' => $smtpPassword,
+                'encryption' => $smtpEncryption,
+                'from_email' => $fromEmail,
+                'from_address' => $fromEmail,
+                'from_name' => $fromName,
+            ],
+
+            // Contact Form
+            'contact' => [
+                'general' => $_ENV['CONTACT_GENERAL'] ?? 'info@hypnose-stammtisch.de',
+                'events' => $_ENV['CONTACT_EVENTS'] ?? 'events@hypnose-stammtisch.de',
+                'conduct' => $_ENV['CONTACT_CONDUCT'] ?? 'conduct@hypnose-stammtisch.de',
+                'support' => $_ENV['CONTACT_SUPPORT'] ?? 'support@hypnose-stammtisch.de',
+            ],
+
+            // Calendar
+            'calendar' => [
+                'feed_token' => $_ENV['CALENDAR_FEED_TOKEN'] ?? '',
+                'timezone' => $_ENV['CALENDAR_TIMEZONE'] ?? 'Europe/Berlin',
+            ],
+
+            // File Upload
+            'upload' => [
+                'max_size' => (int)($_ENV['MAX_FILE_SIZE'] ?? 10485760),
+                'path' => $_ENV['UPLOAD_PATH'] ?? '../uploads',
+                'allowed_extensions' => explode(',', $_ENV['ALLOWED_EXTENSIONS'] ?? 'jpg,jpeg,png,gif,pdf'),
+            ],
+
+            // Rate Limiting
+            'rate_limit' => [
+                'requests' => (int)($_ENV['RATE_LIMIT_REQUESTS'] ?? 100),
+                'window' => (int)($_ENV['RATE_LIMIT_WINDOW'] ?? 3600),
+            ],
+
+            // CORS
+            'cors' => [
+                'allowed_origins' => explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? 'http://localhost:5173'),
+                'allowed_methods' => explode(',', $_ENV['CORS_ALLOWED_METHODS'] ?? 'GET,POST,PUT,DELETE,OPTIONS'),
+                'allowed_headers' => explode(',', $_ENV['CORS_ALLOWED_HEADERS'] ?? 'Content-Type,Authorization,X-Requested-With'),
+            ],
+        ];
+
+        self::$loaded = true;
     }
 
-    $path = $path ?: dirname(__DIR__);
+    /**
+     * Get configuration value by key
+     */
+    public static function get(string $key, mixed $default = null): mixed
+    {
+        if (!self::$loaded) {
+            self::load();
+        }
 
-    if (file_exists($path . '/.env')) {
-      $dotenv = Dotenv::createImmutable($path);
-      $dotenv->load();
+        $keys = explode('.', $key);
+        $value = self::$config;
+
+        foreach ($keys as $k) {
+            if (!isset($value[$k])) {
+                return $default;
+            }
+            $value = $value[$k];
+        }
+
+        return $value;
     }
 
-    self::$config = [
-      // Database
-      'db' => [
-        'host' => $_ENV['DB_HOST'] ?? 'localhost',
-        'port' => (int)($_ENV['DB_PORT'] ?? 3306),
-        'name' => $_ENV['DB_NAME'] ?? 'hypnose_stammtisch',
-        'user' => $_ENV['DB_USER'] ?? 'root',
-        'pass' => $_ENV['DB_PASS'] ?? '',
-        'charset' => 'utf8mb4',
-        'options' => [
-          \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-          \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-          \PDO::ATTR_EMULATE_PREPARES => false,
-        ]
-      ],
-
-      // Application
-      'app' => [
-        'env' => $_ENV['APP_ENV'] ?? 'production',
-        'debug' => filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN),
-        'url' => $_ENV['APP_URL'] ?? 'https://hypnose-stammtisch.de',
-        'frontend_url' => $_ENV['FRONTEND_URL'] ?? 'https://hypnose-stammtisch.de',
-        'timezone' => $_ENV['CALENDAR_TIMEZONE'] ?? 'Europe/Berlin',
-      ],
-
-      // Security
-      'security' => [
-        'jwt_secret' => $_ENV['JWT_SECRET'] ?? '',
-        'csrf_token_name' => $_ENV['CSRF_TOKEN_NAME'] ?? 'csrf_token',
-        'session_lifetime' => (int)($_ENV['SESSION_LIFETIME'] ?? 3600),
-        
-        // Failed login protection
-        'max_failed_attempts' => (int)($_ENV['MAX_FAILED_ATTEMPTS'] ?? 5),
-        'time_window_seconds' => (int)($_ENV['TIME_WINDOW_SECONDS'] ?? 900), // 15 minutes
-        'ip_ban_duration_seconds' => (int)($_ENV['IP_BAN_DURATION_SECONDS'] ?? 3600), // 1 hour, 0 = permanent
-        'account_lock_duration_seconds' => (int)($_ENV['ACCOUNT_LOCK_DURATION_SECONDS'] ?? 3600), // 1 hour, 0 = manual unlock
-        'head_admin_role_name' => $_ENV['HEAD_ADMIN_ROLE_NAME'] ?? 'head',
-      ],
-
-      // Email
-      'mail' => [
-        'host' => $_ENV['MAIL_HOST'] ?? '',
-        'port' => (int)($_ENV['MAIL_PORT'] ?? 587),
-        'username' => $_ENV['MAIL_USERNAME'] ?? '',
-        'password' => $_ENV['MAIL_PASSWORD'] ?? '',
-        'encryption' => $_ENV['MAIL_ENCRYPTION'] ?? 'tls',
-        'from_address' => $_ENV['MAIL_FROM_ADDRESS'] ?? 'info@hypnose-stammtisch.de',
-        'from_name' => $_ENV['MAIL_FROM_NAME'] ?? 'Hypnose Stammtisch',
-      ],
-
-      // Contact Form
-      'contact' => [
-        'general' => $_ENV['CONTACT_GENERAL'] ?? 'info@hypnose-stammtisch.de',
-        'events' => $_ENV['CONTACT_EVENTS'] ?? 'events@hypnose-stammtisch.de',
-        'conduct' => $_ENV['CONTACT_CONDUCT'] ?? 'conduct@hypnose-stammtisch.de',
-        'support' => $_ENV['CONTACT_SUPPORT'] ?? 'support@hypnose-stammtisch.de',
-      ],
-
-      // Calendar
-      'calendar' => [
-        'feed_token' => $_ENV['CALENDAR_FEED_TOKEN'] ?? '',
-        'timezone' => $_ENV['CALENDAR_TIMEZONE'] ?? 'Europe/Berlin',
-      ],
-
-      // File Upload
-      'upload' => [
-        'max_size' => (int)($_ENV['MAX_FILE_SIZE'] ?? 10485760),
-        'path' => $_ENV['UPLOAD_PATH'] ?? '../uploads',
-        'allowed_extensions' => explode(',', $_ENV['ALLOWED_EXTENSIONS'] ?? 'jpg,jpeg,png,gif,pdf'),
-      ],
-
-      // Rate Limiting
-      'rate_limit' => [
-        'requests' => (int)($_ENV['RATE_LIMIT_REQUESTS'] ?? 100),
-        'window' => (int)($_ENV['RATE_LIMIT_WINDOW'] ?? 3600),
-      ],
-
-      // CORS
-      'cors' => [
-        'allowed_origins' => explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? 'http://localhost:5173'),
-        'allowed_methods' => explode(',', $_ENV['CORS_ALLOWED_METHODS'] ?? 'GET,POST,PUT,DELETE,OPTIONS'),
-        'allowed_headers' => explode(',', $_ENV['CORS_ALLOWED_HEADERS'] ?? 'Content-Type,Authorization,X-Requested-With'),
-      ],
-    ];
-
-    self::$loaded = true;
-  }
-
-  /**
-   * Get configuration value by key
-   */
-  public static function get(string $key, mixed $default = null): mixed
-  {
-    if (!self::$loaded) {
-      self::load();
+    /**
+     * Check if configuration key exists
+     */
+    public static function has(string $key): bool
+    {
+        return self::get($key) !== null;
     }
 
-    $keys = explode('.', $key);
-    $value = self::$config;
+    /**
+     * Get all configuration
+     */
+    public static function all(): array
+    {
+        if (!self::$loaded) {
+            self::load();
+        }
 
-    foreach ($keys as $k) {
-      if (!isset($value[$k])) {
-        return $default;
-      }
-      $value = $value[$k];
+        return self::$config;
     }
 
-    return $value;
-  }
+    /**
+     * Convenience accessor for the application name with optional sanitization.
+     */
+    public static function getAppName(bool $sanitize = false): string
+    {
+        $name = self::get('app.name', 'Hypnose Stammtisch');
 
-  /**
-   * Check if configuration key exists
-   */
-  public static function has(string $key): bool
-  {
-    return self::get($key) !== null;
-  }
+        if (!$sanitize) {
+            return $name;
+        }
 
-  /**
-   * Get all configuration
-   */
-  public static function all(): array
-  {
-    if (!self::$loaded) {
-      self::load();
+        $name = self::removeLineBreaks($name);
+        $name = preg_replace("/[\x00-\x1F\x7F]+/u", ' ', $name);
+        $name = preg_replace('/\s+/', ' ', $name);
+        $name = trim((string) $name);
+
+        return $name !== '' ? $name : 'Hypnose Stammtisch';
     }
 
-    return self::$config;
-  }
+    /**
+     * Remove line breaks to keep configuration values safe for headers and metadata.
+     */
+    private static function removeLineBreaks(string $value): string
+    {
+        return str_replace(["\r", "\n"], '', $value);
+    }
 }
