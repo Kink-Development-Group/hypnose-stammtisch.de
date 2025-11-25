@@ -29,6 +29,16 @@ return [
     'allow_private_ips' => filter_var($_ENV['ALLOW_PRIVATE_IPS'] ?? false, FILTER_VALIDATE_BOOLEAN),
     'trusted_proxies' => array_filter(array_map('trim', explode(',', $_ENV['TRUSTED_PROXIES'] ?? ''))),
 
+    // Email validation settings
+    // Enable/disable DNS MX record checking for email validation (may add latency)
+    'enable_email_dns_check' => filter_var($_ENV['ENABLE_EMAIL_DNS_CHECK'] ?? true, FILTER_VALIDATE_BOOLEAN),
+    
+    // Disposable email domains can be extended via ENV (comma-separated list)
+    // If not set, the default list in Validator::DEFAULT_DISPOSABLE_DOMAINS is used
+    'disposable_email_domains' => !empty($_ENV['DISPOSABLE_EMAIL_DOMAINS'])
+      ? array_filter(array_map('trim', explode(',', $_ENV['DISPOSABLE_EMAIL_DOMAINS'])))
+      : null,
+
     // Audit log rate limiting for security events
     'audit_log_rate_limit' => [
       'untrusted_proxy_header' => [

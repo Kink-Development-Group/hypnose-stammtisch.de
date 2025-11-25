@@ -425,44 +425,11 @@ class FormController
 
     /**
      * Validate email address more strictly
-     * Checks for disposable email domains and DNS MX records
+     * Delegates to centralized Validator for consistent validation
      */
     private function isValidEmailDomain(string $email): bool
     {
-        $parts = explode('@', $email);
-        if (count($parts) !== 2) {
-            return false;
-        }
-        
-        $domain = strtolower($parts[1]);
-        
-        // List of common disposable email domains (expanded list)
-        $disposableDomains = [
-            'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'temp-mail.org',
-            'throwaway.email', '10minutemail.com', 'fakeinbox.com', 'trashmail.com',
-            'mailnator.com', 'yopmail.com', 'getnada.com', 'getairmail.com',
-            'dispostable.com', 'mintemail.com', 'tempail.com', 'fakemailgenerator.com',
-            'emailondeck.com', 'mohmal.com', 'tempr.email', 'discard.email',
-            'maildrop.cc', 'guerrillamail.info', 'sharklasers.com', 'grr.la',
-            'mailcatch.com', 'mailnesia.com', 'spamgourmet.com', 'tempmailaddress.com',
-            'burnermail.io', 'inboxkitten.com', 'emkei.cz', 'anonymbox.com',
-            'tempinbox.com', 'fakemailgenerator.net', 'temporary-mail.net'
-        ];
-        
-        if (in_array($domain, $disposableDomains, true)) {
-            return false;
-        }
-        
-        // Check if domain has MX records (can receive email)
-        // This adds latency but significantly reduces spam
-        if (function_exists('checkdnsrr')) {
-            // Check for MX records first, then A records as fallback
-            if (!checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A')) {
-                return false;
-            }
-        }
-        
-        return true;
+        return Validator::isValidEmailDomain($email);
     }
 
     /**

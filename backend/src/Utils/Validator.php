@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace HypnoseStammtisch\Utils;
 
+use HypnoseStammtisch\Config\Config;
+
 /**
  * Validation utility class
  */
@@ -11,6 +13,22 @@ class Validator
 {
     private array $data;
     private array $errors = [];
+
+    /**
+     * Default list of disposable email domains
+     * Can be overridden via config 'security.disposable_email_domains'
+     */
+    private const DEFAULT_DISPOSABLE_DOMAINS = [
+        'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'temp-mail.org',
+        'throwaway.email', '10minutemail.com', 'fakeinbox.com', 'trashmail.com',
+        'mailnator.com', 'yopmail.com', 'getnada.com', 'getairmail.com',
+        'dispostable.com', 'mintemail.com', 'tempail.com', 'fakemailgenerator.com',
+        'emailondeck.com', 'mohmal.com', 'tempr.email', 'discard.email',
+        'maildrop.cc', 'guerrillamail.info', 'sharklasers.com', 'grr.la',
+        'mailcatch.com', 'mailnesia.com', 'spamgourmet.com', 'tempmailaddress.com',
+        'burnermail.io', 'inboxkitten.com', 'emkei.cz', 'anonymbox.com',
+        'tempinbox.com', 'fakemailgenerator.net', 'temporary-mail.net'
+    ];
 
     public function __construct(array $data)
     {
@@ -258,26 +276,27 @@ class Validator
         
         $domain = strtolower($parts[1]);
         
-        // List of common disposable email domains
-        $disposableDomains = [
-            'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'temp-mail.org',
-            'throwaway.email', '10minutemail.com', 'fakeinbox.com', 'trashmail.com',
-            'mailnator.com', 'yopmail.com', 'getnada.com', 'getairmail.com',
-            'dispostable.com', 'mintemail.com', 'tempail.com', 'fakemailgenerator.com',
-            'emailondeck.com', 'mohmal.com', 'tempr.email', 'discard.email',
-            'maildrop.cc', 'guerrillamail.info', 'sharklasers.com', 'grr.la',
-            'mailcatch.com', 'mailnesia.com', 'spamgourmet.com', 'tempmailaddress.com',
-            'burnermail.io', 'inboxkitten.com', 'emkei.cz', 'anonymbox.com',
-            'tempinbox.com', 'fakemailgenerator.net', 'temporary-mail.net'
-        ];
+        // Get disposable domains from config or use defaults
+        $disposableDomains = Config::get('security.disposable_email_domains', self::DEFAULT_DISPOSABLE_DOMAINS);
         
         if (in_array($domain, $disposableDomains, true)) {
             return false;
         }
         
         // Check if domain has MX records (can receive email)
-        if (function_exists('checkdnsrr')) {
-            if (!checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A')) {
+        // This check can be disabled via config for performance
+        $enableDnsCheck = Config::get('security.enable_email_dns_check', true);
+        
+        if ($enableDnsCheck && function_exists('checkdnsrr')) {
+            // Cache DNS results to reduce latency on repeated checks
+            static $dnsCache = [];
+            
+            if (!isset($dnsCache[$domain])) {
+                // Check for MX records first, then A records as fallback
+                $dnsCache[$domain] = checkdnsrr($domain, 'MX') || checkdnsrr($domain, 'A');
+            }
+            
+            if (!$dnsCache[$domain]) {
                 return false;
             }
         }
