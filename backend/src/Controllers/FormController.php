@@ -22,6 +22,12 @@ use Carbon\Carbon;
 class FormController
 {
     /**
+     * Spam protection timing constants (in seconds)
+     */
+    private const MIN_FORM_FILL_TIME = 5;       // Minimum time to fill form (bots are faster)
+    private const MAX_FORM_FILL_TIME = 1800;    // Maximum time (30 min) to prevent replay attacks
+
+    /**
      * Get the configured application name with a fallback for branding emails.
      */
     private function getAppName(): string
@@ -380,8 +386,8 @@ class FormController
             }
         }
 
-        // Timestamp validation - form must take at least 5 seconds (bots are faster)
-        // and not more than 30 minutes (prevents replay attacks with old timestamps)
+        // Timestamp validation - form must take at least MIN_FORM_FILL_TIME seconds
+        // and not more than MAX_FORM_FILL_TIME (prevents replay attacks)
         if (!empty($data['timestamp'])) {
             $timestamp = (int)$data['timestamp'];
             $now = time();
@@ -397,20 +403,22 @@ class FormController
                 return false;
             }
 
-            // Too fast (less than 5 seconds) - likely a bot
-            if ($elapsed < 5) {
+            // Too fast - likely a bot
+            if ($elapsed < self::MIN_FORM_FILL_TIME) {
                 AuditLogger::log('form.suspicious_timing', 'spam', $clientIp, [
                     'reason' => 'too_fast',
-                    'elapsed_seconds' => $elapsed
+                    'elapsed_seconds' => $elapsed,
+                    'min_required' => self::MIN_FORM_FILL_TIME
                 ]);
                 return false;
             }
             
-            // Too slow (more than 30 minutes) - possible replay attack
-            if ($elapsed > 1800) {
+            // Too slow - possible replay attack
+            if ($elapsed > self::MAX_FORM_FILL_TIME) {
                 AuditLogger::log('form.suspicious_timing', 'spam', $clientIp, [
                     'reason' => 'too_slow',
-                    'elapsed_seconds' => $elapsed
+                    'elapsed_seconds' => $elapsed,
+                    'max_allowed' => self::MAX_FORM_FILL_TIME
                 ]);
                 return false;
             }

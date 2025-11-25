@@ -30,6 +30,14 @@ class Validator
         'tempinbox.com', 'fakemailgenerator.net', 'temporary-mail.net'
     ];
 
+    /**
+     * Spam detection thresholds
+     */
+    private const MAX_LINKS_ALLOWED = 2;
+    private const MIN_TEXT_WITHOUT_LINKS = 20;
+    private const MIN_LETTERS_FOR_CAPS_CHECK = 20;
+    private const MAX_CAPS_RATIO = 0.5;
+
     public function __construct(array $data)
     {
         $this->data = $data;
@@ -358,14 +366,14 @@ class Validator
         $name = $data['name'] ?? '';
         $email = $data['email'] ?? '';
 
-        // Check for excessive links (more than 2 is suspicious in a contact form)
-        if (preg_match_all('/https?:\/\//i', $message) > 2) {
+        // Check for excessive links
+        if (preg_match_all('/https?:\/\//i', $message) > self::MAX_LINKS_ALLOWED) {
             return true;
         }
 
         // Check for link-only message
         $textWithoutLinks = preg_replace('/https?:\/\/[^\s]+/', '', $message);
-        if (strlen(trim($textWithoutLinks)) < 20 && preg_match('/https?:\/\//', $message)) {
+        if (strlen(trim($textWithoutLinks)) < self::MIN_TEXT_WITHOUT_LINKS && preg_match('/https?:\/\//', $message)) {
             return true;
         }
 
@@ -409,10 +417,10 @@ class Validator
             return true;
         }
 
-        // Check for excessive capitalization (>50% caps is suspicious)
+        // Check for excessive capitalization
         $upperCount = preg_match_all('/[A-Z]/', $message);
         $letterCount = preg_match_all('/[a-zA-Z]/', $message);
-        if ($letterCount > 20 && ($upperCount / $letterCount) > 0.5) {
+        if ($letterCount > self::MIN_LETTERS_FOR_CAPS_CHECK && ($upperCount / $letterCount) > self::MAX_CAPS_RATIO) {
             return true;
         }
 
