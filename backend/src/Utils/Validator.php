@@ -214,11 +214,13 @@ class Validator
             $errors['name'] = 'Name muss zwischen 2 und 255 Zeichen lang sein';
         }
 
-        // Email validation
+        // Email validation with domain check
         if (!self::isRequired($data['email'] ?? '')) {
             $errors['email'] = 'E-Mail ist erforderlich';
         } elseif (!self::isValidEmail($data['email'])) {
             $errors['email'] = 'Ungültige E-Mail-Adresse';
+        } elseif (!self::isValidEmailDomain($data['email'])) {
+            $errors['email'] = 'Bitte verwenden Sie eine gültige E-Mail-Adresse (keine Wegwerf-E-Mail)';
         }
 
         // Subject validation
@@ -242,6 +244,45 @@ class Validator
         }
 
         return $errors;
+    }
+
+    /**
+     * Validate email domain - checks for disposable emails and DNS records
+     */
+    public static function isValidEmailDomain(string $email): bool
+    {
+        $parts = explode('@', $email);
+        if (count($parts) !== 2) {
+            return false;
+        }
+        
+        $domain = strtolower($parts[1]);
+        
+        // List of common disposable email domains
+        $disposableDomains = [
+            'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'temp-mail.org',
+            'throwaway.email', '10minutemail.com', 'fakeinbox.com', 'trashmail.com',
+            'mailnator.com', 'yopmail.com', 'getnada.com', 'getairmail.com',
+            'dispostable.com', 'mintemail.com', 'tempail.com', 'fakemailgenerator.com',
+            'emailondeck.com', 'mohmal.com', 'tempr.email', 'discard.email',
+            'maildrop.cc', 'guerrillamail.info', 'sharklasers.com', 'grr.la',
+            'mailcatch.com', 'mailnesia.com', 'spamgourmet.com', 'tempmailaddress.com',
+            'burnermail.io', 'inboxkitten.com', 'emkei.cz', 'anonymbox.com',
+            'tempinbox.com', 'fakemailgenerator.net', 'temporary-mail.net'
+        ];
+        
+        if (in_array($domain, $disposableDomains, true)) {
+            return false;
+        }
+        
+        // Check if domain has MX records (can receive email)
+        if (function_exists('checkdnsrr')) {
+            if (!checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A')) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**
@@ -290,35 +331,75 @@ class Validator
 
     /**
      * Check for potential spam indicators
+     * Enhanced spam detection with more patterns and checks
      */
     public static function isSpam(array $data): bool
     {
-        // Simple spam detection
         $message = $data['message'] ?? '';
+        $name = $data['name'] ?? '';
+        $email = $data['email'] ?? '';
 
-        // Check for excessive links
-        if (preg_match_all('/https?:\/\//', $message) > 3) {
+        // Check for excessive links (more than 2 is suspicious in a contact form)
+        if (preg_match_all('/https?:\/\//i', $message) > 2) {
             return true;
         }
 
-        // Check for suspicious keywords
+        // Check for link-only message
+        $textWithoutLinks = preg_replace('/https?:\/\/[^\s]+/', '', $message);
+        if (strlen(trim($textWithoutLinks)) < 20 && preg_match('/https?:\/\//', $message)) {
+            return true;
+        }
+
+        // Check for suspicious keywords (expanded list)
         $spamKeywords = [
-            'viagra',
-            'casino',
-            'lottery',
-            'winner',
-            'congratulations',
-            'click here',
-            'free money',
-            'guaranteed',
-            'investment'
+            'viagra', 'cialis', 'casino', 'lottery', 'winner', 'congratulations',
+            'click here', 'free money', 'guaranteed', 'investment opportunity',
+            'buy now', 'limited time', 'act now', 'urgent', 'make money fast',
+            'million dollars', 'bitcoin investment', 'crypto opportunity',
+            'work from home', 'easy money', 'risk free', 'no obligation',
+            'double your money', 'earn extra cash', 'be your own boss',
+            'financial freedom', 'passive income', 'mlm', 'multi-level marketing',
+            'pyramid scheme', 'adult content', 'xxx', 'porn', 'sex video',
+            'replica watches', 'cheap meds', 'online pharmacy', 'weight loss',
+            'diet pills', 'enhancement pills', 'enlarge', 'medication without',
+            'prescription free', 'herbal remedy', 'miracle cure'
         ];
 
         $lowerMessage = strtolower($message);
+        $lowerName = strtolower($name);
+        
+        // Check message for spam keywords
         foreach ($spamKeywords as $keyword) {
             if (strpos($lowerMessage, $keyword) !== false) {
                 return true;
             }
+        }
+
+        // Check name for spam patterns
+        if (preg_match('/https?:\/\//', $name)) {
+            return true;
+        }
+        
+        // Check for obviously fake names (only special chars or numbers)
+        if (preg_match('/^[^a-zA-ZäöüÄÖÜß]+$/', $name)) {
+            return true;
+        }
+
+        // Check for excessive repetition (spam bots often repeat characters)
+        if (preg_match('/(.)\1{4,}/', $message)) {
+            return true;
+        }
+
+        // Check for excessive capitalization (>50% caps is suspicious)
+        $upperCount = preg_match_all('/[A-Z]/', $message);
+        $letterCount = preg_match_all('/[a-zA-Z]/', $message);
+        if ($letterCount > 20 && ($upperCount / $letterCount) > 0.5) {
+            return true;
+        }
+
+        // Check for HTML/script injection attempts
+        if (preg_match('/<\s*script|javascript:|onclick|onerror|onload/i', $message)) {
+            return true;
         }
 
         return false;

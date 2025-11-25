@@ -7,6 +7,8 @@ namespace HypnoseStammtisch\Controllers;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\Validator;
 use HypnoseStammtisch\Utils\RRuleProcessor;
+use HypnoseStammtisch\Utils\IpBanManager;
+use HypnoseStammtisch\Utils\AuditLogger;
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Config\Config;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -42,8 +44,21 @@ class FormController
     public function submitEvent(): void
     {
         try {
+            // Get client IP using secure method
+            $clientIp = IpBanManager::getClientIP();
+
+            // Check if IP is banned
+            if (IpBanManager::isIPBanned($clientIp)) {
+                AuditLogger::log('form.blocked_ip', 'ip_ban', $clientIp, ['endpoint' => 'submit-event']);
+                Response::json([
+                    'success' => false,
+                    'error' => 'Your request could not be processed. Please try again later.'
+                ], 403);
+                return;
+            }
+
             // Rate limiting check
-            if (!$this->checkRateLimit('submit-event', 3, 3600)) { // 3 per hour
+            if (!$this->checkRateLimit('submit-event', 3, 3600, $clientIp)) { // 3 per hour
                 Response::json([
                     'success' => false,
                     'error' => 'Too many submissions. Please wait before submitting again.'
@@ -117,8 +132,21 @@ class FormController
     public function submitContact(): void
     {
         try {
+            // Get client IP using secure method
+            $clientIp = IpBanManager::getClientIP();
+
+            // Check if IP is banned
+            if (IpBanManager::isIPBanned($clientIp)) {
+                AuditLogger::log('form.blocked_ip', 'ip_ban', $clientIp, ['endpoint' => 'contact']);
+                Response::json([
+                    'success' => false,
+                    'error' => 'Your request could not be processed. Please try again later.'
+                ], 403);
+                return;
+            }
+
             // Rate limiting check
-            if (!$this->checkRateLimit('contact', 5, 3600)) { // 5 per hour
+            if (!$this->checkRateLimit('contact', 5, 3600, $clientIp)) { // 5 per hour
                 Response::json([
                     'success' => false,
                     'error' => 'Too many messages. Please wait before sending another message.'
@@ -211,9 +239,13 @@ class FormController
             }
         }
 
-        // Email validation
-        if (!empty($data['organizer_email']) && !filter_var($data['organizer_email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Invalid email address';
+        // Email validation - check format first
+        if (!empty($data['organizer_email'])) {
+            if (!filter_var($data['organizer_email'], FILTER_VALIDATE_EMAIL)) {
+                $errors[] = 'Invalid email address';
+            } elseif (!$this->isValidEmailDomain($data['organizer_email'])) {
+                $errors[] = 'Please use a valid, non-disposable email address';
+            }
         }
 
         // Date validation
@@ -298,9 +330,13 @@ class FormController
             }
         }
 
-        // Email validation
-        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Invalid email address';
+        // Email validation - check format and domain
+        if (!empty($data['email'])) {
+            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                $errors[] = 'Invalid email address';
+            } elseif (!$this->isValidEmailDomain($data['email'])) {
+                $errors[] = 'Please use a valid, non-disposable email address';
+            }
         }
 
         // Subject validation
@@ -326,24 +362,106 @@ class FormController
 
     /**
      * Validate spam protection measures
+     * Enhanced with stricter timing checks and logging
      */
     private function validateSpamProtection(array $data): bool
     {
-        // Honeypot field check
-        if (!empty($data['honeypot'])) {
-            return false;
-        }
-
-        // Timestamp check (form should take at least 3 seconds to fill)
-        if (!empty($data['timestamp'])) {
-            $timestamp = (int)$data['timestamp'];
-            $elapsed = time() - $timestamp;
-
-            if ($elapsed < 3 || $elapsed > 3600) { // Too fast or too slow
+        $clientIp = IpBanManager::getClientIP();
+        
+        // Honeypot field check - multiple honeypot field names to catch more bots
+        $honeypotFields = ['honeypot', 'website', 'url', 'fax', 'phone2'];
+        foreach ($honeypotFields as $field) {
+            if (!empty($data[$field])) {
+                AuditLogger::log('form.honeypot_triggered', 'spam', $clientIp, [
+                    'field' => $field,
+                    'value' => substr($data[$field], 0, 100)
+                ]);
                 return false;
             }
         }
 
+        // Timestamp validation - form must take at least 5 seconds (bots are faster)
+        // and not more than 30 minutes (prevents replay attacks with old timestamps)
+        if (!empty($data['timestamp'])) {
+            $timestamp = (int)$data['timestamp'];
+            $now = time();
+            $elapsed = $now - $timestamp;
+            
+            // Reject if timestamp is in the future (clock manipulation)
+            if ($timestamp > $now) {
+                AuditLogger::log('form.invalid_timestamp', 'spam', $clientIp, [
+                    'reason' => 'future_timestamp',
+                    'timestamp' => $timestamp,
+                    'server_time' => $now
+                ]);
+                return false;
+            }
+
+            // Too fast (less than 5 seconds) - likely a bot
+            if ($elapsed < 5) {
+                AuditLogger::log('form.suspicious_timing', 'spam', $clientIp, [
+                    'reason' => 'too_fast',
+                    'elapsed_seconds' => $elapsed
+                ]);
+                return false;
+            }
+            
+            // Too slow (more than 30 minutes) - possible replay attack
+            if ($elapsed > 1800) {
+                AuditLogger::log('form.suspicious_timing', 'spam', $clientIp, [
+                    'reason' => 'too_slow',
+                    'elapsed_seconds' => $elapsed
+                ]);
+                return false;
+            }
+        } else {
+            // Timestamp is required - if missing, likely a bot bypassing the form
+            AuditLogger::log('form.missing_timestamp', 'spam', $clientIp);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Validate email address more strictly
+     * Checks for disposable email domains and DNS MX records
+     */
+    private function isValidEmailDomain(string $email): bool
+    {
+        $parts = explode('@', $email);
+        if (count($parts) !== 2) {
+            return false;
+        }
+        
+        $domain = strtolower($parts[1]);
+        
+        // List of common disposable email domains (expanded list)
+        $disposableDomains = [
+            'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'temp-mail.org',
+            'throwaway.email', '10minutemail.com', 'fakeinbox.com', 'trashmail.com',
+            'mailnator.com', 'yopmail.com', 'getnada.com', 'getairmail.com',
+            'dispostable.com', 'mintemail.com', 'tempail.com', 'fakemailgenerator.com',
+            'emailondeck.com', 'mohmal.com', 'tempr.email', 'discard.email',
+            'maildrop.cc', 'guerrillamail.info', 'sharklasers.com', 'grr.la',
+            'mailcatch.com', 'mailnesia.com', 'spamgourmet.com', 'tempmailaddress.com',
+            'burnermail.io', 'inboxkitten.com', 'emkei.cz', 'anonymbox.com',
+            'tempinbox.com', 'fakemailgenerator.net', 'temporary-mail.net'
+        ];
+        
+        if (in_array($domain, $disposableDomains, true)) {
+            return false;
+        }
+        
+        // Check if domain has MX records (can receive email)
+        // This adds latency but significantly reduces spam
+        if (function_exists('checkdnsrr')) {
+            // Check for MX records first, then A records as fallback
+            if (!checkdnsrr($domain, 'MX') && !checkdnsrr($domain, 'A')) {
+                return false;
+            }
+        }
+        
         return true;
     }
 
@@ -376,7 +494,7 @@ class FormController
             'organizer_email' => filter_var(trim($data['organizer_email']), FILTER_SANITIZE_EMAIL),
             'organizer_bio' => !empty($data['organizer_bio']) ? htmlspecialchars(trim($data['organizer_bio']), ENT_QUOTES, 'UTF-8') : '',
             'tags' => !empty($data['tags']) && is_array($data['tags']) ? array_map('trim', $data['tags']) : [],
-            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            'ip_address' => IpBanManager::getClientIP(),
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
         ];
     }
@@ -391,7 +509,7 @@ class FormController
             'email' => filter_var(trim($data['email']), FILTER_SANITIZE_EMAIL),
             'subject' => $data['subject'],
             'message' => htmlspecialchars(trim($data['message']), ENT_QUOTES, 'UTF-8'),
-            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
+            'ip_address' => IpBanManager::getClientIP(),
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
             'referrer' => $_SERVER['HTTP_REFERER'] ?? ''
         ];
@@ -458,11 +576,19 @@ class FormController
 
     /**
      * Check rate limiting
+     * Returns false if rate limit exceeded or on error (fail closed for security)
      */
-    private function checkRateLimit(string $endpoint, int $maxRequests, int $timeWindow): bool
+    private function checkRateLimit(string $endpoint, int $maxRequests, int $timeWindow, string $clientIp = ''): bool
     {
         try {
-            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+            // Use provided IP or get securely
+            $ip = $clientIp ?: IpBanManager::getClientIP();
+            if (empty($ip) || $ip === '0.0.0.0') {
+                // Cannot identify client - fail closed for security
+                error_log("Rate limit check: Unable to determine client IP");
+                return false;
+            }
+            
             $windowStart = date('Y-m-d H:i:s', time() - $timeWindow);
 
             // Clean old entries
@@ -475,6 +601,11 @@ class FormController
 
             if ($result) {
                 if ($result['requests_count'] >= $maxRequests) {
+                    AuditLogger::log('form.rate_limited', 'rate_limit', $ip, [
+                        'endpoint' => $endpoint,
+                        'requests_count' => $result['requests_count'],
+                        'max_requests' => $maxRequests
+                    ]);
                     return false;
                 }
 
@@ -489,8 +620,10 @@ class FormController
 
             return true;
         } catch (\Exception $e) {
-            error_log("Rate limit check error: " . $e->getMessage());
-            return true; // Allow on error
+            // SECURITY FIX: Fail closed instead of open
+            // If rate limiting fails, block the request to prevent abuse
+            error_log("Rate limit check error (blocking request): " . $e->getMessage());
+            return false;
         }
     }
 
