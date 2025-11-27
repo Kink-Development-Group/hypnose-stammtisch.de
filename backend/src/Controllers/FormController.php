@@ -558,7 +558,7 @@ class FormController
         try {
             // Use provided IP or get securely
             $ip = $clientIp ?: IpBanManager::getClientIP();
-            if (empty($ip) || $ip === '0.0.0.0') {
+            if (empty($ip) || $ip === '0.0.0.0' || $ip === '::') {
                 // Cannot identify client - fail closed for security
                 error_log("Rate limit check: Unable to determine client IP");
                 return false;

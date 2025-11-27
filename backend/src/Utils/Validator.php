@@ -285,7 +285,7 @@ class Validator
         $domain = strtolower($parts[1]);
         
         // Get disposable domains from config or use defaults
-        $disposableDomains = Config::get('security.disposable_email_domains', self::DEFAULT_DISPOSABLE_DOMAINS);
+        $disposableDomains = Config::get('security.disposable_email_domains') ?? self::DEFAULT_DISPOSABLE_DOMAINS;
         
         if (in_array($domain, $disposableDomains, true)) {
             return false;
@@ -367,7 +367,8 @@ class Validator
         $email = $data['email'] ?? '';
 
         // Check for excessive links
-        if (preg_match_all('/https?:\/\//i', $message) > self::MAX_LINKS_ALLOWED) {
+        $linkCount = preg_match_all('/https?:\/\//i', $message);
+        if (($linkCount === false ? 0 : $linkCount) > self::MAX_LINKS_ALLOWED) {
             return true;
         }
 
@@ -408,7 +409,8 @@ class Validator
         }
         
         // Check for obviously fake names (only special chars or numbers)
-        if (preg_match('/^[^a-zA-ZäöüÄÖÜß]+$/', $name)) {
+        // Using Unicode letter property \p{L} to support international names
+        if (preg_match('/^[^\p{L}]+$/u', $name)) {
             return true;
         }
 
@@ -420,7 +422,7 @@ class Validator
         // Check for excessive capitalization
         $upperCount = preg_match_all('/[A-Z]/', $message);
         $letterCount = preg_match_all('/[a-zA-Z]/', $message);
-        if ($letterCount > self::MIN_LETTERS_FOR_CAPS_CHECK && ($upperCount / $letterCount) > self::MAX_CAPS_RATIO) {
+        if ($letterCount > self::MIN_LETTERS_FOR_CAPS_CHECK && $letterCount > 0 && ($upperCount / $letterCount) > self::MAX_CAPS_RATIO) {
             return true;
         }
 
