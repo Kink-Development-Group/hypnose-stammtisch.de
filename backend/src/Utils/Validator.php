@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace HypnoseStammtisch\Utils;
 
+use HypnoseStammtisch\Config\Config;
+
 /**
  * Validation utility class
  */
@@ -11,6 +13,30 @@ class Validator
 {
     private array $data;
     private array $errors = [];
+
+    /**
+     * Default list of disposable email domains
+     * Can be overridden via config 'security.disposable_email_domains'
+     */
+    private const DEFAULT_DISPOSABLE_DOMAINS = [
+        'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'temp-mail.org',
+        'throwaway.email', '10minutemail.com', 'fakeinbox.com', 'trashmail.com',
+        'mailnator.com', 'yopmail.com', 'getnada.com', 'getairmail.com',
+        'dispostable.com', 'mintemail.com', 'tempail.com', 'fakemailgenerator.com',
+        'emailondeck.com', 'mohmal.com', 'tempr.email', 'discard.email',
+        'maildrop.cc', 'guerrillamail.info', 'sharklasers.com', 'grr.la',
+        'mailcatch.com', 'mailnesia.com', 'spamgourmet.com', 'tempmailaddress.com',
+        'burnermail.io', 'inboxkitten.com', 'emkei.cz', 'anonymbox.com',
+        'tempinbox.com', 'fakemailgenerator.net', 'temporary-mail.net'
+    ];
+
+    /**
+     * Spam detection thresholds
+     */
+    private const MAX_LINKS_ALLOWED = 2;
+    private const MIN_TEXT_WITHOUT_LINKS = 20;
+    private const MIN_LETTERS_FOR_CAPS_CHECK = 20;
+    private const MAX_CAPS_RATIO = 0.5;
 
     public function __construct(array $data)
     {
@@ -214,11 +240,13 @@ class Validator
             $errors['name'] = 'Name muss zwischen 2 und 255 Zeichen lang sein';
         }
 
-        // Email validation
+        // Email validation with domain check
         if (!self::isRequired($data['email'] ?? '')) {
             $errors['email'] = 'E-Mail ist erforderlich';
         } elseif (!self::isValidEmail($data['email'])) {
             $errors['email'] = 'Ungültige E-Mail-Adresse';
+        } elseif (!self::isValidEmailDomain($data['email'])) {
+            $errors['email'] = 'Bitte verwenden Sie eine gültige E-Mail-Adresse (keine Wegwerf-E-Mail)';
         }
 
         // Subject validation
@@ -242,6 +270,46 @@ class Validator
         }
 
         return $errors;
+    }
+
+    /**
+     * Validate email domain - checks for disposable emails and DNS records
+     */
+    public static function isValidEmailDomain(string $email): bool
+    {
+        $parts = explode('@', $email);
+        if (count($parts) !== 2) {
+            return false;
+        }
+        
+        $domain = strtolower($parts[1]);
+        
+        // Get disposable domains from config or use defaults
+        $disposableDomains = Config::get('security.disposable_email_domains') ?? self::DEFAULT_DISPOSABLE_DOMAINS;
+        
+        if (in_array($domain, $disposableDomains, true)) {
+            return false;
+        }
+        
+        // Check if domain has MX records (can receive email)
+        // This check can be disabled via config for performance
+        $enableDnsCheck = Config::get('security.enable_email_dns_check', true);
+        
+        if ($enableDnsCheck && function_exists('checkdnsrr')) {
+            // Cache DNS results to reduce latency on repeated checks
+            static $dnsCache = [];
+            
+            if (!isset($dnsCache[$domain])) {
+                // Check for MX records first, then A records as fallback
+                $dnsCache[$domain] = checkdnsrr($domain, 'MX') || checkdnsrr($domain, 'A');
+            }
+            
+            if (!$dnsCache[$domain]) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     /**
@@ -290,35 +358,77 @@ class Validator
 
     /**
      * Check for potential spam indicators
+     * Enhanced spam detection with more patterns and checks
      */
     public static function isSpam(array $data): bool
     {
-        // Simple spam detection
         $message = $data['message'] ?? '';
+        $name = $data['name'] ?? '';
+        $email = $data['email'] ?? '';
 
         // Check for excessive links
-        if (preg_match_all('/https?:\/\//', $message) > 3) {
+        $linkCount = preg_match_all('/https?:\/\//i', $message);
+        if (($linkCount === false ? 0 : $linkCount) > self::MAX_LINKS_ALLOWED) {
             return true;
         }
 
-        // Check for suspicious keywords
+        // Check for link-only message
+        $textWithoutLinks = preg_replace('/https?:\/\/[^\s]+/', '', $message);
+        if (strlen(trim($textWithoutLinks)) < self::MIN_TEXT_WITHOUT_LINKS && preg_match('/https?:\/\//', $message)) {
+            return true;
+        }
+
+        // Check for suspicious keywords (expanded list)
         $spamKeywords = [
-            'viagra',
-            'casino',
-            'lottery',
-            'winner',
-            'congratulations',
-            'click here',
-            'free money',
-            'guaranteed',
-            'investment'
+            'viagra', 'cialis', 'casino', 'lottery', 'winner', 'congratulations',
+            'click here', 'free money', 'guaranteed', 'investment opportunity',
+            'buy now', 'limited time', 'act now', 'urgent', 'make money fast',
+            'million dollars', 'bitcoin investment', 'crypto opportunity',
+            'work from home', 'easy money', 'risk free', 'no obligation',
+            'double your money', 'earn extra cash', 'be your own boss',
+            'financial freedom', 'passive income', 'mlm', 'multi-level marketing',
+            'pyramid scheme', 'adult content', 'xxx', 'porn', 'sex video',
+            'replica watches', 'cheap meds', 'online pharmacy', 'weight loss',
+            'diet pills', 'enhancement pills', 'enlarge', 'medication without',
+            'prescription free', 'herbal remedy', 'miracle cure'
         ];
 
         $lowerMessage = strtolower($message);
+        $lowerName = strtolower($name);
+        
+        // Check message for spam keywords
         foreach ($spamKeywords as $keyword) {
             if (strpos($lowerMessage, $keyword) !== false) {
                 return true;
             }
+        }
+
+        // Check name for spam patterns
+        if (preg_match('/https?:\/\//', $name)) {
+            return true;
+        }
+        
+        // Check for obviously fake names (only special chars or numbers)
+        // Using Unicode letter property \p{L} to support international names
+        if (preg_match('/^[^\p{L}]+$/u', $name)) {
+            return true;
+        }
+
+        // Check for excessive repetition (spam bots often repeat characters)
+        if (preg_match('/(.)\1{4,}/', $message)) {
+            return true;
+        }
+
+        // Check for excessive capitalization
+        $upperCount = preg_match_all('/[A-Z]/', $message);
+        $letterCount = preg_match_all('/[a-zA-Z]/', $message);
+        if ($letterCount > self::MIN_LETTERS_FOR_CAPS_CHECK && $letterCount > 0 && ($upperCount / $letterCount) > self::MAX_CAPS_RATIO) {
+            return true;
+        }
+
+        // Check for HTML/script injection attempts
+        if (preg_match('/<\s*script|javascript:|onclick|onerror|onload/i', $message)) {
+            return true;
         }
 
         return false;
