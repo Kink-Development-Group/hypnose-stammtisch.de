@@ -5,6 +5,7 @@
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import RecurrenceBuilder from "../../components/admin/recurrence/RecurrenceBuilder.svelte";
   import SeriesManagement from "../../components/admin/SeriesManagement.svelte";
+  import MarkdownEditor from "../../components/shared/MarkdownEditor.svelte";
   import Portal from "../../components/ui/Portal.svelte";
   import { AdminAPI, adminAuth } from "../../stores/admin";
   import {
@@ -688,21 +689,14 @@
                     />
                   </div>
                   <div class="md:col-span-2">
-                    <label
-                      for="event-description"
-                      class="block text-sm font-medium text-gray-700"
-                      >Kurzbeschreibung</label
-                    >
-                    <textarea
+                    <MarkdownEditor
                       id="event-description"
+                      label="Kurzbeschreibung"
                       bind:value={newEvent.description}
-                      rows="4"
-                      class="mt-1 w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm"
+                      rows={4}
                       placeholder="Worum geht es? Ziel, Ablauf, Besonderheiten..."
-                    ></textarea>
-                    <p class="text-[11px] text-gray-400 mt-1">
-                      Markdown / Rich-Content später möglich.
-                    </p>
+                      theme="light"
+                    />
                   </div>
                   <div>
                     <label

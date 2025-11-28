@@ -18,6 +18,22 @@
     ? "Ganztägig"
     : `${dayjs(event.startDate).format("HH:mm")} - ${dayjs(event.endDate).format("HH:mm")}`;
 
+  // Strip Markdown for preview display
+  function stripMarkdown(text: string): string {
+    return text
+      .replace(/\*\*(.+?)\*\*/g, "$1") // Bold
+      .replace(/\*(.+?)\*/g, "$1") // Italic
+      .replace(/__(.+?)__/g, "$1") // Bold alt
+      .replace(/_(.+?)_/g, "$1") // Italic alt
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // Links
+      .replace(/#{1,6}\s+/g, "") // Headings
+      .replace(/[-*+]\s+/g, "") // Unordered lists
+      .replace(/\d+\.\s+/g, "") // Ordered lists
+      .replace(/`([^`]+)`/g, "$1") // Inline code
+      .replace(/\n+/g, " ") // Newlines to spaces
+      .trim();
+  }
+
   // Handle card click
   const handleClick = () => {
     if (showModal) {
@@ -173,7 +189,7 @@
         ? 'text-smoke-500 italic'
         : 'text-smoke-300'} text-sm leading-relaxed line-clamp-3"
     >
-      {event.description}
+      {stripMarkdown(event.description)}
     </p>
   </div>
 

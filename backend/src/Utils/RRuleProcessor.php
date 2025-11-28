@@ -74,7 +74,9 @@ class RRuleProcessor
         $parts = explode(',', $byDay);
         foreach ($parts as $part) {
             $part = trim(strtoupper($part));
-            if (empty($part)) continue;
+            if (empty($part)) {
+                continue;
+            }
 
             // Check for position prefix (e.g., "1MO", "-1FR", "2TU")
             if (preg_match('/^(-?\d+)?([A-Z]{2})$/', $part, $matches)) {
@@ -194,7 +196,9 @@ class RRuleProcessor
 
             // Process each occurrence date
             foreach ($occurrenceDates as $occDate) {
-                if ($generatedCount >= $maxInstances) break;
+                if ($generatedCount >= $maxInstances) {
+                    break;
+                }
 
                 // Check UNTIL condition
                 if ($until && $occDate->gt($until)) {
@@ -272,7 +276,9 @@ class RRuleProcessor
 
         foreach ($byDay as $day) {
             $dayNum = self::DAY_MAP[$day] ?? null;
-            if ($dayNum === null) continue;
+            if ($dayNum === null) {
+                continue;
+            }
 
             // Carbon uses 0=Sunday, 1=Monday, etc.
             $occurrence = $startOfWeek->copy();
@@ -300,7 +306,9 @@ class RRuleProcessor
 
         foreach ($byDay as $day) {
             $dayNum = self::DAY_MAP[$day] ?? null;
-            if ($dayNum === null) continue;
+            if ($dayNum === null) {
+                continue;
+            }
 
             $occurrence = self::getNthWeekdayOfMonth($month, $dayNum, $setPos);
             if ($occurrence) {
@@ -324,7 +332,9 @@ class RRuleProcessor
         foreach ($byDay as $day) {
             $pos = $positions[$day] ?? 1;
             $dayNum = self::DAY_MAP[$day] ?? null;
-            if ($dayNum === null) continue;
+            if ($dayNum === null) {
+                continue;
+            }
 
             $occurrence = self::getNthWeekdayOfMonth($month, $dayNum, $pos);
             if ($occurrence) {
@@ -346,7 +356,9 @@ class RRuleProcessor
         $daysInMonth = $month->daysInMonth;
 
         foreach ($days as $day) {
-            if ($day < 1 || $day > $daysInMonth) continue;
+            if ($day < 1 || $day > $daysInMonth) {
+                continue;
+            }
 
             $occurrence = $month->copy()->day($day);
             $occurrence->setTime($eventStart->hour, $eventStart->minute, $eventStart->second);

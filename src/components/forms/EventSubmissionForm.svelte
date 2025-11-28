@@ -5,6 +5,7 @@
   import { onMount } from "svelte";
   import { z } from "zod";
   import InvisibleCaptcha from "../shared/InvisibleCaptcha.svelte";
+  import MarkdownEditor from "../shared/MarkdownEditor.svelte";
 
   // CAPTCHA component reference
   let captchaComponent: InvisibleCaptcha;
@@ -385,39 +386,17 @@
 
       <!-- Description -->
       <div class="md:col-span-2">
-        <label
-          for="description"
-          class="block text-sm font-medium text-smoke-100 mb-2"
-        >
-          Beschreibung <span class="text-boundaries" aria-label="Pflichtfeld"
-            >*</span
-          >
-        </label>
-        <textarea
+        <MarkdownEditor
           id="description"
+          label="Beschreibung"
           bind:value={formData.description}
-          rows="4"
-          class="w-full px-4 py-3 bg-charcoal-800 border border-charcoal-600 rounded-lg text-smoke-50 placeholder-smoke-400 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
-          placeholder="Beschreiben Sie Ihr Event... (Markdown wird unterstützt)"
-          required
-          aria-describedby={errors.description
-            ? "description-error"
-            : "description-help"}
-          aria-invalid={errors.description ? "true" : "false"}
-        ></textarea>
-        <p id="description-help" class="mt-2 text-sm text-smoke-400">
-          Sie können Markdown verwenden für Formatierung (z.B. **fett**,
-          *kursiv*, [Link](URL))
-        </p>
-        {#if errors.description}
-          <p
-            id="description-error"
-            class="mt-2 text-sm text-boundaries"
-            role="alert"
-          >
-            {errors.description}
-          </p>
-        {/if}
+          rows={4}
+          placeholder="Beschreiben Sie Ihr Event..."
+          required={true}
+          error={errors.description || ""}
+          maxLength={2000}
+          theme="dark"
+        />
       </div>
 
       <!-- Category -->
