@@ -253,6 +253,7 @@ class AdminAuth
 
   /**
    * Verify CSRF token
+   * Supports tokens from POST, GET, JSON body (X-CSRF-Token), and custom header
    */
     public static function verifyCSRF(string $token = null): bool
     {
@@ -260,8 +261,43 @@ class AdminAuth
         if (!isset($_SESSION['csrf_token'])) {
             return false;
         }
-        $providedToken = $token ?? $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? null;
+
+      // Try to get token from various sources
+        $providedToken = $token
+        ?? $_POST['csrf_token']
+        ?? $_GET['csrf_token']
+        ?? $_SERVER['HTTP_X_CSRF_TOKEN']
+        ?? null;
+
+      // Also check JSON body if not found
+        if ($providedToken === null) {
+            $input = file_get_contents('php://input');
+            if ($input) {
+                $json = json_decode($input, true);
+                $providedToken = $json['csrf_token'] ?? null;
+            }
+        }
+
         return $providedToken && hash_equals($_SESSION['csrf_token'], $providedToken);
+    }
+
+  /**
+   * Require valid CSRF token for mutating requests (POST, PUT, DELETE, PATCH)
+   * Stops execution and returns 403 if invalid
+   */
+    public static function requireCSRF(): void
+    {
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+      // Only check CSRF for mutating methods
+        if (!in_array($method, ['POST', 'PUT', 'DELETE', 'PATCH'], true)) {
+            return;
+        }
+
+        if (!self::verifyCSRF()) {
+            Response::error('Invalid or missing CSRF token', 403);
+            exit;
+        }
     }
 
   /**

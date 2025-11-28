@@ -229,32 +229,32 @@ class ICSGenerator
     {
         $description = [];
 
-        // Basic description
+        // Basic description - sanitize for XSS protection
         if (!empty($event['description'])) {
-            $description[] = strip_tags($event['description']);
+            $description[] = htmlspecialchars(strip_tags($event['description']), ENT_QUOTES, 'UTF-8');
         }
 
-        // Event details
+        // Event details - sanitize all user-provided content
         if (!empty($event['category'])) {
-            $description[] = "\\nKategorie: " . ucfirst($event['category']);
+            $description[] = "\\nKategorie: " . htmlspecialchars(ucfirst($event['category']), ENT_QUOTES, 'UTF-8');
         }
 
         if (!empty($event['difficulty_level']) && $event['difficulty_level'] !== 'all') {
-            $description[] = "Schwierigkeitsgrad: " . ucfirst($event['difficulty_level']);
+            $description[] = "Schwierigkeitsgrad: " . htmlspecialchars(ucfirst($event['difficulty_level']), ENT_QUOTES, 'UTF-8');
         }
 
         if (!empty($event['max_participants'])) {
-            $description[] = "Max. Teilnehmer: " . $event['max_participants'];
+            $description[] = "Max. Teilnehmer: " . (int)$event['max_participants'];
         }
 
-        // Location details
+        // Location details - sanitize
         if (!empty($event['location_instructions'])) {
-            $description[] = "\\nAnfahrt: " . $event['location_instructions'];
+            $description[] = "\\nAnfahrt: " . htmlspecialchars($event['location_instructions'], ENT_QUOTES, 'UTF-8');
         }
 
-        // Requirements
+        // Requirements - sanitize
         if (!empty($event['requirements'])) {
-            $description[] = "\\nVoraussetzungen: " . $event['requirements'];
+            $description[] = "\\nVoraussetzungen: " . htmlspecialchars($event['requirements'], ENT_QUOTES, 'UTF-8');
         }
 
         // Safety notes

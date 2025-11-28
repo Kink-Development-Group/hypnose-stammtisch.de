@@ -14,6 +14,14 @@ return [
     'name' => 'hypnose_session',
   ],
 
+  // CAPTCHA Configuration (Cloudflare Turnstile, hCaptcha, or reCAPTCHA v3)
+  'captcha' => [
+    'enabled' => filter_var($_ENV['CAPTCHA_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN),
+    'provider' => $_ENV['CAPTCHA_PROVIDER'] ?? 'turnstile', // turnstile, hcaptcha, recaptcha
+    'site_key' => $_ENV['CAPTCHA_SITE_KEY'] ?? null,
+    'secret_key' => $_ENV['CAPTCHA_SECRET_KEY'] ?? null,
+  ],
+
   'security' => [
     'csrf_token_lifetime' => (int)($_ENV['CSRF_TOKEN_LIFETIME'] ?? 3600),
     'password_min_length' => 8,
@@ -32,7 +40,7 @@ return [
     // Email validation settings
     // Enable/disable DNS MX record checking for email validation (may add latency)
     'enable_email_dns_check' => filter_var($_ENV['ENABLE_EMAIL_DNS_CHECK'] ?? true, FILTER_VALIDATE_BOOLEAN),
-    
+
     // Disposable email domains can be extended via ENV (comma-separated list)
     // If not set, the default list in Validator::DEFAULT_DISPOSABLE_DOMAINS is used
     'disposable_email_domains' => !empty($_ENV['DISPOSABLE_EMAIL_DOMAINS'])

@@ -16,9 +16,9 @@ use HypnoseStammtisch\Utils\Validator;
  */
 class AdminStammtischLocationController
 {
-  /**
-   * Check if current user is authorized (head admin, admin, or event manager)
-   */
+    /**
+     * Check if current user is authorized (head admin, admin, or event manager)
+     */
     private static function requireLocationAdmin(): void
     {
         AdminAuth::requireAuth();
@@ -30,10 +30,10 @@ class AdminStammtischLocationController
         }
     }
 
-  /**
-   * Get all locations for admin (including drafts)
-   * GET /api/admin/stammtisch-locations
-   */
+    /**
+     * Get all locations for admin (including drafts)
+     * GET /api/admin/stammtisch-locations
+     */
     public static function index(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -53,10 +53,10 @@ class AdminStammtischLocationController
         }
     }
 
-  /**
-   * Get specific location
-   * GET /api/admin/stammtisch-locations/{id}
-   */
+    /**
+     * Get specific location
+     * GET /api/admin/stammtisch-locations/{id}
+     */
     public static function show(string $id): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -80,10 +80,10 @@ class AdminStammtischLocationController
         }
     }
 
-  /**
-   * Create new location
-   * POST /api/admin/stammtisch-locations
-   */
+    /**
+     * Create new location
+     * POST /api/admin/stammtisch-locations
+     */
     public static function create(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -92,10 +92,11 @@ class AdminStammtischLocationController
         }
 
         self::requireLocationAdmin();
+        AdminAuth::requireCSRF();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
-      // Validate input
+        // Validate input
         $validator = new Validator($input);
         $validator->required(['name', 'city', 'region', 'country', 'latitude', 'longitude']);
         $validator->length('name', 3, 255);
@@ -106,7 +107,7 @@ class AdminStammtischLocationController
             $validator->email('contact_email');
         }
 
-      // Manual validation for fields not supported by the validator
+        // Manual validation for fields not supported by the validator
         if (!Validator::isValidEnum($input['country'] ?? '', ['DE', 'AT', 'CH'])) {
             $validator->getErrors()['country'] = 'Country must be DE, AT, or CH';
         }
@@ -143,7 +144,7 @@ class AdminStammtischLocationController
         try {
             $currentUser = AdminAuth::getCurrentUser();
 
-          // Create location object
+            // Create location object
             $location = new StammtischLocation(
                 name: $input['name'],
                 city: $input['city'],
@@ -180,10 +181,10 @@ class AdminStammtischLocationController
         }
     }
 
-  /**
-   * Update location
-   * PUT /api/admin/stammtisch-locations/{id}
-   */
+    /**
+     * Update location
+     * PUT /api/admin/stammtisch-locations/{id}
+     */
     public static function update(string $id): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
@@ -192,20 +193,21 @@ class AdminStammtischLocationController
         }
 
         self::requireLocationAdmin();
+        AdminAuth::requireCSRF();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
-      // Check if location exists
+        // Check if location exists
         $location = StammtischLocation::getById($id);
         if (!$location) {
             Response::notFound(['message' => 'Stammtisch location not found']);
             return;
         }
 
-      // Validate input
+        // Validate input
         $validator = new Validator($input);
 
-      // Only validate provided fields
+        // Only validate provided fields
         if (isset($input['name'])) {
             $validator->length('name', 3, 255);
         }
@@ -219,7 +221,7 @@ class AdminStammtischLocationController
             $validator->email('contact_email');
         }
 
-      // Manual validation for fields not supported by the validator
+        // Manual validation for fields not supported by the validator
         $errors = $validator->getErrors();
 
         if (isset($input['country']) && !Validator::isValidEnum($input['country'], ['DE', 'AT', 'CH'])) {
@@ -238,7 +240,7 @@ class AdminStammtischLocationController
         }
 
         try {
-          // Update location properties
+            // Update location properties
             if (isset($input['name'])) {
                 $location->name = $input['name'];
             }
@@ -308,10 +310,10 @@ class AdminStammtischLocationController
         }
     }
 
-  /**
-   * Delete location
-   * DELETE /api/admin/stammtisch-locations/{id}
-   */
+    /**
+     * Delete location
+     * DELETE /api/admin/stammtisch-locations/{id}
+     */
     public static function delete(string $id): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
@@ -320,6 +322,7 @@ class AdminStammtischLocationController
         }
 
         self::requireLocationAdmin();
+        AdminAuth::requireCSRF();
 
         try {
             $location = StammtischLocation::getById($id);
@@ -341,10 +344,10 @@ class AdminStammtischLocationController
         }
     }
 
-  /**
-   * Bulk publish/unpublish locations
-   * POST /api/admin/stammtisch-locations/bulk-status
-   */
+    /**
+     * Bulk publish/unpublish locations
+     * POST /api/admin/stammtisch-locations/bulk-status
+     */
     public static function bulkUpdateStatus(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -353,6 +356,7 @@ class AdminStammtischLocationController
         }
 
         self::requireLocationAdmin();
+        AdminAuth::requireCSRF();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
@@ -377,7 +381,7 @@ class AdminStammtischLocationController
                 return;
             }
 
-          // Update all locations
+            // Update all locations
             $placeholders = str_repeat('?,', count($ids) - 1) . '?';
             $sql = "UPDATE stammtisch_locations SET status = ? WHERE id IN ($placeholders)";
             $params = array_merge([$status], $ids);
@@ -391,10 +395,10 @@ class AdminStammtischLocationController
         }
     }
 
-  /**
-   * Get location statistics
-   * GET /api/admin/stammtisch-locations/stats
-   */
+    /**
+     * Get location statistics
+     * GET /api/admin/stammtisch-locations/stats
+     */
     public static function stats(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -406,17 +410,17 @@ class AdminStammtischLocationController
 
         try {
             $stats = [
-            'total' => 0,
-            'published' => 0,
-            'draft' => 0,
-            'archived' => 0,
-            'active' => 0,
-            'inactive' => 0,
-            'by_country' => [],
-            'by_region' => []
+                'total' => 0,
+                'published' => 0,
+                'draft' => 0,
+                'archived' => 0,
+                'active' => 0,
+                'inactive' => 0,
+                'by_country' => [],
+                'by_region' => []
             ];
 
-          // Get overall stats
+            // Get overall stats
             $overallStats = Database::fetchAll("
         SELECT
           COUNT(*) as total,
@@ -432,7 +436,7 @@ class AdminStammtischLocationController
                 $stats = array_merge($stats, $overallStats[0]);
             }
 
-          // Get stats by country
+            // Get stats by country
             $countryStats = Database::fetchAll("
         SELECT country, COUNT(*) as count
         FROM stammtisch_locations
@@ -441,7 +445,7 @@ class AdminStammtischLocationController
       ");
             $stats['by_country'] = $countryStats;
 
-          // Get stats by region (top 10)
+            // Get stats by region (top 10)
             $regionStats = Database::fetchAll("
         SELECT region, country, COUNT(*) as count
         FROM stammtisch_locations

@@ -50,24 +50,53 @@ class Response
 
     /**
      * Send file download response
+     * @param string $filepath Absolute path to the file
+     * @param string|null $filename Optional filename for the download
+     * @param string|null $allowedBasePath Optional base path restriction (defaults to uploads folder)
      */
-    public static function download(string $filepath, string $filename = null): void
+    public static function download(string $filepath, string $filename = null, string $allowedBasePath = null): void
     {
-        if (!file_exists($filepath)) {
+        // Resolve paths for security check
+        $realPath = realpath($filepath);
+
+        // Get allowed base path (default to uploads folder)
+        if ($allowedBasePath === null) {
+            $allowedBasePath = realpath(__DIR__ . '/../../uploads');
+        } else {
+            $allowedBasePath = realpath($allowedBasePath);
+        }
+
+        // Security: Prevent directory traversal attacks
+        if ($realPath === false) {
             self::json(['error' => 'File not found'], 404);
             return;
         }
 
-        $filename = $filename ?: basename($filepath);
-        $mimeType = mime_content_type($filepath) ?: 'application/octet-stream';
+        // Ensure file is within allowed directory
+        if ($allowedBasePath !== false && !str_starts_with($realPath, $allowedBasePath)) {
+            self::json(['error' => 'Access denied'], 403);
+            return;
+        }
+
+        if (!file_exists($realPath) || !is_file($realPath)) {
+            self::json(['error' => 'File not found'], 404);
+            return;
+        }
+
+        $filename = $filename ?: basename($realPath);
+
+        // Sanitize filename to prevent header injection
+        $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+
+        $mimeType = mime_content_type($realPath) ?: 'application/octet-stream';
 
         header('Content-Type: ' . $mimeType);
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Length: ' . filesize($filepath));
+        header('Content-Length: ' . filesize($realPath));
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: 0');
 
-        readfile($filepath);
+        readfile($realPath);
         exit;
     }
 

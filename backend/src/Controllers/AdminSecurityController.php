@@ -161,6 +161,7 @@ class AdminSecurityController
         }
 
         $currentUser = self::requireSecurityManagementPermission();
+        AdminAuth::requireCSRF();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $accountId = (int)($input['account_id'] ?? 0);
@@ -213,6 +214,7 @@ class AdminSecurityController
         }
 
         $currentUser = self::requireSecurityManagementPermission();
+        AdminAuth::requireCSRF();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $ipAddress = trim($input['ip_address'] ?? '');
@@ -265,6 +267,7 @@ class AdminSecurityController
         }
 
         $currentUser = self::requireSecurityManagementPermission();
+        AdminAuth::requireCSRF();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $ipAddress = trim($input['ip_address'] ?? '');

@@ -14,9 +14,9 @@ use Exception;
  */
 class AdminMessagesController
 {
-  /**
-   * Ensure current user has permission to manage/view messages
-   */
+    /**
+     * Ensure current user has permission to manage/view messages
+     */
     private static function requireMessagesPermission(): void
     {
         AdminAuth::requireAuth();
@@ -26,9 +26,9 @@ class AdminMessagesController
             exit;
         }
     }
-  /**
-   * Get all contact form submissions
-   */
+    /**
+     * Get all contact form submissions
+     */
     public static function index(): void
     {
         self::requireMessagesPermission();
@@ -46,7 +46,7 @@ class AdminMessagesController
             $status = $_GET['status'] ?? null;
             $subject = $_GET['subject'] ?? null;
 
-          // Build WHERE clause
+            // Build WHERE clause
             $whereClauses = [];
             $params = [];
 
@@ -62,12 +62,12 @@ class AdminMessagesController
 
             $whereClause = !empty($whereClauses) ? "WHERE " . implode(" AND ", $whereClauses) : "";
 
-          // Get total count
+            // Get total count
             $countSql = "SELECT COUNT(*) as total FROM contact_submissions {$whereClause}";
             $totalResult = Database::fetchOne($countSql, $params);
             $total = $totalResult['total'];
 
-          // Get messages
+            // Get messages
             $sql = "SELECT id, name, email, subject, message, status, response_sent,
                            submitted_at, processed_at, assigned_to
                     FROM contact_submissions
@@ -77,31 +77,31 @@ class AdminMessagesController
 
             $messages = Database::fetchAll($sql, $params);
 
-          // Format timestamps for display
+            // Format timestamps for display
             foreach ($messages as &$message) {
                 $message['submitted_at_formatted'] = date('d.m.Y H:i', strtotime($message['submitted_at']));
                 $message['processed_at_formatted'] = $message['processed_at']
-                ? date('d.m.Y H:i', strtotime($message['processed_at']))
-                : null;
+                    ? date('d.m.Y H:i', strtotime($message['processed_at']))
+                    : null;
             }
 
             Response::success([
-            'messages' => $messages,
-            'pagination' => [
-            'page' => $page,
-            'limit' => $limit,
-            'total' => $total,
-            'pages' => ceil($total / $limit)
-            ]
+                'messages' => $messages,
+                'pagination' => [
+                    'page' => $page,
+                    'limit' => $limit,
+                    'total' => $total,
+                    'pages' => ceil($total / $limit)
+                ]
             ]);
         } catch (Exception $e) {
             Response::error('Failed to fetch messages: ' . $e->getMessage(), 500);
         }
     }
 
-  /**
-   * Get single message by ID
-   */
+    /**
+     * Get single message by ID
+     */
     public static function show(string $id): void
     {
         self::requireMessagesPermission();
@@ -120,11 +120,11 @@ class AdminMessagesController
                 return;
             }
 
-          // Format timestamps
+            // Format timestamps
             $message['submitted_at_formatted'] = date('d.m.Y H:i', strtotime($message['submitted_at']));
             $message['processed_at_formatted'] = $message['processed_at']
-            ? date('d.m.Y H:i', strtotime($message['processed_at']))
-            : null;
+                ? date('d.m.Y H:i', strtotime($message['processed_at']))
+                : null;
 
             Response::success($message);
         } catch (Exception $e) {
@@ -132,12 +132,13 @@ class AdminMessagesController
         }
     }
 
-  /**
-   * Update message status
-   */
+    /**
+     * Update message status
+     */
     public static function updateStatus(string $id): void
     {
         self::requireMessagesPermission();
+        AdminAuth::requireCSRF();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
             Response::error('Method not allowed', 405);
@@ -165,9 +166,9 @@ class AdminMessagesController
                     WHERE id = ?";
 
             $affected = Database::execute($sql, [
-            $input['status'],
-            $currentUser['username'],
-            $id
+                $input['status'],
+                $currentUser['username'],
+                $id
             ])->rowCount();
 
             if ($affected === 0) {
@@ -181,12 +182,13 @@ class AdminMessagesController
         }
     }
 
-  /**
-   * Mark message as responded
-   */
+    /**
+     * Mark message as responded
+     */
     public static function markResponded(string $id): void
     {
         self::requireMessagesPermission();
+        AdminAuth::requireCSRF();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
             Response::error('Method not allowed', 405);
@@ -211,12 +213,13 @@ class AdminMessagesController
         }
     }
 
-  /**
-   * Delete message
-   */
+    /**
+     * Delete message
+     */
     public static function delete(string $id): void
     {
         self::requireMessagesPermission();
+        AdminAuth::requireCSRF();
 
         if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
             Response::error('Method not allowed', 405);
@@ -238,9 +241,9 @@ class AdminMessagesController
         }
     }
 
-  /**
-   * Get dashboard statistics
-   */
+    /**
+     * Get dashboard statistics
+     */
     public static function stats(): void
     {
         self::requireMessagesPermission();
@@ -251,45 +254,45 @@ class AdminMessagesController
         }
 
         try {
-          // Get message counts by status
+            // Get message counts by status
             $statusSql = "SELECT status, COUNT(*) as count
                          FROM contact_submissions
                          GROUP BY status";
             $statusCounts = Database::fetchAll($statusSql);
 
-          // Get message counts by subject
+            // Get message counts by subject
             $subjectSql = "SELECT subject, COUNT(*) as count
                           FROM contact_submissions
                           GROUP BY subject
                           ORDER BY count DESC";
             $subjectCounts = Database::fetchAll($subjectSql);
 
-          // Get recent messages (last 7 days)
+            // Get recent messages (last 7 days)
             $recentSql = "SELECT COUNT(*) as count
                          FROM contact_submissions
                          WHERE submitted_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
             $recentResult = Database::fetchOne($recentSql);
 
-          // Get unread messages count
+            // Get unread messages count
             $unreadSql = "SELECT COUNT(*) as count
                          FROM contact_submissions
                          WHERE status = 'new'";
             $unreadResult = Database::fetchOne($unreadSql);
 
             Response::success([
-            'status_counts' => $statusCounts,
-            'subject_counts' => $subjectCounts,
-            'recent_count' => $recentResult['count'],
-            'unread_count' => $unreadResult['count']
+                'status_counts' => $statusCounts,
+                'subject_counts' => $subjectCounts,
+                'recent_count' => $recentResult['count'],
+                'unread_count' => $unreadResult['count']
             ]);
         } catch (Exception $e) {
             Response::error('Failed to fetch statistics: ' . $e->getMessage(), 500);
         }
     }
 
-  /**
-   * Get notes for a message
-   */
+    /**
+     * Get notes for a message
+     */
     public static function getNotes(string $messageId): void
     {
         self::requireMessagesPermission();
@@ -311,12 +314,12 @@ class AdminMessagesController
 
             $notes = Database::fetchAll($sql, [$messageId]);
 
-          // Format timestamps
+            // Format timestamps
             foreach ($notes as &$note) {
                 $note['created_at_formatted'] = date('d.m.Y H:i', strtotime($note['created_at']));
                 $note['updated_at_formatted'] = $note['updated_at']
-                ? date('d.m.Y H:i', strtotime($note['updated_at']))
-                : null;
+                    ? date('d.m.Y H:i', strtotime($note['updated_at']))
+                    : null;
             }
 
             Response::success($notes);
@@ -325,9 +328,9 @@ class AdminMessagesController
         }
     }
 
-  /**
-   * Add note to message
-   */
+    /**
+     * Add note to message
+     */
     public static function addNote(string $messageId): void
     {
         self::requireMessagesPermission();
@@ -359,10 +362,10 @@ class AdminMessagesController
               VALUES (?, ?, ?, ?)";
 
             $noteId = Database::insert($sql, [
-            $messageId,
-            $currentUser['username'],
-            trim($input['note']),
-            $noteType
+                $messageId,
+                $currentUser['username'],
+                trim($input['note']),
+                $noteType
             ]);
 
             if (!$noteId) {
@@ -370,7 +373,7 @@ class AdminMessagesController
                 return;
             }
 
-          // Get the created note
+            // Get the created note
             $createdNote = Database::fetchOne(
                 "SELECT * FROM message_notes WHERE id = ?",
                 [$noteId]
@@ -384,9 +387,9 @@ class AdminMessagesController
         }
     }
 
-  /**
-   * Update note
-   */
+    /**
+     * Update note
+     */
     public static function updateNote(string $messageId, string $noteId): void
     {
         self::requireMessagesPermission();
@@ -406,7 +409,7 @@ class AdminMessagesController
         try {
             $currentUser = AdminAuth::getCurrentUser();
 
-          // Verify note belongs to message and user has permission to edit
+            // Verify note belongs to message and user has permission to edit
             $existingNote = Database::fetchOne(
                 "SELECT * FROM message_notes WHERE id = ? AND message_id = ?",
                 [$noteId, $messageId]
@@ -417,7 +420,7 @@ class AdminMessagesController
                 return;
             }
 
-          // Only allow editing own notes or if admin
+            // Only allow editing own notes or if admin
             if ($existingNote['admin_user'] !== $currentUser['username'] && $currentUser['role'] !== 'admin') {
                 Response::error('Permission denied', 403);
                 return;
@@ -428,9 +431,9 @@ class AdminMessagesController
               WHERE id = ? AND message_id = ?";
 
             $affected = Database::execute($sql, [
-            trim($input['note']),
-            $noteId,
-            $messageId
+                trim($input['note']),
+                $noteId,
+                $messageId
             ])->rowCount();
 
             if ($affected === 0) {
@@ -444,9 +447,9 @@ class AdminMessagesController
         }
     }
 
-  /**
-   * Delete note
-   */
+    /**
+     * Delete note
+     */
     public static function deleteNote(string $messageId, string $noteId): void
     {
         self::requireMessagesPermission();
@@ -459,7 +462,7 @@ class AdminMessagesController
         try {
             $currentUser = AdminAuth::getCurrentUser();
 
-          // Verify note belongs to message and user has permission to delete
+            // Verify note belongs to message and user has permission to delete
             $existingNote = Database::fetchOne(
                 "SELECT * FROM message_notes WHERE id = ? AND message_id = ?",
                 [$noteId, $messageId]
@@ -470,7 +473,7 @@ class AdminMessagesController
                 return;
             }
 
-          // Only allow deleting own notes or if admin
+            // Only allow deleting own notes or if admin
             if ($existingNote['admin_user'] !== $currentUser['username'] && $currentUser['role'] !== 'admin') {
                 Response::error('Permission denied', 403);
                 return;
@@ -490,9 +493,9 @@ class AdminMessagesController
         }
     }
 
-  /**
-   * Get available email addresses for responses
-   */
+    /**
+     * Get available email addresses for responses
+     */
     public static function getEmailAddresses(): void
     {
         self::requireMessagesPermission();
@@ -516,9 +519,9 @@ class AdminMessagesController
         }
     }
 
-  /**
-   * Send email response
-   */
+    /**
+     * Send email response
+     */
     public static function sendResponse(string $messageId): void
     {
         self::requireMessagesPermission();
@@ -530,7 +533,7 @@ class AdminMessagesController
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
-      // Validation
+        // Validation
         $required = ['from_email_id', 'subject', 'body'];
         foreach ($required as $field) {
             if (!isset($input[$field]) || trim($input[$field]) === '') {
@@ -542,7 +545,7 @@ class AdminMessagesController
         try {
             $currentUser = AdminAuth::getCurrentUser();
 
-          // Get the original message
+            // Get the original message
             $message = Database::fetchOne(
                 "SELECT * FROM contact_submissions WHERE id = ?",
                 [$messageId]
@@ -553,7 +556,7 @@ class AdminMessagesController
                 return;
             }
 
-          // Get the from email address
+            // Get the from email address
             $fromEmail = Database::fetchOne(
                 "SELECT * FROM admin_email_addresses WHERE id = ? AND is_active = 1",
                 [$input['from_email_id']]
@@ -564,48 +567,48 @@ class AdminMessagesController
                 return;
             }
 
-          // Store the response in database
+            // Store the response in database
             $responseId = Database::insert(
                 "INSERT INTO message_responses
          (message_id, admin_user, from_email, to_email, subject, body, status)
          VALUES (?, ?, ?, ?, ?, ?, ?)",
                 [
-                $messageId,
-                $currentUser['username'],
-                $fromEmail['email'],
-                $message['email'],
-                trim($input['subject']),
-                trim($input['body']),
-                'draft' // Will be updated to 'sent' after successful email
+                    $messageId,
+                    $currentUser['username'],
+                    $fromEmail['email'],
+                    $message['email'],
+                    trim($input['subject']),
+                    trim($input['body']),
+                    'draft' // Will be updated to 'sent' after successful email
                 ]
             );
 
-          // Here you would integrate with your email service (PHPMailer, etc.)
-          // For now, we'll mark it as sent
+            // Here you would integrate with your email service (PHPMailer, etc.)
+            // For now, we'll mark it as sent
 
             Database::execute(
                 "UPDATE message_responses SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?",
                 [$responseId]
             );
 
-          // Update the original message as responded
+            // Update the original message as responded
             Database::execute(
                 "UPDATE contact_submissions SET response_sent = 1, processed_at = CURRENT_TIMESTAMP WHERE id = ?",
                 [$messageId]
             );
 
             Response::success([
-            'response_id' => $responseId,
-            'status' => 'sent'
+                'response_id' => $responseId,
+                'status' => 'sent'
             ], 'Response sent successfully');
         } catch (Exception $e) {
             Response::error('Failed to send response: ' . $e->getMessage(), 500);
         }
     }
 
-  /**
-   * Get response history for a message
-   */
+    /**
+     * Get response history for a message
+     */
     public static function getResponses(string $messageId): void
     {
         self::requireMessagesPermission();
@@ -624,11 +627,11 @@ class AdminMessagesController
 
             $responses = Database::fetchAll($sql, [$messageId]);
 
-          // Format timestamps
+            // Format timestamps
             foreach ($responses as &$response) {
                 $response['sent_at_formatted'] = $response['sent_at']
-                ? date('d.m.Y H:i', strtotime($response['sent_at']))
-                : null;
+                    ? date('d.m.Y H:i', strtotime($response['sent_at']))
+                    : null;
             }
 
             Response::success($responses);
