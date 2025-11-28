@@ -308,7 +308,7 @@
             disabled
             class="w-28 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-gray-100 dark:bg-charcoal-700 text-gray-700 dark:text-gray-300"
           />
-          <span class="text-[10px] text-gray-600 dark:text-smoke-300">
+          <span class="text-[10px] text-slate-600 dark:text-smoke-300">
             {#if derivedCount !== null}
               {derivedCountOverflow
                 ? `${derivedCount}+ (gekürzt)`
@@ -318,7 +318,7 @@
             {/if}
           </span>
         </div>
-        <div class="text-[10px] text-gray-500 dark:text-smoke-400 mt-0.5">
+        <div class="text-[10px] text-slate-500 dark:text-smoke-400 mt-0.5">
           Deaktiviert weil Enddatum gesetzt (UNTIL). Entferne Enddatum um feste
           Anzahl zu definieren.
         </div>
@@ -400,11 +400,11 @@
             on:input={() => buildAndEmit()}
             {disabled}
           />
-          <span class="text-xs text-gray-600 dark:text-smoke-400"
+          <span class="text-xs text-slate-600 dark:text-smoke-400"
             >des Monats</span
           >
         </div>
-        <p class="text-[10px] text-gray-500 dark:text-smoke-400">
+        <p class="text-[10px] text-slate-500 dark:text-smoke-400">
           z.B. "15" = jeden 15. des Monats
         </p>
       {:else}
@@ -435,11 +435,11 @@
                 <option value={w}>{weekdayLabels[w] || w}</option>
               {/each}
             </select>
-            <span class="text-xs text-gray-600 dark:text-smoke-400"
+            <span class="text-xs text-slate-600 dark:text-smoke-400"
               >im Monat</span
             >
           </div>
-          <p class="text-[10px] text-gray-500 dark:text-smoke-400">
+          <p class="text-[10px] text-slate-500 dark:text-smoke-400">
             z.B. "1. Dienstag" = jeden ersten Dienstag des Monats, "Letzten
             Freitag" = jeden letzten Freitag
           </p>
@@ -480,7 +480,7 @@
           on:input={emitManual}
           {disabled}
         ></textarea>
-        <div class="text-[10px] text-gray-600 dark:text-smoke-300">
+        <div class="text-[10px] text-slate-600 dark:text-smoke-300">
           RRULE wird automatisch generiert – manuelle Bearbeitung überschreibt
           die Felder oben.
         </div>
@@ -501,7 +501,7 @@
         {/each}
       </ul>
     {:else}
-      <p class="text-[11px] text-gray-600 dark:text-smoke-300">
+      <p class="text-[11px] text-slate-600 dark:text-smoke-300">
         Keine Vorschau verfügbar.
       </p>
     {/if}

@@ -226,15 +226,17 @@
       class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
-        <h1 class="text-3xl font-semibold tracking-tight text-slate-800">
+        <h1
+          class="text-3xl font-semibold tracking-tight text-slate-800 dark:text-smoke-50"
+        >
           Nachrichten
         </h1>
-        <p class="mt-1 text-sm text-slate-600">
+        <p class="mt-1 text-sm text-slate-600 dark:text-smoke-400">
           Verfolgen und beantworten Sie eingehende Kontaktanfragen.
         </p>
       </div>
       <button
-        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50"
+        class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-charcoal-600 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-smoke-300 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
         on:click={loadMessages}
         title="Nachrichten neu laden"
       >
@@ -260,7 +262,7 @@
 
     {#if error}
       <div
-        class="rounded-xl border border-red-200 bg-red-50/90 p-4 text-sm text-red-800 shadow-sm"
+        class="rounded-xl border border-red-200 dark:border-red-700 bg-red-50/90 dark:bg-red-900/30 p-4 text-sm text-red-800 dark:text-red-200 shadow-sm"
         role="alert"
       >
         <div class="flex items-start gap-2">
@@ -286,32 +288,46 @@
     <!-- Statistics -->
     {#if stats.status_counts}
       <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-2xl font-bold text-blue-600">
+        <div
+          class="bg-white dark:bg-charcoal-800 rounded-lg shadow dark:shadow-charcoal-900/30 p-6 border border-transparent dark:border-charcoal-700"
+        >
+          <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
             {stats.unread_count || 0}
           </div>
-          <div class="text-sm text-gray-600">Ungelesen</div>
+          <div class="text-sm text-slate-600 dark:text-smoke-400">
+            Ungelesen
+          </div>
         </div>
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-2xl font-bold text-yellow-600">
+        <div
+          class="bg-white dark:bg-charcoal-800 rounded-lg shadow dark:shadow-charcoal-900/30 p-6 border border-transparent dark:border-charcoal-700"
+        >
+          <div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
             {stats.status_counts.find((s: any) => s.status === "in_progress")
               ?.count || 0}
           </div>
-          <div class="text-sm text-gray-600">In Bearbeitung</div>
+          <div class="text-sm text-slate-600 dark:text-smoke-400">
+            In Bearbeitung
+          </div>
         </div>
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-2xl font-bold text-green-600">
+        <div
+          class="bg-white dark:bg-charcoal-800 rounded-lg shadow dark:shadow-charcoal-900/30 p-6 border border-transparent dark:border-charcoal-700"
+        >
+          <div class="text-2xl font-bold text-green-600 dark:text-green-400">
             {stats.status_counts.find((s: any) => s.status === "resolved")
               ?.count || 0}
           </div>
-          <div class="text-sm text-gray-600">Erledigt</div>
+          <div class="text-sm text-slate-600 dark:text-smoke-400">Erledigt</div>
         </div>
-        <div class="bg-white rounded-lg shadow p-6">
-          <div class="text-2xl font-bold text-gray-600">
+        <div
+          class="bg-white dark:bg-charcoal-800 rounded-lg shadow dark:shadow-charcoal-900/30 p-6 border border-transparent dark:border-charcoal-700"
+        >
+          <div class="text-2xl font-bold text-slate-600 dark:text-smoke-300">
             {stats.status_counts?.reduce((sum, item) => sum + item.count, 0) ||
               0}
           </div>
-          <div class="text-sm text-gray-600">Letzte 7 Tage</div>
+          <div class="text-sm text-slate-600 dark:text-smoke-400">
+            Letzte 7 Tage
+          </div>
         </div>
       </div>
     {/if}
@@ -320,12 +336,14 @@
       <!-- Messages List -->
       <div class="lg:w-1/2">
         <!-- Filters -->
-        <div class="mb-4 bg-white p-4 rounded-lg shadow">
+        <div
+          class="mb-4 bg-white dark:bg-charcoal-800 p-4 rounded-lg shadow dark:shadow-charcoal-900/30 border border-transparent dark:border-charcoal-700"
+        >
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label
                 for="status-filter"
-                class="block text-sm font-medium text-gray-700 mb-2"
+                class="block text-sm font-medium text-slate-700 dark:text-smoke-300 mb-2"
               >
                 Status
               </label>
@@ -333,7 +351,7 @@
                 id="status-filter"
                 bind:value={filters.status}
                 on:change={handleFilterChange}
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-3 py-2 border border-slate-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Alle Status</option>
                 <option value="new">Neu</option>
@@ -346,7 +364,7 @@
             <div>
               <label
                 for="subject-filter"
-                class="block text-sm font-medium text-gray-700 mb-2"
+                class="block text-sm font-medium text-slate-700 dark:text-smoke-300 mb-2"
               >
                 Betreff
               </label>
@@ -354,7 +372,7 @@
                 id="subject-filter"
                 bind:value={filters.subject}
                 on:change={handleFilterChange}
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                class="w-full px-3 py-2 border border-slate-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Alle Betreffe</option>
                 <option value="teilnahme">Teilnahme</option>
@@ -372,21 +390,23 @@
         {#if loading}
           <div class="flex justify-center py-12">
             <div
-              class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+              class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"
             ></div>
           </div>
         {:else}
-          <div class="bg-white shadow overflow-hidden sm:rounded-md">
+          <div
+            class="bg-white dark:bg-charcoal-800 shadow dark:shadow-charcoal-900/30 overflow-hidden sm:rounded-md border border-transparent dark:border-charcoal-700"
+          >
             {#if messages.length === 0}
-              <div class="p-6 text-center text-gray-500">
+              <div class="p-6 text-center text-slate-600 dark:text-smoke-400">
                 Keine Nachrichten gefunden
               </div>
             {:else}
-              <ul class="divide-y divide-gray-200">
+              <ul class="divide-y divide-gray-200 dark:divide-charcoal-700">
                 {#each messages as message (message.id)}
                   <li class="px-6 py-4">
                     <button
-                      class="w-full text-left hover:bg-gray-50 {selectedMessage?.id ===
+                      class="w-full text-left hover:bg-slate-50 {selectedMessage?.id ===
                       message.id
                         ? 'bg-blue-50'
                         : ''}"
@@ -396,7 +416,7 @@
                         <div class="flex-1 min-w-0">
                           <div class="flex items-center space-x-3">
                             <p
-                              class="text-sm font-medium text-gray-900 truncate"
+                              class="text-sm font-medium text-slate-900 truncate"
                             >
                               {message.name}
                             </p>
@@ -416,14 +436,14 @@
                             {/if}
                           </div>
                           <div class="mt-1">
-                            <p class="text-sm text-gray-600">
+                            <p class="text-sm text-slate-700">
                               {getSubjectLabel(message.subject)}
                             </p>
-                            <p class="text-sm text-gray-500 mt-1 truncate">
+                            <p class="text-sm text-slate-600 mt-1 truncate">
                               {message.message.substring(0, 100)}...
                             </p>
                           </div>
-                          <div class="mt-1 text-xs text-gray-500">
+                          <div class="mt-1 text-xs text-slate-500">
                             {new Date(message.created_at).toLocaleString()}
                           </div>
                         </div>
@@ -435,23 +455,23 @@
 
               <!-- Pagination -->
               {#if totalPages > 1}
-                <div class="px-6 py-3 bg-gray-50 border-t border-gray-200">
+                <div class="px-6 py-3 bg-slate-50 border-t border-slate-200">
                   <div class="flex items-center justify-between">
-                    <div class="text-sm text-gray-700">
+                    <div class="text-sm text-slate-700">
                       Seite {currentPage} von {totalPages}
                     </div>
                     <div class="flex space-x-1">
                       <button
                         on:click={() => changePage(currentPage - 1)}
                         disabled={currentPage === 1}
-                        class="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="px-3 py-1 text-sm border rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Zurück
                       </button>
                       <button
                         on:click={() => changePage(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        class="px-3 py-1 text-sm border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="px-3 py-1 text-sm border rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Weiter
                       </button>
@@ -467,11 +487,17 @@
       <!-- Message Detail -->
       <div class="lg:w-1/2">
         {#if selectedMessage}
-          <div class="bg-white shadow rounded-lg">
+          <div
+            class="bg-white dark:bg-charcoal-800 shadow dark:shadow-charcoal-900/30 rounded-lg border border-transparent dark:border-charcoal-700"
+          >
             <!-- Message Header -->
-            <div class="border-b border-gray-200 px-6 py-4">
+            <div
+              class="border-b border-slate-200 dark:border-charcoal-700 px-6 py-4"
+            >
               <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-medium text-gray-900">
+                <h3
+                  class="text-lg font-medium text-slate-900 dark:text-smoke-50"
+                >
                   {selectedMessage.name}
                 </h3>
                 <span
@@ -483,7 +509,7 @@
                 </span>
               </div>
 
-              <div class="text-sm text-gray-600 space-y-1">
+              <div class="text-sm text-slate-600 dark:text-smoke-400 space-y-1">
                 <p><strong>E-Mail:</strong> {selectedMessage.email}</p>
                 <p>
                   <strong>Betreff:</strong>
@@ -516,7 +542,7 @@
             <!-- Tab Navigation -->
             <div class="px-6">
               <nav
-                class="flex space-x-8 border-b border-gray-200"
+                class="flex space-x-8 border-b border-slate-200 dark:border-charcoal-700"
                 aria-label="Tabs"
               >
                 <button
@@ -526,8 +552,8 @@
                   }}
                   class="py-2 px-1 border-b-2 font-medium text-sm {!showNotes &&
                   !showEmailComposer
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-slate-500 dark:text-smoke-400 hover:text-slate-700 dark:hover:text-smoke-200 hover:border-slate-300 dark:hover:border-charcoal-500'}"
                 >
                   Nachricht
                 </button>
@@ -538,8 +564,8 @@
                   }}
                   class="py-2 px-1 border-b-2 font-medium text-sm {showNotes &&
                   !showEmailComposer
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-slate-500 dark:text-smoke-400 hover:text-slate-700 dark:hover:text-smoke-200 hover:border-slate-300 dark:hover:border-charcoal-500'}"
                 >
                   Notizen
                 </button>
@@ -550,8 +576,8 @@
                   }}
                   class="py-2 px-1 border-b-2 font-medium text-sm {showEmailComposer &&
                   !showNotes
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-slate-500 dark:text-smoke-400 hover:text-slate-700 dark:hover:text-smoke-200 hover:border-slate-300 dark:hover:border-charcoal-500'}"
                 >
                   E-Mail Antwort
                 </button>
@@ -563,11 +589,13 @@
               {#if !showNotes && !showEmailComposer}
                 <!-- Original Message Content -->
                 <div class="mb-6">
-                  <h4 class="text-sm font-medium text-gray-900 mb-2">
+                  <h4
+                    class="text-sm font-medium text-slate-900 dark:text-smoke-50 mb-2"
+                  >
                     Nachricht
                   </h4>
                   <div
-                    class="bg-gray-50 rounded-lg p-4 text-sm text-gray-800 whitespace-pre-wrap"
+                    class="bg-slate-50 dark:bg-charcoal-700 rounded-lg p-4 text-sm text-slate-800 dark:text-smoke-200 whitespace-pre-wrap"
                   >
                     {selectedMessage.message}
                   </div>
@@ -576,7 +604,9 @@
                 <!-- Actions -->
                 <div class="space-y-4">
                   <div>
-                    <h4 class="block text-sm font-medium text-gray-700 mb-2">
+                    <h4
+                      class="block text-sm font-medium text-slate-700 dark:text-smoke-300 mb-2"
+                    >
                       Status ändern
                     </h4>
                     <div class="flex space-x-2">
@@ -666,10 +696,12 @@
             </div>
           </div>
         {:else}
-          <div class="bg-white shadow rounded-lg p-6">
-            <div class="text-center text-gray-500">
+          <div
+            class="bg-white dark:bg-charcoal-800 shadow dark:shadow-charcoal-900/30 rounded-lg p-6 border border-transparent dark:border-charcoal-700"
+          >
+            <div class="text-center text-slate-500 dark:text-smoke-400">
               <svg
-                class="mx-auto h-12 w-12 text-gray-400"
+                class="mx-auto h-12 w-12 text-slate-400 dark:text-smoke-600"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -696,15 +728,17 @@
   {#if deleteConfirm}
     <Portal>
       <div
-        class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999]"
+        class="fixed inset-0 bg-slate-700/50 dark:bg-charcoal-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-[9999]"
       >
         <div
-          class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+          class="relative top-20 mx-auto p-5 border dark:border-charcoal-600 w-96 shadow-lg rounded-md bg-white dark:bg-charcoal-800"
         >
           <div class="mt-3 text-center">
-            <h3 class="text-lg font-medium text-gray-900">Nachricht löschen</h3>
+            <h3 class="text-lg font-medium text-slate-900 dark:text-smoke-50">
+              Nachricht löschen
+            </h3>
             <div class="mt-2 px-7 py-3">
-              <p class="text-sm text-gray-500">
+              <p class="text-sm text-slate-600 dark:text-smoke-300">
                 Sind Sie sicher, dass Sie diese Nachricht von {deleteConfirm.name}
                 löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
               </p>
@@ -712,13 +746,13 @@
             <div class="flex justify-center space-x-3 px-4 py-3">
               <button
                 on:click={() => (deleteConfirm = null)}
-                class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md hover:bg-gray-400 transition-colors"
+                class="px-4 py-2 bg-slate-200 dark:bg-charcoal-600 text-slate-800 dark:text-smoke-200 text-base font-medium rounded-md hover:bg-slate-300 dark:hover:bg-charcoal-500 transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 on:click={() => deleteMessage(deleteConfirm.id)}
-                class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 transition-colors"
+                class="px-4 py-2 bg-red-600 dark:bg-red-700 text-white text-base font-medium rounded-md hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
               >
                 Löschen
               </button>

@@ -3,11 +3,13 @@
   import { link, push } from "svelte-spa-router";
   import User from "../../classes/User";
   import { adminAuth } from "../../stores/admin";
+  import { adminTheme } from "../../stores/adminTheme";
   import { UserHelpers } from "../../utils/userHelpers";
   import BrandLogo from "../ui/BrandLogo.svelte";
   import AdminNavigationLinks from "./AdminNavigationLinks.svelte";
   import AdminNotifications from "./AdminNotifications.svelte";
   import AdminStatusBar from "./AdminStatusBar.svelte";
+  import AdminThemeToggle from "./AdminThemeToggle.svelte";
 
   type PermissionState = ReturnType<typeof UserHelpers.getPermissions>;
 
@@ -44,6 +46,9 @@
   }
 
   onMount(() => {
+    // Initialize theme
+    adminTheme.initialize();
+
     isAuthenticated = false;
     currentUser = null;
     permissions = {
@@ -140,10 +145,12 @@
 </script>
 
 {#if isAuthenticated}
-  <div class="min-h-screen bg-slate-50 text-slate-900">
+  <div
+    class="admin-theme-transition min-h-screen bg-slate-50 dark:bg-charcoal-900 text-slate-900 dark:text-smoke-50"
+  >
     <a
       href="#main-content"
-      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-lg focus-visible:bg-white focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-blue-600 focus-visible:shadow-lg"
+      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-lg focus-visible:bg-white dark:focus-visible:bg-charcoal-800 focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-semibold focus-visible:text-blue-600 dark:focus-visible:text-blue-400 focus-visible:shadow-lg"
       >Zum Inhalt springen</a
     >
 
@@ -157,7 +164,7 @@
         on:keydown={handleOverlayKeydown}
       >
         <div
-          class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+          class="absolute inset-0 bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm"
           on:click={closeMobileNav}
           role="button"
           tabindex="0"
@@ -165,13 +172,17 @@
           on:keydown={handleOverlayKeydown}
         ></div>
         <div
-          class="relative ml-auto flex h-full w-72 max-w-xs flex-col bg-white shadow-2xl"
+          class="relative ml-auto flex h-full w-72 max-w-xs flex-col bg-white dark:bg-charcoal-800 shadow-2xl"
         >
-          <div class="flex items-center justify-between border-b px-4 py-4">
+          <div
+            class="flex items-center justify-between border-b border-slate-200 dark:border-charcoal-700 px-4 py-4"
+          >
             <div class="flex items-center gap-2">
               <BrandLogo size="sm" />
               <div>
-                <p class="text-sm font-semibold text-slate-900">
+                <p
+                  class="text-sm font-semibold text-slate-900 dark:text-smoke-50"
+                >
                   {currentUser?.username || "Admin"}
                 </p>
                 {#if roleDisplayName}
@@ -184,7 +195,7 @@
             </div>
             <button
               type="button"
-              class="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              class="rounded-full p-2 text-slate-500 dark:text-smoke-400 transition hover:bg-slate-100 dark:hover:bg-charcoal-700 hover:text-slate-700 dark:hover:text-smoke-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
               on:click={closeMobileNav}
               aria-label="Navigation schließen"
             >
@@ -206,11 +217,19 @@
             />
           </div>
 
-          <div class="border-t px-4 py-3">
+          <div
+            class="border-t border-slate-200 dark:border-charcoal-700 px-4 py-3 space-y-3"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-slate-600 dark:text-smoke-400"
+                >Design</span
+              >
+              <AdminThemeToggle size="sm" />
+            </div>
             <a
               href="/admin/profile"
               use:link
-              class="flex items-center justify-center rounded-lg border border-blue-100 px-3 py-2 text-sm font-medium text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
+              class="flex items-center justify-center rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
               on:click={handleNavigate}>Profil öffnen</a
             >
           </div>
@@ -218,14 +237,16 @@
       </div>
     {/if}
 
-    <header class="border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header
+      class="border-b border-slate-200 dark:border-charcoal-700 bg-white/95 dark:bg-charcoal-900/95 backdrop-blur"
+    >
       <div
         class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8"
       >
         <div class="flex items-center gap-3">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-md p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:hidden"
+            class="inline-flex items-center justify-center rounded-md p-2 text-slate-500 dark:text-smoke-400 transition hover:bg-slate-100 dark:hover:bg-charcoal-700 hover:text-slate-700 dark:hover:text-smoke-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 lg:hidden"
             on:click={() => (isNavOpen = true)}
             aria-label="Navigation öffnen"
           >
@@ -246,11 +267,13 @@
 
           <BrandLogo size="sm" />
           <div class="hidden sm:flex flex-col">
-            <span class="text-sm font-semibold text-slate-900">
+            <span
+              class="text-sm font-semibold text-slate-900 dark:text-smoke-50"
+            >
               Hypnose-Stammtisch.de
             </span>
             <span
-              class="text-xs font-medium uppercase tracking-wide text-slate-500"
+              class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-smoke-400"
             >
               Adminbereich
             </span>
@@ -258,8 +281,13 @@
         </div>
 
         <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Theme Toggle -->
+          <AdminThemeToggle size="sm" />
+
           <div class="flex flex-col items-end leading-tight">
-            <span class="text-sm font-semibold text-slate-700">
+            <span
+              class="text-sm font-semibold text-slate-700 dark:text-smoke-200"
+            >
               {currentUser?.username}
             </span>
             {#if roleDisplayName}
@@ -274,21 +302,21 @@
           <a
             href="/admin/profile"
             use:link
-            class="hidden sm:inline-flex items-center rounded-lg border border-blue-100 px-3 py-2 text-sm font-medium text-blue-600 transition hover:border-blue-200 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+            class="hidden sm:inline-flex items-center rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           >
             Profil
           </a>
 
           <button
             on:click={handleLogout}
-            class="inline-flex items-center rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+            class="inline-flex items-center rounded-lg bg-red-600 dark:bg-red-700 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 dark:hover:bg-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
           >
             Abmelden
           </button>
         </div>
       </div>
 
-      <div class="border-t border-slate-200">
+      <div class="border-t border-slate-200 dark:border-charcoal-700">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <AdminStatusBar className="border-0 px-0" dense />
         </div>
@@ -302,7 +330,7 @@
         class="order-2 hidden lg:order-1 lg:block lg:w-64 lg:flex-shrink-0"
       >
         <div
-          class="sticky top-28 space-y-6 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur"
+          class="sticky top-28 space-y-6 rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/80 dark:bg-charcoal-800/80 p-4 shadow-sm backdrop-blur"
         >
           <AdminNavigationLinks
             {currentPath}
@@ -310,13 +338,17 @@
             onNavigate={handleNavigate}
           />
           {#if currentUser}
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div
+              class="rounded-xl border border-slate-200 dark:border-charcoal-600 bg-slate-50 dark:bg-charcoal-700/50 p-4"
+            >
               <p
-                class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
               >
                 Angemeldet als
               </p>
-              <p class="mt-1 text-sm font-semibold text-slate-700">
+              <p
+                class="mt-1 text-sm font-semibold text-slate-700 dark:text-smoke-200"
+              >
                 {currentUser.username}
               </p>
               {#if roleDisplayName}
@@ -337,7 +369,7 @@
         tabindex="-1"
       >
         <div
-          class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm backdrop-blur sm:p-6"
+          class="rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/90 dark:bg-charcoal-800/90 p-4 shadow-sm backdrop-blur sm:p-6"
         >
           <slot />
         </div>
@@ -347,12 +379,16 @@
     <AdminNotifications />
   </div>
 {:else}
-  <div class="flex min-h-screen items-center justify-center bg-slate-50">
-    <div class="rounded-xl border border-slate-200 bg-white p-8 shadow-lg">
+  <div
+    class="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-charcoal-900"
+  >
+    <div
+      class="rounded-xl border border-slate-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 p-8 shadow-lg"
+    >
       <div
-        class="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"
+        class="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600 dark:border-blue-400"
       ></div>
-      <p class="mt-4 text-center text-sm text-slate-600">
+      <p class="mt-4 text-center text-sm text-slate-600 dark:text-smoke-400">
         Überprüfe Anmeldestatus ...
       </p>
     </div>

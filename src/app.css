@@ -1,4 +1,5 @@
 @import "./fonts.css";
+@import "./styles/adminTheme.css";
 
 @tailwind base;
 @tailwind components;
@@ -80,7 +81,7 @@
 
   /* Skip link */
   .skip-link {
-    @apply absolute -top-10 left-4 z-50 bg-accent-400 text-charcoal-900 px-4 py-2 rounded-md font-medium;
+    @apply absolute -top-10 left-4 z-50 bg-accent-400 text-gray-900 px-4 py-2 rounded-md font-medium;
     @apply focus:top-4 transition-all duration-300;
   }
 
@@ -137,7 +138,7 @@
   }
 
   .btn-primary {
-    @apply bg-accent-400 text-charcoal-900 hover:bg-accent-300 hover:shadow-glow;
+    @apply bg-accent-400 text-black hover:bg-accent-300 hover:shadow-glow;
     @apply focus-visible:ring-accent-400 focus-visible:ring-offset-charcoal-900;
   }
 
@@ -171,7 +172,7 @@
   }
 
   .badge-accent {
-    @apply bg-accent-400 text-charcoal-900;
+    @apply bg-accent-400 text-gray-900;
   }
 
   .badge-consent {
@@ -252,7 +253,7 @@
   }
 
   .calendar-day-today {
-    @apply bg-accent-400 text-charcoal-900;
+    @apply bg-accent-400 text-gray-900;
   }
 
   .calendar-day-other-month {

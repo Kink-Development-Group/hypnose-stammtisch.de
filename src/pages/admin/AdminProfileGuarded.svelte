@@ -204,10 +204,10 @@
             >
           </div>
           <div>
-            <h3 class="text-lg font-medium leading-tight text-gray-700">
+            <h3 class="text-lg font-medium leading-tight text-slate-700">
               Zugangsdaten
             </h3>
-            <p class="text-xs text-gray-600">
+            <p class="text-xs text-slate-600">
               Benutzername & E‑Mail-Adresse für die Anmeldung
             </p>
           </div>
@@ -216,12 +216,12 @@
           <!-- Username -->
           <div class="space-y-1">
             <label
-              class="block text-sm font-medium text-gray-800"
+              class="block text-sm font-medium text-slate-800"
               for="username">Benutzername</label
             >
             <div class="relative">
               <span
-                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"
+                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500"
               >
                 <svg
                   class="h-5 w-5"
@@ -238,7 +238,7 @@
               </span>
               <input
                 id="username"
-                class="w-full rounded-lg border border-gray-300 bg-white px-10 py-2 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
+                class="w-full rounded-lg border border-slate-300 bg-white px-10 py-2 text-sm text-slate-900 placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
                 bind:value={username}
                 autocomplete="username"
               />
@@ -246,12 +246,12 @@
           </div>
           <!-- Email -->
           <div class="space-y-1">
-            <label class="block text-sm font-medium text-gray-800" for="email"
+            <label class="block text-sm font-medium text-slate-800" for="email"
               >E‑Mail</label
             >
             <div class="relative">
               <span
-                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"
+                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500"
               >
                 <svg
                   class="h-5 w-5"
@@ -269,27 +269,27 @@
               <input
                 id="email"
                 type="email"
-                class="w-full rounded-lg border border-gray-300 bg-white px-10 py-2 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
+                class="w-full rounded-lg border border-slate-300 bg-white px-10 py-2 text-sm text-slate-900 placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
                 bind:value={email}
                 autocomplete="email"
               />
             </div>
-            <p class="text-xs text-gray-700">
+            <p class="text-xs text-slate-700">
               Änderungen erfordern Bestätigung über eine E‑Mail.
             </p>
           </div>
           <!-- Password -->
           <div class="space-y-1 md:col-span-2">
             <label
-              class="block text-sm font-medium text-gray-800"
+              class="block text-sm font-medium text-slate-800"
               for="password"
-              >Neues Passwort <span class="text-gray-400 text-xs font-normal"
+              >Neues Passwort <span class="text-slate-400 text-xs font-normal"
                 >(optional)</span
               ></label
             >
             <div class="relative group">
               <span
-                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 group-focus-within:text-blue-600"
+                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 group-focus-within:text-blue-600"
               >
                 <svg
                   class="h-5 w-5"

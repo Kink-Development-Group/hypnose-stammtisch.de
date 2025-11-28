@@ -100,17 +100,17 @@
 
 <div class="mt-3 space-y-6">
   {#if loading}
-    <div class="text-sm text-gray-500">Lade Daten...</div>
+    <div class="text-sm text-slate-500">Lade Daten...</div>
   {:else}
     <div class="space-y-2">
-      <h4 class="text-sm font-semibold text-gray-700">
+      <h4 class="text-sm font-semibold text-slate-700">
         Overrides (individuelle Instanzen)
       </h4>
       <div class="flex flex-col md:flex-row gap-2 items-end">
         <div>
           <label
             for="ov-date-{seriesItem.id}"
-            class="block text-xs text-gray-600 mb-1">Datum</label
+            class="block text-xs text-slate-600 mb-1">Datum</label
           >
           <input
             id="ov-date-{seriesItem.id}"
@@ -122,7 +122,7 @@
         <div>
           <label
             for="ov-start-{seriesItem.id}"
-            class="block text-xs text-gray-600 mb-1">Start (HH:MM)</label
+            class="block text-xs text-slate-600 mb-1">Start (HH:MM)</label
           >
           <input
             id="ov-start-{seriesItem.id}"
@@ -134,7 +134,7 @@
         <div>
           <label
             for="ov-end-{seriesItem.id}"
-            class="block text-xs text-gray-600 mb-1">Ende (HH:MM)</label
+            class="block text-xs text-slate-600 mb-1">Ende (HH:MM)</label
           >
           <input
             id="ov-end-{seriesItem.id}"
@@ -146,7 +146,7 @@
         <div class="flex-1">
           <label
             for="ov-title-{seriesItem.id}"
-            class="block text-xs text-gray-600 mb-1">Titel (optional)</label
+            class="block text-xs text-slate-600 mb-1">Titel (optional)</label
           >
           <input
             id="ov-title-{seriesItem.id}"
@@ -163,7 +163,7 @@
         >
       </div>
       {#if overrides.length === 0}
-        <div class="text-xs text-gray-500">Keine Overrides vorhanden.</div>
+        <div class="text-xs text-slate-600">Keine Overrides vorhanden.</div>
       {:else}
         <ul class="text-xs divide-y divide-gray-200 border rounded bg-white">
           {#each overrides as ov (ov.instance_date || ov.id || Math.random())}
@@ -172,7 +172,7 @@
                 <span class="font-medium"
                   >{ov.instance_date} • {ov.title || seriesItem.title}</span
                 >
-                <span class="text-gray-400">
+                <span class="text-slate-500">
                   {#if ov.start_datetime && ov.end_datetime}
                     {ov.start_datetime.slice(11, 16)} - {ov.end_datetime.slice(
                       11,
@@ -196,14 +196,14 @@
     </div>
 
     <div class="space-y-2">
-      <h4 class="text-sm font-semibold text-gray-700">
+      <h4 class="text-sm font-semibold text-slate-700">
         Ausnahmedaten (EXDATE)
       </h4>
       <div class="flex gap-2 items-end">
         <div>
           <label
             for="exdate-{seriesItem.id}"
-            class="block text-xs text-gray-600 mb-1">Datum</label
+            class="block text-xs text-slate-600 mb-1">Datum</label
           >
           <input
             id="exdate-{seriesItem.id}"
@@ -219,7 +219,7 @@
         >
       </div>
       {#if exdates.length === 0}
-        <div class="text-xs text-gray-500">Keine EXDATEs definiert.</div>
+        <div class="text-xs text-slate-600">Keine EXDATEs definiert.</div>
       {:else}
         <ul class="text-xs divide-y divide-gray-200 border rounded bg-white">
           {#each exdates as d (d)}
@@ -236,12 +236,12 @@
     </div>
 
     <div class="space-y-2">
-      <h4 class="text-sm font-semibold text-gray-700">Instanz absagen</h4>
+      <h4 class="text-sm font-semibold text-slate-700">Instanz absagen</h4>
       <div class="flex flex-col md:flex-row gap-2 items-end">
         <div>
           <label
             for="cancel-date-{seriesItem.id}"
-            class="block text-xs text-gray-600 mb-1">Datum</label
+            class="block text-xs text-slate-600 mb-1">Datum</label
           >
           <input
             id="cancel-date-{seriesItem.id}"
@@ -253,7 +253,7 @@
         <div class="flex-1">
           <label
             for="cancel-reason-{seriesItem.id}"
-            class="block text-xs text-gray-600 mb-1">Grund (optional)</label
+            class="block text-xs text-slate-600 mb-1">Grund (optional)</label
           >
           <input
             id="cancel-reason-{seriesItem.id}"
@@ -272,12 +272,12 @@
     </div>
 
     <div class="space-y-2">
-      <h4 class="text-sm font-semibold text-gray-700">Absage zurücknehmen</h4>
+      <h4 class="text-sm font-semibold text-slate-700">Absage zurücknehmen</h4>
       <div class="flex flex-col md:flex-row gap-2 items-end">
         <div>
           <label
             for="restore-date-{seriesItem.id}"
-            class="block text-xs text-gray-600 mb-1">Datum</label
+            class="block text-xs text-slate-600 mb-1">Datum</label
           >
           <input
             id="restore-date-{seriesItem.id}"

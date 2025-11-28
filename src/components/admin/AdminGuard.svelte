@@ -66,7 +66,7 @@
         <h2 class="text-lg font-medium text-gray-900 mb-2">
           Authentifizierung prüfen
         </h2>
-        <p class="text-gray-600 text-center">Überprüfe Anmeldestatus...</p>
+        <p class="text-slate-600 text-center">Überprüfe Anmeldestatus...</p>
       </div>
     </div>
   </div>
@@ -94,7 +94,7 @@
         <h2 class="text-lg font-medium text-gray-900 mb-2">
           Zugriff verweigert
         </h2>
-        <p class="text-gray-600 text-center mb-4">
+        <p class="text-slate-600 text-center mb-4">
           {authError ||
             "Sie sind nicht authentifiziert. Bitte melden Sie sich an."}
         </p>

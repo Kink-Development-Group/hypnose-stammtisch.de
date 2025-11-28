@@ -116,21 +116,23 @@
 </script>
 
 <div class="admin-message-notes">
-  <h3 class="text-lg font-semibold mb-4">Notizen</h3>
+  <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-smoke-50">
+    Notizen
+  </h3>
 
   <!-- Add new note -->
-  <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+  <div class="mb-6 p-4 bg-gray-50 dark:bg-charcoal-700 rounded-lg">
     <div class="mb-3">
       <label
         for="note-type-select"
-        class="block text-sm font-medium text-gray-700 mb-2"
+        class="block text-sm font-medium text-gray-700 dark:text-smoke-300 mb-2"
       >
         Notiz-Kategorie
       </label>
       <select
         id="note-type-select"
         bind:value={noteType}
-        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
       >
         <option value="processing"
           >Bearbeitung - Workflow und Status-Notizen</option
@@ -146,7 +148,7 @@
       <textarea
         bind:value={newNote}
         placeholder="Neue Notiz hinzufügen..."
-        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical min-h-[80px]"
+        class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical min-h-[80px] placeholder:text-gray-400 dark:placeholder:text-smoke-500"
         rows="3"
       ></textarea>
 
@@ -166,16 +168,20 @@
       <div
         class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"
       ></div>
-      <span class="ml-2 text-gray-600">Lade Notizen...</span>
+      <span class="ml-2 text-slate-600 dark:text-smoke-400"
+        >Lade Notizen...</span
+      >
     </div>
   {:else if notes.length === 0}
-    <div class="text-center py-8 text-gray-500">
+    <div class="text-center py-8 text-slate-600 dark:text-smoke-400">
       <p>Noch keine Notizen vorhanden.</p>
     </div>
   {:else}
     <div class="space-y-4">
       {#each notes as note (note.id)}
-        <div class="border border-gray-200 rounded-lg p-4 bg-white">
+        <div
+          class="border border-gray-200 dark:border-charcoal-600 rounded-lg p-4 bg-white dark:bg-charcoal-800"
+        >
           <div class="flex items-start justify-between mb-2">
             <div class="flex items-center space-x-2">
               <span
@@ -190,14 +196,14 @@
             <div class="flex items-center space-x-2">
               <button
                 on:click={() => startEdit(note)}
-                class="text-blue-600 hover:text-blue-800 text-sm"
+                class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
                 title="Bearbeiten"
               >
                 Bearbeiten
               </button>
               <button
                 on:click={() => deleteNote(note.id)}
-                class="text-red-600 hover:text-red-800 text-sm"
+                class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm"
                 title="Löschen"
               >
                 Löschen
@@ -209,7 +215,7 @@
             <div class="space-y-3">
               <textarea
                 bind:value={editingNote.note}
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical min-h-[80px]"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical min-h-[80px]"
                 rows="3"
               ></textarea>
 
@@ -229,10 +235,12 @@
               </div>
             </div>
           {:else}
-            <div class="text-gray-800 whitespace-pre-wrap">{note.note}</div>
+            <div class="text-gray-800 dark:text-smoke-200 whitespace-pre-wrap">
+              {note.note}
+            </div>
           {/if}
 
-          <div class="mt-3 text-xs text-gray-500">
+          <div class="mt-3 text-xs text-slate-500 dark:text-smoke-400">
             Erstellt: {formatDate(note.created_at)}
             {#if note.updated_at !== note.created_at}
               • Geändert: {formatDate(note.updated_at)}

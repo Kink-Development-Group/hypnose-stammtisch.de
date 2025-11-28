@@ -9,8 +9,20 @@ use HypnoseStammtisch\Middleware\AdminAuth;
 
 class AuditLogger
 {
+    /**
+     * Flag to prevent recursive calls during IP resolution
+     * This breaks the circular dependency: AuditLogger::log() -> IpBanManager::getClientIP() -> AuditLogger::log()
+     */
+    private static bool $isLogging = false;
+
     public static function log(string $action, ?string $resourceType = null, ?string $resourceId = null, array $meta = []): void
     {
+        // Prevent recursive calls that could cause infinite loops and memory exhaustion
+        if (self::$isLogging) {
+            return;
+        }
+
+        self::$isLogging = true;
         try {
             $user = AdminAuth::getCurrentUser();
             $userId = $user['id'] ?? null;
@@ -27,6 +39,8 @@ class AuditLogger
         } catch (\Throwable $e) {
             // Fail silently, but log to PHP error log
             error_log('Audit log insert failed: ' . $e->getMessage());
+        } finally {
+            self::$isLogging = false;
         }
     }
 }

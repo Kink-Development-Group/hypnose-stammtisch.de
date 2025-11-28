@@ -248,10 +248,12 @@
       class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
-        <h1 class="text-3xl font-semibold tracking-tight text-slate-800">
+        <h1
+          class="text-3xl font-semibold tracking-tight text-slate-800 dark:text-smoke-50"
+        >
           Admin-Benutzer
         </h1>
-        <p class="mt-1 text-sm text-slate-600">
+        <p class="mt-1 text-sm text-slate-600 dark:text-smoke-400">
           Verwalten Sie Admin-Benutzer, ihre Rollen und Zugänge.
         </p>
       </div>
@@ -264,7 +266,7 @@
             error = "";
             success = "";
           }}
-          class="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          class="inline-flex items-center gap-2 rounded-xl bg-blue-600 dark:bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 dark:hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
           <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path
@@ -280,11 +282,14 @@
 
     {#if success}
       <div
-        class="rounded-xl border border-green-200 bg-green-50/80 p-4 text-sm text-green-800 shadow-sm"
+        class="rounded-xl border border-green-200 dark:border-green-800 bg-green-50/80 dark:bg-green-900/30 p-4 text-sm text-green-800 dark:text-green-200 shadow-sm"
         role="status"
       >
         <div class="flex items-start gap-2">
-          <svg class="mt-0.5 h-5 w-5 text-green-500" viewBox="0 0 24 24">
+          <svg
+            class="mt-0.5 h-5 w-5 text-green-500 dark:text-green-400"
+            viewBox="0 0 24 24"
+          >
             <path
               fill="currentColor"
               d="M12 2a10 10 0 1010 10A10.011 10.011 0 0012 2zm-1 14l-4-4 1.41-1.41L11 13.17l5.59-5.59L18 9z"
@@ -294,7 +299,7 @@
             <p class="font-medium">{success}</p>
             <button
               on:click={() => (success = "")}
-              class="mt-2 inline-flex items-center text-xs font-semibold text-green-700 underline-offset-2 hover:underline"
+              class="mt-2 inline-flex items-center text-xs font-semibold text-green-700 dark:text-green-300 underline-offset-2 hover:underline"
             >
               Ausblenden
             </button>
@@ -305,11 +310,14 @@
 
     {#if error}
       <div
-        class="rounded-xl border border-red-200 bg-red-50/90 p-4 text-sm text-red-800 shadow-sm"
+        class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/90 dark:bg-red-900/30 p-4 text-sm text-red-800 dark:text-red-200 shadow-sm"
         role="alert"
       >
         <div class="flex items-start gap-2">
-          <svg class="mt-0.5 h-5 w-5 text-red-500" viewBox="0 0 24 24">
+          <svg
+            class="mt-0.5 h-5 w-5 text-red-500 dark:text-red-400"
+            viewBox="0 0 24 24"
+          >
             <path
               fill="currentColor"
               d="M12 2a10 10 0 1010 10A10.011 10.011 0 0012 2zm1 14h-2v-2h2zm0-4h-2V7h2z"
@@ -319,7 +327,7 @@
             <p class="font-medium">{error}</p>
             <button
               on:click={() => (error = "")}
-              class="mt-2 inline-flex items-center text-xs font-semibold text-red-700 underline-offset-2 hover:underline"
+              class="mt-2 inline-flex items-center text-xs font-semibold text-red-700 dark:text-red-300 underline-offset-2 hover:underline"
             >
               Ausblenden
             </button>
@@ -330,16 +338,16 @@
 
     <!-- Action Bar -->
     <section
-      class="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm sm:p-6"
+      class="rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/80 dark:bg-charcoal-800/80 p-4 shadow-sm sm:p-6"
     >
       <div
         class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
-          <h2 class="text-lg font-semibold text-slate-800">
+          <h2 class="text-lg font-semibold text-slate-800 dark:text-smoke-50">
             Benutzer-Übersicht
           </h2>
-          <p class="text-sm text-slate-500">
+          <p class="text-sm text-slate-500 dark:text-smoke-400">
             Aktuelle Kennzahlen für Rollen- und Zugangsverwaltung.
           </p>
         </div>
@@ -347,7 +355,7 @@
         <div class="flex items-center gap-3">
           {#if loading}
             <div
-              class="flex items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-1.5 text-xs font-medium text-blue-600"
+              class="flex items-center gap-2 rounded-xl border border-blue-100 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/30 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-300"
             >
               <span
                 class="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
@@ -357,7 +365,7 @@
           {/if}
           <button
             on:click={loadUsers}
-            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-charcoal-600 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-smoke-200 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           >
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
               <path
@@ -381,29 +389,44 @@
       </div>
 
       <div class="mt-4 grid gap-3 sm:grid-cols-3">
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div
+          class="rounded-xl border border-slate-200 dark:border-charcoal-600 bg-slate-50 dark:bg-charcoal-700 p-4"
+        >
           <p
-            class="text-xs font-semibold uppercase tracking-wide text-slate-500"
+            class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
           >
             Gesamt
           </p>
-          <p class="mt-1 text-2xl font-bold text-slate-800">{totalUsers}</p>
+          <p class="mt-1 text-2xl font-bold text-slate-800 dark:text-smoke-50">
+            {totalUsers}
+          </p>
         </div>
-        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+        <div
+          class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 p-4"
+        >
           <p
-            class="text-xs font-semibold uppercase tracking-wide text-emerald-600"
+            class="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400"
           >
             Aktiv
           </p>
-          <p class="mt-1 text-2xl font-bold text-emerald-700">{activeUsers}</p>
-        </div>
-        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <p
-            class="text-xs font-semibold uppercase tracking-wide text-amber-600"
+            class="mt-1 text-2xl font-bold text-emerald-700 dark:text-emerald-300"
+          >
+            {activeUsers}
+          </p>
+        </div>
+        <div
+          class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-4"
+        >
+          -800 bg-amber-50 dark:bg-amber-900/30 p-4">
+          <p
+            class="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
           >
             Deaktiviert
           </p>
-          <p class="mt-1 text-2xl font-bold text-amber-700">{inactiveUsers}</p>
+          <p class="mt-1 text-2xl font-bold text-amber-700 dark:text-amber-300">
+            {inactiveUsers}
+          </p>
         </div>
       </div>
     </section>
@@ -411,15 +434,15 @@
     <!-- Create/Edit Form -->
     {#if showCreateForm}
       <section
-        class="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-lg sm:p-6"
+        class="space-y-6 rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/90 dark:bg-charcoal-800/90 p-4 shadow-lg sm:p-6"
       >
         <!-- Form Header -->
         <div
-          class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 pb-4"
+          class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-charcoal-700 pb-4"
         >
           <div class="flex items-center gap-3">
             <svg
-              class="h-9 w-9 rounded-full bg-blue-100 text-blue-600"
+              class="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -434,12 +457,14 @@
               />
             </svg>
             <div>
-              <h3 class="text-xl font-semibold text-slate-800">
+              <h3
+                class="text-xl font-semibold text-slate-800 dark:text-smoke-50"
+              >
                 {editingUser
                   ? "Benutzer bearbeiten"
                   : "Neuen Benutzer erstellen"}
               </h3>
-              <p class="text-sm text-slate-500">
+              <p class="text-sm text-slate-500 dark:text-smoke-400">
                 {editingUser
                   ? "Aktualisieren Sie Rollen, Status oder Zugangsdaten."
                   : "Legen Sie einen neuen Admin-Zugang mit Rollen und Berechtigungen an."}
@@ -450,7 +475,7 @@
             <button
               type="button"
               on:click={clearFormFields}
-              class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+              class="inline-flex items-center rounded-lg border border-slate-200 dark:border-charcoal-600 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-smoke-300 transition hover:border-slate-300 dark:hover:border-charcoal-500 hover:bg-slate-50 dark:hover:bg-charcoal-700"
             >
               Zurücksetzen
             </button>
@@ -458,7 +483,7 @@
               type="button"
               on:click={resetForm}
               aria-label="Schließen"
-              class="inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+              class="inline-flex items-center rounded-lg border border-slate-200 dark:border-charcoal-600 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-smoke-300 transition hover:border-slate-300 dark:hover:border-charcoal-500 hover:bg-slate-50 dark:hover:bg-charcoal-700"
             >
               Schließen
             </button>
@@ -469,12 +494,12 @@
         <div class="space-y-6">
           <form on:submit|preventDefault={handleSubmit} class="space-y-6">
             <!-- Personal Information Section -->
-            <div class="border-b border-gray-200 pb-6">
+            <div class="border-b border-gray-200 dark:border-charcoal-700 pb-6">
               <h4
-                class="text-lg font-medium text-gray-900 mb-4 flex items-center"
+                class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-4 flex items-center"
               >
                 <svg
-                  class="w-5 h-5 mr-2 text-blue-600"
+                  class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -493,7 +518,7 @@
                 <div class="space-y-1">
                   <label
                     for="username"
-                    class="block text-sm font-semibold text-gray-700"
+                    class="block text-sm font-semibold text-gray-700 dark:text-smoke-300"
                   >
                     Benutzername *
                   </label>
@@ -502,7 +527,7 @@
                       class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -521,7 +546,7 @@
                       bind:value={formData.username}
                       required
                       placeholder="z.B. max.mustermann"
-                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-50 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-charcoal-500 placeholder:text-gray-400 dark:placeholder:text-smoke-500"
                     />
                   </div>
                 </div>
@@ -529,7 +554,7 @@
                 <div class="space-y-1">
                   <label
                     for="email"
-                    class="block text-sm font-semibold text-gray-700"
+                    class="block text-sm font-semibold text-gray-700 dark:text-smoke-300"
                   >
                     E-Mail-Adresse *
                   </label>
@@ -538,7 +563,7 @@
                       class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -557,7 +582,7 @@
                       bind:value={formData.email}
                       required
                       placeholder="max@beispiel.de"
-                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-50 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-charcoal-500 placeholder:text-gray-400 dark:placeholder:text-smoke-500"
                     />
                   </div>
                 </div>
@@ -565,12 +590,12 @@
             </div>
 
             <!-- Security Section -->
-            <div class="border-b border-gray-200 pb-6">
+            <div class="border-b border-gray-200 dark:border-charcoal-700 pb-6">
               <h4
-                class="text-lg font-medium text-gray-900 mb-4 flex items-center"
+                class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-4 flex items-center"
               >
                 <svg
-                  class="w-5 h-5 mr-2 text-blue-600"
+                  class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -589,12 +614,12 @@
                 <div class="space-y-1">
                   <label
                     for="password"
-                    class="block text-sm font-semibold text-gray-700"
+                    class="block text-sm font-semibold text-slate-700 dark:text-smoke-300"
                   >
                     {editingUser ? "Neues Passwort" : "Passwort *"}
                   </label>
                   {#if editingUser}
-                    <p class="text-xs text-gray-500 mb-2">
+                    <p class="text-xs text-slate-500 dark:text-smoke-400 mb-2">
                       Leer lassen, um das aktuelle Passwort zu behalten
                     </p>
                   {/if}
@@ -603,7 +628,7 @@
                       class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -622,7 +647,7 @@
                       bind:value={formData.password}
                       required={!editingUser}
                       placeholder="Mindestens 8 Zeichen"
-                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-50 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-charcoal-500 placeholder:text-gray-400 dark:placeholder:text-smoke-500"
                     />
                   </div>
                 </div>
@@ -630,7 +655,7 @@
                 <div class="space-y-1">
                   <label
                     for="role"
-                    class="block text-sm font-semibold text-gray-700"
+                    class="block text-sm font-semibold text-slate-700 dark:text-smoke-300"
                   >
                     Benutzerrolle *
                   </label>
@@ -639,7 +664,7 @@
                       class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -655,7 +680,7 @@
                     <select
                       id="role"
                       bind:value={formData.role}
-                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-50 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-charcoal-500 appearance-none"
                     >
                       <option value={Role.ADMIN}
                         >Administrator - Vollzugriff auf alle Funktionen</option
@@ -671,7 +696,7 @@
                       class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -692,10 +717,10 @@
             <!-- Account Status -->
             <div class="pb-2">
               <h4
-                class="text-lg font-medium text-gray-900 mb-4 flex items-center"
+                class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-4 flex items-center"
               >
                 <svg
-                  class="w-5 h-5 mr-2 text-blue-600"
+                  class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -711,24 +736,24 @@
               </h4>
 
               <div
-                class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200"
+                class="flex items-center justify-between p-4 bg-gray-50 dark:bg-charcoal-700 rounded-xl border border-gray-200 dark:border-charcoal-600"
               >
                 <div class="flex items-center">
                   <input
                     type="checkbox"
                     id="is_active"
                     bind:checked={formData.is_active}
-                    class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all duration-200"
+                    class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-charcoal-600 rounded transition-all duration-200"
                   />
                   <label
                     for="is_active"
-                    class="ml-3 block text-sm font-medium text-gray-900"
+                    class="ml-3 block text-sm font-medium text-gray-900 dark:text-smoke-50"
                   >
                     Benutzer ist aktiv
                   </label>
                 </div>
                 <div class="text-right">
-                  <div class="text-xs text-gray-500">
+                  <div class="text-xs text-slate-500 dark:text-smoke-400">
                     {formData.is_active
                       ? "Benutzer kann sich anmelden"
                       : "Benutzer ist deaktiviert"}
@@ -739,12 +764,12 @@
 
             <!-- Form Actions -->
             <div
-              class="flex justify-end space-x-4 pt-6 border-t border-gray-200"
+              class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-charcoal-700"
             >
               <button
                 type="button"
                 on:click={resetForm}
-                class="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                class="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-charcoal-600 shadow-sm text-sm font-medium rounded-xl text-gray-700 dark:text-smoke-300 bg-white dark:bg-charcoal-700 hover:bg-gray-50 dark:hover:bg-charcoal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
               >
                 <svg
                   class="w-4 h-4 mr-2"
@@ -792,7 +817,7 @@
     <section class="space-y-6">
       {#if loading}
         <div
-          class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white/80 p-10 text-slate-600 shadow-sm"
+          class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/80 dark:bg-charcoal-800/80 p-10 text-slate-600 dark:text-smoke-400 shadow-sm"
         >
           <span
             class="inline-flex h-10 w-10 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
@@ -801,10 +826,10 @@
         </div>
       {:else if users.length === 0}
         <div
-          class="rounded-2xl border border-dashed border-slate-300 bg-white/70 p-10 text-center shadow-sm"
+          class="rounded-2xl border border-dashed border-slate-300 dark:border-charcoal-600 bg-white/70 dark:bg-charcoal-800/70 p-10 text-center shadow-sm"
         >
           <svg
-            class="mx-auto h-12 w-12 text-slate-300"
+            class="mx-auto h-12 w-12 text-slate-300 dark:text-charcoal-600"
             viewBox="0 0 48 48"
             fill="none"
             stroke="currentColor"
@@ -816,61 +841,71 @@
               d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.713-3.714M14 40v-4c0-1.313.253-2.566.713-3.714m0 0A10.003 10.003 0 0124 26c4.21 0 7.813 2.602 9.288 6.286M30 14a6 6 0 11-12 0 6 6 0 0112 0zm12 6a4 4 0 11-8 0 4 4 0 018 0zm-28 0a4 4 0 11-8 0 4 4 0 018 0z"
             />
           </svg>
-          <p class="mt-4 text-base font-semibold text-slate-700">
+          <p
+            class="mt-4 text-base font-semibold text-slate-700 dark:text-smoke-200"
+          >
             Noch keine Admin-Benutzer angelegt
           </p>
-          <p class="mt-2 text-sm text-slate-500">
+          <p class="mt-2 text-sm text-slate-500 dark:text-smoke-400">
             Legen Sie den ersten Zugang über „Neuen Benutzer erstellen“ an.
           </p>
         </div>
       {:else}
         <div
-          class="hidden lg:block overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+          class="hidden lg:block overflow-hidden rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 shadow-sm"
         >
-          <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50">
+          <table
+            class="min-w-full divide-y divide-slate-200 dark:divide-charcoal-700 text-sm"
+          >
+            <thead class="bg-slate-50 dark:bg-charcoal-700">
               <tr>
                 <th
                   scope="col"
-                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
                 >
                   Benutzer
                 </th>
                 <th
                   scope="col"
-                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
                 >
                   Rolle
                 </th>
                 <th
                   scope="col"
-                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
                 >
                   Status
                 </th>
                 <th
                   scope="col"
-                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
                 >
                   Zuletzt aktiv
                 </th>
                 <th
                   scope="col"
-                  class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
                 >
                   Aktionen
                 </th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 bg-white">
+            <tbody
+              class="divide-y divide-slate-100 dark:divide-charcoal-700 bg-white dark:bg-charcoal-800"
+            >
               {#each users as user (user.id)}
-                <tr class="hover:bg-slate-50">
+                <tr class="hover:bg-slate-50 dark:hover:bg-charcoal-700">
                   <td class="px-6 py-4">
                     <div class="space-y-1">
-                      <p class="text-sm font-semibold text-slate-800">
+                      <p
+                        class="text-sm font-semibold text-slate-800 dark:text-smoke-50"
+                      >
                         {user.username}
                       </p>
-                      <p class="text-sm text-slate-500">{user.email}</p>
+                      <p class="text-sm text-slate-500 dark:text-smoke-400">
+                        {user.email}
+                      </p>
                     </div>
                   </td>
                   <td class="px-6 py-4">
@@ -884,18 +919,18 @@
                     <span
                       class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         user.is_active
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-amber-100 text-amber-700"
+                          ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                          : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                       }`}
                     >
                       {user.is_active ? "Aktiv" : "Deaktiviert"}
                     </span>
                   </td>
                   <td class="px-6 py-4">
-                    <div class="text-sm text-slate-600">
+                    <div class="text-sm text-slate-600 dark:text-smoke-300">
                       {formatDate(user.updated_at)}
                     </div>
-                    <div class="text-xs text-slate-400">
+                    <div class="text-xs text-slate-400 dark:text-smoke-500">
                       Login: {formatDate(user.last_login)}
                     </div>
                   </td>
@@ -903,7 +938,7 @@
                     <div class="flex justify-end gap-2">
                       <button
                         on:click={() => startEdit(user)}
-                        class="inline-flex items-center gap-2 rounded-lg border border-blue-100 px-3 py-2 text-xs font-semibold text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
+                        class="inline-flex items-center gap-2 rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                       >
                         <svg
                           class="h-4 w-4"
@@ -922,7 +957,7 @@
                       </button>
                       <button
                         on:click={() => deleteUser(user)}
-                        class="inline-flex items-center gap-2 rounded-lg border border-red-100 px-3 py-2 text-xs font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50"
+                        class="inline-flex items-center gap-2 rounded-lg border border-red-100 dark:border-red-800 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 transition hover:border-red-200 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
                       >
                         <svg
                           class="h-4 w-4"
@@ -950,14 +985,18 @@
         <div class="grid gap-4 lg:hidden">
           {#each users as user (user.id)}
             <article
-              class="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm"
+              class="rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/90 dark:bg-charcoal-800/90 p-4 shadow-sm"
             >
               <div class="flex items-start justify-between gap-3">
                 <div>
-                  <h3 class="text-base font-semibold text-slate-800">
+                  <h3
+                    class="text-base font-semibold text-slate-800 dark:text-smoke-50"
+                  >
                     {user.username}
                   </h3>
-                  <p class="text-sm text-slate-500">{user.email}</p>
+                  <p class="text-sm text-slate-500 dark:text-smoke-400">
+                    {user.email}
+                  </p>
                   <div class="mt-2 flex flex-wrap items-center gap-2">
                     <span
                       class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${UserHelpers.getRoleBadgeClass(user.role)}`}
@@ -967,8 +1006,8 @@
                     <span
                       class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         user.is_active
-                          ? "bg-emerald-100 text-emerald-700"
-                          : "bg-amber-100 text-amber-700"
+                          ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                          : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
                       }`}
                     >
                       {user.is_active ? "Aktiv" : "Deaktiviert"}
@@ -978,20 +1017,20 @@
                 <div class="flex flex-col gap-2">
                   <button
                     on:click={() => startEdit(user)}
-                    class="inline-flex items-center justify-center rounded-lg border border-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
+                    class="inline-flex items-center justify-center rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                   >
                     Bearbeiten
                   </button>
                   <button
                     on:click={() => deleteUser(user)}
-                    class="inline-flex items-center justify-center rounded-lg border border-red-100 px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:border-red-200 hover:bg-red-50"
+                    class="inline-flex items-center justify-center rounded-lg border border-red-100 dark:border-red-800 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 transition hover:border-red-200 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
                   >
                     Löschen
                   </button>
                 </div>
               </div>
               <div
-                class="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500"
+                class="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-smoke-400"
               >
                 <span>Aktualisiert: {formatDate(user.updated_at)}</span>
                 <span>Login: {formatDate(user.last_login)}</span>

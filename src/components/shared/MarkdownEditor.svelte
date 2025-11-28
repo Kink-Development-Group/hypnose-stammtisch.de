@@ -19,48 +19,48 @@
   $: toolbarClasses =
     theme === "dark"
       ? "bg-charcoal-700 border-charcoal-600"
-      : "bg-gray-100 border-gray-300";
+      : "bg-slate-50 border-slate-300";
 
   $: buttonClasses =
     theme === "dark"
       ? "text-smoke-300 hover:text-smoke-50 hover:bg-charcoal-600"
-      : "text-gray-600 hover:text-gray-900 hover:bg-gray-200";
+      : "text-slate-700 hover:text-slate-900 hover:bg-slate-200";
 
   $: activeButtonClasses =
     theme === "dark"
       ? "bg-accent-600 text-charcoal-900"
       : "bg-blue-600 text-white";
 
-  $: dividerClasses = theme === "dark" ? "bg-charcoal-500" : "bg-gray-300";
+  $: dividerClasses = theme === "dark" ? "bg-charcoal-500" : "bg-slate-300";
 
   $: textareaClasses =
     theme === "dark"
       ? "bg-charcoal-800 border-charcoal-600 text-smoke-50 placeholder-smoke-400 focus:ring-accent-400"
-      : "bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500";
+      : "bg-white border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-blue-600 focus:border-blue-600";
 
   $: previewClasses =
     theme === "dark"
-      ? "bg-charcoal-800 border-charcoal-600 text-smoke-50"
-      : "bg-white border-gray-300 text-gray-900";
+      ? "bg-charcoal-800 border-charcoal-600 text-smoke-50 prose-invert"
+      : "bg-white border-slate-300 text-slate-900 prose-slate";
 
-  $: labelClasses = theme === "dark" ? "text-smoke-100" : "text-gray-700";
+  $: labelClasses = theme === "dark" ? "text-smoke-100" : "text-slate-800";
 
-  $: helpClasses = theme === "dark" ? "text-smoke-400" : "text-gray-500";
+  $: helpClasses = theme === "dark" ? "text-smoke-400" : "text-slate-600";
 
-  $: errorClasses = theme === "dark" ? "text-boundaries" : "text-red-600";
+  $: errorClasses = theme === "dark" ? "text-boundaries" : "text-red-700";
 
   $: detailsClasses =
     theme === "dark"
       ? "text-smoke-400 hover:text-smoke-200"
-      : "text-gray-500 hover:text-gray-700";
+      : "text-slate-600 hover:text-slate-900";
 
   $: detailsContentClasses =
     theme === "dark"
       ? "bg-charcoal-700/50 text-smoke-300"
-      : "bg-gray-50 text-gray-600";
+      : "bg-slate-100 text-slate-800";
 
   $: codeHighlightClasses =
-    theme === "dark" ? "text-accent-400" : "text-blue-600";
+    theme === "dark" ? "text-accent-400" : "text-blue-700";
 
   // State
   let showPreview = false;
@@ -204,7 +204,7 @@
   }
 </script>
 
-<div class="markdown-editor">
+<div class="markdown-editor {theme}">
   {#if label}
     <label for={id} class="block text-sm font-medium {labelClasses} mb-2">
       {label}
@@ -429,22 +429,66 @@
     color: inherit;
   }
 
-  .markdown-editor :global(.prose a) {
+  /* Light mode styles */
+  .markdown-editor.light :global(.prose) {
+    color: theme("colors.slate.900");
+  }
+
+  .markdown-editor.light :global(.prose h1),
+  .markdown-editor.light :global(.prose h2),
+  .markdown-editor.light :global(.prose h3),
+  .markdown-editor.light :global(.prose h4),
+  .markdown-editor.light :global(.prose strong),
+  .markdown-editor.light :global(.prose b) {
+    color: theme("colors.slate.900");
+  }
+
+  .markdown-editor.light :global(.prose a) {
+    color: theme("colors.blue.700");
+    font-weight: 500;
+  }
+
+  .markdown-editor.light :global(.prose a:hover) {
+    color: theme("colors.blue.900");
+    text-decoration: underline;
+  }
+
+  .markdown-editor.light :global(.prose code) {
+    color: theme("colors.slate.800");
+    background: theme("colors.slate.100");
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+  }
+
+  .markdown-editor.light :global(.prose blockquote) {
+    border-left-color: theme("colors.slate.300");
+    color: theme("colors.slate.700");
+    font-style: italic;
+  }
+
+  .markdown-editor.light :global(.prose ul > li::marker),
+  .markdown-editor.light :global(.prose ol > li::marker) {
+    color: theme("colors.slate.500");
+  }
+
+  /* Dark mode styles */
+  .markdown-editor.dark :global(.prose a) {
     color: theme("colors.accent.400");
   }
 
-  .markdown-editor :global(.prose a:hover) {
+  .markdown-editor.dark :global(.prose a:hover) {
     color: theme("colors.accent.300");
   }
 
-  .markdown-editor :global(.prose code) {
+  .markdown-editor.dark :global(.prose code) {
     color: theme("colors.accent.400");
     background: theme("colors.charcoal.700");
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
   }
 
-  .markdown-editor :global(.prose blockquote) {
+  .markdown-editor.dark :global(.prose blockquote) {
     border-left-color: theme("colors.accent.500");
     color: inherit;
     opacity: 0.85;

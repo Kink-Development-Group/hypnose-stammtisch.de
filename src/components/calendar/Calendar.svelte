@@ -311,7 +311,7 @@
               <div class="text-right mb-2">
                 <span
                   class="text-sm {day.isToday
-                    ? 'bg-accent-400 text-charcoal-900 w-6 h-6 rounded-full inline-flex items-center justify-center font-medium'
+                    ? 'bg-accent-400 text-gray-900 w-6 h-6 rounded-full inline-flex items-center justify-center font-medium'
                     : day.isCurrentMonth
                       ? 'text-smoke-200'
                       : 'text-smoke-500'}"
@@ -358,7 +358,7 @@
               </div>
               <div
                 class="text-lg {day.isToday
-                  ? 'bg-accent-400 text-charcoal-900 w-8 h-8 rounded-full inline-flex items-center justify-center font-medium'
+                  ? 'bg-accent-400 text-gray-900 w-8 h-8 rounded-full inline-flex items-center justify-center font-medium'
                   : 'text-smoke-200'}"
               >
                 {day.dayNumber}

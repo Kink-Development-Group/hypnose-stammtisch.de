@@ -65,7 +65,7 @@
       <div
         class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"
       ></div>
-      <p class="mt-4 text-gray-600 text-center">Überprüfe Berechtigung...</p>
+      <p class="mt-4 text-slate-600 text-center">Überprüfe Berechtigung...</p>
     </div>
   </div>
 {:else if isAuthenticated && hasPermission}
@@ -76,7 +76,7 @@
       <h2 class="text-xl font-semibold text-gray-900 mb-4">
         Zugriff verweigert
       </h2>
-      <p class="text-gray-600 mb-4">
+      <p class="text-slate-600 mb-4">
         Sie haben keine Berechtigung, auf die Stammtisch-Verwaltung zuzugreifen.
       </p>
       <button
