@@ -510,6 +510,11 @@ export class AdminAPI {
   }
 
   static async createEvent(eventData: any) {
+    console.log(
+      "Creating event with data:",
+      JSON.stringify(eventData, null, 2),
+    );
+
     // Optimistische Aktualisierung: Event sofort zur Liste hinzufügen
     const tempEvent = {
       ...eventData,
@@ -527,6 +532,8 @@ export class AdminAPI {
         body: JSON.stringify(eventData),
       });
 
+      console.log("Create event result:", result);
+
       if (result.success) {
         // Ersetze das temporäre Event mit den echten Daten
         adminEventHelpers.removeEvent(tempEvent.id);
@@ -535,9 +542,14 @@ export class AdminAPI {
       } else {
         // Entferne das temporäre Event bei Fehler
         adminEventHelpers.removeEvent(tempEvent.id);
-        adminNotifications.error(
-          result.message || "Fehler beim Erstellen des Events",
-        );
+        const errorDetails = result.details || result.errors;
+        const errorMsg = errorDetails
+          ? `${result.error || result.message}: ${JSON.stringify(errorDetails)}`
+          : result.error ||
+            result.message ||
+            "Fehler beim Erstellen des Events";
+        adminNotifications.error(errorMsg);
+        console.error("Event creation error:", result);
       }
 
       return result;

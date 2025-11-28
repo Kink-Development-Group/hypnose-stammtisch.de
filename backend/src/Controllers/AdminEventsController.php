@@ -195,12 +195,15 @@ class AdminEventsController
      */
     private static function createSingleEvent(array $input): void
     {
+        error_log('[createSingleEvent] Input received: ' . json_encode($input));
+
         $validator = new Validator($input);
         $validator->required(['title', 'start_datetime', 'end_datetime', 'category'])
             ->length('title', 3, 255)
             ->length('description', 0, 1000);
 
         if (!$validator->isValid()) {
+            error_log('[createSingleEvent] Validation failed: ' . json_encode($validator->getErrors()));
             Response::error('Validation failed', 400, $validator->getErrors());
             return;
         }
