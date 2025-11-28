@@ -1,5 +1,6 @@
 import { writable } from "svelte/store";
 import User from "../classes/User";
+import { clearCsrfToken, getCsrfToken } from "../utils/adminApi";
 import { adminEventHelpers, adminNotifications } from "./adminData";
 
 export interface AdminAuthState {
@@ -415,49 +416,8 @@ class AdminAuthStore {
 
 export const adminAuth = new AdminAuthStore();
 
-// CSRF Token Management
-let csrfToken: string | null = null;
-let csrfTokenPromise: Promise<string> | null = null;
-
-async function fetchCsrfToken(): Promise<string> {
-  const response = await fetch(`${API_BASE}/auth/csrf`, {
-    method: "GET",
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch CSRF token");
-  }
-
-  const result = await response.json();
-  if (result.success && result.data?.csrf_token) {
-    return result.data.csrf_token;
-  }
-  throw new Error("Invalid CSRF token response");
-}
-
-async function getCsrfToken(): Promise<string> {
-  if (csrfToken) return csrfToken;
-  if (csrfTokenPromise) return csrfTokenPromise;
-
-  csrfTokenPromise = fetchCsrfToken()
-    .then((token) => {
-      csrfToken = token;
-      csrfTokenPromise = null;
-      return token;
-    })
-    .catch((error) => {
-      csrfTokenPromise = null;
-      throw error;
-    });
-
-  return csrfTokenPromise;
-}
-
-export function clearCsrfToken(): void {
-  csrfToken = null;
-  csrfTokenPromise = null;
-}
+// Re-export clearCsrfToken for backwards compatibility
+export { clearCsrfToken } from "../utils/adminApi";
 
 // Admin API helper functions
 export class AdminAPI {
@@ -501,7 +461,7 @@ export class AdminAPI {
         result.message?.toLowerCase().includes("token"))
     ) {
       console.warn("CSRF token expired, fetching new token...");
-      csrfToken = null;
+      clearCsrfToken();
 
       try {
         const newToken = await getCsrfToken();
