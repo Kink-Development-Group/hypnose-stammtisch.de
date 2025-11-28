@@ -7,6 +7,8 @@ namespace HypnoseStammtisch\Controllers;
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\Validator;
+use HypnoseStammtisch\Utils\IpBanManager;
+use HypnoseStammtisch\Utils\AuditLogger;
 use HypnoseStammtisch\Config\Config;
 
 /**
@@ -21,6 +23,16 @@ class ContactController
     public function submit(): void
     {
         try {
+            // Get client IP using secure method
+            $clientIp = IpBanManager::getClientIP();
+
+            // Check if IP is banned
+            if (IpBanManager::isIPBanned($clientIp)) {
+                AuditLogger::log('contact.blocked_ip', 'ip_ban', $clientIp, ['endpoint' => 'contact']);
+                Response::error('Your request could not be processed. Please try again later.', 403);
+                return;
+            }
+
             // Get JSON input
             $input = json_decode(file_get_contents('php://input'), true);
 
@@ -39,23 +51,24 @@ class ContactController
 
             // Check for spam
             if (Validator::isSpam($input)) {
+                AuditLogger::log('contact.spam_detected', 'spam', $clientIp);
                 Response::error('Message flagged as spam', 400);
                 return;
             }
 
-            // Rate limiting check
-            if (!$this->checkRateLimit()) {
+            // Rate limiting check (fail closed for security)
+            if (!$this->checkRateLimit($clientIp)) {
                 Response::error('Too many requests. Please try again later.', 429);
                 return;
             }
 
-            // Sanitize input
+            // Sanitize input - use secure IP handling
             $data = [
                 'name' => Validator::sanitizeString($input['name']),
                 'email' => Validator::sanitizeEmail($input['email']),
                 'subject' => $input['subject'],
                 'message' => Validator::sanitizeString($input['message']),
-                'ip_address' => $this->getClientIp(),
+                'ip_address' => $clientIp,
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
                 'referrer' => $_SERVER['HTTP_REFERER'] ?? ''
             ];
@@ -71,6 +84,11 @@ class ContactController
 
             // Send email notification (will fail gracefully in development)
             $this->sendEmailNotification($data, $contactId);
+
+            AuditLogger::log('contact.submitted', 'contact', $contactId, [
+                'ip' => $clientIp,
+                'subject' => $data['subject']
+            ]);
 
             Response::success([
                 'id' => $contactId,
@@ -196,11 +214,19 @@ class ContactController
 
     /**
      * Check rate limiting
+     * Returns false if rate limit exceeded or on error (fail closed for security)
      */
-    private function checkRateLimit(): bool
+    private function checkRateLimit(string $clientIp = ''): bool
     {
         try {
-            $ip = $this->getClientIp();
+            // Use provided IP or get securely
+            $ip = $clientIp ?: IpBanManager::getClientIP();
+            if (empty($ip) || $ip === '0.0.0.0' || $ip === '::') {
+                // Cannot identify client - fail closed for security
+                error_log("Rate limit check: Unable to determine client IP");
+                return false;
+            }
+            
             $endpoint = 'contact';
             $maxRequests = Config::get('rate_limit.requests', 10);
             $window = Config::get('rate_limit.window', 3600);
@@ -219,6 +245,11 @@ class ContactController
 
             if ($current) {
                 if ($current['requests_count'] >= $maxRequests) {
+                    AuditLogger::log('contact.rate_limited', 'rate_limit', $ip, [
+                        'endpoint' => $endpoint,
+                        'requests_count' => $current['requests_count'],
+                        'max_requests' => $maxRequests
+                    ]);
                     return false;
                 }
 
@@ -237,39 +268,10 @@ class ContactController
 
             return true;
         } catch (\Exception $e) {
-            error_log("Rate limit check error: " . $e->getMessage());
-            // In development mode, allow requests if rate limiting fails
-            return true;
+            // SECURITY FIX: Fail closed instead of open
+            // If rate limiting fails, block the request to prevent abuse
+            error_log("Rate limit check error (blocking request): " . $e->getMessage());
+            return false;
         }
-    }
-
-    /**
-     * Get client IP address
-     */
-    private function getClientIp(): string
-    {
-        $ipHeaders = [
-            'HTTP_CF_CONNECTING_IP',     // Cloudflare
-            'HTTP_CLIENT_IP',            // Proxy
-            'HTTP_X_FORWARDED_FOR',      // Load balancer/proxy
-            'HTTP_X_FORWARDED',          // Proxy
-            'HTTP_X_CLUSTER_CLIENT_IP',  // Cluster
-            'HTTP_FORWARDED_FOR',        // Proxy
-            'HTTP_FORWARDED',            // Proxy
-            'REMOTE_ADDR'                // Standard
-        ];
-
-        foreach ($ipHeaders as $header) {
-            if (!empty($_SERVER[$header])) {
-                $ips = explode(',', $_SERVER[$header]);
-                $ip = trim($ips[0]);
-
-                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
-                    return $ip;
-                }
-            }
-        }
-
-        return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
 }
