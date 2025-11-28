@@ -39,16 +39,16 @@ class StammtischLocation
     ) {
     }
 
-  /**
-   * Get all published and active locations
-   */
+    /**
+     * Get all published and active locations
+     */
     public static function getAllPublished(array $filters = []): array
     {
         try {
             $where = ['status = ?', 'is_active = ?'];
             $params = ['published', true];
 
-          // Apply filters
+            // Apply filters
             if (!empty($filters['countries'])) {
                 $placeholders = str_repeat('?,', count($filters['countries']) - 1) . '?';
                 $where[] = "country IN ($placeholders)";
@@ -80,9 +80,9 @@ class StammtischLocation
         }
     }
 
-  /**
-   * Get all locations for admin (including drafts)
-   */
+    /**
+     * Get all locations for admin (including drafts)
+     */
     public static function getAllForAdmin(): array
     {
         try {
@@ -103,9 +103,9 @@ class StammtischLocation
         }
     }
 
-  /**
-   * Get location by ID
-   */
+    /**
+     * Get location by ID
+     */
     public static function getById(string $id): ?self
     {
         try {
@@ -118,9 +118,9 @@ class StammtischLocation
         }
     }
 
-  /**
-   * Get location by slug
-   */
+    /**
+     * Get location by slug
+     */
     public static function getBySlug(string $slug): ?self
     {
         try {
@@ -133,9 +133,9 @@ class StammtischLocation
         }
     }
 
-  /**
-   * Create new location
-   */
+    /**
+     * Create new location
+     */
     public function create(): ?string
     {
         try {
@@ -155,27 +155,27 @@ class StammtischLocation
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             Database::execute($sql, [
-            $this->id,
-            $this->name,
-            $this->slug,
-            $this->city,
-            $this->region,
-            $this->country,
-            $this->latitude,
-            $this->longitude,
-            $this->description,
-            $this->contactEmail,
-            $this->contactPhone,
-            $this->contactFetLife,
-            $this->contactWebsite,
-            $this->meetingFrequency,
-            $this->meetingLocation,
-            $this->meetingAddress,
-            $this->nextMeeting,
-            json_encode($this->tags),
-            $this->isActive,
-            $this->status,
-            $this->createdBy
+                $this->id,
+                $this->name,
+                $this->slug,
+                $this->city,
+                $this->region,
+                $this->country,
+                $this->latitude,
+                $this->longitude,
+                $this->description,
+                $this->contactEmail,
+                $this->contactPhone,
+                $this->contactFetLife,
+                $this->contactWebsite,
+                $this->meetingFrequency,
+                $this->meetingLocation,
+                $this->meetingAddress,
+                $this->nextMeeting,
+                json_encode($this->tags),
+                $this->isActive,
+                $this->status,
+                $this->createdBy
             ]);
 
             return $this->id;
@@ -185,9 +185,9 @@ class StammtischLocation
         }
     }
 
-  /**
-   * Update location
-   */
+    /**
+     * Update location
+     */
     public function update(): bool
     {
         try {
@@ -200,26 +200,26 @@ class StammtischLocation
                 WHERE id = ?";
 
             Database::execute($sql, [
-            $this->name,
-            $this->slug,
-            $this->city,
-            $this->region,
-            $this->country,
-            $this->latitude,
-            $this->longitude,
-            $this->description,
-            $this->contactEmail,
-            $this->contactPhone,
-            $this->contactFetLife,
-            $this->contactWebsite,
-            $this->meetingFrequency,
-            $this->meetingLocation,
-            $this->meetingAddress,
-            $this->nextMeeting,
-            json_encode($this->tags),
-            $this->isActive,
-            $this->status,
-            $this->id
+                $this->name,
+                $this->slug,
+                $this->city,
+                $this->region,
+                $this->country,
+                $this->latitude,
+                $this->longitude,
+                $this->description,
+                $this->contactEmail,
+                $this->contactPhone,
+                $this->contactFetLife,
+                $this->contactWebsite,
+                $this->meetingFrequency,
+                $this->meetingLocation,
+                $this->meetingAddress,
+                $this->nextMeeting,
+                json_encode($this->tags),
+                $this->isActive,
+                $this->status,
+                $this->id
             ]);
 
             return true;
@@ -229,9 +229,9 @@ class StammtischLocation
         }
     }
 
-  /**
-   * Delete location
-   */
+    /**
+     * Delete location
+     */
     public function delete(): bool
     {
         try {
@@ -244,9 +244,9 @@ class StammtischLocation
         }
     }
 
-  /**
-   * Get available regions for given countries
-   */
+    /**
+     * Get available regions for given countries
+     */
     public static function getAvailableRegions(array $countries = []): array
     {
         try {
@@ -269,9 +269,9 @@ class StammtischLocation
         }
     }
 
-  /**
-   * Get available tags
-   */
+    /**
+     * Get available tags
+     */
     public static function getAvailableTags(): array
     {
         try {
@@ -287,7 +287,7 @@ class StammtischLocation
             $results = Database::fetchAll($sql, ['published', true]);
             return array_column($results, 'tag');
         } catch (\Exception $e) {
-          // Fallback for simpler MySQL versions
+            // Fallback for simpler MySQL versions
             try {
                 $sql = "SELECT tags FROM stammtisch_locations WHERE status = ? AND is_active = ?";
                 $results = Database::fetchAll($sql, ['published', true]);
@@ -308,9 +308,9 @@ class StammtischLocation
         }
     }
 
-  /**
-   * Convert array to StammtischLocation object
-   */
+    /**
+     * Convert array to StammtischLocation object
+     */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -340,45 +340,45 @@ class StammtischLocation
         );
     }
 
-  /**
-   * Convert to array format
-   */
+    /**
+     * Convert to array format
+     */
     public function toArray(): array
     {
         return [
-        'id' => $this->id,
-        'name' => $this->name,
-        'slug' => $this->slug,
-        'city' => $this->city,
-        'region' => $this->region,
-        'country' => $this->country,
-        'coordinates' => [
-        'lat' => $this->latitude,
-        'lng' => $this->longitude
-        ],
-        'description' => $this->description,
-        'contact' => [
-        'email' => $this->contactEmail,
-        'phone' => $this->contactPhone,
-        'telegram' => $this->contactFetLife,
-        'website' => $this->contactWebsite
-        ],
-        'meetingInfo' => [
-        'frequency' => $this->meetingFrequency,
-        'location' => $this->meetingLocation,
-        'address' => $this->meetingAddress,
-        'nextMeeting' => $this->nextMeeting
-        ],
-        'tags' => $this->tags,
-        'isActive' => $this->isActive,
-        'status' => $this->status,
-        'lastUpdated' => $this->updatedAt
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'city' => $this->city,
+            'region' => $this->region,
+            'country' => $this->country,
+            'coordinates' => [
+                'lat' => $this->latitude,
+                'lng' => $this->longitude
+            ],
+            'description' => $this->description,
+            'contact' => [
+                'email' => $this->contactEmail,
+                'phone' => $this->contactPhone,
+                'fetlife' => $this->contactFetLife,
+                'website' => $this->contactWebsite
+            ],
+            'meetingInfo' => [
+                'frequency' => $this->meetingFrequency,
+                'location' => $this->meetingLocation,
+                'address' => $this->meetingAddress,
+                'nextMeeting' => $this->nextMeeting
+            ],
+            'tags' => $this->tags,
+            'isActive' => $this->isActive,
+            'status' => $this->status,
+            'lastUpdated' => $this->updatedAt
         ];
     }
 
-  /**
-   * Generate UUID
-   */
+    /**
+     * Generate UUID
+     */
     private function generateId(): string
     {
         return sprintf(
@@ -394,9 +394,9 @@ class StammtischLocation
         );
     }
 
-  /**
-   * Generate slug from name
-   */
+    /**
+     * Generate slug from name
+     */
     private function generateSlug(): string
     {
         $slug = strtolower($this->name);
@@ -404,7 +404,7 @@ class StammtischLocation
         $slug = preg_replace('/-+/', '-', $slug);
         $slug = trim($slug, '-');
 
-      // Ensure uniqueness
+        // Ensure uniqueness
         $originalSlug = $slug;
         $counter = 1;
 

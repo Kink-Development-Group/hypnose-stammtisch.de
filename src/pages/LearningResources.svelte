@@ -84,9 +84,8 @@
                 <span class="text-boundaries mr-2 mt-0.5">•</span>
                 <div>
                   <strong class="text-smoke-50">Akute Psychosen:</strong>
-                  Schizophrenie, schwere wahnhafte Störungen oder akute manische
-                  Phasen. Die hypnotische Trance könnte die Realitätswahrnehmung
-                  weiter stören.
+                  Schizophrenie, schwere wahnhafte Störungen oder akute manische Phasen.
+                  Die hypnotische Trance könnte die Realitätswahrnehmung weiter stören.
                 </div>
               </li>
               <li class="flex items-start">
@@ -127,8 +126,8 @@
                 <span class="text-boundaries mr-2 mt-0.5">•</span>
                 <div>
                   <strong class="text-smoke-50">Fehlende Bereitschaft:</strong>
-                  Hypnose funktioniert nicht gegen den Willen einer Person. Eine
-                  Anwendung wäre sinnlos und unethisch.
+                  Hypnose funktioniert nicht gegen den Willen einer Person. Eine Anwendung
+                  wäre sinnlos und unethisch.
                 </div>
               </li>
             </ul>

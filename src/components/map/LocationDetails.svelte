@@ -81,9 +81,13 @@
       case "phone":
         window.open(`tel:${value}`);
         break;
-      case "telegram": {
+      case "fetlife": {
         const handle = value.replace(/^@/, "");
-        window.open(`https://t.me/${handle}`, "_blank", "noopener");
+        window.open(
+          `https://fetlife.com/users/${handle}`,
+          "_blank",
+          "noopener",
+        );
         break;
       }
       case "discord":
@@ -246,18 +250,18 @@
               </button>
             {/if}
 
-            {#if currentLocation.contact.telegram}
+            {#if currentLocation.contact.fetlife}
               <button
-                class="contact-button telegram"
+                class="contact-button fetlife"
                 on:click={() =>
                   handleContactClick(
-                    "telegram",
-                    currentLocation.contact.telegram,
+                    "fetlife",
+                    currentLocation.contact.fetlife,
                   )}
               >
-                📱
-                {t("map.details.contact.telegram", {
-                  values: { handle: currentLocation.contact.telegram },
+                🔗
+                {t("map.details.contact.fetlife", {
+                  values: { handle: currentLocation.contact.fetlife },
                 })}
               </button>
             {/if}
@@ -472,7 +476,7 @@
     color: #0284c7;
   }
 
-  .contact-button.telegram:hover {
+  .contact-button.fetlife:hover {
     background: #f0f9ff;
     border-color: #bae6fd;
     color: #0284c7;

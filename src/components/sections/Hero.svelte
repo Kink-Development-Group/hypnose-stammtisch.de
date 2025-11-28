@@ -33,7 +33,7 @@
 
 <section
   bind:this={heroRef}
-  class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-charcoal-900 via-primary-950 to-charcoal-900"
+  class="relative min-h-[calc(100vh-6.5rem)] flex items-center justify-center overflow-hidden bg-gradient-to-br from-charcoal-900 via-primary-950 to-charcoal-900"
   aria-labelledby="hero-heading"
 >
   <!-- Background spiral gradient -->
@@ -44,7 +44,7 @@
   ></div>
 
   <!-- Content -->
-  <div class="relative z-10 text-center px-4 max-w-5xl mx-auto mt-20">
+  <div class="relative z-10 text-center px-4 max-w-5xl mx-auto">
     <!-- Logo -->
     <div class="mb-8 flex justify-center">
       <BrandLogo

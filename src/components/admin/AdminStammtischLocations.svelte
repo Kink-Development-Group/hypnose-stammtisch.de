@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { LocationStatus } from "../../enums/locationStatus";
   import { CountryCode } from "../../enums/countryCode";
-  import { t } from "../../utils/i18n";
+  import { LocationStatus } from "../../enums/locationStatus";
   import type { StammtischLocation } from "../../types/stammtisch";
+  import { t } from "../../utils/i18n";
 
   /**
    * Statistics interface for location data aggregation.
@@ -32,7 +32,7 @@
     description: string;
     contact_email: string;
     contact_phone: string;
-    contact_telegram: string;
+    contact_fetlife: string;
     contact_website: string;
     meeting_frequency: string;
     meeting_location: string;
@@ -62,7 +62,7 @@
     description: "",
     contact_email: "",
     contact_phone: "",
-    contact_telegram: "",
+    contact_fetlife: "",
     contact_website: "",
     meeting_frequency: "",
     meeting_location: "",
@@ -169,7 +169,7 @@
       description: "",
       contact_email: "",
       contact_phone: "",
-      contact_telegram: "",
+      contact_fetlife: "",
       contact_website: "",
       meeting_frequency: "",
       meeting_location: "",
@@ -210,7 +210,7 @@
       description: location.description,
       contact_email: location.contact?.email || "",
       contact_phone: location.contact?.phone || "",
-      contact_telegram: location.contact?.telegram || "",
+      contact_fetlife: location.contact?.fetlife || "",
       contact_website: location.contact?.website || "",
       meeting_frequency: location.meetingInfo?.frequency || "",
       meeting_location: location.meetingInfo?.location || "",
@@ -939,15 +939,15 @@
 
               <div>
                 <label
-                  for="telegram-input"
+                  for="fetlife-input"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
                   {t("adminLocations.form.fetlifeLabel")}
                 </label>
                 <input
-                  id="telegram-input"
+                  id="fetlife-input"
                   type="text"
-                  bind:value={formData.contact_telegram}
+                  bind:value={formData.contact_fetlife}
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder={t("adminLocations.form.fetlifePlaceholder")}
                 />

@@ -17,7 +17,7 @@ export interface StammtischContact {
   email?: string;
   phone?: string;
   website?: string;
-  telegram?: string;
+  fetlife?: string;
   discord?: string;
 }
 

@@ -23,8 +23,7 @@
       <br />
       Entstanden durch die Hamburger Kinky Hypnose Szene, und in ständigem Austausch
       mit vielen anderen Communitys möchten wir so vielen Menschen wie möglich einen
-      sicheren und einfachen Einstieg in die Szene der Kink- und Freizeithypnose
-      ermöglichen!
+      sicheren und einfachen Einstieg in die Szene der Kink- und Freizeithypnose ermöglichen!
     </p>
   </section>
 
