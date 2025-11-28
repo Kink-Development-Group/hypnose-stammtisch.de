@@ -418,7 +418,6 @@
         <div
           class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-4"
         >
-          -800 bg-amber-50 dark:bg-amber-900/30 p-4">
           <p
             class="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
           >
