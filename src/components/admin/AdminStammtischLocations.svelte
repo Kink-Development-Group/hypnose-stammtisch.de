@@ -4,6 +4,7 @@
   import { LocationStatus } from "../../enums/locationStatus";
   import type { StammtischLocation } from "../../types/stammtisch";
   import { t } from "../../utils/i18n";
+  import Portal from "../ui/Portal.svelte";
 
   /**
    * Statistics interface for location data aggregation.
@@ -713,475 +714,477 @@
 
 <!-- Create/Edit Form Modal -->
 {#if showCreateForm}
-  <div
-    class="fixed inset-0 bg-gray-700/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50"
-  >
+  <Portal>
     <div
-      class="relative mx-auto mt-8 md:mt-12 border w-11/12 max-w-5xl shadow-2xl rounded-lg bg-white flex flex-col max-h-[92vh]"
+      class="fixed inset-0 bg-gray-700/50 backdrop-blur-sm overflow-y-auto h-full w-full z-[9999]"
     >
-      <!-- Header (sticky) -->
       <div
-        class="px-6 py-5 border-b bg-gradient-to-r from-gray-50 to-white sticky top-0 z-10 rounded-t-lg"
+        class="relative mx-auto mt-8 md:mt-12 border w-11/12 max-w-5xl shadow-2xl rounded-lg bg-white flex flex-col max-h-[92vh]"
       >
-        <div class="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <h3 class="text-xl font-semibold text-gray-900 leading-tight">
-              {editingLocation
-                ? t("adminLocations.modal.titleEdit")
-                : t("adminLocations.modal.titleCreate")}
-            </h3>
-          </div>
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="text-xs px-2 py-1 rounded border shadow-sm hover:bg-gray-100 focus:outline-none focus:ring"
-              on:click={cancelForm}
-            >
-              {t("adminLocations.modal.close")}
-            </button>
-            <button
-              type="button"
-              class="text-xs px-2 py-1 rounded border shadow-sm hover:bg-gray-100 focus:outline-none focus:ring"
-              on:click={resetForm}
-            >
-              {t("adminLocations.modal.reset")}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Scrollable Form Content -->
-      <div class="flex-1 overflow-y-auto px-6 py-6">
-        <form on:submit|preventDefault={saveLocation} class="space-y-6">
-          <!-- Basic Information -->
-          <fieldset class="space-y-4">
-            <legend class="text-lg font-medium text-gray-900 mb-4">
-              Grundinformationen
-            </legend>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Name -->
-              <div>
-                <label
-                  for="name-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.nameLabel")}
-                  <span class="text-red-600">*</span>
-                </label>
-                <input
-                  id="name-input"
-                  type="text"
-                  bind:value={formData.name}
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.namePlaceholder")}
-                />
-              </div>
-
-              <!-- City -->
-              <div>
-                <label
-                  for="city-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.cityLabel")}
-                  <span class="text-red-600">*</span>
-                </label>
-                <input
-                  id="city-input"
-                  type="text"
-                  bind:value={formData.city}
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.cityPlaceholder")}
-                />
-              </div>
-
-              <!-- Region -->
-              <div>
-                <label
-                  for="region-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.regionLabel")}
-                  <span class="text-red-600">*</span>
-                </label>
-                <input
-                  id="region-input"
-                  type="text"
-                  bind:value={formData.region}
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.regionPlaceholder")}
-                />
-              </div>
-
-              <!-- Country -->
-              <div>
-                <label
-                  for="country-select"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.countryLabel")}
-                  <span class="text-red-600">*</span>
-                </label>
-                <select
-                  id="country-select"
-                  bind:value={formData.country}
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {#each countryOptions as country (country.code)}
-                    <option value={country.code}>
-                      {country.flag}
-                      {country.name}
-                    </option>
-                  {/each}
-                </select>
-              </div>
-
-              <!-- Latitude -->
-              <div>
-                <label
-                  for="latitude-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.latitudeLabel")}
-                  <span class="text-red-600">*</span>
-                </label>
-                <input
-                  id="latitude-input"
-                  type="number"
-                  step="any"
-                  bind:value={formData.latitude}
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.latitudePlaceholder")}
-                />
-              </div>
-
-              <!-- Longitude -->
-              <div>
-                <label
-                  for="longitude-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.longitudeLabel")}
-                  <span class="text-red-600">*</span>
-                </label>
-                <input
-                  id="longitude-input"
-                  type="number"
-                  step="any"
-                  bind:value={formData.longitude}
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.longitudePlaceholder")}
-                />
-              </div>
-            </div>
-
-            <!-- Description -->
+        <!-- Header (sticky) -->
+        <div
+          class="px-6 py-5 border-b bg-gradient-to-r from-gray-50 to-white sticky top-0 z-10 rounded-t-lg"
+        >
+          <div class="flex items-start justify-between flex-wrap gap-4">
             <div>
-              <label
-                for="description-textarea"
-                class="block text-sm font-medium text-gray-700 mb-1"
-              >
-                {t("adminLocations.form.descriptionLabel")}
-              </label>
-              <textarea
-                id="description-textarea"
-                bind:value={formData.description}
-                rows="3"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={t("adminLocations.form.descriptionPlaceholder")}
-              ></textarea>
+              <h3 class="text-xl font-semibold text-gray-900 leading-tight">
+                {editingLocation
+                  ? t("adminLocations.modal.titleEdit")
+                  : t("adminLocations.modal.titleCreate")}
+              </h3>
             </div>
-          </fieldset>
-
-          <!-- Contact Information -->
-          <fieldset class="space-y-4">
-            <legend class="text-lg font-medium text-gray-900 mb-4">
-              {t("adminLocations.form.contactSectionTitle")}
-            </legend>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  for="email-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.emailLabel")}
-                </label>
-                <input
-                  id="email-input"
-                  type="email"
-                  bind:value={formData.contact_email}
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.emailPlaceholder")}
-                />
-              </div>
-
-              <div>
-                <label
-                  for="phone-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.phoneLabel")}
-                </label>
-                <input
-                  id="phone-input"
-                  type="tel"
-                  bind:value={formData.contact_phone}
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.phonePlaceholder")}
-                />
-              </div>
-
-              <div>
-                <label
-                  for="fetlife-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.fetlifeLabel")}
-                </label>
-                <input
-                  id="fetlife-input"
-                  type="text"
-                  bind:value={formData.contact_fetlife}
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.fetlifePlaceholder")}
-                />
-              </div>
-
-              <div>
-                <label
-                  for="website-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.websiteLabel")}
-                </label>
-                <input
-                  id="website-input"
-                  type="url"
-                  bind:value={formData.contact_website}
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.websitePlaceholder")}
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- Meeting Information -->
-          <fieldset class="space-y-4">
-            <legend class="text-lg font-medium text-gray-900 mb-4">
-              {t("adminLocations.form.meetingSectionTitle")}
-            </legend>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  for="frequency-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.frequencyLabel")}
-                </label>
-                <input
-                  id="frequency-input"
-                  type="text"
-                  bind:value={formData.meeting_frequency}
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.frequencyPlaceholder")}
-                />
-              </div>
-
-              <div>
-                <label
-                  for="location-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.locationLabel")}
-                </label>
-                <input
-                  id="location-input"
-                  type="text"
-                  bind:value={formData.meeting_location}
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.locationPlaceholder")}
-                />
-              </div>
-
-              <div class="md:col-span-2">
-                <label
-                  for="address-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.addressLabel")}
-                </label>
-                <input
-                  id="address-input"
-                  type="text"
-                  bind:value={formData.meeting_address}
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t("adminLocations.form.addressPlaceholder")}
-                />
-              </div>
-
-              <div>
-                <label
-                  for="next-meeting-input"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  {t("adminLocations.form.nextMeetingLabel")}
-                </label>
-                <input
-                  id="next-meeting-input"
-                  type="datetime-local"
-                  bind:value={formData.next_meeting}
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- Tags -->
-          <fieldset class="space-y-4">
-            <legend class="text-lg font-medium text-gray-900 mb-4">
-              {t("adminLocations.form.tagsSectionTitle")}
-            </legend>
-
-            <!-- Available Tags -->
-            <div class="mb-3">
-              <p class="text-sm text-gray-600 mb-2">
-                {t("adminLocations.form.tagsAvailable")}
-              </p>
-              <div class="flex flex-wrap gap-2">
-                {#each availableTags as tag (tag)}
-                  <button
-                    type="button"
-                    on:click={() => addAvailableTag(tag)}
-                    disabled={formData.tags.includes(tag)}
-                    class="px-3 py-1.5 text-sm bg-gray-50 border-2 border-gray-300 text-gray-700 rounded-md hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-50 disabled:hover:border-gray-300 disabled:hover:text-gray-700"
-                  >
-                    {tag}
-                  </button>
-                {/each}
-              </div>
-            </div>
-
-            <!-- Custom Tag Input -->
-            <div class="flex mb-3">
-              <input
-                type="text"
-                bind:value={tagInput}
-                on:keydown={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), addTag())}
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={t("adminLocations.form.tagInputPlaceholder")}
-              />
+            <div class="flex items-center gap-2">
               <button
                 type="button"
-                on:click={addTag}
-                class="px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded-r-md hover:bg-blue-700 hover:border-blue-700 transition-colors font-medium"
+                class="text-xs px-2 py-1 rounded border shadow-sm hover:bg-gray-100 focus:outline-none focus:ring"
+                on:click={cancelForm}
               >
-                {t("adminLocations.form.tagAdd")}
+                {t("adminLocations.modal.close")}
+              </button>
+              <button
+                type="button"
+                class="text-xs px-2 py-1 rounded border shadow-sm hover:bg-gray-100 focus:outline-none focus:ring"
+                on:click={resetForm}
+              >
+                {t("adminLocations.modal.reset")}
               </button>
             </div>
+          </div>
+        </div>
 
-            <!-- Selected Tags -->
-            <div class="flex flex-wrap gap-2">
-              {#each formData.tags as tag (tag)}
-                <span
-                  class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    on:click={() => removeTag(tag)}
-                    class="ml-1 text-blue-600 hover:text-blue-800"
+        <!-- Scrollable Form Content -->
+        <div class="flex-1 overflow-y-auto px-6 py-6">
+          <form on:submit|preventDefault={saveLocation} class="space-y-6">
+            <!-- Basic Information -->
+            <fieldset class="space-y-4">
+              <legend class="text-lg font-medium text-gray-900 mb-4">
+                Grundinformationen
+              </legend>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Name -->
+                <div>
+                  <label
+                    for="name-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    ×
-                  </button>
-                </span>
-              {/each}
-            </div>
-          </fieldset>
+                    {t("adminLocations.form.nameLabel")}
+                    <span class="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="name-input"
+                    type="text"
+                    bind:value={formData.name}
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.namePlaceholder")}
+                  />
+                </div>
 
-          <!-- Status and Active -->
-          <fieldset class="space-y-4">
-            <legend class="text-lg font-medium text-gray-900 mb-4">
-              Status & Sichtbarkeit
-            </legend>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- City -->
+                <div>
+                  <label
+                    for="city-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.cityLabel")}
+                    <span class="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="city-input"
+                    type="text"
+                    bind:value={formData.city}
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.cityPlaceholder")}
+                  />
+                </div>
+
+                <!-- Region -->
+                <div>
+                  <label
+                    for="region-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.regionLabel")}
+                    <span class="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="region-input"
+                    type="text"
+                    bind:value={formData.region}
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.regionPlaceholder")}
+                  />
+                </div>
+
+                <!-- Country -->
+                <div>
+                  <label
+                    for="country-select"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.countryLabel")}
+                    <span class="text-red-600">*</span>
+                  </label>
+                  <select
+                    id="country-select"
+                    bind:value={formData.country}
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {#each countryOptions as country (country.code)}
+                      <option value={country.code}>
+                        {country.flag}
+                        {country.name}
+                      </option>
+                    {/each}
+                  </select>
+                </div>
+
+                <!-- Latitude -->
+                <div>
+                  <label
+                    for="latitude-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.latitudeLabel")}
+                    <span class="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="latitude-input"
+                    type="number"
+                    step="any"
+                    bind:value={formData.latitude}
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.latitudePlaceholder")}
+                  />
+                </div>
+
+                <!-- Longitude -->
+                <div>
+                  <label
+                    for="longitude-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.longitudeLabel")}
+                    <span class="text-red-600">*</span>
+                  </label>
+                  <input
+                    id="longitude-input"
+                    type="number"
+                    step="any"
+                    bind:value={formData.longitude}
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.longitudePlaceholder")}
+                  />
+                </div>
+              </div>
+
+              <!-- Description -->
               <div>
                 <label
-                  for="status-select"
+                  for="description-textarea"
                   class="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  {t("adminLocations.form.statusLabel")}
+                  {t("adminLocations.form.descriptionLabel")}
                 </label>
-                <select
-                  id="status-select"
-                  bind:value={formData.status}
+                <textarea
+                  id="description-textarea"
+                  bind:value={formData.description}
+                  rows="3"
                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value={LocationStatus.DRAFT}>
-                    {t("adminLocations.form.statusDraft")}
-                  </option>
-                  <option value={LocationStatus.PUBLISHED}>
-                    {t("adminLocations.form.statusPublished")}
-                  </option>
-                  <option value={LocationStatus.ARCHIVED}>
-                    {t("adminLocations.form.statusArchived")}
-                  </option>
-                </select>
+                  placeholder={t("adminLocations.form.descriptionPlaceholder")}
+                ></textarea>
+              </div>
+            </fieldset>
+
+            <!-- Contact Information -->
+            <fieldset class="space-y-4">
+              <legend class="text-lg font-medium text-gray-900 mb-4">
+                {t("adminLocations.form.contactSectionTitle")}
+              </legend>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    for="email-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.emailLabel")}
+                  </label>
+                  <input
+                    id="email-input"
+                    type="email"
+                    bind:value={formData.contact_email}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.emailPlaceholder")}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="phone-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.phoneLabel")}
+                  </label>
+                  <input
+                    id="phone-input"
+                    type="tel"
+                    bind:value={formData.contact_phone}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.phonePlaceholder")}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="fetlife-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.fetlifeLabel")}
+                  </label>
+                  <input
+                    id="fetlife-input"
+                    type="text"
+                    bind:value={formData.contact_fetlife}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.fetlifePlaceholder")}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="website-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.websiteLabel")}
+                  </label>
+                  <input
+                    id="website-input"
+                    type="url"
+                    bind:value={formData.contact_website}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.websitePlaceholder")}
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Meeting Information -->
+            <fieldset class="space-y-4">
+              <legend class="text-lg font-medium text-gray-900 mb-4">
+                {t("adminLocations.form.meetingSectionTitle")}
+              </legend>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    for="frequency-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.frequencyLabel")}
+                  </label>
+                  <input
+                    id="frequency-input"
+                    type="text"
+                    bind:value={formData.meeting_frequency}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.frequencyPlaceholder")}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="location-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.locationLabel")}
+                  </label>
+                  <input
+                    id="location-input"
+                    type="text"
+                    bind:value={formData.meeting_location}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.locationPlaceholder")}
+                  />
+                </div>
+
+                <div class="md:col-span-2">
+                  <label
+                    for="address-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.addressLabel")}
+                  </label>
+                  <input
+                    id="address-input"
+                    type="text"
+                    bind:value={formData.meeting_address}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={t("adminLocations.form.addressPlaceholder")}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="next-meeting-input"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.nextMeetingLabel")}
+                  </label>
+                  <input
+                    id="next-meeting-input"
+                    type="datetime-local"
+                    bind:value={formData.next_meeting}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Tags -->
+            <fieldset class="space-y-4">
+              <legend class="text-lg font-medium text-gray-900 mb-4">
+                {t("adminLocations.form.tagsSectionTitle")}
+              </legend>
+
+              <!-- Available Tags -->
+              <div class="mb-3">
+                <p class="text-sm text-gray-600 mb-2">
+                  {t("adminLocations.form.tagsAvailable")}
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  {#each availableTags as tag (tag)}
+                    <button
+                      type="button"
+                      on:click={() => addAvailableTag(tag)}
+                      disabled={formData.tags.includes(tag)}
+                      class="px-3 py-1.5 text-sm bg-gray-50 border-2 border-gray-300 text-gray-700 rounded-md hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-50 disabled:hover:border-gray-300 disabled:hover:text-gray-700"
+                    >
+                      {tag}
+                    </button>
+                  {/each}
+                </div>
               </div>
 
-              <div class="flex items-center">
+              <!-- Custom Tag Input -->
+              <div class="flex mb-3">
                 <input
-                  type="checkbox"
-                  id="is_active"
-                  bind:checked={formData.is_active}
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  type="text"
+                  bind:value={tagInput}
+                  on:keydown={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), addTag())}
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={t("adminLocations.form.tagInputPlaceholder")}
                 />
-                <label
-                  for="is_active"
-                  class="ml-2 text-sm font-medium text-gray-700"
+                <button
+                  type="button"
+                  on:click={addTag}
+                  class="px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded-r-md hover:bg-blue-700 hover:border-blue-700 transition-colors font-medium"
                 >
-                  {t("adminLocations.form.isActiveLabel")}
-                </label>
+                  {t("adminLocations.form.tagAdd")}
+                </button>
               </div>
-            </div>
-          </fieldset>
-        </form>
-      </div>
 
-      <!-- Footer (sticky) -->
-      <div
-        class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-between items-center rounded-b-lg gap-4"
-      >
-        <div class="text-xs text-gray-400">
-          <span class="text-red-600">*</span> = {t(
-            "adminLocations.form.required",
-          )}
+              <!-- Selected Tags -->
+              <div class="flex flex-wrap gap-2">
+                {#each formData.tags as tag (tag)}
+                  <span
+                    class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      on:click={() => removeTag(tag)}
+                      class="ml-1 text-blue-600 hover:text-blue-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                {/each}
+              </div>
+            </fieldset>
+
+            <!-- Status and Active -->
+            <fieldset class="space-y-4">
+              <legend class="text-lg font-medium text-gray-900 mb-4">
+                Status & Sichtbarkeit
+              </legend>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label
+                    for="status-select"
+                    class="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {t("adminLocations.form.statusLabel")}
+                  </label>
+                  <select
+                    id="status-select"
+                    bind:value={formData.status}
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value={LocationStatus.DRAFT}>
+                      {t("adminLocations.form.statusDraft")}
+                    </option>
+                    <option value={LocationStatus.PUBLISHED}>
+                      {t("adminLocations.form.statusPublished")}
+                    </option>
+                    <option value={LocationStatus.ARCHIVED}>
+                      {t("adminLocations.form.statusArchived")}
+                    </option>
+                  </select>
+                </div>
+
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="is_active"
+                    bind:checked={formData.is_active}
+                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label
+                    for="is_active"
+                    class="ml-2 text-sm font-medium text-gray-700"
+                  >
+                    {t("adminLocations.form.isActiveLabel")}
+                  </label>
+                </div>
+              </div>
+            </fieldset>
+          </form>
         </div>
-        <div class="flex gap-3">
-          <button
-            type="button"
-            on:click={cancelForm}
-            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            {t("adminLocations.form.cancel")}
-          </button>
-          <button
-            type="submit"
-            on:click={saveLocation}
-            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            {editingLocation
-              ? t("adminLocations.form.update")
-              : t("adminLocations.form.create")}
-          </button>
+
+        <!-- Footer (sticky) -->
+        <div
+          class="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-between items-center rounded-b-lg gap-4"
+        >
+          <div class="text-xs text-gray-400">
+            <span class="text-red-600">*</span> = {t(
+              "adminLocations.form.required",
+            )}
+          </div>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              on:click={cancelForm}
+              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              {t("adminLocations.form.cancel")}
+            </button>
+            <button
+              type="submit"
+              on:click={saveLocation}
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              {editingLocation
+                ? t("adminLocations.form.update")
+                : t("adminLocations.form.create")}
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </Portal>
 {/if}

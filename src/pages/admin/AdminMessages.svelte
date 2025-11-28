@@ -3,6 +3,7 @@
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import AdminMessageNotes from "../../components/admin/AdminMessageNotes.svelte";
   import AdminMessageResponse from "../../components/admin/AdminMessageResponse.svelte";
+  import Portal from "../../components/ui/Portal.svelte";
   import { AdminAPI } from "../../stores/admin";
   import {
     adminAutoUpdate,
@@ -693,36 +694,38 @@
 
   <!-- Delete Confirmation Modal -->
   {#if deleteConfirm}
-    <div
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
-    >
+    <Portal>
       <div
-        class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+        class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999]"
       >
-        <div class="mt-3 text-center">
-          <h3 class="text-lg font-medium text-gray-900">Nachricht löschen</h3>
-          <div class="mt-2 px-7 py-3">
-            <p class="text-sm text-gray-500">
-              Sind Sie sicher, dass Sie diese Nachricht von {deleteConfirm.name}
-              löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
-            </p>
-          </div>
-          <div class="flex justify-center space-x-3 px-4 py-3">
-            <button
-              on:click={() => (deleteConfirm = null)}
-              class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md hover:bg-gray-400 transition-colors"
-            >
-              Abbrechen
-            </button>
-            <button
-              on:click={() => deleteMessage(deleteConfirm.id)}
-              class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 transition-colors"
-            >
-              Löschen
-            </button>
+        <div
+          class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+        >
+          <div class="mt-3 text-center">
+            <h3 class="text-lg font-medium text-gray-900">Nachricht löschen</h3>
+            <div class="mt-2 px-7 py-3">
+              <p class="text-sm text-gray-500">
+                Sind Sie sicher, dass Sie diese Nachricht von {deleteConfirm.name}
+                löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+              </p>
+            </div>
+            <div class="flex justify-center space-x-3 px-4 py-3">
+              <button
+                on:click={() => (deleteConfirm = null)}
+                class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                on:click={() => deleteMessage(deleteConfirm.id)}
+                class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md hover:bg-red-700 transition-colors"
+              >
+                Löschen
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </Portal>
   {/if}
 </AdminLayout>

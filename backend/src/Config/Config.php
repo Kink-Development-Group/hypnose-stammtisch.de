@@ -81,17 +81,17 @@ class Config
                 'ip_ban_duration_seconds' => (int)($_ENV['IP_BAN_DURATION_SECONDS'] ?? 3600), // 1 hour, 0 = permanent
                 'account_lock_duration_seconds' => (int)($_ENV['ACCOUNT_LOCK_DURATION_SECONDS'] ?? 3600), // 1 hour, 0 = manual unlock
                 'head_admin_role_name' => $_ENV['HEAD_ADMIN_ROLE_NAME'] ?? 'head',
-                
+
                 // IP validation settings
                 'allow_private_ips' => filter_var($_ENV['ALLOW_PRIVATE_IPS'] ?? false, FILTER_VALIDATE_BOOLEAN),
                 'trusted_proxies' => array_filter(array_map('trim', explode(',', $_ENV['TRUSTED_PROXIES'] ?? ''))),
-                
+
                 // Email validation settings
                 'enable_email_dns_check' => filter_var($_ENV['ENABLE_EMAIL_DNS_CHECK'] ?? true, FILTER_VALIDATE_BOOLEAN),
                 'disposable_email_domains' => !empty($_ENV['DISPOSABLE_EMAIL_DOMAINS'])
                     ? array_filter(array_map('trim', explode(',', $_ENV['DISPOSABLE_EMAIL_DOMAINS'])))
                     : null,
-                    
+
                 // Audit log rate limiting
                 'audit_log_rate_limit' => [
                     'untrusted_proxy_header' => [

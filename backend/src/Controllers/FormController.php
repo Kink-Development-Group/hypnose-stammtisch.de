@@ -373,7 +373,7 @@ class FormController
     private function validateSpamProtection(array $data): bool
     {
         $clientIp = IpBanManager::getClientIP();
-        
+
         // Honeypot field check - multiple honeypot field names to catch more bots
         $honeypotFields = ['honeypot', 'website', 'url', 'fax', 'phone2'];
         foreach ($honeypotFields as $field) {
@@ -392,7 +392,7 @@ class FormController
             $timestamp = (int)$data['timestamp'];
             $now = time();
             $elapsed = $now - $timestamp;
-            
+
             // Reject if timestamp is in the future (clock manipulation)
             if ($timestamp > $now) {
                 AuditLogger::log('form.invalid_timestamp', 'spam', $clientIp, [
@@ -412,7 +412,7 @@ class FormController
                 ]);
                 return false;
             }
-            
+
             // Too slow - possible replay attack
             if ($elapsed > self::MAX_FORM_FILL_TIME) {
                 AuditLogger::log('form.suspicious_timing', 'spam', $clientIp, [
@@ -563,7 +563,7 @@ class FormController
                 error_log("Rate limit check: Unable to determine client IP");
                 return false;
             }
-            
+
             $windowStart = date('Y-m-d H:i:s', time() - $timeWindow);
 
             // Clean old entries

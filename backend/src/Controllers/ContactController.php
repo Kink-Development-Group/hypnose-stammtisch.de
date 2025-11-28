@@ -226,7 +226,7 @@ class ContactController
                 error_log("Rate limit check: Unable to determine client IP");
                 return false;
             }
-            
+
             $endpoint = 'contact';
             $maxRequests = Config::get('rate_limit.requests', 10);
             $window = Config::get('rate_limit.window', 3600);

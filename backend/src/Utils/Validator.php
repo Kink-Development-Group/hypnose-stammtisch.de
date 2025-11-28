@@ -281,34 +281,34 @@ class Validator
         if (count($parts) !== 2) {
             return false;
         }
-        
+
         $domain = strtolower($parts[1]);
-        
+
         // Get disposable domains from config or use defaults
         $disposableDomains = Config::get('security.disposable_email_domains') ?? self::DEFAULT_DISPOSABLE_DOMAINS;
-        
+
         if (in_array($domain, $disposableDomains, true)) {
             return false;
         }
-        
+
         // Check if domain has MX records (can receive email)
         // This check can be disabled via config for performance
         $enableDnsCheck = Config::get('security.enable_email_dns_check', true);
-        
+
         if ($enableDnsCheck && function_exists('checkdnsrr')) {
             // Cache DNS results to reduce latency on repeated checks
             static $dnsCache = [];
-            
+
             if (!isset($dnsCache[$domain])) {
                 // Check for MX records first, then A records as fallback
                 $dnsCache[$domain] = checkdnsrr($domain, 'MX') || checkdnsrr($domain, 'A');
             }
-            
+
             if (!$dnsCache[$domain]) {
                 return false;
             }
         }
-        
+
         return true;
     }
 
@@ -395,7 +395,7 @@ class Validator
 
         $lowerMessage = strtolower($message);
         $lowerName = strtolower($name);
-        
+
         // Check message for spam keywords
         foreach ($spamKeywords as $keyword) {
             if (strpos($lowerMessage, $keyword) !== false) {
@@ -407,7 +407,7 @@ class Validator
         if (preg_match('/https?:\/\//', $name)) {
             return true;
         }
-        
+
         // Check for obviously fake names (only special chars or numbers)
         // Using Unicode letter property \p{L} to support international names
         if (preg_match('/^[^\p{L}]+$/u', $name)) {
