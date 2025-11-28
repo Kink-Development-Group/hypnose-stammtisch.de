@@ -33,7 +33,29 @@
   let derivedCountOverflow = false;
 
   const weekOptions = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
-  const posOptions = [1, 2, 3, 4, -1];
+  const posOptions = [1, 2, 3, 4, 5, -1, -2];
+
+  // Menschenlesbare Labels für Positionen
+  const posLabels: Record<number, string> = {
+    1: "1. (ersten)",
+    2: "2. (zweiten)",
+    3: "3. (dritten)",
+    4: "4. (vierten)",
+    5: "5. (fünften)",
+    "-1": "Letzten",
+    "-2": "Vorletzten",
+  };
+
+  // Deutsche Wochentagsnamen
+  const weekdayLabels: Record<string, string> = {
+    MO: "Montag",
+    TU: "Dienstag",
+    WE: "Mittwoch",
+    TH: "Donnerstag",
+    FR: "Freitag",
+    SA: "Samstag",
+    SU: "Sonntag",
+  };
 
   function parseExisting(rr: string) {
     if (!rr) return;
@@ -342,7 +364,7 @@
   {/if}
 
   {#if freq === "MONTHLY"}
-    <div class="space-y-2">
+    <div class="space-y-3">
       <div
         class="flex items-center gap-4 text-xs text-gray-950 dark:text-white font-medium"
       >
@@ -353,7 +375,7 @@
             value="bymonthday"
             on:change={() => buildAndEmit()}
             {disabled}
-          /> Tag im Monat</label
+          /> Fester Tag im Monat</label
         >
         <label class="flex items-center gap-1"
           ><input
@@ -367,45 +389,60 @@
       </div>
       {#if monthlyMode === "bymonthday"}
         <div class="flex items-center gap-2 text-gray-950 dark:text-white">
-          <label for="rb-monthday" class="text-xs font-medium">Tag:</label>
+          <label for="rb-monthday" class="text-xs font-medium">Am Tag:</label>
           <input
             id="rb-monthday"
             type="number"
             min="1"
             max="31"
             bind:value={monthday}
-            class="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-charcoal-800 text-gray-900 dark:text-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-charcoal-800 text-gray-900 dark:text-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             on:input={() => buildAndEmit()}
             {disabled}
           />
+          <span class="text-xs text-gray-600 dark:text-smoke-400"
+            >des Monats</span
+          >
         </div>
+        <p class="text-[10px] text-gray-500 dark:text-smoke-400">
+          z.B. "15" = jeden 15. des Monats
+        </p>
       {:else}
-        <div
-          class="flex items-center gap-2 flex-wrap text-gray-950 dark:text-white"
-        >
-          <label for="rb-setpos" class="text-xs font-medium">Position:</label>
-          <select
-            id="rb-setpos"
-            bind:value={setpos}
-            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-charcoal-800 text-gray-900 dark:text-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            on:change={() => buildAndEmit()}
-            {disabled}
+        <div class="space-y-2">
+          <div
+            class="flex items-center gap-2 flex-wrap text-gray-950 dark:text-white"
           >
-            {#each posOptions as p, index (index)}
-              <option value={p}>{p === -1 ? "letzte" : p + "."}</option>
-            {/each}
-          </select>
-          <select
-            aria-label="Wochentag für Position"
-            bind:value={setposWeekday}
-            class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-charcoal-800 text-gray-900 dark:text-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            on:change={() => buildAndEmit()}
-            {disabled}
-          >
-            {#each weekOptions as w (w)}
-              <option value={w}>{w}</option>
-            {/each}
-          </select>
+            <span class="text-xs font-medium">Jeden</span>
+            <select
+              id="rb-setpos"
+              bind:value={setpos}
+              class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-charcoal-800 text-gray-900 dark:text-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              on:change={() => buildAndEmit()}
+              {disabled}
+            >
+              {#each posOptions as p (p)}
+                <option value={p}>{posLabels[p] || p}</option>
+              {/each}
+            </select>
+            <select
+              aria-label="Wochentag für Position"
+              bind:value={setposWeekday}
+              class="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm bg-white dark:bg-charcoal-800 text-gray-900 dark:text-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              on:change={() => buildAndEmit()}
+              {disabled}
+            >
+              {#each weekOptions as w (w)}
+                <option value={w}>{weekdayLabels[w] || w}</option>
+              {/each}
+            </select>
+            <span class="text-xs text-gray-600 dark:text-smoke-400"
+              >im Monat</span
+            >
+          </div>
+          <p class="text-[10px] text-gray-500 dark:text-smoke-400">
+            z.B. "1. Dienstag" = jeden ersten Dienstag des Monats, "Letzten
+            Freitag" = jeden letzten Freitag
+          </p>
         </div>
       {/if}
     </div>

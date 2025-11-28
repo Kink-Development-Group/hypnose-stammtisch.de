@@ -57,7 +57,8 @@ export function summarizeRRule(
     }
     // Monatstag
     if (rule.options.bymonthday && rule.options.bymonthday.length) {
-      parts.push(`am ${rule.options.bymonthday.join(", ")}. Tag`);
+      const dayNumbers = rule.options.bymonthday.join("., ");
+      parts.push(`am ${dayNumbers}. des Monats`);
     }
     // N-ter Wochentag im Monat
     if (
@@ -68,19 +69,21 @@ export function summarizeRRule(
       const rawPos: any = rule.options.bysetpos;
       const pos = Array.isArray(rawPos) ? rawPos[0] : rawPos;
       const mapPos: Record<string, string> = {
-        "1": "1.",
-        "2": "2.",
-        "3": "3.",
-        "4": "4.",
+        "1": "ersten",
+        "2": "zweiten",
+        "3": "dritten",
+        "4": "vierten",
+        "5": "fünften",
         "-1": "letzten",
+        "-2": "vorletzten",
       };
       const posLabel = mapPos[String(pos)] || `${pos}.`;
       const day =
         weekdayNames[rule.options.byweekday[0].toString().substring(0, 2)] ||
         rule.options.byweekday[0].toString();
-      parts.push(`(${posLabel} ${day})`);
+      parts.push(`(jeden ${posLabel} ${day})`);
     }
-    if (rule.options.count) parts.push(`für ${rule.options.count} Vorkommen`);
+    if (rule.options.count) parts.push(`für ${rule.options.count} Termine`);
     if (rule.options.until) {
       const until = options?.localeDate
         ? options.localeDate(rule.options.until)
@@ -92,7 +95,7 @@ export function summarizeRRule(
       const first = options.localeDate
         ? options.localeDate(options.occurrences[0])
         : options.occurrences[0].toLocaleDateString("de-DE");
-      out += ` (nächster: ${first})`;
+      out += ` • Nächster: ${first}`;
     }
     return out;
   } catch (e) {
