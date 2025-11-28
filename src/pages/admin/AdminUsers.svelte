@@ -4,7 +4,7 @@
   import User from "../../classes/User";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import { Role } from "../../enums/role";
-  import { adminAuth } from "../../stores/admin";
+  import { AdminAPI, adminAuth } from "../../stores/admin";
   import { UserHelpers } from "../../utils/userHelpers";
 
   interface UserFormData {
@@ -90,37 +90,13 @@
 
   async function createUser() {
     try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(formData),
+      const result = await AdminAPI.createUser({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password || "",
+        role: formData.role,
+        is_active: formData.is_active,
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AdminUsers: Create error:", errorText);
-        try {
-          const errorData = JSON.parse(errorText);
-          if (errorData.details) {
-            const fieldErrors = Object.entries(errorData.details)
-              .map(([field, message]) => `${field}: ${message}`)
-              .join(", ");
-            error = `Validierungsfehler: ${fieldErrors}`;
-          } else {
-            error =
-              errorData.error ||
-              `Fehler beim Erstellen des Benutzers: ${response.status}`;
-          }
-        } catch {
-          error = `Fehler beim Erstellen des Benutzers: ${response.status}`;
-        }
-        return;
-      }
-
-      const result = await response.json();
 
       if (result.success) {
         success = `Benutzer "${formData.username}" wurde erfolgreich erstellt.`;
@@ -128,7 +104,14 @@
         resetForm();
         await loadUsers();
       } else {
-        error = result.message || "Fehler beim Erstellen des Benutzers";
+        if (result.details) {
+          const fieldErrors = Object.entries(result.details)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join(", ");
+          error = `Validierungsfehler: ${fieldErrors}`;
+        } else {
+          error = result.message || "Fehler beim Erstellen des Benutzers";
+        }
       }
     } catch (err) {
       console.error("AdminUsers: Error creating user:", err);
@@ -141,42 +124,24 @@
 
     try {
       // Prepare the data - exclude password if it's empty
-      const updateData = { ...formData };
-      if (!updateData.password || updateData.password.trim() === "") {
+      const updateData: Record<string, unknown> = { ...formData };
+      if (
+        !updateData.password ||
+        (updateData.password as string).trim() === ""
+      ) {
         delete updateData.password;
       }
 
-      const response = await fetch(`/api/admin/users/${editingUser.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      const result = await AdminAPI.updateUser(
+        editingUser.id,
+        updateData as {
+          username?: string;
+          email?: string;
+          password?: string;
+          role?: string;
+          is_active?: boolean;
         },
-        credentials: "include",
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AdminUsers: Update error:", errorText);
-        try {
-          const errorData = JSON.parse(errorText);
-          if (errorData.details) {
-            const fieldErrors = Object.entries(errorData.details)
-              .map(([field, message]) => `${field}: ${message}`)
-              .join(", ");
-            error = `Validierungsfehler: ${fieldErrors}`;
-          } else {
-            error =
-              errorData.error ||
-              `Fehler beim Aktualisieren des Benutzers: ${response.status}`;
-          }
-        } catch {
-          error = `Fehler beim Aktualisieren des Benutzers: ${response.status}`;
-        }
-        return;
-      }
-
-      const result = await response.json();
+      );
 
       if (result.success) {
         success = `Benutzer "${formData.username}" wurde erfolgreich aktualisiert.`;
@@ -184,7 +149,14 @@
         resetForm();
         await loadUsers();
       } else {
-        error = result.message || "Fehler beim Aktualisieren des Benutzers";
+        if (result.details) {
+          const fieldErrors = Object.entries(result.details)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join(", ");
+          error = `Validierungsfehler: ${fieldErrors}`;
+        } else {
+          error = result.message || "Fehler beim Aktualisieren des Benutzers";
+        }
       }
     } catch (err) {
       console.error("AdminUsers: Error updating user:", err);
@@ -202,19 +174,7 @@
     }
 
     try {
-      const response = await fetch(`/api/admin/users/${user.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AdminUsers: Delete error:", errorText);
-        error = `Fehler beim Löschen des Benutzers: ${response.status}`;
-        return;
-      }
-
-      const result = await response.json();
+      const result = await AdminAPI.deleteUser(user.id);
 
       if (result.success) {
         await loadUsers();

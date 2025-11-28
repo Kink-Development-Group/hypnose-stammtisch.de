@@ -11,6 +11,7 @@ use HypnoseStammtisch\Utils\IpBanManager;
 use HypnoseStammtisch\Utils\AuditLogger;
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Config\Config;
+use HypnoseStammtisch\Utils\CaptchaValidator;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use Carbon\Carbon;
@@ -87,6 +88,20 @@ class FormController
                 Response::json([
                     'success' => false,
                     'error' => 'Spam protection failed'
+                ], 400);
+                return;
+            }
+
+            // CAPTCHA validation
+            $captchaResult = CaptchaValidator::validate($input['captcha_token'] ?? null, 'event_submission');
+            if (!$captchaResult['success']) {
+                AuditLogger::log('form.captcha_failed', 'spam', $clientIp, [
+                    'endpoint' => 'submit-event',
+                    'message' => $captchaResult['message']
+                ]);
+                Response::json([
+                    'success' => false,
+                    'error' => $captchaResult['message']
                 ], 400);
                 return;
             }
@@ -175,6 +190,20 @@ class FormController
                 Response::json([
                     'success' => false,
                     'error' => 'Spam protection failed'
+                ], 400);
+                return;
+            }
+
+            // CAPTCHA validation
+            $captchaResult = CaptchaValidator::validate($input['captcha_token'] ?? null, 'contact');
+            if (!$captchaResult['success']) {
+                AuditLogger::log('form.captcha_failed', 'spam', $clientIp, [
+                    'endpoint' => 'contact',
+                    'message' => $captchaResult['message']
+                ]);
+                Response::json([
+                    'success' => false,
+                    'error' => $captchaResult['message']
                 ], 400);
                 return;
             }
@@ -509,7 +538,7 @@ class FormController
             $result = Database::execute($sql, [
                 $uuid,
                 $payload,
-                $_SERVER['REMOTE_ADDR'] ?? '',
+                IpBanManager::getClientIP(),
                 $_SERVER['HTTP_USER_AGENT'] ?? '',
                 $_SERVER['HTTP_REFERER'] ?? ''
             ]);

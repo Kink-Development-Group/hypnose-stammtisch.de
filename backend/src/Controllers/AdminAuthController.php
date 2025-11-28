@@ -10,15 +10,17 @@ use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\RateLimiter;
 use HypnoseStammtisch\Utils\AuditLogger;
 use HypnoseStammtisch\Utils\Validator;
+use HypnoseStammtisch\Utils\CaptchaValidator;
+use HypnoseStammtisch\Utils\IpBanManager;
 
 /**
  * Admin authentication controller
  */
 class AdminAuthController
 {
-  /**
-   * Handle login request
-   */
+    /**
+     * Handle login request
+     */
     public static function login(): void
     {
         AdminAuth::startSession();
@@ -28,7 +30,7 @@ class AdminAuthController
             return;
         }
 
-      // Check for IP ban first - before any other processing
+        // Check for IP ban first - before any other processing
         $ip = \HypnoseStammtisch\Utils\IpBanManager::getClientIP();
         $ipBanCheck = \HypnoseStammtisch\Utils\IpBanManager::checkIPBanMiddleware($ip);
         if ($ipBanCheck['blocked']) {
@@ -54,13 +56,21 @@ class AdminAuthController
             return;
         }
 
+        // CAPTCHA validation (optional based on configuration)
+        $captchaResult = CaptchaValidator::validate($input['captcha_token'] ?? null, 'admin_login');
+        if (!$captchaResult['success']) {
+            AuditLogger::log('auth.captcha_failed', null, null, ['ip' => $ip]);
+            Response::error($captchaResult['message'], 400);
+            return;
+        }
+
         $result = AdminAuth::authenticate($input['email'], $input['password'], $ip);
 
         if ($result['success']) {
             AuditLogger::log('auth.login_stage1', 'user', (string)$result['user_id']);
             Response::success([
-            'twofa_required' => $result['twofa_required'],
-            'twofa_configured' => $result['twofa_configured']
+                'twofa_required' => $result['twofa_required'],
+                'twofa_configured' => $result['twofa_configured']
             ], $result['message']);
         } else {
             AuditLogger::log('auth.login_failed', null, null, ['email' => $input['email'] ?? null, 'ip' => $ip]);
@@ -68,9 +78,9 @@ class AdminAuthController
         }
     }
 
-  /**
-   * Handle logout request
-   */
+    /**
+     * Handle logout request
+     */
     public static function logout(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -83,10 +93,10 @@ class AdminAuthController
             AuditLogger::log('auth.logout', 'user', (string)$user['id']);
         }
 
-      // Perform logout
+        // Perform logout
         AdminAuth::logout();
 
-      // Add additional headers to prevent caching
+        // Add additional headers to prevent caching
         header('Cache-Control: no-cache, no-store, must-revalidate');
         header('Pragma: no-cache');
         header('Expires: 0');
@@ -94,9 +104,9 @@ class AdminAuthController
         Response::success(null, 'Logout successful');
     }
 
-  /**
-   * Get current authentication status
-   */
+    /**
+     * Get current authentication status
+     */
     public static function status(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -104,7 +114,7 @@ class AdminAuthController
             return;
         }
 
-      // Add cache prevention headers
+        // Add cache prevention headers
         header('Cache-Control: no-cache, no-store, must-revalidate');
         header('Pragma: no-cache');
         header('Expires: 0');
@@ -113,26 +123,26 @@ class AdminAuthController
 
         if (!$user && isset($_SESSION['admin_user_pending_id'])) {
             Response::success([
-            'twofa_pending' => true,
-            'twofa_configured' => true
+                'twofa_pending' => true,
+                'twofa_configured' => true
             ], '2FA verification pending');
             return;
         }
 
         if ($user) {
-          // Log successful status check
+            // Log successful status check
             error_log("Admin status check: User {$user['username']} is authenticated");
             Response::success($user, 'Authenticated');
         } else {
-          // Log failed status check
+            // Log failed status check
             error_log("Admin status check: No authenticated user found");
             Response::unauthorized(['message' => 'Not authenticated']);
         }
     }
 
-  /**
-   * Get CSRF token
-   */
+    /**
+     * Get CSRF token
+     */
     public static function csrf(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -144,9 +154,9 @@ class AdminAuthController
         Response::success(['csrf_token' => $token]);
     }
 
-  /**
-   * 2FA setup (generate secret)
-   */
+    /**
+     * 2FA setup (generate secret)
+     */
     public static function twofaSetup(): void
     {
         AdminAuth::startSession();
@@ -185,14 +195,14 @@ class AdminAuthController
         $issuer = 'HypnoseStammtisch';
         $uri = \HypnoseStammtisch\Utils\Totp::provisioningUri($secret, $user['email'], $issuer);
         Response::success([
-        'secret' => $secret,
-        'otpauth_uri' => $uri
+            'secret' => $secret,
+            'otpauth_uri' => $uri
         ], '2FA secret generated');
     }
 
-  /**
-   * 2FA verify code
-   */
+    /**
+     * 2FA verify code
+     */
     public static function twofaVerify(): void
     {
         AdminAuth::startSession();
@@ -207,7 +217,7 @@ class AdminAuthController
             return;
         }
 
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip = IpBanManager::getClientIP();
         $rlKey = '2fa:' . ($ip) . ':' . ($_SESSION['admin_user_pending_id'] ?? 'none');
         $rl = RateLimiter::attempt($rlKey, 15, 600); // 15 Codes pro 10 Minuten
         if (!$rl['allowed']) {
@@ -226,7 +236,7 @@ class AdminAuthController
 
         $userId = $_SESSION['admin_user_pending_id'];
 
-      // rate limit attempts (in session)
+        // rate limit attempts (in session)
         $_SESSION['twofa_attempts'] = ($_SESSION['twofa_attempts'] ?? 0) + 1;
         if ($_SESSION['twofa_attempts'] > 10) { // hard cap
             Response::error('Too many attempts. Start over.', 429);
@@ -244,7 +254,7 @@ class AdminAuthController
         $valid = \HypnoseStammtisch\Utils\Totp::verify($user['twofa_secret'], $code);
 
         if (!$valid) {
-          // try backup code
+            // try backup code
             $backup = Database::fetchOne('SELECT id, code_hash FROM user_twofa_backup_codes WHERE user_id = ? AND used_at IS NULL', [$userId]);
             if ($backup && password_verify($code, $backup['code_hash'])) {
                 Database::execute('UPDATE user_twofa_backup_codes SET used_at = CURRENT_TIMESTAMP WHERE id = ?', [$backup['id']]);
@@ -265,7 +275,7 @@ class AdminAuthController
 
         $final = AdminAuth::finalizeTwoFactor($userId); // sets authenticated session
 
-      // If first-time activation, pre-generate backup codes if none exist
+        // If first-time activation, pre-generate backup codes if none exist
         $backupCodes = null;
         if ($final['success'] && $wasDisabled) {
             $existing = Database::fetchOne('SELECT COUNT(*) as c FROM user_twofa_backup_codes WHERE user_id = ?', [$userId]);
@@ -292,7 +302,7 @@ class AdminAuthController
         }
     }
 
-  /** Generate backup codes (must be after full auth) */
+    /** Generate backup codes (must be after full auth) */
     public static function twofaBackupGenerate(): void
     {
         if (!AdminAuth::isAuthenticated()) {
@@ -312,7 +322,7 @@ class AdminAuthController
         }
 
         AuditLogger::log('2fa.backup_regenerate');
-      // delete existing
+        // delete existing
         Database::execute('DELETE FROM user_twofa_backup_codes WHERE user_id = ?', [$user['id']]);
         $plainCodes = [];
         for ($i = 0; $i < 10; $i++) {
@@ -323,7 +333,7 @@ class AdminAuthController
         Response::success(['codes' => $plainCodes], 'Backup codes generated');
     }
 
-  /** List remaining backup codes count */
+    /** List remaining backup codes count */
     public static function twofaBackupStatus(): void
     {
         if (!AdminAuth::isAuthenticated()) {

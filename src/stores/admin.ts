@@ -1,5 +1,6 @@
 import { writable } from "svelte/store";
 import User from "../classes/User";
+import { clearCsrfToken, getCsrfToken } from "../utils/adminApi";
 import { adminEventHelpers, adminNotifications } from "./adminData";
 
 export interface AdminAuthState {
@@ -57,8 +58,11 @@ class AdminAuthStore {
 
   /**
    * Login with email and password
+   * @param email User email
+   * @param password User password
+   * @param captchaToken Optional CAPTCHA token for bot protection
    */
-  async login(email: string, password: string) {
+  async login(email: string, password: string, captchaToken?: string) {
     adminAuthState.update((state) => ({
       ...state,
       loading: true,
@@ -77,7 +81,7 @@ class AdminAuthStore {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, captcha_token: captchaToken }),
       });
 
       console.log("Response status:", response.status);
@@ -252,6 +256,9 @@ class AdminAuthStore {
       localStorage.removeItem("admin_user");
       sessionStorage.removeItem("admin_user");
 
+      // Clear CSRF token
+      clearCsrfToken();
+
       return result;
     } catch (_error) {
       // Even on network error, ensure frontend is logged out
@@ -264,6 +271,9 @@ class AdminAuthStore {
       // Clear any cached data
       localStorage.removeItem("admin_user");
       sessionStorage.removeItem("admin_user");
+
+      // Clear CSRF token
+      clearCsrfToken();
 
       return {
         success: false,
@@ -406,19 +416,69 @@ class AdminAuthStore {
 
 export const adminAuth = new AdminAuthStore();
 
+// Re-export clearCsrfToken for backwards compatibility
+export { clearCsrfToken } from "../utils/adminApi";
+
 // Admin API helper functions
 export class AdminAPI {
   private static async request(endpoint: string, options: RequestInit = {}) {
+    const method = (options.method || "GET").toUpperCase();
+    const isMutating = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
+
+    // Build headers
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    // Add CSRF token for mutating requests
+    if (isMutating) {
+      try {
+        const token = await getCsrfToken();
+        headers["X-CSRF-Token"] = token;
+      } catch (error) {
+        console.error("Failed to get CSRF token:", error);
+        return {
+          success: false,
+          message: "Security token error. Please refresh the page.",
+        };
+      }
+    }
+
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      headers,
     });
 
     const result = await response.json();
+
+    // Handle CSRF token errors - retry with fresh token
+    if (
+      response.status === 403 &&
+      isMutating &&
+      (result.message?.toLowerCase().includes("csrf") ||
+        result.message?.toLowerCase().includes("token"))
+    ) {
+      console.warn("CSRF token expired, fetching new token...");
+      clearCsrfToken();
+
+      try {
+        const newToken = await getCsrfToken();
+        headers["X-CSRF-Token"] = newToken;
+
+        const retryResponse = await fetch(`${API_BASE}${endpoint}`, {
+          ...options,
+          credentials: "include",
+          headers,
+        });
+
+        return await retryResponse.json();
+      } catch (retryError) {
+        console.error("CSRF retry failed:", retryError);
+        return result;
+      }
+    }
 
     // If unauthorized, redirect to login
     if (response.status === 401) {
@@ -427,6 +487,9 @@ export class AdminAPI {
         isAuthenticated: false,
         user: null,
       }));
+
+      // Clear CSRF token on logout
+      clearCsrfToken();
 
       if (typeof window !== "undefined") {
         window.location.href = "/admin/login";
@@ -907,5 +970,78 @@ export class AdminAPI {
       );
     }
     return res;
+  }
+
+  // Users API
+  static async getUsers() {
+    return this.request("/users");
+  }
+
+  static async createUser(userData: {
+    username: string;
+    email: string;
+    password: string;
+    role: string;
+    is_active?: boolean;
+  }) {
+    adminNotifications.info("Benutzer wird erstellt...");
+    const result = await this.request("/users", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    });
+
+    if (result.success) {
+      adminNotifications.success("Benutzer erfolgreich erstellt!");
+    } else {
+      adminNotifications.error(
+        result.message || "Fehler beim Erstellen des Benutzers",
+      );
+    }
+
+    return result;
+  }
+
+  static async updateUser(
+    userId: number | string,
+    userData: {
+      username?: string;
+      email?: string;
+      password?: string;
+      role?: string;
+      is_active?: boolean;
+    },
+  ) {
+    adminNotifications.info("Benutzer wird aktualisiert...");
+    const result = await this.request(`/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify(userData),
+    });
+
+    if (result.success) {
+      adminNotifications.success("Benutzer erfolgreich aktualisiert!");
+    } else {
+      adminNotifications.error(
+        result.message || "Fehler beim Aktualisieren des Benutzers",
+      );
+    }
+
+    return result;
+  }
+
+  static async deleteUser(userId: number | string) {
+    adminNotifications.info("Benutzer wird gelöscht...");
+    const result = await this.request(`/users/${userId}`, {
+      method: "DELETE",
+    });
+
+    if (result.success) {
+      adminNotifications.success("Benutzer erfolgreich gelöscht!");
+    } else {
+      adminNotifications.error(
+        result.message || "Fehler beim Löschen des Benutzers",
+      );
+    }
+
+    return result;
   }
 }

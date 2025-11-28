@@ -15,9 +15,9 @@ use Exception;
  */
 class AdminEventsController
 {
-  /**
-   * Get all events (including series)
-   */
+    /**
+     * Get all events (including series)
+     */
     public static function index(): void
     {
         AdminAuth::requireAuth();
@@ -28,14 +28,14 @@ class AdminEventsController
         }
 
         try {
-          // Get single events
+            // Get single events
             $eventsSql = "SELECT e.*, NULL as series_title
                          FROM events e
                          WHERE e.series_id IS NULL
                          ORDER BY e.start_datetime DESC";
             $events = Database::fetchAll($eventsSql);
 
-          // Get event series
+            // Get event series
             $seriesSql = "SELECT s.*, 'series' as event_type, COUNT(e.id) as generated_events_count
                          FROM event_series s
                          LEFT JOIN events e ON e.series_id = s.id
@@ -43,26 +43,27 @@ class AdminEventsController
                          ORDER BY s.start_date DESC";
             $series = Database::fetchAll($seriesSql);
 
-          // Combine and sort by creation date
+            // Combine and sort by creation date
             $allEvents = array_merge($events, $series);
 
             Response::success([
-            'events' => $events,
-            'series' => $series,
-            'total' => count($allEvents)
+                'events' => $events,
+                'series' => $series,
+                'total' => count($allEvents)
             ]);
         } catch (Exception $e) {
             Response::error('Failed to fetch events: ' . $e->getMessage(), 500);
         }
     }
 
-  /**
-   * Create new event or series
-   */
+    /**
+     * Create new event or series
+     */
     public static function create(): void
     {
         AdminAuth::requireAuth();
-      // Only head, admin, or event role may create
+        AdminAuth::requireCSRF();
+        // Only head, admin, or event role may create
         $user = AdminAuth::getCurrentUser();
         if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
             Response::error('Insufficient permissions to create events', 403);
@@ -85,12 +86,13 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Update existing event or series
-   */
+    /**
+     * Update existing event or series
+     */
     public static function update(string $id): void
     {
         AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
         $user = AdminAuth::getCurrentUser();
         if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
             Response::error('Insufficient permissions to update events', 403);
@@ -104,7 +106,7 @@ class AdminEventsController
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
-      // Check if it's a series or single event
+        // Check if it's a series or single event
         $checkSql = "SELECT 'event' as type FROM events WHERE id = ?
                      UNION
                      SELECT 'series' as type FROM event_series WHERE id = ?";
@@ -122,18 +124,19 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Delete event or series
-   */
+    /**
+     * Delete event or series
+     */
     public static function delete(string $id): void
     {
         AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
         $user = AdminAuth::getCurrentUser();
         if (!$user) {
             Response::error('Authentication required', 401);
             return;
         }
-      // event role has restricted delete rights
+        // event role has restricted delete rights
         $isEventManager = $user['role'] === 'event_manager';
 
         if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
@@ -144,7 +147,7 @@ class AdminEventsController
         try {
             Database::beginTransaction();
 
-          // Check if it's a series or single event
+            // Check if it's a series or single event
             $checkSql = "SELECT 'event' as type FROM events WHERE id = ?
                          UNION
                          SELECT 'series' as type FROM event_series WHERE id = ?";
@@ -156,13 +159,13 @@ class AdminEventsController
             }
 
             if ($result['type'] === 'series') {
-              // Delete series and all associated events
+                // Delete series and all associated events
                 Database::execute("DELETE FROM events WHERE series_id = ?", [$id]);
                 Database::execute("DELETE FROM event_series WHERE id = ?", [$id]);
                 $message = 'Event series deleted successfully';
             } else {
                 if ($isEventManager) {
-                  // Check if event already ended (end_datetime < now UTC)
+                    // Check if event already ended (end_datetime < now UTC)
                     $event = Database::fetchOne("SELECT end_datetime FROM events WHERE id = ?", [$id]);
                     if (!$event) {
                         Response::notFound(['message' => 'Event not found']);
@@ -187,15 +190,15 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Create single event
-   */
+    /**
+     * Create single event
+     */
     private static function createSingleEvent(array $input): void
     {
         $validator = new Validator($input);
         $validator->required(['title', 'start_datetime', 'end_datetime', 'category'])
-        ->length('title', 3, 255)
-        ->length('description', 0, 1000);
+            ->length('title', 3, 255)
+            ->length('description', 0, 1000);
 
         if (!$validator->isValid()) {
             Response::error('Validation failed', 400, $validator->getErrors());
@@ -203,7 +206,7 @@ class AdminEventsController
         }
 
         try {
-          // Validate time order if provided
+            // Validate time order if provided
             if (!empty($input['start_time']) && !empty($input['end_time'])) {
                 $startT = \DateTime::createFromFormat('H:i', substr($input['start_time'], 0, 5));
                 $endT = \DateTime::createFromFormat('H:i', substr($input['end_time'], 0, 5));
@@ -212,20 +215,20 @@ class AdminEventsController
                     return;
                 }
             }
-          // Generate slug if not provided (more entropy to avoid collisions)
+            // Generate slug if not provided (more entropy to avoid collisions)
             $slug = $input['slug'] ?? self::generateSlug($input['title']);
 
-          // Check if slug exists
+            // Check if slug exists
             if (self::slugExists($slug)) {
                 Response::error('Event with this slug already exists', 400);
                 return;
             }
 
-          // Convert times to UTC
+            // Convert times to UTC
             $startUTC = self::convertToUTC($input['start_datetime'], $input['timezone'] ?? 'Europe/Berlin');
             $endUTC = self::convertToUTC($input['end_datetime'], $input['timezone'] ?? 'Europe/Berlin');
 
-          // Validate chronological order
+            // Validate chronological order
             if (strtotime($endUTC) <= strtotime($startUTC)) {
                 Response::error('end_datetime muss nach start_datetime liegen', 400);
                 return;
@@ -239,26 +242,26 @@ class AdminEventsController
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $eventId = Database::insert($sql, [
-            $input['title'],
-            $slug,
-            $input['description'] ?? null,
-            $input['content'] ?? null,
-            $startUTC,
-            $endUTC,
-            $input['timezone'] ?? 'Europe/Berlin',
-            $input['location_type'] ?? 'physical',
-            $input['location_name'] ?? null,
-            $input['location_address'] ?? null,
-            $input['location_url'] ?? null,
-            $input['category'],
-            $input['difficulty_level'] ?? 'all',
-            $input['max_participants'] ?? null,
-            $input['status'] ?? 'draft',
-            isset($input['is_featured']) ? (int)$input['is_featured'] : 0,
-            isset($input['requires_registration']) ? (int)$input['requires_registration'] : 1,
-            $input['organizer_name'] ?? null,
-            $input['organizer_email'] ?? null,
-            isset($input['tags']) ? json_encode($input['tags']) : null
+                $input['title'],
+                $slug,
+                $input['description'] ?? null,
+                $input['content'] ?? null,
+                $startUTC,
+                $endUTC,
+                $input['timezone'] ?? 'Europe/Berlin',
+                $input['location_type'] ?? 'physical',
+                $input['location_name'] ?? null,
+                $input['location_address'] ?? null,
+                $input['location_url'] ?? null,
+                $input['category'],
+                $input['difficulty_level'] ?? 'all',
+                $input['max_participants'] ?? null,
+                $input['status'] ?? 'draft',
+                isset($input['is_featured']) ? (int)$input['is_featured'] : 0,
+                isset($input['requires_registration']) ? (int)$input['requires_registration'] : 1,
+                $input['organizer_name'] ?? null,
+                $input['organizer_email'] ?? null,
+                isset($input['tags']) ? json_encode($input['tags']) : null
             ]);
 
             Response::success(['id' => $eventId], 'Event created successfully');
@@ -268,18 +271,18 @@ class AdminEventsController
             if (isset($inputPreview['content']) && is_string($inputPreview['content']) && strlen($inputPreview['content']) > 200) {
                 $inputPreview['content'] = substr($inputPreview['content'], 0, 200) . '…';
             }
-          // Versuche zusätzliche PDO-Fehlerinfos zu extrahieren
+            // Versuche zusätzliche PDO-Fehlerinfos zu extrahieren
             if ($e instanceof \PDOException && method_exists($e, 'errorInfo') && !empty($e->errorInfo)) {
                 error_log('[createSingleEvent][pdo] errorInfo: ' . json_encode($e->errorInfo));
             }
             error_log('[createSingleEvent] Insert attempt params: ' . json_encode([
-            'title' => $input['title'] ?? null,
-            'slug' => $slug ?? null,
-            'startUTC' => $startUTC ?? null,
-            'endUTC' => $endUTC ?? null,
-            'timezone' => $input['timezone'] ?? 'Europe/Berlin',
-            'category' => $input['category'] ?? null,
-            'max_participants' => $input['max_participants'] ?? null,
+                'title' => $input['title'] ?? null,
+                'slug' => $slug ?? null,
+                'startUTC' => $startUTC ?? null,
+                'endUTC' => $endUTC ?? null,
+                'timezone' => $input['timezone'] ?? 'Europe/Berlin',
+                'category' => $input['category'] ?? null,
+                'max_participants' => $input['max_participants'] ?? null,
             ]));
             error_log('[createSingleEvent] Exception: ' . $msg . ' | Input: ' . json_encode($inputPreview));
             if (str_contains(strtolower($msg), 'duplicate') && str_contains($msg, 'slug')) {
@@ -292,15 +295,15 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Create event series
-   */
+    /**
+     * Create event series
+     */
     private static function createSeries(array $input): void
     {
         $validator = new Validator($input);
         $validator->required(['title', 'rrule', 'start_date'])
-        ->length('title', 3, 255)
-        ->length('description', 0, 1000);
+            ->length('title', 3, 255)
+            ->length('description', 0, 1000);
 
         if (!$validator->isValid()) {
             Response::error('Validation failed', 400, $validator->getErrors());
@@ -308,22 +311,22 @@ class AdminEventsController
         }
 
         try {
-          // Generate slug if not provided (more entropy)
+            // Generate slug if not provided (more entropy)
             $slug = $input['slug'] ?? self::generateSlug($input['title']);
 
-          // Check if slug exists in series table
+            // Check if slug exists in series table
             $checkSql = "SELECT id FROM event_series WHERE slug = ?";
             if (Database::fetchOne($checkSql, [$slug])) {
                 Response::error('Series with this slug already exists', 400);
                 return;
             }
 
-          // Normalisiere leere Strings -> null
+            // Normalisiere leere Strings -> null
             $startTime = isset($input['start_time']) && trim((string)$input['start_time']) !== '' ? substr($input['start_time'], 0, 5) : null;
             $endTime   = isset($input['end_time']) && trim((string)$input['end_time']) !== '' ? substr($input['end_time'], 0, 5) : null;
             $endDate   = isset($input['end_date']) && trim((string)$input['end_date']) !== '' ? $input['end_date'] : null;
 
-          // Zeitliche Plausibilitätsprüfung falls beide gesetzt
+            // Zeitliche Plausibilitätsprüfung falls beide gesetzt
             if ($startTime && $endTime) {
                 $st = \DateTime::createFromFormat('H:i', $startTime);
                 $et = \DateTime::createFromFormat('H:i', $endTime);
@@ -345,29 +348,29 @@ class AdminEventsController
 
             try {
                 $seriesId = Database::insert($sql, [
-                $input['title'],
-                $slug,
-                $input['description'] ?? null,
-                $input['rrule'],
-                $input['start_date'],
-                $endDate,
-                $startTime,
-                $endTime,
-                $exdatesJson,
-                $input['default_location_type'] ?? 'physical',
-                $input['default_location_name'] ?? null,
-                $input['default_location_address'] ?? null,
-                $input['default_category'] ?? 'stammtisch',
-                $input['default_max_participants'] ?? null,
-                $input['default_requires_registration'] ?? true,
-                $input['status'] ?? 'draft',
-                $tagsJson
+                    $input['title'],
+                    $slug,
+                    $input['description'] ?? null,
+                    $input['rrule'],
+                    $input['start_date'],
+                    $endDate,
+                    $startTime,
+                    $endTime,
+                    $exdatesJson,
+                    $input['default_location_type'] ?? 'physical',
+                    $input['default_location_name'] ?? null,
+                    $input['default_location_address'] ?? null,
+                    $input['default_category'] ?? 'stammtisch',
+                    $input['default_max_participants'] ?? null,
+                    $input['default_requires_registration'] ?? true,
+                    $input['status'] ?? 'draft',
+                    $tagsJson
                 ]);
             } catch (\Exception $inner) {
                 $innerMsg = $inner->getMessage();
-              // Fallback: wenn Migration 003 noch nicht gelaufen (start_time / end_time unbekannt)
+                // Fallback: wenn Migration 003 noch nicht gelaufen (start_time / end_time unbekannt)
                 if (str_contains(strtolower($innerMsg), 'unknown column') && (str_contains($innerMsg, 'start_time') || str_contains($innerMsg, 'end_time'))) {
-                  // Versuche Insert ohne Zeit-Spalten
+                    // Versuche Insert ohne Zeit-Spalten
                     $fallbackSql = "INSERT INTO event_series (
             title, slug, description, rrule, start_date, end_date, exdates,
             default_location_type, default_location_name, default_location_address, default_category, default_max_participants,
@@ -375,28 +378,28 @@ class AdminEventsController
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     try {
                         $seriesId = Database::insert($fallbackSql, [
-                          $input['title'],
-                          $slug,
-                          $input['description'] ?? null,
-                          $input['rrule'],
-                          $input['start_date'],
-                          $endDate,
-                          $exdatesJson,
-                          $input['default_location_type'] ?? 'physical',
-                          $input['default_location_name'] ?? null,
-                          $input['default_location_address'] ?? null,
-                          $input['default_category'] ?? 'stammtisch',
-                          $input['default_max_participants'] ?? null,
-                          $input['default_requires_registration'] ?? true,
-                          $input['status'] ?? 'draft',
-                          $tagsJson
+                            $input['title'],
+                            $slug,
+                            $input['description'] ?? null,
+                            $input['rrule'],
+                            $input['start_date'],
+                            $endDate,
+                            $exdatesJson,
+                            $input['default_location_type'] ?? 'physical',
+                            $input['default_location_name'] ?? null,
+                            $input['default_location_address'] ?? null,
+                            $input['default_category'] ?? 'stammtisch',
+                            $input['default_max_participants'] ?? null,
+                            $input['default_requires_registration'] ?? true,
+                            $input['status'] ?? 'draft',
+                            $tagsJson
                         ]);
-                          // Informiere Client, dass Migration fehlt
-                          Response::success([
-                          'id' => $seriesId,
-                          'warning' => 'Serie erstellt, aber Migration 003 (start_time/end_time) scheint nicht angewendet. Bitte Migration ausführen.'
-                          ], 'Event series created (ohne Zeit-Spalten)');
-                          return;
+                        // Informiere Client, dass Migration fehlt
+                        Response::success([
+                            'id' => $seriesId,
+                            'warning' => 'Serie erstellt, aber Migration 003 (start_time/end_time) scheint nicht angewendet. Bitte Migration ausführen.'
+                        ], 'Event series created (ohne Zeit-Spalten)');
+                        return;
                     } catch (\Exception $fallbackEx) {
                         throw $fallbackEx; // gehe in äußeres catch
                     }
@@ -413,19 +416,19 @@ class AdminEventsController
                 return;
             }
             Response::error('Failed to create event series: ' . $msg, 500, [
-            'hint' => 'Falls "Unknown column start_time" auftritt: php backend/migrations/migrate.php migrate ausführen.'
+                'hint' => 'Falls "Unknown column start_time" auftritt: php backend/migrations/migrate.php migrate ausführen.'
             ]);
         }
     }
 
-  /**
-   * Update single event
-   */
+    /**
+     * Update single event
+     */
     private static function updateSingleEvent(string $id, array $input): void
     {
         $validator = new Validator($input);
         $validator->required(['title', 'start_datetime', 'end_datetime', 'category'])
-        ->length('title', 3, 255);
+            ->length('title', 3, 255);
 
         if (!$validator->isValid()) {
             Response::error('Validation failed', 400, $validator->getErrors());
@@ -433,7 +436,7 @@ class AdminEventsController
         }
 
         try {
-          // Convert times to UTC
+            // Convert times to UTC
             $startUTC = self::convertToUTC($input['start_datetime'], $input['timezone'] ?? 'Europe/Berlin');
             $endUTC = self::convertToUTC($input['end_datetime'], $input['timezone'] ?? 'Europe/Berlin');
 
@@ -446,26 +449,26 @@ class AdminEventsController
                 WHERE id = ?";
 
             Database::execute($sql, [
-            $input['title'],
-            $input['description'] ?? null,
-            $input['content'] ?? null,
-            $startUTC,
-            $endUTC,
-            $input['timezone'] ?? 'Europe/Berlin',
-            $input['location_type'] ?? 'physical',
-            $input['location_name'] ?? null,
-            $input['location_address'] ?? null,
-            $input['location_url'] ?? null,
-            $input['category'],
-            $input['difficulty_level'] ?? 'all',
-            $input['max_participants'] ?? null,
-            $input['status'] ?? 'draft',
-            $input['is_featured'] ?? false,
-            $input['requires_registration'] ?? true,
-            $input['organizer_name'] ?? null,
-            $input['organizer_email'] ?? null,
-            isset($input['tags']) ? json_encode($input['tags']) : null,
-            $id
+                $input['title'],
+                $input['description'] ?? null,
+                $input['content'] ?? null,
+                $startUTC,
+                $endUTC,
+                $input['timezone'] ?? 'Europe/Berlin',
+                $input['location_type'] ?? 'physical',
+                $input['location_name'] ?? null,
+                $input['location_address'] ?? null,
+                $input['location_url'] ?? null,
+                $input['category'],
+                $input['difficulty_level'] ?? 'all',
+                $input['max_participants'] ?? null,
+                $input['status'] ?? 'draft',
+                $input['is_featured'] ?? false,
+                $input['requires_registration'] ?? true,
+                $input['organizer_name'] ?? null,
+                $input['organizer_email'] ?? null,
+                isset($input['tags']) ? json_encode($input['tags']) : null,
+                $id
             ]);
 
             Response::success(null, 'Event updated successfully');
@@ -474,14 +477,14 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Update event series
-   */
+    /**
+     * Update event series
+     */
     private static function updateSeries(string $id, array $input): void
     {
         $validator = new Validator($input);
         $validator->required(['title', 'rrule', 'start_date'])
-        ->length('title', 3, 255);
+            ->length('title', 3, 255);
 
         if (!$validator->isValid()) {
             Response::error('Validation failed', 400, $validator->getErrors());
@@ -489,7 +492,7 @@ class AdminEventsController
         }
 
         try {
-          // Normalisierung & Validierung Zeiten
+            // Normalisierung & Validierung Zeiten
             $startTime = isset($input['start_time']) && trim((string)$input['start_time']) !== '' ? substr($input['start_time'], 0, 5) : null;
             $endTime   = isset($input['end_time']) && trim((string)$input['end_time']) !== '' ? substr($input['end_time'], 0, 5) : null;
             if ($startTime && $endTime) {
@@ -515,39 +518,13 @@ class AdminEventsController
 
             try {
                 Database::execute($sql, [
-                $input['title'],
-                $input['description'] ?? null,
-                $input['rrule'],
-                $input['start_date'],
-                $endDate,
-                $startTime,
-                $endTime,
-                $exdatesJson,
-                $input['default_location_type'] ?? 'physical',
-                $input['default_location_name'] ?? null,
-                $input['default_location_address'] ?? null,
-                $input['default_category'] ?? 'stammtisch',
-                $input['default_max_participants'] ?? null,
-                $input['default_requires_registration'] ?? true,
-                $input['status'] ?? 'draft',
-                $tagsJson,
-                $id
-                ]);
-            } catch (\Exception $inner) {
-                $msg = $inner->getMessage();
-                if (str_contains(strtolower($msg), 'unknown column') && (str_contains($msg, 'start_time') || str_contains($msg, 'end_time'))) {
-                  // Fallback ohne Zeitspalten (Migration 003 fehlt)
-                    $fallbackSql = "UPDATE event_series SET
-              title = ?, description = ?, rrule = ?, start_date = ?, end_date = ?,
-              exdates = ?, default_location_type = ?, default_location_name = ?, default_location_address = ?, default_category = ?,
-              default_max_participants = ?, default_requires_registration = ?, status = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
-              WHERE id = ?";
-                    Database::execute($fallbackSql, [
                     $input['title'],
                     $input['description'] ?? null,
                     $input['rrule'],
                     $input['start_date'],
                     $endDate,
+                    $startTime,
+                    $endTime,
                     $exdatesJson,
                     $input['default_location_type'] ?? 'physical',
                     $input['default_location_name'] ?? null,
@@ -558,6 +535,32 @@ class AdminEventsController
                     $input['status'] ?? 'draft',
                     $tagsJson,
                     $id
+                ]);
+            } catch (\Exception $inner) {
+                $msg = $inner->getMessage();
+                if (str_contains(strtolower($msg), 'unknown column') && (str_contains($msg, 'start_time') || str_contains($msg, 'end_time'))) {
+                    // Fallback ohne Zeitspalten (Migration 003 fehlt)
+                    $fallbackSql = "UPDATE event_series SET
+              title = ?, description = ?, rrule = ?, start_date = ?, end_date = ?,
+              exdates = ?, default_location_type = ?, default_location_name = ?, default_location_address = ?, default_category = ?,
+              default_max_participants = ?, default_requires_registration = ?, status = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?";
+                    Database::execute($fallbackSql, [
+                        $input['title'],
+                        $input['description'] ?? null,
+                        $input['rrule'],
+                        $input['start_date'],
+                        $endDate,
+                        $exdatesJson,
+                        $input['default_location_type'] ?? 'physical',
+                        $input['default_location_name'] ?? null,
+                        $input['default_location_address'] ?? null,
+                        $input['default_category'] ?? 'stammtisch',
+                        $input['default_max_participants'] ?? null,
+                        $input['default_requires_registration'] ?? true,
+                        $input['status'] ?? 'draft',
+                        $tagsJson,
+                        $id
                     ]);
                     Response::success(null, 'Event series updated (ohne Zeit-Spalten – bitte Migration 003 ausführen)');
                     return;
@@ -571,16 +574,16 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Generate URL-friendly slug
-   */
+    /**
+     * Generate URL-friendly slug
+     */
     private static function generateSlug(string $title): string
     {
         $base = strtolower(trim($title));
         $base = preg_replace('/[^a-z0-9-]/', '-', $base);
         $base = preg_replace('/-+/', '-', $base);
         $base = trim($base, '-');
-      // More entropy: datetime + random hex; robust fallback wenn random_bytes nicht verfügbar
+        // More entropy: datetime + random hex; robust fallback wenn random_bytes nicht verfügbar
         try {
             $rand = substr(bin2hex(random_bytes(4)), 0, 8);
         } catch (\Throwable $e) {
@@ -590,9 +593,9 @@ class AdminEventsController
         return $base . '-' . $suffix;
     }
 
-  /**
-   * Check if slug exists
-   */
+    /**
+     * Check if slug exists
+     */
     private static function slugExists(string $slug): bool
     {
         $eventExists = Database::fetchOne("SELECT id FROM events WHERE slug = ?", [$slug]);
@@ -601,9 +604,9 @@ class AdminEventsController
         return $eventExists || $seriesExists;
     }
 
-  /**
-   * Convert local datetime to UTC
-   */
+    /**
+     * Convert local datetime to UTC
+     */
     private static function convertToUTC(string $datetime, string $timezone): string
     {
         $dt = new \DateTime($datetime, new \DateTimeZone($timezone));
@@ -611,11 +614,11 @@ class AdminEventsController
         return $dt->format('Y-m-d H:i:s');
     }
 
-  /**
-   * Create an override (individual instance) for an event series occurrence
-   * POST /admin/events/series/{seriesId}/overrides
-   * Body: { instance_date: 'YYYY-MM-DD', title?, start_time?, end_time?, description?, ... }
-   */
+    /**
+     * Create an override (individual instance) for an event series occurrence
+     * POST /admin/events/series/{seriesId}/overrides
+     * Body: { instance_date: 'YYYY-MM-DD', title?, start_time?, end_time?, description?, ... }
+     */
     public static function createSeriesOverride(string $seriesId): void
     {
         AdminAuth::requireAuth();
@@ -640,7 +643,7 @@ class AdminEventsController
         }
 
         try {
-          // Load series
+            // Load series
             $series = Database::fetchOne('SELECT * FROM event_series WHERE id = ?', [$seriesId]);
             if (!$series) {
                 Response::notFound(['message' => 'Series not found']);
@@ -648,7 +651,7 @@ class AdminEventsController
             }
 
             $instanceDate = $input['instance_date'];
-          // Build start/end datetime using provided times or series defaults
+            // Build start/end datetime using provided times or series defaults
             $startTime = $input['start_time'] ?? $series['start_time'] ?? '00:00:00';
             $endTime = $input['end_time'] ?? $series['end_time'] ?? null;
 
@@ -656,7 +659,7 @@ class AdminEventsController
                 $endTime = $series['end_time'];
             }
 
-          // Wenn keine Endzeit vorhanden ist, kein automatisches Fallback mehr (Pflicht: Nutzer definiert Zeiten in Serie oder Override)
+            // Wenn keine Endzeit vorhanden ist, kein automatisches Fallback mehr (Pflicht: Nutzer definiert Zeiten in Serie oder Override)
             if ($endTime === null) {
                 Response::error('Serie oder Override benötigt end_time (Standarddauer entfernt)', 400);
                 return;
@@ -678,30 +681,30 @@ class AdminEventsController
             $title = $input['title'] ?? $series['title'];
             $slug = self::generateSlug($title);
             $eventId = Database::insert($sql, [
-            $title,
-            $slug,
-            $input['description'] ?? $series['description'] ?? null,
-            $input['content'] ?? null,
-            $startUTC,
-            $endUTC,
-            $timezone,
-            $input['location_type'] ?? $series['default_location_type'] ?? 'physical',
-            $input['location_name'] ?? $series['default_location_name'] ?? null,
-            $input['location_address'] ?? $series['default_location_address'] ?? null,
-            $input['location_url'] ?? null,
-            $input['category'] ?? $series['default_category'] ?? 'stammtisch',
-            $input['difficulty_level'] ?? 'all',
-            $input['max_participants'] ?? $series['default_max_participants'] ?? null,
-            $input['status'] ?? 'draft',
-            $input['is_featured'] ?? 0,
-            $input['requires_registration'] ?? ($series['default_requires_registration'] ?? 1),
-            $input['organizer_name'] ?? null,
-            $input['organizer_email'] ?? null,
-            isset($input['tags']) ? json_encode($input['tags']) : $series['tags'],
-            $seriesId,
-            $instanceDate,
-            null,
-            'changed'
+                $title,
+                $slug,
+                $input['description'] ?? $series['description'] ?? null,
+                $input['content'] ?? null,
+                $startUTC,
+                $endUTC,
+                $timezone,
+                $input['location_type'] ?? $series['default_location_type'] ?? 'physical',
+                $input['location_name'] ?? $series['default_location_name'] ?? null,
+                $input['location_address'] ?? $series['default_location_address'] ?? null,
+                $input['location_url'] ?? null,
+                $input['category'] ?? $series['default_category'] ?? 'stammtisch',
+                $input['difficulty_level'] ?? 'all',
+                $input['max_participants'] ?? $series['default_max_participants'] ?? null,
+                $input['status'] ?? 'draft',
+                $input['is_featured'] ?? 0,
+                $input['requires_registration'] ?? ($series['default_requires_registration'] ?? 1),
+                $input['organizer_name'] ?? null,
+                $input['organizer_email'] ?? null,
+                isset($input['tags']) ? json_encode($input['tags']) : $series['tags'],
+                $seriesId,
+                $instanceDate,
+                null,
+                'changed'
             ]);
 
             Response::success(['id' => $eventId], 'Series override created');
@@ -710,9 +713,9 @@ class AdminEventsController
         }
     }
 
-  /**
-   * List overrides for a series
-   */
+    /**
+     * List overrides for a series
+     */
     public static function listSeriesOverrides(string $seriesId): void
     {
         AdminAuth::requireAuth();
@@ -728,9 +731,9 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Delete a series override (individual instance event)
-   */
+    /**
+     * Delete a series override (individual instance event)
+     */
     public static function deleteSeriesOverride(string $seriesId, string $overrideId): void
     {
         AdminAuth::requireAuth();
@@ -751,9 +754,9 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Add EXDATE to series
-   */
+    /**
+     * Add EXDATE to series
+     */
     public static function addSeriesExdate(string $seriesId): void
     {
         AdminAuth::requireAuth();
@@ -784,9 +787,9 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Remove EXDATE
-   */
+    /**
+     * Remove EXDATE
+     */
     public static function removeSeriesExdate(string $seriesId): void
     {
         AdminAuth::requireAuth();
@@ -814,9 +817,9 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Get EXDATES list for a series
-   */
+    /**
+     * Get EXDATES list for a series
+     */
     public static function getSeriesExdates(string $seriesId): void
     {
         AdminAuth::requireAuth();
@@ -837,11 +840,11 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Cancel a single instance of a series (creates or updates override_type=cancelled)
-   * POST /admin/events/series/{seriesId}/cancel
-   * Body: { instance_date: 'YYYY-MM-DD', reason?: string }
-   */
+    /**
+     * Cancel a single instance of a series (creates or updates override_type=cancelled)
+     * POST /admin/events/series/{seriesId}/cancel
+     * Body: { instance_date: 'YYYY-MM-DD', reason?: string }
+     */
     public static function cancelSeriesInstance(string $seriesId): void
     {
         AdminAuth::requireAuth();
@@ -861,19 +864,19 @@ class AdminEventsController
                 return;
             }
             $instanceDate = $input['instance_date'];
-          // Versuche bestehendes Override zu finden
+            // Versuche bestehendes Override zu finden
             $existing = Database::fetchOne('SELECT id, override_type FROM events WHERE series_id = ? AND instance_date = ?', [$seriesId, $instanceDate]);
             if ($existing) {
                 Database::execute('UPDATE events SET override_type = ?, cancellation_reason = ?, status = ? WHERE id = ?', [
-                'cancelled',
-                $input['reason'] ?? null,
-                'cancelled',
-                $existing['id']
+                    'cancelled',
+                    $input['reason'] ?? null,
+                    'cancelled',
+                    $existing['id']
                 ]);
                 Response::success(['id' => $existing['id']], 'Instance cancelled');
                 return;
             }
-          // Neues Cancel-Override (minimal – nutzt Serien-Metadaten)
+            // Neues Cancel-Override (minimal – nutzt Serien-Metadaten)
             if (!$series['start_time'] || !$series['end_time']) {
                 Response::error('Serie benötigt start_time & end_time für Cancel-Instanz (Migration 003+)', 400);
                 return;
@@ -885,19 +888,19 @@ class AdminEventsController
             $title = $series['title'] . ' (abgesagt)';
             $slug = self::generateSlug($title . '-' . $instanceDate);
             $id = Database::insert($insertSql, [
-            $title,
-            $slug,
-            $startUTC,
-            $endUTC,
-            $tz,
-            $series['default_category'] ?? 'stammtisch',
-            'cancelled',
-            $series['tags'],
-            $seriesId,
-            $instanceDate,
-            null,
-            'cancelled',
-            $input['reason'] ?? null
+                $title,
+                $slug,
+                $startUTC,
+                $endUTC,
+                $tz,
+                $series['default_category'] ?? 'stammtisch',
+                'cancelled',
+                $series['tags'],
+                $seriesId,
+                $instanceDate,
+                null,
+                'cancelled',
+                $input['reason'] ?? null
             ]);
             Response::success(['id' => $id], 'Instance cancelled');
         } catch (\Exception $e) {
@@ -905,10 +908,10 @@ class AdminEventsController
         }
     }
 
-  /**
-   * Restore a cancelled instance (removes cancellation override or switches changed->active)
-   * DELETE /admin/events/series/{seriesId}/cancel?instance_date=YYYY-MM-DD
-   */
+    /**
+     * Restore a cancelled instance (removes cancellation override or switches changed->active)
+     * DELETE /admin/events/series/{seriesId}/cancel?instance_date=YYYY-MM-DD
+     */
     public static function restoreSeriesInstance(string $seriesId): void
     {
         AdminAuth::requireAuth();
@@ -928,12 +931,12 @@ class AdminEventsController
                 return;
             }
             if ($row['override_type'] === 'cancelled') {
-              // vollständige Cancel-Override entfernen
+                // vollständige Cancel-Override entfernen
                 Database::execute('DELETE FROM events WHERE id = ?', [$row['id']]);
                 Response::success(null, 'Cancellation removed');
                 return;
             }
-          // Wenn geändert, nur Status zurücksetzen (kein echtes cancel restore nötig)
+            // Wenn geändert, nur Status zurücksetzen (kein echtes cancel restore nötig)
             Response::success(null, 'No cancellation to remove');
         } catch (\Exception $e) {
             Response::error('Failed to restore instance: ' . $e->getMessage(), 500);

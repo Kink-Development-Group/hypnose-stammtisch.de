@@ -2,9 +2,13 @@
   import { onMount } from "svelte";
   import { push } from "svelte-spa-router";
   import { get } from "svelte/store";
+  import InvisibleCaptcha from "../../components/shared/InvisibleCaptcha.svelte";
   import BrandLogo from "../../components/ui/BrandLogo.svelte";
   import QrCode from "../../components/ui/QrCode.svelte";
   import { adminAuth, adminAuthState } from "../../stores/admin";
+
+  // CAPTCHA component reference
+  let captchaComponent: InvisibleCaptcha;
 
   let email = "";
   let password = "";
@@ -46,7 +50,19 @@
     loading = true;
     error = "";
 
-    const result = await adminAuth.login(email, password);
+    // Execute CAPTCHA before login
+    let captchaToken = "";
+    try {
+      captchaToken = await captchaComponent.execute();
+    } catch (captchaError) {
+      console.error("CAPTCHA error:", captchaError);
+      error =
+        "CAPTCHA-Überprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.";
+      loading = false;
+      return;
+    }
+
+    const result = await adminAuth.login(email, password, captchaToken);
 
     if (result.success) {
       const st = get(adminAuthState);
@@ -105,6 +121,9 @@
 
     {#if state.stage === "login"}
       <form class="mt-8 space-y-6" on:submit|preventDefault={handleLogin}>
+        <!-- Invisible CAPTCHA for bot protection -->
+        <InvisibleCaptcha bind:this={captchaComponent} action="admin_login" />
+
         <div class="space-y-4">
           <div>
             <label for="email" class="sr-only">E-Mail-Adresse</label>

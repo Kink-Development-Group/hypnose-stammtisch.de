@@ -1,5 +1,9 @@
 <script lang="ts">
   import { z } from "zod";
+  import InvisibleCaptcha from "../shared/InvisibleCaptcha.svelte";
+
+  // CAPTCHA component reference
+  let captchaComponent: InvisibleCaptcha;
 
   // Form validation schema
   const contactSchema = z.object({
@@ -91,11 +95,24 @@
         return;
       }
 
+      // Execute CAPTCHA and get token
+      let captchaToken = "";
+      try {
+        captchaToken = await captchaComponent.execute();
+      } catch (captchaError) {
+        console.error("CAPTCHA error:", captchaError);
+        submitError =
+          "CAPTCHA-Überprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.";
+        isSubmitting = false;
+        return;
+      }
+
       // Prepare submission data
       const submissionData = {
         ...validation.data,
         honeypot, // Should be empty
         timestamp, // Form load time
+        captcha_token: captchaToken, // CAPTCHA token
       };
 
       // Submit to backend
@@ -204,6 +221,9 @@
 {/if}
 
 <form on:submit={handleSubmit} class="space-y-8" novalidate>
+  <!-- Invisible CAPTCHA for spam protection -->
+  <InvisibleCaptcha bind:this={captchaComponent} action="contact" />
+
   <!-- Honeypot field for spam protection -->
   <input
     type="text"

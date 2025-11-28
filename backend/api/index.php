@@ -132,6 +132,10 @@ function route(string $method, array $segments): void
         handleStammtischLocationRoutes($method, $action, $id);
         break;
 
+      case 'captcha':
+        handleCaptchaRoutes($method, $action);
+        break;
+
       default:
         Response::error('Endpoint not found', 404);
     }
@@ -324,6 +328,17 @@ function handleStammtischLocationRoutes(string $method, ?string $action, ?string
     }
   } else {
     Response::error('Method not allowed', 405);
+  }
+}
+
+// Handle CAPTCHA configuration routes
+function handleCaptchaRoutes(string $method, ?string $action): void
+{
+  if ($method === 'GET' && $action === 'config') {
+    // GET /captcha/config - Return public CAPTCHA configuration for frontend
+    Response::json(\HypnoseStammtisch\Utils\CaptchaValidator::getClientConfig());
+  } else {
+    Response::error('Invalid captcha endpoint', 404);
   }
 }
 

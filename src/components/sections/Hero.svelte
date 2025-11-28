@@ -94,7 +94,7 @@
       <a
         href="/events"
         use:link
-        class="btn btn-primary text-lg px-8 py-4 shadow-glow hover:shadow-glow transform hover:scale-105 transition-all duration-300"
+        class="btn btn-primary text-lg px-8 py-4 shadow-glow hover:shadow-glow transform hover:scale-105 transition-all duration-300 bg-accent-400 text-charcoal-900 hover:bg-accent-500"
       >
         Stammtische & Events
       </a>

@@ -14,18 +14,18 @@ class AuditLogger
         try {
             $user = AdminAuth::getCurrentUser();
             $userId = $user['id'] ?? null;
-            $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+            $ip = IpBanManager::getClientIP();
             $metaJson = $meta ? json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
             Database::execute('INSERT INTO audit_logs (user_id, ip_address, action, resource_type, resource_id, meta) VALUES (?, ?, ?, ?, ?, ?)', [
-            $userId,
-            $ip,
-            $action,
-            $resourceType,
-            $resourceId,
-            $metaJson
+                $userId,
+                $ip,
+                $action,
+                $resourceType,
+                $resourceId,
+                $metaJson
             ]);
         } catch (\Throwable $e) {
-          // Fail silently, but log to PHP error log
+            // Fail silently, but log to PHP error log
             error_log('Audit log insert failed: ' . $e->getMessage());
         }
     }

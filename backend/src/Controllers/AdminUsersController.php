@@ -15,9 +15,9 @@ use HypnoseStammtisch\Utils\Validator;
  */
 class AdminUsersController
 {
-  /**
-   * Check if current user is a head admin
-   */
+    /**
+     * Check if current user is a head admin
+     */
     private static function requireHeadAdmin(): void
     {
         AdminAuth::requireAuth();
@@ -29,9 +29,9 @@ class AdminUsersController
         }
     }
 
-  /**
-   * Get all admin users
-   */
+    /**
+     * Get all admin users
+     */
     public static function index(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -48,11 +48,11 @@ class AdminUsersController
 
             $users = Database::fetchAll($sql);
 
-          // Format users data and convert datetime fields
+            // Format users data and convert datetime fields
             $users = array_map(function ($user) {
                 unset($user['password_hash']); // Remove password_hash for security
 
-              // Convert datetime fields to ISO format
+                // Convert datetime fields to ISO format
                 $user['is_active'] = (bool)$user['is_active'];
                 $user['last_login'] = $user['last_login'] ? date('c', strtotime($user['last_login'])) : null;
                 $user['created_at'] = date('c', strtotime($user['created_at']));
@@ -68,9 +68,9 @@ class AdminUsersController
         }
     }
 
-  /**
-   * Get specific admin user
-   */
+    /**
+     * Get specific admin user
+     */
     public static function show(string $id): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -99,9 +99,9 @@ class AdminUsersController
         }
     }
 
-  /**
-   * Create new admin user
-   */
+    /**
+     * Create new admin user
+     */
     public static function create(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -110,6 +110,7 @@ class AdminUsersController
         }
 
         self::requireHeadAdmin();
+        AdminAuth::requireCSRF();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
@@ -119,12 +120,12 @@ class AdminUsersController
         $validator->length('username', 3, 50);
         $validator->length('password', 8, 255);
 
-      // Validate role manually
+        // Validate role manually
         if (!Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head', 'event_manager'])) {
-          // Since getErrors() returns a copy, we need to manually set the error
+            // Since getErrors() returns a copy, we need to manually set the error
             $errors = $validator->getErrors();
             $errors['role'] = 'Invalid role. Must be head, admin, moderator, or event_manager.';
-          // We need to check this differently
+            // We need to check this differently
         }
 
         if (!$validator->isValid() || !Validator::isValidEnum($input['role'] ?? '', ['admin', 'moderator', 'head', 'event_manager'])) {
@@ -137,7 +138,7 @@ class AdminUsersController
         }
 
         try {
-          // Check if username or email already exists
+            // Check if username or email already exists
             $checkSql = "SELECT COUNT(*) as count FROM users WHERE username = ? OR email = ?";
             $existing = Database::fetchOne($checkSql, [$input['username'], $input['email']]);
 
@@ -146,20 +147,20 @@ class AdminUsersController
                 return;
             }
 
-          // Hash password
+            // Hash password
             $passwordHash = password_hash($input['password'], PASSWORD_DEFAULT);
 
-          // Insert new user
+            // Insert new user
             $sql = "INSERT INTO users (username, email, password_hash, role, is_active)
                     VALUES (?, ?, ?, ?, ?)";
 
             $isActive = $input['is_active'] ?? true;
             $result = Database::execute($sql, [
-            $input['username'],
-            $input['email'],
-            $passwordHash,
-            $input['role'],
-            $isActive
+                $input['username'],
+                $input['email'],
+                $passwordHash,
+                $input['role'],
+                $isActive
             ]);
 
             if ($result) {
@@ -171,7 +172,7 @@ class AdminUsersController
                     [$userId]
                 );
 
-                  Response::success($createdUser, 'Admin user created successfully', 201);
+                Response::success($createdUser, 'Admin user created successfully', 201);
             } else {
                 Response::error('Failed to create admin user', 500);
             }
@@ -181,9 +182,9 @@ class AdminUsersController
         }
     }
 
-  /**
-   * Update admin user
-   */
+    /**
+     * Update admin user
+     */
     public static function update(string $id): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
@@ -192,17 +193,18 @@ class AdminUsersController
         }
 
         self::requireHeadAdmin();
+        AdminAuth::requireCSRF();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
-      // Check if user exists
+        // Check if user exists
         $existingUser = Database::fetchOne("SELECT * FROM users WHERE id = ?", [$id]);
         if (!$existingUser) {
             Response::notFound(['message' => 'Admin user not found']);
             return;
         }
 
-      // Prevent self-demotion from head admin
+        // Prevent self-demotion from head admin
         $currentUser = AdminAuth::getCurrentUser();
         if ($currentUser['id'] == $id && isset($input['role']) && $input['role'] !== 'head') {
             Response::error('Cannot demote yourself from head admin role', 403);
@@ -211,7 +213,7 @@ class AdminUsersController
 
         $validator = new Validator($input);
 
-      // Only validate fields that are provided
+        // Only validate fields that are provided
         if (isset($input['username'])) {
             $validator->length('username', 3, 50);
         }
@@ -222,7 +224,7 @@ class AdminUsersController
             $validator->length('password', 8, 255);
         }
 
-      // Check validation and role enum separately
+        // Check validation and role enum separately
         $errors = $validator->getErrors();
         if (isset($input['role']) && !Validator::isValidEnum($input['role'], ['admin', 'moderator', 'head', 'event_manager'])) {
             $errors['role'] = 'Invalid role. Must be head, admin, moderator, or event_manager.';
@@ -233,7 +235,7 @@ class AdminUsersController
             return;
         }
 
-      // Check for duplicate username/email (excluding current user)
+        // Check for duplicate username/email (excluding current user)
         if (isset($input['username'])) {
             $existingUsername = Database::fetchOne("SELECT id FROM users WHERE username = ? AND id != ?", [$input['username'], $id]);
             if ($existingUsername) {
@@ -254,7 +256,7 @@ class AdminUsersController
             $updateFields = [];
             $updateValues = [];
 
-          // Build dynamic update query
+            // Build dynamic update query
             if (isset($input['username'])) {
                 $updateFields[] = 'username = ?';
                 $updateValues[] = $input['username'];
@@ -277,7 +279,7 @@ class AdminUsersController
 
             if (isset($input['is_active'])) {
                 $updateFields[] = 'is_active = ?';
-              // Ensure boolean conversion for MySQL
+                // Ensure boolean conversion for MySQL
                 $updateValues[] = $input['is_active'] ? 1 : 0;
             }
 
@@ -294,7 +296,7 @@ class AdminUsersController
             $result = Database::execute($sql, $updateValues);
 
             if ($result) {
-              // Fetch updated user
+                // Fetch updated user
                 $updatedUser = Database::fetchOne(
                     "SELECT id, username, email, role, is_active, last_login, created_at, updated_at FROM users WHERE id = ?",
                     [$id]
@@ -312,9 +314,9 @@ class AdminUsersController
         }
     }
 
-  /**
-   * Delete admin user
-   */
+    /**
+     * Delete admin user
+     */
     public static function delete(string $id): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
@@ -323,8 +325,9 @@ class AdminUsersController
         }
 
         self::requireHeadAdmin();
+        AdminAuth::requireCSRF();
 
-      // Prevent self-deletion
+        // Prevent self-deletion
         $currentUser = AdminAuth::getCurrentUser();
         if ($currentUser['id'] == $id) {
             Response::error('Cannot delete yourself', 403);
@@ -332,14 +335,14 @@ class AdminUsersController
         }
 
         try {
-          // Check if user exists
+            // Check if user exists
             $user = Database::fetchOne("SELECT id, role FROM users WHERE id = ?", [$id]);
             if (!$user) {
                 Response::notFound(['message' => 'Admin user not found']);
                 return;
             }
 
-          // Delete the user
+            // Delete the user
             $sql = "DELETE FROM users WHERE id = ?";
             $result = Database::execute($sql, [$id]);
 
@@ -354,9 +357,9 @@ class AdminUsersController
         }
     }
 
-  /**
-   * Get current user's permissions
-   */
+    /**
+     * Get current user's permissions
+     */
     public static function permissions(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -369,11 +372,11 @@ class AdminUsersController
         $user = AdminAuth::getCurrentUser();
 
         $permissions = [
-        'can_manage_users' => AdminAuth::userHasRole($user, AdminAuth::HEAD_ADMIN_ROLES),
-        'can_manage_events' => AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES),
-        'can_manage_security' => AdminAuth::userHasRole($user, AdminAuth::SECURITY_MANAGEMENT_ROLES),
-        'can_view_messages' => AdminAuth::userHasRole($user, AdminAuth::MESSAGE_MANAGEMENT_ROLES),
-        'role' => $user['role']
+            'can_manage_users' => AdminAuth::userHasRole($user, AdminAuth::HEAD_ADMIN_ROLES),
+            'can_manage_events' => AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES),
+            'can_manage_security' => AdminAuth::userHasRole($user, AdminAuth::SECURITY_MANAGEMENT_ROLES),
+            'can_view_messages' => AdminAuth::userHasRole($user, AdminAuth::MESSAGE_MANAGEMENT_ROLES),
+            'role' => $user['role']
         ];
 
         Response::success($permissions);

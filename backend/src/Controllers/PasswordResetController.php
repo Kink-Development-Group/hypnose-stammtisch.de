@@ -10,6 +10,7 @@ use HypnoseStammtisch\Utils\Validator;
 use HypnoseStammtisch\Utils\RateLimiter;
 use HypnoseStammtisch\Utils\AuditLogger;
 use HypnoseStammtisch\Utils\EmailService;
+use HypnoseStammtisch\Utils\IpBanManager;
 use RuntimeException;
 
 use function bin2hex;
@@ -71,7 +72,7 @@ class PasswordResetController
         }
 
         // Get client IP for rate limiting
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip = IpBanManager::getClientIP();
 
         // Rate limit password reset requests
         $rlKey = 'password_reset:' . $ip;
@@ -251,7 +252,7 @@ class PasswordResetController
         }
 
         // Get client IP for logging
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        $ip = IpBanManager::getClientIP();
 
         // Parse and validate input
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
