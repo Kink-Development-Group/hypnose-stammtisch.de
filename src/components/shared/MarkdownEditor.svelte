@@ -40,8 +40,8 @@
 
   $: previewClasses =
     theme === "dark"
-      ? "bg-charcoal-800 border-charcoal-600 prose-invert"
-      : "bg-white border-gray-300";
+      ? "bg-charcoal-800 border-charcoal-600 text-smoke-50"
+      : "bg-white border-gray-300 text-gray-900";
 
   $: labelClasses = theme === "dark" ? "text-smoke-100" : "text-gray-700";
 
@@ -408,20 +408,33 @@
 </div>
 
 <style>
-  /* Prose styling adjustments for dark theme */
+  /* Prose styling - inherit text color from parent */
   .markdown-editor :global(.prose) {
-    color: theme("colors.smoke.200");
+    color: inherit;
   }
 
   .markdown-editor :global(.prose h1),
   .markdown-editor :global(.prose h2),
   .markdown-editor :global(.prose h3),
   .markdown-editor :global(.prose h4) {
-    color: theme("colors.smoke.50");
+    color: inherit;
   }
 
   .markdown-editor :global(.prose strong) {
-    color: theme("colors.smoke.50");
+    color: inherit;
+    font-weight: 600;
+  }
+
+  .markdown-editor :global(.prose em) {
+    color: inherit;
+  }
+
+  .markdown-editor :global(.prose a) {
+    color: theme("colors.accent.400");
+  }
+
+  .markdown-editor :global(.prose a:hover) {
+    color: theme("colors.accent.300");
   }
 
   .markdown-editor :global(.prose code) {
@@ -433,6 +446,16 @@
 
   .markdown-editor :global(.prose blockquote) {
     border-left-color: theme("colors.accent.500");
-    color: theme("colors.smoke.300");
+    color: inherit;
+    opacity: 0.85;
+  }
+
+  .markdown-editor :global(.prose ul),
+  .markdown-editor :global(.prose ol) {
+    color: inherit;
+  }
+
+  .markdown-editor :global(.prose li) {
+    color: inherit;
   }
 </style>
