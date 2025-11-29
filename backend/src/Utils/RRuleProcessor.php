@@ -554,6 +554,7 @@ class RRuleProcessor
         if (isset($components['COUNT']) && isset($components['UNTIL'])) {
             // Note: RFC 5545 discourages this but doesn't forbid it
             // We'll allow it but warn
+            error_log('RRuleProcessor Warning: RRULE contains both COUNT and UNTIL. RFC 5545 discourages this.');
         }
 
         return $errors;
