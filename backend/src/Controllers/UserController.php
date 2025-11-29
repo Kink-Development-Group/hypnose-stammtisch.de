@@ -68,14 +68,14 @@ class UserController
             $params[] = $input['username'];
         }
         if (isset($input['email']) && $input['email'] !== $current['email']) {
-          // create pending email change with token
+            // create pending email change with token
             $token = bin2hex(random_bytes(16));
             $fields[] = 'pending_email = ?';
             $params[] = $input['email'];
             $fields[] = 'email_change_token = ?';
             $params[] = $token;
             $fields[] = 'email_change_requested_at = CURRENT_TIMESTAMP';
-          // send confirmation email
+            // send confirmation email
             self::sendEmailChangeConfirmation($current['email'], $input['email'], $token);
         }
         if (!empty($input['password'])) {
@@ -164,6 +164,10 @@ class UserController
         if (isset($input['role'])) {
             $fields[] = 'role = ?';
             $params[] = $input['role'];
+        }
+        if (isset($input['is_active'])) {
+            $fields[] = 'is_active = ?';
+            $params[] = $input['is_active'] ? 1 : 0;
         }
         if (!empty($input['reset_twofa'])) {
             $fields[] = 'twofa_secret = NULL';
