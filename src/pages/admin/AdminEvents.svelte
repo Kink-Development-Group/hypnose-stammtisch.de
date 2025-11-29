@@ -489,18 +489,18 @@
 
       <!-- Event Series -->
       <div>
-        <h2 class="text-lg font-medium text-gray-900 mb-4">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-smoke-100 mb-4">
           Veranstaltungsreihen
         </h2>
         <div
-          class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+          class="overflow-hidden rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 shadow-sm"
         >
           {#if series.length === 0}
-            <div class="p-6 text-center text-slate-600">
+            <div class="p-6 text-center text-slate-600 dark:text-smoke-400">
               Keine Veranstaltungsreihen vorhanden
             </div>
           {:else}
-            <ul class="divide-y divide-gray-200">
+            <ul class="divide-y divide-gray-200 dark:divide-charcoal-700">
               {#each series as seriesItem (seriesItem.id || seriesItem.title)}
                 <li class="px-4 py-4 sm:px-6">
                   <div
@@ -508,7 +508,9 @@
                   >
                     <div class="flex-1 space-y-2">
                       <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-sm font-medium text-gray-900">
+                        <h3
+                          class="text-sm font-medium text-gray-900 dark:text-smoke-100"
+                        >
                           {seriesItem.title}
                         </h3>
                         <span
@@ -519,15 +521,17 @@
                           {seriesItem.status}
                         </span>
                         <span
-                          class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-800"
+                          class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300"
                         >
                           Serie
                         </span>
                       </div>
-                      <div class="text-sm text-slate-700 break-all">
+                      <div
+                        class="text-sm text-slate-700 dark:text-smoke-300 break-all"
+                      >
                         {seriesItem.rrule}
                       </div>
-                      <div class="text-sm text-slate-600">
+                      <div class="text-sm text-slate-600 dark:text-smoke-400">
                         Ab {seriesItem.start_date} • {seriesItem.generated_events_count ||
                           0} generierte Events
                       </div>
@@ -536,14 +540,14 @@
                     <div class="flex items-center gap-2 sm:self-start">
                       <button
                         on:click={() => openEditModal(seriesItem, "series")}
-                        class="rounded-lg border border-blue-100 px-3 py-1 text-sm font-medium text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
+                        class="rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                       >
                         Bearbeiten
                       </button>
                       {#if canDelete(seriesItem)}
                         <button
                           on:click={() => (deleteConfirm = seriesItem)}
-                          class="rounded-lg border border-red-100 px-3 py-1 text-sm font-medium text-red-600 transition hover:border-red-200 hover:bg-red-50"
+                          class="rounded-lg border border-red-100 dark:border-red-800 px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 transition hover:border-red-200 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
                         >
                           Löschen
                         </button>
@@ -551,9 +555,11 @@
                     </div>
                   </div>
                   <!-- Overrides & EXDATE Management -->
-                  <details class="mt-4 bg-gray-50 rounded p-4">
+                  <details
+                    class="mt-4 bg-gray-50 dark:bg-charcoal-700/50 rounded p-4"
+                  >
                     <summary
-                      class="cursor-pointer text-sm font-semibold text-gray-700"
+                      class="cursor-pointer text-sm font-semibold text-gray-700 dark:text-smoke-200"
                       >Instanzen & Ausnahmen verwalten</summary
                     >
                     <SeriesManagement {seriesItem} />
