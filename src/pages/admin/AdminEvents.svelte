@@ -460,14 +460,14 @@
                     <div class="flex items-center gap-2 sm:self-start">
                       <button
                         on:click={() => openEditModal(event, "event")}
-                        class="rounded-lg border border-blue-100 px-3 py-1 text-sm font-medium text-blue-600 transition hover:border-blue-200 hover:bg-blue-50"
+                        class="rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                       >
                         Bearbeiten
                       </button>
                       {#if canDelete(event)}
                         <button
                           on:click={() => (deleteConfirm = event)}
-                          class="rounded-lg border border-red-100 px-3 py-1 text-sm font-medium text-red-600 transition hover:border-red-200 hover:bg-red-50"
+                          class="rounded-lg border border-red-100 dark:border-red-800 px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 transition hover:border-red-200 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
                         >
                           Löschen
                         </button>
