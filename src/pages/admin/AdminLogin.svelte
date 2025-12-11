@@ -34,11 +34,19 @@
   }
 
   onMount(async () => {
-    // Always clear authentication state when visiting login page
-    adminAuth.reset();
+    // Check if user is already authenticated
+    const status = await adminAuth.checkStatus();
 
-    // Force logout to ensure clean state
-    await adminAuth.logout();
+    if (status.success && status.data && !status.data.twofa_pending) {
+      // Already logged in - redirect to events
+      push("/admin/events");
+      return;
+    }
+
+    // Only reset state if not authenticated (don't logout existing session)
+    if (!status.success) {
+      adminAuth.reset();
+    }
   });
 
   async function handleLogin() {

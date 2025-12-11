@@ -35,8 +35,15 @@ class AdminEventsController
                          ORDER BY e.start_datetime DESC";
             $events = Database::fetchAll($eventsSql);
 
-            // Get event series
-            $seriesSql = "SELECT s.*, 'series' as event_type, COUNT(e.id) as generated_events_count
+            // Get event series with aliased fields for frontend compatibility
+            $seriesSql = "SELECT s.*, 'series' as event_type,
+                         s.default_location_type as location_type,
+                         s.default_location_name as location_name,
+                         s.default_location_address as location_address,
+                         s.default_category as category,
+                         s.default_max_participants as max_participants,
+                         s.default_requires_registration as requires_registration,
+                         COUNT(e.id) as generated_events_count
                          FROM event_series s
                          LEFT JOIN events e ON e.series_id = s.id
                          GROUP BY s.id
@@ -313,6 +320,26 @@ class AdminEventsController
             return;
         }
 
+        // Map location_* fields to default_location_* if not already provided
+        if (!isset($input['default_location_type']) && isset($input['location_type'])) {
+            $input['default_location_type'] = $input['location_type'];
+        }
+        if (!isset($input['default_location_name']) && isset($input['location_name'])) {
+            $input['default_location_name'] = $input['location_name'];
+        }
+        if (!isset($input['default_location_address']) && isset($input['location_address'])) {
+            $input['default_location_address'] = $input['location_address'];
+        }
+        if (!isset($input['default_category']) && isset($input['category'])) {
+            $input['default_category'] = $input['category'];
+        }
+        if (!isset($input['default_max_participants']) && isset($input['max_participants'])) {
+            $input['default_max_participants'] = $input['max_participants'];
+        }
+        if (!isset($input['default_requires_registration']) && isset($input['requires_registration'])) {
+            $input['default_requires_registration'] = $input['requires_registration'];
+        }
+
         try {
             // Generate slug if not provided (more entropy)
             $slug = $input['slug'] ?? self::generateSlug($input['title']);
@@ -492,6 +519,26 @@ class AdminEventsController
         if (!$validator->isValid()) {
             Response::error('Validation failed', 400, $validator->getErrors());
             return;
+        }
+
+        // Map location_* fields to default_location_* if not already provided
+        if (!isset($input['default_location_type']) && isset($input['location_type'])) {
+            $input['default_location_type'] = $input['location_type'];
+        }
+        if (!isset($input['default_location_name']) && isset($input['location_name'])) {
+            $input['default_location_name'] = $input['location_name'];
+        }
+        if (!isset($input['default_location_address']) && isset($input['location_address'])) {
+            $input['default_location_address'] = $input['location_address'];
+        }
+        if (!isset($input['default_category']) && isset($input['category'])) {
+            $input['default_category'] = $input['category'];
+        }
+        if (!isset($input['default_max_participants']) && isset($input['max_participants'])) {
+            $input['default_max_participants'] = $input['max_participants'];
+        }
+        if (!isset($input['default_requires_registration']) && isset($input['requires_registration'])) {
+            $input['default_requires_registration'] = $input['requires_registration'];
         }
 
         try {

@@ -36,36 +36,28 @@ export function summarizeRRule(
       [RRule.MONTHLY]: "monatlich",
       [RRule.YEARLY]: "jährlich",
     };
+    const freqMapPlural: Record<number, string> = {
+      [RRule.DAILY]: "Tage",
+      [RRule.WEEKLY]: "Wochen",
+      [RRule.MONTHLY]: "Monate",
+      [RRule.YEARLY]: "Jahre",
+    };
     const interval = rule.options.interval || 1;
     let basis = "";
     if (interval === 1) {
       basis = freqMap[rule.options.freq];
     } else {
-      basis = `alle ${interval}. ${freqMap[rule.options.freq]}`;
+      basis = `alle ${interval} ${freqMapPlural[rule.options.freq]}`;
     }
     parts.push(basis);
 
-    // Wochen-Tage
-    if (rule.options.byweekday && rule.options.byweekday.length) {
-      const days = rule.options.byweekday
-        .map(
-          (d: any) =>
-            weekdayShort[d.toString().substring(0, 2)] || d.toString(),
-        )
-        .join(", ");
-      parts.push(`(${days})`);
-    }
-    // Monatstag
-    if (rule.options.bymonthday && rule.options.bymonthday.length) {
-      const dayNumbers = rule.options.bymonthday.join("., ");
-      parts.push(`am ${dayNumbers}. des Monats`);
-    }
-    // N-ter Wochentag im Monat
-    if (
+    // N-ter Wochentag im Monat (BYSETPOS) - prüfen BEVOR generische byweekday Ausgabe
+    const hasSetPos =
       rule.options.bysetpos &&
       rule.options.byweekday &&
-      rule.options.freq === RRule.MONTHLY
-    ) {
+      rule.options.freq === RRule.MONTHLY;
+
+    if (hasSetPos) {
       const rawPos: any = rule.options.bysetpos;
       const pos = Array.isArray(rawPos) ? rawPos[0] : rawPos;
       const mapPos: Record<string, string> = {
@@ -78,11 +70,56 @@ export function summarizeRRule(
         "-2": "vorletzten",
       };
       const posLabel = mapPos[String(pos)] || `${pos}.`;
-      const day =
-        weekdayNames[rule.options.byweekday[0].toString().substring(0, 2)] ||
-        rule.options.byweekday[0].toString();
+
+      // Wochentag aus byweekday extrahieren
+      const weekdayObj = rule.options.byweekday[0];
+      let dayCode = "";
+      if (typeof weekdayObj === "number") {
+        // rrule.js verwendet 0=MO, 1=TU, etc.
+        const numToCode: Record<number, string> = {
+          0: "MO",
+          1: "TU",
+          2: "WE",
+          3: "TH",
+          4: "FR",
+          5: "SA",
+          6: "SU",
+        };
+        dayCode = numToCode[weekdayObj] || "";
+      } else if (weekdayObj && typeof weekdayObj.toString === "function") {
+        dayCode = weekdayObj.toString().substring(0, 2).toUpperCase();
+      }
+
+      const day = weekdayNames[dayCode] || dayCode || "?";
       parts.push(`(jeden ${posLabel} ${day})`);
+    } else if (rule.options.byweekday && rule.options.byweekday.length) {
+      // Wochen-Tage (ohne BYSETPOS)
+      const days = rule.options.byweekday
+        .map((d: any) => {
+          if (typeof d === "number") {
+            const numToShort: Record<number, string> = {
+              0: "Mo",
+              1: "Di",
+              2: "Mi",
+              3: "Do",
+              4: "Fr",
+              5: "Sa",
+              6: "So",
+            };
+            return numToShort[d] || String(d);
+          }
+          return weekdayShort[d.toString().substring(0, 2)] || d.toString();
+        })
+        .join(", ");
+      parts.push(`(${days})`);
     }
+
+    // Monatstag
+    if (rule.options.bymonthday && rule.options.bymonthday.length) {
+      const dayNumbers = rule.options.bymonthday.join("., ");
+      parts.push(`am ${dayNumbers}. des Monats`);
+    }
+
     if (rule.options.count) parts.push(`für ${rule.options.count} Termine`);
     if (rule.options.until) {
       const until = options?.localeDate
