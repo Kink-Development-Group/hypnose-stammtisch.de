@@ -277,15 +277,15 @@
     >
       <!-- Day headers -->
       <div class="contents" role="row">
-        {#each ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] as dayName, index (dayName)}
+        {#each [{ full: "Montag", short: "Mo" }, { full: "Dienstag", short: "Di" }, { full: "Mittwoch", short: "Mi" }, { full: "Donnerstag", short: "Do" }, { full: "Freitag", short: "Fr" }, { full: "Samstag", short: "Sa" }, { full: "Sonntag", short: "So" }] as day, index (day.full)}
           <div
-            class="calendar-day-header p-3 text-center text-sm font-medium text-smoke-400 border-b border-charcoal-700"
+            class="calendar-day-header p-1 md:p-3 text-center text-xs md:text-sm font-medium text-smoke-400 border-b border-charcoal-700 truncate"
             role="columnheader"
-            aria-label={dayName}
+            aria-label={day.full}
             id="day-header-{index}"
           >
-            >
-            {dayName}
+            <span class="hidden sm:inline">{day.full}</span>
+            <span class="sm:hidden">{day.short}</span>
           </div>
         {/each}
       </div>
@@ -295,7 +295,7 @@
         <div class="contents" role="row">
           {#each week as day (day.date)}
             <div
-              class="calendar-day min-h-[120px] p-2 border border-charcoal-700 {day.isCurrentMonth
+              class="calendar-day min-h-[60px] md:min-h-[120px] p-1 md:p-2 border border-charcoal-700 {day.isCurrentMonth
                 ? 'bg-charcoal-800'
                 : 'bg-charcoal-900 opacity-50'} {day.isToday
                 ? 'ring-2 ring-accent-400'
@@ -403,16 +403,26 @@
 <style>
   .calendar-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0;
+    width: 100%;
+  }
+
+  .contents {
+    display: contents;
+  }
+
+  .calendar-day-header {
+    font-weight: 500;
   }
 
   .calendar-day:focus {
-    outline: 2px solid theme("colors.accent.400");
+    outline: 2px solid #41f2c0; /* accent-400 */
     outline-offset: -2px;
   }
 
   .calendar-day:focus-within {
-    outline: 2px solid theme("colors.accent.400");
+    outline: 2px solid #41f2c0; /* accent-400 */
     outline-offset: -2px;
   }
 
@@ -433,6 +443,10 @@
     min-height: 500px;
   }
 
+  .week-day {
+    min-height: 200px;
+  }
+
   /* High contrast mode support */
   @media (prefers-contrast: high) {
     .calendar-day {
@@ -445,18 +459,52 @@
     }
   }
 
+  /* Mobile styles */
   @media (max-width: 768px) {
     .calendar-grid {
-      font-size: 0.875rem;
-    }
-
-    .calendar-day {
-      min-height: 80px;
+      font-size: 0.75rem;
     }
 
     .week-view .grid {
       grid-template-columns: 1fr;
       gap: 1rem;
+    }
+
+    /* Turn event bars into dots on mobile to save space */
+    .calendar-event {
+      width: 6px;
+      height: 6px;
+      padding: 0;
+      border-radius: 50%;
+      color: transparent;
+      overflow: hidden;
+      margin: 0 auto 2px auto;
+      display: inline-block;
+    }
+
+    /* Center the dots container */
+    .calendar-day .space-y-1 {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    /* Override tailwind space-y-1 */
+    .calendar-day .space-y-1 > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0;
+    }
+
+    /* Remove the "+X more" text on mobile */
+    .calendar-day .text-xs.text-smoke-400 {
+      display: none;
+    }
+  }
+
+  /* Very small screens */
+  @media (max-width: 480px) {
+    .calendar-day {
+      min-height: 50px;
     }
   }
 </style>

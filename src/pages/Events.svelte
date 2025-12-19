@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { link } from "svelte-spa-router";
   import Calendar from "../components/calendar/Calendar.svelte";
   import EventFilters from "../components/calendar/EventFilters.svelte";
@@ -8,6 +8,7 @@
   // Import stores
   import {
     calendarView,
+    currentDate,
     events,
     filteredEvents,
     isLoading,
@@ -17,31 +18,37 @@
   import { transformApiEvents } from "../utils/eventTransform";
 
   let searchTerm = "";
+  let loadedMonthKey = ""; // Track which month we've loaded events for
+  let unsubscribe: (() => void) | null = null;
 
-  // Load events
-  onMount(async () => {
+  // Function to load events for a given date
+  async function loadEventsForDate(date: Date) {
+    // Calculate month key to avoid reloading same month
+    const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
+
+    // Skip if we've already loaded this month (with some buffer)
+    if (monthKey === loadedMonthKey) {
+      return;
+    }
+
     try {
       isLoading.set(true);
 
-      // In a real app, this would be an API call
-      // Zeitraum bestimmen (für Recurrence Expansion im Backend)
-      const now = new Date();
-      // Standard: aktueller Monat
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      // Zusätzlicher Puffer: eine Woche vorher/nachher für flüssiges Navigieren
-      const fromDate = new Date(
-        startOfMonth.getTime() - 7 * 24 * 60 * 60 * 1000,
-      );
-      const toDate = new Date(endOfMonth.getTime() + 7 * 24 * 60 * 60 * 1000);
+      // Calculate date range: current month + 1 month before and after for smooth navigation
+      const startOfMonth = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+      const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 2, 0);
+
       const fmt = (d: Date) => d.toISOString().slice(0, 10);
-      const url = `/api/events?view=expanded&from_date=${fmt(fromDate)}&to_date=${fmt(toDate)}`;
+      const url = `/api/events?view=expanded&from_date=${fmt(startOfMonth)}&to_date=${fmt(endOfMonth)}`;
+
       const response = await fetch(url);
+
       if (response.ok) {
         const result = await response.json();
         const apiEvents = result.success ? result.data : [];
         const transformedEvents = transformApiEvents(apiEvents);
         events.set(transformedEvents);
+        loadedMonthKey = monthKey;
       } else {
         throw new Error("Failed to load events");
       }
@@ -54,6 +61,20 @@
       });
     } finally {
       isLoading.set(false);
+    }
+  }
+
+  // Load events on mount and subscribe to date changes
+  onMount(() => {
+    // Subscribe to currentDate changes
+    unsubscribe = currentDate.subscribe((date) => {
+      loadEventsForDate(date);
+    });
+  });
+
+  onDestroy(() => {
+    if (unsubscribe) {
+      unsubscribe();
     }
   });
 

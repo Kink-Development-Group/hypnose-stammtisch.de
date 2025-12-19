@@ -1,5 +1,5 @@
 export interface Event {
-  id: number;
+  id: string | number;
   title: string;
   description: string;
   startDate: Date;
@@ -12,7 +12,7 @@ export interface Event {
   tags: string[];
   beginnerFriendly: boolean;
   visibility: "public" | "private";
-  seriesId?: number;
+  seriesId?: string | number;
   rrule?: string;
   exdates?: Date[];
   createdAt: Date;
@@ -24,7 +24,7 @@ export interface Event {
 }
 
 export interface EventSeries {
-  id: number;
+  id: string | number;
   rrule: string;
   dtstart: Date;
   until?: Date;

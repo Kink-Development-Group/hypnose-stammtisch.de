@@ -207,7 +207,7 @@ class AdminEventsController
         $validator = new Validator($input);
         $validator->required(['title', 'start_datetime', 'end_datetime', 'category'])
             ->length('title', 3, 255)
-            ->length('description', 0, 1000);
+            ->length('description', 0, 10000);
 
         if (!$validator->isValid()) {
             error_log('[createSingleEvent] Validation failed: ' . json_encode($validator->getErrors()));
@@ -313,7 +313,7 @@ class AdminEventsController
         $validator = new Validator($input);
         $validator->required(['title', 'rrule', 'start_date'])
             ->length('title', 3, 255)
-            ->length('description', 0, 1000);
+            ->length('description', 0, 10000);
 
         if (!$validator->isValid()) {
             Response::error('Validation failed', 400, $validator->getErrors());
