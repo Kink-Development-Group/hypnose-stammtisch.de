@@ -42,9 +42,19 @@ class PasswordResetController
     private const MAX_REQUESTS_PER_IP = 3;
 
     /**
+     * Maximum number of reset requests per email per time window
+     */
+    private const MAX_REQUESTS_PER_EMAIL = 2;
+
+    /**
      * Rate limit time window in seconds (15 minutes)
      */
     private const RATE_LIMIT_WINDOW = 900;
+
+    /**
+     * Cooldown period in seconds before a new token can be generated for the same email (5 minutes)
+     */
+    private const TOKEN_COOLDOWN_SECONDS = 300;
 
     private const GENERIC_RESET_RESPONSE =
     'Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde eine E-Mail mit Anweisungen '
@@ -129,6 +139,40 @@ class PasswordResetController
             ]);
 
             // Return generic success message for security
+            Response::success(null, self::GENERIC_RESET_RESPONSE);
+            return;
+        }
+
+        // Rate limit by email address (prevents spam even if requests come from different IPs)
+        $emailRlKey = 'password_reset_email:' . hash('sha256', strtolower($email));
+        $emailRl = RateLimiter::attempt($emailRlKey, self::MAX_REQUESTS_PER_EMAIL, self::RATE_LIMIT_WINDOW);
+
+        if (!$emailRl['allowed']) {
+            AuditLogger::log('password_reset.email_rate_limited', 'user', (string)$user['id'], [
+                'email' => $email,
+                'ip' => $ip
+            ]);
+            // Return generic success to prevent email enumeration
+            Response::success(null, self::GENERIC_RESET_RESPONSE);
+            return;
+        }
+
+        // Check for existing valid (unused, unexpired) token created recently - prevent spam
+        $recentToken = Database::fetchOne(
+            'SELECT id, created_at FROM password_reset_tokens
+             WHERE user_id = ? AND used_at IS NULL AND expires_at > NOW()
+             AND created_at > DATE_SUB(NOW(), INTERVAL ? SECOND)
+             ORDER BY created_at DESC LIMIT 1',
+            [$user['id'], self::TOKEN_COOLDOWN_SECONDS]
+        );
+
+        if ($recentToken) {
+            AuditLogger::log('password_reset.cooldown_active', 'user', (string)$user['id'], [
+                'email' => $email,
+                'ip' => $ip,
+                'existing_token_created' => $recentToken['created_at']
+            ]);
+            // Return generic success to prevent enumeration - no new email sent
             Response::success(null, self::GENERIC_RESET_RESPONSE);
             return;
         }

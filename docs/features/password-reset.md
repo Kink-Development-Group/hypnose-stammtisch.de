@@ -130,8 +130,10 @@ The password reset feature provides a secure, token-based flow for admin users w
 
 ### Rate Limiting
 
-- **Request Reset:** 3 attempts per IP per 15 minutes
-- **Purpose:** Prevents brute force attacks and email flooding
+- **Per IP:** 3 attempts per IP per 15 minutes
+- **Per Email:** 2 attempts per email address per 15 minutes
+- **Token Cooldown:** 5 minutes between new token generation for the same email
+- **Purpose:** Prevents brute force attacks and email flooding/spam
 
 ### User Enumeration Protection
 
@@ -151,7 +153,9 @@ All password reset events are logged:
 - `password_reset.token_reuse` - Attempt to reuse token
 - `password_reset.token_expired` - Expired token used
 - `password_reset.completed` - Password successfully reset
-- `password_reset.rate_limited` - Rate limit exceeded
+- `password_reset.rate_limited` - IP rate limit exceeded
+- `password_reset.email_rate_limited` - Email rate limit exceeded
+- `password_reset.cooldown_active` - Token cooldown period active (too recent request)
 
 ### IP Tracking
 
