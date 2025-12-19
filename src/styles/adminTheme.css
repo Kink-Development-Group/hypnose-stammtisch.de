@@ -7,38 +7,38 @@
 
 :root {
   /* Default to light theme */
-  --admin-bg-primary: theme("colors.white");
-  --admin-bg-secondary: theme("colors.slate.50");
-  --admin-bg-tertiary: theme("colors.slate.100");
-  --admin-bg-accent: theme("colors.blue.50");
-  --admin-bg-muted: theme("colors.slate.100/80");
+  --admin-bg-primary: #ffffff;
+  --admin-bg-secondary: #f8fafc; /* slate-50 */
+  --admin-bg-tertiary: #f1f5f9; /* slate-100 */
+  --admin-bg-accent: #eff6ff; /* blue-50 */
+  --admin-bg-muted: rgba(241, 245, 249, 0.8); /* slate-100 @ 80% */
 
-  --admin-text-primary: theme("colors.slate.900");
-  --admin-text-secondary: theme("colors.slate.700");
-  --admin-text-muted: theme("colors.slate.500");
-  --admin-text-accent: theme("colors.blue.600");
+  --admin-text-primary: #0f172a; /* slate-900 */
+  --admin-text-secondary: #334155; /* slate-700 */
+  --admin-text-muted: #64748b; /* slate-500 */
+  --admin-text-accent: #2563eb; /* blue-600 */
 
-  --admin-border-primary: theme("colors.slate.200");
-  --admin-border-secondary: theme("colors.slate.300");
+  --admin-border-primary: #e2e8f0; /* slate-200 */
+  --admin-border-secondary: #cbd5e1; /* slate-300 */
 
-  --admin-hover-bg: theme("colors.slate.100");
-  --admin-active-bg: theme("colors.blue.50");
+  --admin-hover-bg: #f1f5f9; /* slate-100 */
+  --admin-active-bg: #eff6ff; /* blue-50 */
 
-  --admin-success: theme("colors.green.600");
-  --admin-success-bg: theme("colors.green.50");
-  --admin-success-border: theme("colors.green.200");
+  --admin-success: #16a34a; /* green-600 */
+  --admin-success-bg: #f0fdf4; /* green-50 */
+  --admin-success-border: #bbf7d0; /* green-200 */
 
-  --admin-warning: theme("colors.amber.600");
-  --admin-warning-bg: theme("colors.amber.50");
-  --admin-warning-border: theme("colors.amber.200");
+  --admin-warning: #d97706; /* amber-600 */
+  --admin-warning-bg: #fffbeb; /* amber-50 */
+  --admin-warning-border: #fde68a; /* amber-200 */
 
-  --admin-error: theme("colors.red.600");
-  --admin-error-bg: theme("colors.red.50");
-  --admin-error-border: theme("colors.red.200");
+  --admin-error: #dc2626; /* red-600 */
+  --admin-error-bg: #fef2f2; /* red-50 */
+  --admin-error-border: #fecdd3; /* red-200 */
 
-  --admin-info: theme("colors.blue.600");
-  --admin-info-bg: theme("colors.blue.50");
-  --admin-info-border: theme("colors.blue.200");
+  --admin-info: #2563eb; /* blue-600 */
+  --admin-info-bg: #eff6ff; /* blue-50 */
+  --admin-info-border: #bfdbfe; /* blue-200 */
 
   /* Card shadows */
   --admin-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -55,38 +55,38 @@
 
 /* Dark theme variables */
 .dark {
-  --admin-bg-primary: theme("colors.charcoal.900");
-  --admin-bg-secondary: theme("colors.charcoal.800");
-  --admin-bg-tertiary: theme("colors.charcoal.700");
-  --admin-bg-accent: theme("colors.blue.900/30");
-  --admin-bg-muted: theme("colors.charcoal.800/80");
+  --admin-bg-primary: #111418; /* charcoal-900 */
+  --admin-bg-secondary: #363d53; /* charcoal-800 */
+  --admin-bg-tertiary: #3f4862; /* charcoal-700 */
+  --admin-bg-accent: rgba(30, 58, 138, 0.3); /* blue-900 / 30% */
+  --admin-bg-muted: rgba(54, 61, 83, 0.8); /* charcoal-800 / 80% */
 
-  --admin-text-primary: theme("colors.smoke.50");
-  --admin-text-secondary: theme("colors.smoke.200");
-  --admin-text-muted: theme("colors.smoke.400");
-  --admin-text-accent: theme("colors.blue.400");
+  --admin-text-primary: #f4f6f8; /* smoke-50 */
+  --admin-text-secondary: #d5dde4; /* smoke-200 */
+  --admin-text-muted: #a8bdd1; /* smoke-400 */
+  --admin-text-accent: #60a5fa; /* blue-400 */
 
-  --admin-border-primary: theme("colors.charcoal.700");
-  --admin-border-secondary: theme("colors.charcoal.600");
+  --admin-border-primary: #3f4862; /* charcoal-700 */
+  --admin-border-secondary: #4d5a78; /* charcoal-600 */
 
-  --admin-hover-bg: theme("colors.charcoal.700");
-  --admin-active-bg: theme("colors.blue.900/40");
+  --admin-hover-bg: #3f4862; /* charcoal-700 */
+  --admin-active-bg: rgba(30, 58, 138, 0.4); /* blue-900 / 40% */
 
-  --admin-success: theme("colors.green.400");
-  --admin-success-bg: theme("colors.green.900/30");
-  --admin-success-border: theme("colors.green.700");
+  --admin-success: #22c55e; /* green-400 */
+  --admin-success-bg: rgba(20, 83, 45, 0.3); /* green-900 / 30% */
+  --admin-success-border: #15803d; /* green-700 */
 
-  --admin-warning: theme("colors.amber.400");
-  --admin-warning-bg: theme("colors.amber.900/30");
-  --admin-warning-border: theme("colors.amber.700");
+  --admin-warning: #f59e0b; /* amber-400 */
+  --admin-warning-bg: rgba(120, 53, 15, 0.3); /* amber-900 / 30% */
+  --admin-warning-border: #b45309; /* amber-700 */
 
-  --admin-error: theme("colors.red.400");
-  --admin-error-bg: theme("colors.red.900/30");
-  --admin-error-border: theme("colors.red.700");
+  --admin-error: #f87171; /* red-400 */
+  --admin-error-bg: rgba(127, 29, 29, 0.3); /* red-900 / 30% */
+  --admin-error-border: #b91c1c; /* red-700 */
 
-  --admin-info: theme("colors.blue.400");
-  --admin-info-bg: theme("colors.blue.900/30");
-  --admin-info-border: theme("colors.blue.700");
+  --admin-info: #60a5fa; /* blue-400 */
+  --admin-info-bg: rgba(30, 64, 175, 0.3); /* blue-900 / 30% */
+  --admin-info-border: #1d4ed8; /* blue-700 */
 
   /* Dark shadows (more subtle) */
   --admin-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
@@ -174,7 +174,7 @@
 .admin-card {
   background-color: var(--admin-bg-primary);
   border: 1px solid var(--admin-border-primary);
-  border-radius: theme("borderRadius.xl");
+  border-radius: 0.75rem; /* xl */
   box-shadow: var(--admin-shadow-sm);
 }
 
@@ -182,7 +182,7 @@
   background-color: var(--admin-glass-bg);
   backdrop-filter: blur(8px);
   border: 1px solid var(--admin-border-primary);
-  border-radius: theme("borderRadius.xl");
+  border-radius: 0.75rem; /* xl */
   box-shadow: var(--admin-shadow-sm);
 }
 
@@ -216,17 +216,17 @@
   background-color: var(--admin-bg-primary);
   border: 1px solid var(--admin-border-primary);
   color: var(--admin-text-primary);
-  border-radius: theme("borderRadius.lg");
-  padding: theme("spacing.2") theme("spacing.3");
+  border-radius: 0.5rem; /* lg */
+  padding: 0.5rem 0.75rem; /* 2 3 */
   transition:
     border-color 0.15s ease-in-out,
     box-shadow 0.15s ease-in-out;
 }
 
 .admin-input:focus {
-  border-color: theme("colors.blue.500");
+  border-color: #3b82f6; /* blue-500 */
   outline: none;
-  box-shadow: 0 0 0 3px theme("colors.blue.500/20");
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
 .admin-input::placeholder {
@@ -244,11 +244,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: theme("spacing.2");
-  padding: theme("spacing.2") theme("spacing.4");
-  font-size: theme("fontSize.sm");
+  gap: 0.5rem; /* 2 */
+  padding: 0.5rem 1rem; /* 2 4 */
+  font-size: 0.875rem; /* sm */
   font-weight: 500;
-  border-radius: theme("borderRadius.lg");
+  border-radius: 0.5rem; /* lg */
   transition: all 0.15s ease-in-out;
   cursor: pointer;
 }
@@ -259,11 +259,11 @@
 }
 
 .admin-btn-primary {
-  background-color: theme("colors.blue.600");
+  background-color: #2563eb; /* blue-600 */
   color: white;
 }
 .admin-btn-primary:hover:not(:disabled) {
-  background-color: theme("colors.blue.700");
+  background-color: #1d4ed8; /* blue-700 */
 }
 
 .admin-btn-secondary {
@@ -285,11 +285,11 @@
 }
 
 .admin-btn-danger {
-  background-color: theme("colors.red.600");
+  background-color: #dc2626; /* red-600 */
   color: white;
 }
 .admin-btn-danger:hover:not(:disabled) {
-  background-color: theme("colors.red.700");
+  background-color: #b91c1c; /* red-700 */
 }
 
 /* Tables */
@@ -300,18 +300,18 @@
 
 .admin-table th {
   text-align: left;
-  padding: theme("spacing.3") theme("spacing.4");
-  font-size: theme("fontSize.xs");
+  padding: 0.75rem 1rem; /* 3 4 */
+  font-size: 0.75rem; /* xs */
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: theme("letterSpacing.wide");
+  letter-spacing: 0.025em; /* wide */
   color: var(--admin-text-muted);
   background-color: var(--admin-bg-secondary);
   border-bottom: 1px solid var(--admin-border-primary);
 }
 
 .admin-table td {
-  padding: theme("spacing.4");
+  padding: 1rem; /* 4 */
   border-bottom: 1px solid var(--admin-border-primary);
   color: var(--admin-text-primary);
 }
@@ -322,8 +322,8 @@
 
 /* Alerts/Notifications */
 .admin-alert {
-  padding: theme("spacing.4");
-  border-radius: theme("borderRadius.lg");
+  padding: 1rem; /* 4 */
+  border-radius: 0.5rem; /* lg */
   border-width: 1px;
 }
 
@@ -371,16 +371,16 @@
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: theme("colors.charcoal.800");
+  background: #363d53; /* charcoal-800 */
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: theme("colors.charcoal.600");
+  background: #4d5a78; /* charcoal-600 */
   border-radius: 4px;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: theme("colors.charcoal.500");
+  background: #617091; /* charcoal-500 */
 }
 
 /* Focus ring consistency */
@@ -388,7 +388,7 @@
   outline: none;
   box-shadow:
     0 0 0 2px var(--admin-bg-primary),
-    0 0 0 4px theme("colors.blue.500");
+    0 0 0 4px #3b82f6; /* blue-500 */
 }
 
 /* Transitions for theme switching */

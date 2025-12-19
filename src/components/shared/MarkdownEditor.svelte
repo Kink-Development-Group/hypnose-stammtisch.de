@@ -431,7 +431,7 @@
 
   /* Light mode styles */
   .markdown-editor.light :global(.prose) {
-    color: theme("colors.slate.900");
+    color: #0f172a; /* slate-900 */
   }
 
   .markdown-editor.light :global(.prose h1),
@@ -440,56 +440,56 @@
   .markdown-editor.light :global(.prose h4),
   .markdown-editor.light :global(.prose strong),
   .markdown-editor.light :global(.prose b) {
-    color: theme("colors.slate.900");
+    color: #0f172a; /* slate-900 */
   }
 
   .markdown-editor.light :global(.prose a) {
-    color: theme("colors.blue.700");
+    color: #1d4ed8; /* blue-700 */
     font-weight: 500;
   }
 
   .markdown-editor.light :global(.prose a:hover) {
-    color: theme("colors.blue.900");
+    color: #1e3a8a; /* blue-900 */
     text-decoration: underline;
   }
 
   .markdown-editor.light :global(.prose code) {
-    color: theme("colors.slate.800");
-    background: theme("colors.slate.100");
+    color: #1e293b; /* slate-800 */
+    background: #f1f5f9; /* slate-100 */
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
     font-weight: 500;
   }
 
   .markdown-editor.light :global(.prose blockquote) {
-    border-left-color: theme("colors.slate.300");
-    color: theme("colors.slate.700");
+    border-left-color: #cbd5e1; /* slate-300 */
+    color: #334155; /* slate-700 */
     font-style: italic;
   }
 
   .markdown-editor.light :global(.prose ul > li::marker),
   .markdown-editor.light :global(.prose ol > li::marker) {
-    color: theme("colors.slate.500");
+    color: #64748b; /* slate-500 */
   }
 
   /* Dark mode styles */
   .markdown-editor.dark :global(.prose a) {
-    color: theme("colors.accent.400");
+    color: #41f2c0; /* accent-400 */
   }
 
   .markdown-editor.dark :global(.prose a:hover) {
-    color: theme("colors.accent.300");
+    color: #5cfceb; /* accent-300 */
   }
 
   .markdown-editor.dark :global(.prose code) {
-    color: theme("colors.accent.400");
-    background: theme("colors.charcoal.700");
+    color: #41f2c0; /* accent-400 */
+    background: #3f4862; /* charcoal-700 */
     padding: 0.125rem 0.25rem;
     border-radius: 0.25rem;
   }
 
   .markdown-editor.dark :global(.prose blockquote) {
-    border-left-color: theme("colors.accent.500");
+    border-left-color: #06d6a0; /* accent-500 */
     color: inherit;
     opacity: 0.85;
   }

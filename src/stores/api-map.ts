@@ -1,4 +1,5 @@
 import { derived, writable } from "svelte/store";
+import { CountryCode } from "../enums/countryCode";
 import type {
   MapFilter,
   MapViewport,
@@ -36,7 +37,11 @@ export const mapViewport = writable<MapViewport>({
 });
 
 export const mapFilter = writable<MapFilter>({
-  countries: ["DE", "AT", "CH"],
+  countries: [
+    CountryCode.GERMANY,
+    CountryCode.AUSTRIA,
+    CountryCode.SWITZERLAND,
+  ],
   regions: [],
   tags: [],
   activeOnly: true,
@@ -99,7 +104,7 @@ export const availableRegions = derived(
       return $meta.regions;
     }
     return $meta.regions.filter((region) =>
-      $filter.countries.includes(region.country),
+      $filter.countries.includes(region.country as CountryCode),
     );
   },
 );
@@ -200,7 +205,7 @@ export function updateMapViewport(viewport: Partial<MapViewport>) {
   mapViewport.update((current) => ({ ...current, ...viewport }));
 }
 
-export function toggleCountryFilter(country: string) {
+export function toggleCountryFilter(country: CountryCode) {
   mapFilter.update((current) => {
     const countries = current.countries.includes(country)
       ? current.countries.filter((c) => c !== country)
@@ -229,7 +234,11 @@ export function toggleTagFilter(tag: string) {
 
 export function resetMapFilters() {
   mapFilter.set({
-    countries: ["DE", "AT", "CH"],
+    countries: [
+      CountryCode.GERMANY,
+      CountryCode.AUSTRIA,
+      CountryCode.SWITZERLAND,
+    ],
     regions: [],
     tags: [],
     activeOnly: true,

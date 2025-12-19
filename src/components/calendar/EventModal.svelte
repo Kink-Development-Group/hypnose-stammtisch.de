@@ -473,7 +473,7 @@
   /* Additional styles for better accessibility */
   .modal-container {
     scrollbar-width: thin;
-    scrollbar-color: theme("colors.charcoal.600") theme("colors.charcoal.800");
+    scrollbar-color: #4d5a78 #363d53; /* charcoal-600 on charcoal-800 */
   }
 
   /* Webkit scrollbar styling */
@@ -482,16 +482,16 @@
   }
 
   .modal-container::-webkit-scrollbar-track {
-    background: theme("colors.charcoal.800");
+    background: #363d53; /* charcoal-800 */
   }
 
   .modal-container::-webkit-scrollbar-thumb {
-    background: theme("colors.charcoal.600");
+    background: #4d5a78; /* charcoal-600 */
     border-radius: 4px;
   }
 
   .modal-container::-webkit-scrollbar-thumb:hover {
-    background: theme("colors.charcoal.500");
+    background: #617091; /* charcoal-500 */
   }
 
   /* Focus styles for better accessibility */

@@ -72,7 +72,8 @@ export function summarizeRRule(
       const posLabel = mapPos[String(pos)] || `${pos}.`;
 
       // Wochentag aus byweekday extrahieren
-      const weekdayObj = rule.options.byweekday[0];
+      const weekdayObj: number | { toString(): string } | undefined =
+        rule.options.byweekday[0];
       let dayCode = "";
       if (typeof weekdayObj === "number") {
         // rrule.js verwendet 0=MO, 1=TU, etc.
@@ -86,7 +87,11 @@ export function summarizeRRule(
           6: "SU",
         };
         dayCode = numToCode[weekdayObj] || "";
-      } else if (weekdayObj && typeof weekdayObj.toString === "function") {
+      } else if (
+        weekdayObj &&
+        typeof weekdayObj === "object" &&
+        typeof weekdayObj.toString === "function"
+      ) {
         dayCode = weekdayObj.toString().substring(0, 2).toUpperCase();
       }
 

@@ -118,7 +118,7 @@
 <style>
   /* Ensure proper spacing between sections */
   section + section {
-    border-top: 1px solid theme("colors.charcoal.700");
+    border-top: 1px solid #3f4862; /* charcoal-700 */
     padding-top: 2rem;
   }
 </style>

@@ -148,7 +148,7 @@
       <textarea
         bind:value={newNote}
         placeholder="Neue Notiz hinzufügen..."
-        class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical min-h-[80px] placeholder:text-gray-400 dark:placeholder:text-smoke-500"
+        class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y min-h-[80px] placeholder:text-gray-400 dark:placeholder:text-smoke-500"
         rows="3"
       ></textarea>
 
@@ -215,7 +215,7 @@
             <div class="space-y-3">
               <textarea
                 bind:value={editingNote.note}
-                class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical min-h-[80px]"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y min-h-[80px]"
                 rows="3"
               ></textarea>
 
