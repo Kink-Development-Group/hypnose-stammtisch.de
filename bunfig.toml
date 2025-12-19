@@ -1,0 +1,10 @@
+# Bun configuration for hypnose-stammtisch.de
+# https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Use the existing node_modules structure for compatibility
+peer = true
+
+[install.lockfile]
+# Save lockfile
+save = true
