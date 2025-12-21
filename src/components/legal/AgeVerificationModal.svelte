@@ -19,7 +19,7 @@
 
 <!-- Backdrop -->
 <div
-  class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+  class="age-verification-modal fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
   class:opacity-0={isClosing}
   class:transition-opacity={isClosing}
   class:duration-300={isClosing}
