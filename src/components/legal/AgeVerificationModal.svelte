@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ageVerificationStore } from "../../stores/consent";
+  import { ageVerificationStore, showAgeVerification } from "../../stores/consent";
 
   let isClosing = false;
 
@@ -7,6 +7,7 @@
     isClosing = true;
     setTimeout(() => {
       ageVerificationStore.verify();
+      showAgeVerification.set(false);
     }, 300); // Wait for animation
   }
 

@@ -68,17 +68,17 @@
   // Handle deep linking to events
   onMount(() => {
     // Check age verification first
-    if (!ageVerificationStore.isVerified()) {
-      showAgeVerification.set(true);
-    }
+    const isVerified = ageVerificationStore.isVerified();
+    showAgeVerification.set(!isVerified);
 
-    // Check cookie consent
-    consentStore.subscribe((state) => {
-      if (!state.hasConsented && ageVerificationStore.isVerified()) {
-        // Only show cookie banner after age verification
-        showCookieBanner.set(true);
-      } else {
-        showCookieBanner.set(false);
+    // Subscribe to age verification store
+    const unsubAge = ageVerificationStore.subscribe((verified) => {
+      if (verified) {
+        showAgeVerification.set(false);
+        // Show cookie banner if consent not given
+        consentStore.subscribe((state) => {
+          showCookieBanner.set(!state.hasConsented);
+        });
       }
     });
 
