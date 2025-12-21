@@ -25,8 +25,17 @@
   import EventModal from "./components/calendar/EventModal.svelte";
   import Footer from "./components/layout/Footer.svelte";
   import Header from "./components/layout/Header.svelte";
+  // Import legal components
+  import AgeVerificationModal from "./components/legal/AgeVerificationModal.svelte";
+  import CookieBanner from "./components/legal/CookieBanner.svelte";
   // Import stores
   import { selectedEvent, showEventModal } from "./stores/calendar";
+  import {
+    ageVerificationStore,
+    consentStore,
+    showAgeVerification,
+    showCookieBanner,
+  } from "./stores/consent";
   import { transformApiEvent } from "./utils/eventTransform";
 
   // Define routes
@@ -58,6 +67,21 @@
 
   // Handle deep linking to events
   onMount(() => {
+    // Check age verification first
+    if (!ageVerificationStore.isVerified()) {
+      showAgeVerification.set(true);
+    }
+
+    // Check cookie consent
+    consentStore.subscribe((state) => {
+      if (!state.hasConsented && ageVerificationStore.isVerified()) {
+        // Only show cookie banner after age verification
+        showCookieBanner.set(true);
+      } else {
+        showCookieBanner.set(false);
+      }
+    });
+
     // Automatic redirect from non-hash URLs to hash URLs for consistency
     const currentPath = window.location.pathname;
     if (currentPath !== "/" && !window.location.hash) {
@@ -127,6 +151,16 @@
   <!-- Event Modal -->
   {#if $showEventModal}
     <EventModal />
+  {/if}
+
+  <!-- Age Verification Modal -->
+  {#if $showAgeVerification}
+    <AgeVerificationModal />
+  {/if}
+
+  <!-- Cookie Consent Banner -->
+  {#if $showCookieBanner}
+    <CookieBanner />
   {/if}
 </main>
 

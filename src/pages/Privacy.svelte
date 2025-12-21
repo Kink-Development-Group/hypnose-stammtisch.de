@@ -199,10 +199,70 @@
             <li>• Session-Management</li>
             <li>• Sicherheitsfeatures</li>
             <li>• Cookie-Einstellungen speichern</li>
+            <li>• Altersverifikation (18+ Bestätigung)</li>
           </ul>
           <p class="mt-3">
             <strong>Rechtsgrundlage:</strong> Berechtigtes Interesse (Art. 6 Abs.
             1 lit. f DSGVO)
+          </p>
+          
+          <div class="mt-4 overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="border-b border-smoke-700">
+                  <th class="text-left py-2 pr-4">Cookie-Name</th>
+                  <th class="text-left py-2 pr-4">Zweck</th>
+                  <th class="text-left py-2 pr-4">Gültigkeit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-smoke-800">
+                  <td class="py-2 pr-4 font-mono">age_verified</td>
+                  <td class="py-2 pr-4">Speichert die Altersverifikation</td>
+                  <td class="py-2 pr-4">1 Jahr</td>
+                </tr>
+                <tr class="border-b border-smoke-800">
+                  <td class="py-2 pr-4 font-mono">cookie_consent</td>
+                  <td class="py-2 pr-4">Speichert Cookie-Einstellungen</td>
+                  <td class="py-2 pr-4">1 Jahr</td>
+                </tr>
+                <tr class="border-b border-smoke-800">
+                  <td class="py-2 pr-4 font-mono">session_id</td>
+                  <td class="py-2 pr-4">Session-Verwaltung für Admins</td>
+                  <td class="py-2 pr-4">Session</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cookie Management -->
+      <div class="card bg-accent-400/10 border-accent-400/30">
+        <h3 class="text-xl font-semibold text-smoke-50 mb-4">
+          3.2 Cookie-Verwaltung
+        </h3>
+        <p class="text-smoke-300 text-sm mb-4">
+          Sie können Ihre Cookie-Einstellungen jederzeit in Ihrem Browser
+          anpassen oder löschen. Beachten Sie, dass die Website ohne
+          notwendige Cookies möglicherweise nicht ordnungsgemäß funktioniert.
+        </p>
+        <div class="space-y-2 text-smoke-400 text-xs">
+          <p>
+            <strong>Chrome:</strong> Einstellungen → Datenschutz und Sicherheit
+            → Cookies
+          </p>
+          <p>
+            <strong>Firefox:</strong> Einstellungen → Datenschutz & Sicherheit
+            → Cookies und Website-Daten
+          </p>
+          <p>
+            <strong>Safari:</strong> Einstellungen → Datenschutz → Cookies und
+            Website-Daten
+          </p>
+          <p>
+            <strong>Edge:</strong> Einstellungen → Cookies und
+            Websiteberechtigungen
           </p>
         </div>
       </div>
@@ -210,7 +270,7 @@
       <!-- No Analytics -->
       <div class="card bg-consent/10 border-consent/30">
         <h3 class="text-xl font-semibold text-smoke-50 mb-4">
-          3.2 Keine Tracking-Cookies
+          3.3 Keine Tracking-Cookies
         </h3>
         <p class="text-smoke-300 text-sm">
           Wir verwenden bewusst <strong>keine</strong> Tracking-Cookies, Analytics-Tools
