@@ -43,6 +43,17 @@ Eine moderne, barrierefreie Webanwendung für die Hypnose-Community mit Kalender
 - **@axe-core/playwright** - Accessibility Testing
 - **ESLint + Prettier** - Code-Qualität
 
+## 🌐 Deployment Environments
+
+The application supports multiple deployment environments:
+
+- **Production** (`main` branch) - Live environment at `hypnose-stammtisch.de`
+- **Staging** (`staging` branch) - Pre-production environment for database preparation at `staging.hypnose-stammtisch.de`
+- **Beta** (`beta` branch) - Testing environment for new features at `beta.hypnose-stammtisch.de`
+- **Development** (local) - Local development environment
+
+For detailed setup instructions, see [docs/DEPLOYMENT_ENVIRONMENTS.md](./docs/DEPLOYMENT_ENVIRONMENTS.md).
+
 ## 🚀 Quick Start
 
 ### Voraussetzungen
@@ -230,7 +241,8 @@ composer install --no-dev --optimize-autoloader
 
 ### Deployment
 
-Siehe [DEPLOYMENT.md](./DEPLOYMENT.md) für detaillierte Deployment-Anweisungen auf Hetzner Shared Hosting.
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Detaillierte Deployment-Anweisungen auf Hetzner Shared Hosting
+- [docs/DEPLOYMENT_ENVIRONMENTS.md](./docs/DEPLOYMENT_ENVIRONMENTS.md) - Multi-Environment Setup (Production, Staging, Beta)
 
 ## 🔧 Entwicklung
 
