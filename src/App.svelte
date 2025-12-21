@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import router, { push } from "svelte-spa-router";
   // Import pages
   import About from "./pages/About.svelte";
@@ -66,17 +66,20 @@
   };
 
   // Handle deep linking to events
+  let unsubAge: (() => void) | undefined;
+  let unsubConsent: (() => void) | undefined;
+
   onMount(() => {
     // Check age verification first
     const isVerified = ageVerificationStore.isVerified();
     showAgeVerification.set(!isVerified);
 
     // Subscribe to age verification store
-    const unsubAge = ageVerificationStore.subscribe((verified) => {
+    unsubAge = ageVerificationStore.subscribe((verified) => {
       if (verified) {
         showAgeVerification.set(false);
         // Show cookie banner if consent not given
-        consentStore.subscribe((state) => {
+        unsubConsent = consentStore.subscribe((state) => {
           showCookieBanner.set(!state.hasConsented);
         });
       }
@@ -135,6 +138,12 @@
         handleRouteChanged as EventListener,
       );
     };
+  });
+
+  onDestroy(() => {
+    // Clean up subscriptions
+    if (unsubAge) unsubAge();
+    if (unsubConsent) unsubConsent();
   });
 </script>
 
