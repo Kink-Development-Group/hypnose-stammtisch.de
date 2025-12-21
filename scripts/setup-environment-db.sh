@@ -197,9 +197,11 @@ backup_database() {
     BACKUP_FILE="$BACKUP_DIR/${DB_NAME}_$(date +%Y%m%d_%H%M%S).sql"
     
     get_mysql_password
-    ERROR_OUTPUT=$(mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" "$DB_NAME" 2>&1 > "$BACKUP_FILE")
+    # Redirect stderr to capture errors, stdout goes to backup file
+    ERROR_OUTPUT=$(mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" "$DB_NAME" > "$BACKUP_FILE" 2>&1 >/dev/null)
+    EXIT_CODE=$?
     
-    if [ $? -eq 0 ]; then
+    if [ $EXIT_CODE -eq 0 ]; then
         print_info "Database backed up to: $BACKUP_FILE"
         
         # Compress backup
@@ -207,7 +209,9 @@ backup_database() {
         print_info "Backup compressed: ${BACKUP_FILE}.gz"
     else
         print_error "Backup failed"
-        print_error "MySQL error: $ERROR_OUTPUT"
+        if [ -n "$ERROR_OUTPUT" ]; then
+            print_error "MySQL error: $ERROR_OUTPUT"
+        fi
         # Clean up partial backup file
         rm -f "$BACKUP_FILE"
         exit 1
@@ -249,15 +253,20 @@ restore_database() {
     get_mysql_password
     
     if [[ $BACKUP_FILE == *.gz ]]; then
-        gunzip -c "$BACKUP_DIR/$BACKUP_FILE" | mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$DB_NAME" 2>/dev/null
+        ERROR_OUTPUT=$(gunzip -c "$BACKUP_DIR/$BACKUP_FILE" 2>&1 | mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$DB_NAME" 2>&1)
+        EXIT_CODE=$?
     else
-        mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$DB_NAME" < "$BACKUP_DIR/$BACKUP_FILE" 2>/dev/null
+        ERROR_OUTPUT=$(mysql -u root -p"$MYSQL_ROOT_PASSWORD" "$DB_NAME" < "$BACKUP_DIR/$BACKUP_FILE" 2>&1)
+        EXIT_CODE=$?
     fi
     
-    if [ $? -eq 0 ]; then
+    if [ $EXIT_CODE -eq 0 ]; then
         print_info "Database restored successfully"
     else
         print_error "Restore failed"
+        if [ -n "$ERROR_OUTPUT" ]; then
+            print_error "MySQL error: $ERROR_OUTPUT"
+        fi
         exit 1
     fi
 }
@@ -280,16 +289,29 @@ reset_database() {
     get_mysql_password
     
     print_info "Dropping database..."
-    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_NAME;" 2>/dev/null
+    ERROR_OUTPUT=$(mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_NAME;" 2>&1)
+    EXIT_CODE=$?
+    
+    if [ $EXIT_CODE -ne 0 ]; then
+        print_error "Failed to drop database"
+        if [ -n "$ERROR_OUTPUT" ]; then
+            print_error "MySQL error: $ERROR_OUTPUT"
+        fi
+        exit 1
+    fi
     
     print_info "Recreating database..."
-    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null
+    ERROR_OUTPUT=$(mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>&1)
+    EXIT_CODE=$?
     
-    if [ $? -eq 0 ]; then
+    if [ $EXIT_CODE -eq 0 ]; then
         print_info "Database reset successfully"
         run_migrations
     else
         print_error "Reset failed"
+        if [ -n "$ERROR_OUTPUT" ]; then
+            print_error "MySQL error: $ERROR_OUTPUT"
+        fi
         exit 1
     fi
 }
