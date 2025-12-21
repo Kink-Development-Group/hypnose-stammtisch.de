@@ -97,8 +97,13 @@ esac
 
 # Function to prompt for MySQL root password
 get_mysql_password() {
+    if [ -n "$MYSQL_ROOT_PASSWORD" ]; then
+        # Password already set (e.g., from environment variable)
+        return
+    fi
     read -sp "Enter MySQL root password: " MYSQL_ROOT_PASSWORD
     echo
+    export MYSQL_ROOT_PASSWORD
 }
 
 # Function to create database
@@ -107,12 +112,13 @@ create_database() {
     get_mysql_password
     
     # Create database
-    mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null
+    ERROR_OUTPUT=$(mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>&1)
     
     if [ $? -eq 0 ]; then
         print_info "Database $DB_NAME created successfully"
     else
         print_error "Failed to create database"
+        print_error "MySQL error: $ERROR_OUTPUT"
         exit 1
     fi
     
@@ -121,16 +127,18 @@ create_database() {
     echo
     
     # Create user and grant privileges
-    mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<EOF 2>/dev/null
+    ERROR_OUTPUT=$(mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<EOF 2>&1
 CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
 FLUSH PRIVILEGES;
 EOF
+)
     
     if [ $? -eq 0 ]; then
         print_info "User $DB_USER created and privileges granted"
     else
         print_error "Failed to create user"
+        print_error "MySQL error: $ERROR_OUTPUT"
         exit 1
     fi
     
@@ -189,7 +197,7 @@ backup_database() {
     BACKUP_FILE="$BACKUP_DIR/${DB_NAME}_$(date +%Y%m%d_%H%M%S).sql"
     
     get_mysql_password
-    mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" "$DB_NAME" > "$BACKUP_FILE" 2>/dev/null
+    ERROR_OUTPUT=$(mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" "$DB_NAME" 2>&1 > "$BACKUP_FILE")
     
     if [ $? -eq 0 ]; then
         print_info "Database backed up to: $BACKUP_FILE"
@@ -199,6 +207,9 @@ backup_database() {
         print_info "Backup compressed: ${BACKUP_FILE}.gz"
     else
         print_error "Backup failed"
+        print_error "MySQL error: $ERROR_OUTPUT"
+        # Clean up partial backup file
+        rm -f "$BACKUP_FILE"
         exit 1
     fi
 }
