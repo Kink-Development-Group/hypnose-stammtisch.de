@@ -1,8 +1,17 @@
 <script lang="ts">
   import { link } from "svelte-spa-router";
+  import { consentStore, showCookieBanner } from "../../stores/consent";
   import BrandLogo from "../ui/BrandLogo.svelte";
 
   const currentYear = new Date().getFullYear();
+
+  /**
+   * Opens the cookie settings banner to allow users to modify their preferences
+   */
+  function openCookieSettings() {
+    consentStore.reset();
+    showCookieBanner.set(true);
+  }
 
   const footerLinks = {
     legal: [
@@ -10,6 +19,7 @@
       { href: "/imprint", label: "Impressum" },
       { href: "/code-of-conduct", label: "Verhaltenskodex" },
     ],
+    settings: [{ action: "cookie-settings", label: "Cookie-Einstellungen" }],
     community: [
       { href: "/about", label: "Über uns" },
       { href: "/resources", label: "Ressourcen" },
@@ -84,6 +94,18 @@
                 >
                   {linkItem.label}
                 </a>
+              </li>
+            {/each}
+            {#each footerLinks.settings as settingItem}
+              <li>
+                <button
+                  type="button"
+                  onclick={openCookieSettings}
+                  class="text-smoke-300 hover:text-accent-400 text-sm transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal-800 rounded-sm cursor-pointer"
+                  aria-label={settingItem.label}
+                >
+                  {settingItem.label}
+                </button>
               </li>
             {/each}
           </ul>

@@ -1,0 +1,23 @@
+# robots.txt for hypnose-stammtisch.de
+# Adult content website - age verification required
+
+# Allow all robots for indexing
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://hypnose-stammtisch.de/sitemap.xml
+
+# Adult Content Classification
+# This website contains adult content and requires age verification (18+)
+# Website is labeled with RTA (Restricted To Adults) meta tags
+
+# Block sensitive directories
+Disallow: /api/
+Disallow: /admin/
+Disallow: /backend/
+
+# Allow legal pages for indexing
+Allow: /privacy
+Allow: /imprint
+Allow: /code-of-conduct
