@@ -150,7 +150,7 @@
         <div class="text-smoke-400 text-xs flex items-center gap-3">
           <button
             type="button"
-            onclick={openCookieSettings}
+            on:click={openCookieSettings}
             class="inline-flex items-center hover:text-accent-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 rounded-sm cursor-pointer"
           >
             <svg
