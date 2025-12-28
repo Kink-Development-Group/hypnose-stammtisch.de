@@ -15,7 +15,7 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch",
-    "lint": "prettier --check . && eslint .",
+    "lint": "prettier --check --write . && eslint .",
     "format": "bun run format:frontend",
     "format:all": "bun run format:frontend && bun run format:php",
     "format:frontend": "bun run format:frontend:code && bun run format:frontend:svelte",
