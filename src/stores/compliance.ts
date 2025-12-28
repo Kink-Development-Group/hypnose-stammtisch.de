@@ -476,7 +476,6 @@ export function initializeAnalytics(measurementId: string): void {
 
   gtag("js", new Date());
   gtag("config", measurementId, {
-    anonymize_ip: true, // GDPR requirement
     cookie_flags: "SameSite=Lax;Secure",
   });
 }
