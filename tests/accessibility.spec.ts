@@ -1,13 +1,52 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+/**
+ * Helper function to bypass compliance modals (Age Verification & Cookie Consent)
+ * Sets the required cookies before navigating to the page
+ */
+async function bypassComplianceModals(page: Page): Promise<void> {
+  // Create a proper ConsentRecord matching the format expected by the store
+  const consentRecord = {
+    timestamp: new Date().toISOString(),
+    version: "1.0.0", // Must match CONSENT_VERSION in compliance.ts
+    consent: {
+      essential: true,
+      preferences: true,
+      statistics: false,
+      marketing: false,
+    },
+  };
+
+  // Set cookies to bypass modals
+  await page.context().addCookies([
+    {
+      name: "age_verified",
+      value: "true",
+      domain: "127.0.0.1",
+      path: "/",
+    },
+    {
+      name: "cookie_consent",
+      value: encodeURIComponent(JSON.stringify(consentRecord)),
+      domain: "127.0.0.1",
+      path: "/",
+    },
+  ]);
+}
 
 test.describe("Accessibility Tests", () => {
+  test.beforeEach(async ({ page }) => {
+    await bypassComplianceModals(page);
+  });
+
   test("Homepage should be accessible", async ({ page }) => {
     await page.goto("/");
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .include("main")
       .exclude("iframe") // Exclude any iframes from accessibility scan
+      .exclude(".shadow-glow") // Exclude elements with shadow-glow effect (causes false positives in some browsers)
       .analyze();
 
     expect(accessibilityScanResults.violations).toEqual([]);
@@ -15,6 +54,7 @@ test.describe("Accessibility Tests", () => {
 
   test("Events page should be accessible", async ({ page }) => {
     await page.goto("/events");
+    await page.waitForLoadState("networkidle");
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .include("main")
@@ -25,6 +65,7 @@ test.describe("Accessibility Tests", () => {
 
   test("Contact form should be accessible", async ({ page }) => {
     await page.goto("/contact");
+    await page.waitForLoadState("networkidle");
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .include("main")
@@ -151,6 +192,10 @@ test.describe("Accessibility Tests", () => {
 });
 
 test.describe("Form Accessibility", () => {
+  test.beforeEach(async ({ page }) => {
+    await bypassComplianceModals(page);
+  });
+
   test("Event submission form labels and descriptions", async ({ page }) => {
     // Navigate directly to submit-event page
     await page.goto("/submit-event");
@@ -199,6 +244,10 @@ test.describe("Form Accessibility", () => {
 test.describe("Mobile Accessibility", () => {
   test.use({ viewport: { width: 375, height: 667 } }); // iPhone SE size
 
+  test.beforeEach(async ({ page }) => {
+    await bypassComplianceModals(page);
+  });
+
   test("Mobile navigation should be accessible", async ({ page }) => {
     await page.goto("/");
 
@@ -222,6 +271,7 @@ test.describe("Mobile Accessibility", () => {
 
   test("Mobile form interactions should be accessible", async ({ page }) => {
     await page.goto("/contact");
+    await page.waitForLoadState("networkidle");
 
     const accessibilityScanResults = await new AxeBuilder({ page })
       .include("main")

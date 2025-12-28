@@ -5,6 +5,7 @@
   import About from "./pages/About.svelte";
   import CodeOfConduct from "./pages/CodeOfConduct.svelte";
   import Contact from "./pages/Contact.svelte";
+  import CookiePolicy from "./pages/CookiePolicy.svelte";
   import Events from "./pages/Events.svelte";
   import Home from "./pages/Home.svelte";
   import Imprint from "./pages/Imprint.svelte";
@@ -15,6 +16,7 @@
   import Faq from "./pages/ResourcesFaq.svelte";
   import SafetyGuide from "./pages/ResourcesSafetyGuide.svelte";
   import SubmitEvent from "./pages/SubmitEvent.svelte";
+  import Terms from "./pages/Terms.svelte";
   // Import admin pages
   import AdminEventsGuarded from "./pages/admin/AdminEventsGuarded.svelte";
   import AdminLogin from "./pages/admin/AdminLogin.svelte";
@@ -27,9 +29,14 @@
   import EventModal from "./components/calendar/EventModal.svelte";
   import Footer from "./components/layout/Footer.svelte";
   import Header from "./components/layout/Header.svelte";
+  // Import compliance components
+  import AgeVerificationModal from "./components/shared/AgeVerificationModal.svelte";
+  import CookieBanner from "./components/shared/CookieBanner.svelte";
+  import CookieSettingsModal from "./components/shared/CookieSettingsModal.svelte";
   // Import stores
   import LearningResources from "./pages/LearningResources.svelte";
   import { selectedEvent, showEventModal } from "./stores/calendar";
+  import { complianceStore } from "./stores/compliance";
   import { transformApiEvent } from "./utils/eventTransform";
 
   // Define routes
@@ -58,6 +65,8 @@
     "/contact": Contact,
     "/privacy": Privacy,
     "/imprint": Imprint,
+    "/cookies": CookiePolicy,
+    "/terms": Terms,
     "/submit-event": SubmitEvent,
     // Catch-all route must be last
     "*": NotFound,
@@ -65,6 +74,9 @@
 
   // Handle deep linking to events
   onMount(() => {
+    // Hydrate compliance store from cookies
+    complianceStore.hydrate();
+
     // Scroll to top on initial load (unless there's a hash anchor)
     const initialHash = window.location.hash;
     const hasAnchor =
@@ -163,6 +175,19 @@
   <!-- Event Modal -->
   {#if $showEventModal}
     <EventModal />
+  {/if}
+
+  <!-- Compliance Modals -->
+  {#if $complianceStore.showAgeVerification}
+    <AgeVerificationModal />
+  {/if}
+
+  {#if $complianceStore.showCookieBanner}
+    <CookieBanner />
+  {/if}
+
+  {#if $complianceStore.showCookieSettings}
+    <CookieSettingsModal />
   {/if}
 </div>
 
