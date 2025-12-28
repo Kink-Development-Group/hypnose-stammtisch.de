@@ -479,8 +479,6 @@ export function initializeAnalytics(measurementId: string): void {
     anonymize_ip: true, // GDPR requirement
     cookie_flags: "SameSite=Lax;Secure",
   });
-
-  console.log("[Compliance] Analytics initialized");
 }
 
 // Type declarations for Google Analytics
