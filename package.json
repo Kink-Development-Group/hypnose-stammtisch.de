@@ -2,7 +2,7 @@
   "name": "hypnose-stammtisch.de",
   "private": true,
   "version": "1.0.0",
-  "description": "Hypnose Stammtisch Community Calendar - Full Stack Application and Website",
+  "description": "Hypnose Stammtisch Community Calendar - Full Stack Application",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"bun run dev:frontend\" \"bun run dev:backend\" --kill-others-on-fail --prefix-colors \"cyan,magenta\" --names \"Frontend,Backend\"",
