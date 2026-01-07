@@ -55,6 +55,19 @@ copyTree(
   copyTree(join(backendDir, dir), join(distDir, dir)),
 );
 
+// uploads Verzeichnisstruktur mit .htaccess kopieren
+const uploadsDir = join(backendDir, "uploads");
+if (existsSync(uploadsDir)) {
+  const targetUploads = join(distDir, "uploads");
+  ensureDir(targetUploads);
+  ensureDir(join(targetUploads, "public"));
+  // .htaccess für Upload-Schutz kopieren
+  const uploadsHtaccess = join(uploadsDir, ".htaccess");
+  if (existsSync(uploadsHtaccess)) {
+    copyFileSync(uploadsHtaccess, join(targetUploads, ".htaccess"));
+  }
+}
+
 // migrations kopieren (nur konsolidierte Baseline + Runner) + Schutzdatei
 const migrationsDir = join(backendDir, "migrations");
 if (existsSync(migrationsDir)) {
@@ -93,6 +106,13 @@ if (existsSync(migrationsDir)) {
 const backendEnv = join(backendDir, ".env");
 if (existsSync(backendEnv)) {
   copyFileSync(backendEnv, join(distDir, ".env"));
+}
+
+// .htaccess für SPA-Routing aus public/ kopieren
+const publicHtaccess = join(root, "public", ".htaccess");
+if (existsSync(publicHtaccess)) {
+  copyFileSync(publicHtaccess, join(distDir, ".htaccess"));
+  console.log(".htaccess für SPA-Routing kopiert.");
 }
 
 // setup.php für Web-Setup mit kopieren

@@ -2,6 +2,25 @@
   RewriteEngine On
   RewriteBase /
 
+  # ==========================================================
+  # Security: Block access to sensitive directories
+  # ==========================================================
+  RewriteRule ^migrations(/.*)?$ - [F,L]
+  RewriteRule ^vendor(/.*)?$ - [F,L]
+  RewriteRule ^logs(/.*)?$ - [F,L]
+  RewriteRule ^config(/.*)?$ - [F,L]
+  RewriteRule ^cache(/.*)?$ - [F,L]
+  RewriteRule ^temp(/.*)?$ - [F,L]
+  RewriteRule ^src(/.*)?$ - [F,L]
+  RewriteRule ^cli(/.*)?$ - [F,L]
+  RewriteRule ^tests(/.*)?$ - [F,L]
+  RewriteRule ^scripts(/.*)?$ - [F,L]
+  RewriteRule ^uploads/private(/.*)?$ - [F,L]
+
+  # ==========================================================
+  # SPA Routing
+  # ==========================================================
+
   # Route calendar subscriptions to backend API feed
   RewriteRule ^calendar\.ics$ api/calendar/feed [QSA,L]
 
@@ -17,4 +36,57 @@
 
   # Fallback all other requests to index.html so the SPA can handle routing
   RewriteRule ^ index.html [L]
+</IfModule>
+
+# ==========================================================
+# Security: File access restrictions
+# ==========================================================
+
+# Hide ALL dotfiles (including .env, .htaccess in subdirectories, .git, etc.)
+<FilesMatch "^\.">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Explicitly block .env files with any extension (.env, .env.local, .env.production, etc.)
+<FilesMatch "^\.env(\..+)?$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Protect environment & build artifacts
+<FilesMatch "(composer\.(json|lock)|package\.json|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|phpunit\.xml.*|phpcs\.xml|README\.md)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Block PHP files outside of api/ directory (handled by Location in api/.htaccess)
+<FilesMatch "\.php$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Fallback: prevent PHP execution in data directories
+<IfModule mod_php.c>
+  php_flag engine off
 </IfModule>
