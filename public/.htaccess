@@ -75,14 +75,17 @@
   </IfModule>
 </FilesMatch>
 
-# Block PHP files outside of api/ directory (handled by Location in api/.htaccess)
+# Block PHP files EXCEPT in api/ directory
+# Use SetEnvIf to allow PHP execution only in /api/
+SetEnvIf Request_URI "^/api/" ALLOW_PHP
 <FilesMatch "\.php$">
   <IfModule mod_authz_core.c>
-    Require all denied
+    Require env ALLOW_PHP
   </IfModule>
   <IfModule !mod_authz_core.c>
-    Order allow,deny
+    Order deny,allow
     Deny from all
+    Allow from env=ALLOW_PHP
   </IfModule>
 </FilesMatch>
 
