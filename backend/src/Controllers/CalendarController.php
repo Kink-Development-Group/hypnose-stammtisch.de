@@ -432,15 +432,28 @@ class CalendarController
                         $endDate,
                         json_decode($eventArray['exdates'] ?? '[]', true)
                     );
-                    $expandedEvents = array_merge($expandedEvents, $instances);
+
+                    if (!empty($instances)) {
+                        $expandedEvents = array_merge($expandedEvents, $instances);
+                    } else {
+                        // If expansion returned no instances (e.g., all dates in past),
+                        // add base event if it falls within range
+                        $eventStart = Carbon::parse($eventArray['start_datetime']);
+                        if ($eventStart->between($startDate, $endDate)) {
+                            $expandedEvents[] = $eventArray;
+                        }
+                    }
                 } catch (\Exception $e) {
                     error_log("Error expanding recurring event {$eventArray['id']}: " . $e->getMessage());
                     // Add the base event if expansion fails
                     $expandedEvents[] = $eventArray;
                 }
             } else {
-                // Add single event
-                $expandedEvents[] = $eventArray;
+                // Add single event (also handles is_recurring=true with empty rrule)
+                $eventStart = Carbon::parse($eventArray['start_datetime']);
+                if ($eventStart->between($startDate, $endDate)) {
+                    $expandedEvents[] = $eventArray;
+                }
             }
         }
 

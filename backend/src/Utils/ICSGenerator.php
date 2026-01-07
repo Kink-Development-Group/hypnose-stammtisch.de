@@ -224,47 +224,55 @@ class ICSGenerator
 
     /**
      * Create detailed event description for iCal
+     * Converts Markdown to readable plain text
      */
     private static function createEventDescription(array $event): string
     {
         $description = [];
 
-        // Basic description - sanitize for XSS protection
+        // Basic description - convert Markdown to plain text
         if (!empty($event['description'])) {
-            $description[] = htmlspecialchars(strip_tags($event['description']), ENT_QUOTES, 'UTF-8');
+            $plainText = self::markdownToPlainText($event['description']);
+            // Remove any remaining HTML tags for security
+            $plainText = strip_tags($plainText);
+            $description[] = $plainText;
         }
 
-        // Event details - sanitize all user-provided content
+        // Event details
         if (!empty($event['category'])) {
-            $description[] = "\\nKategorie: " . htmlspecialchars(ucfirst($event['category']), ENT_QUOTES, 'UTF-8');
+            $description[] = "\\nKategorie: " . ucfirst($event['category']);
         }
 
         if (!empty($event['difficulty_level']) && $event['difficulty_level'] !== 'all') {
-            $description[] = "Schwierigkeitsgrad: " . htmlspecialchars(ucfirst($event['difficulty_level']), ENT_QUOTES, 'UTF-8');
+            $description[] = "Schwierigkeitsgrad: " . ucfirst($event['difficulty_level']);
         }
 
         if (!empty($event['max_participants'])) {
             $description[] = "Max. Teilnehmer: " . (int)$event['max_participants'];
         }
 
-        // Location details - sanitize
+        // Location details - convert Markdown
         if (!empty($event['location_instructions'])) {
-            $description[] = "\\nAnfahrt: " . htmlspecialchars($event['location_instructions'], ENT_QUOTES, 'UTF-8');
+            $locationInstructions = self::markdownToPlainText($event['location_instructions']);
+            $description[] = "\\nAnfahrt: " . strip_tags($locationInstructions);
         }
 
-        // Requirements - sanitize
+        // Requirements - convert Markdown
         if (!empty($event['requirements'])) {
-            $description[] = "\\nVoraussetzungen: " . htmlspecialchars($event['requirements'], ENT_QUOTES, 'UTF-8');
+            $requirements = self::markdownToPlainText($event['requirements']);
+            $description[] = "\\nVoraussetzungen: " . strip_tags($requirements);
         }
 
-        // Safety notes
+        // Safety notes - convert Markdown
         if (!empty($event['safety_notes'])) {
-            $description[] = "\\nSicherheitshinweise: " . $event['safety_notes'];
+            $safetyNotes = self::markdownToPlainText($event['safety_notes']);
+            $description[] = "\\nSicherheitshinweise: " . strip_tags($safetyNotes);
         }
 
-        // Preparation notes
+        // Preparation notes - convert Markdown
         if (!empty($event['preparation_notes'])) {
-            $description[] = "\\nVorbereitung: " . $event['preparation_notes'];
+            $prepNotes = self::markdownToPlainText($event['preparation_notes']);
+            $description[] = "\\nVorbereitung: " . strip_tags($prepNotes);
         }
 
         // Contact info
@@ -295,31 +303,127 @@ class ICSGenerator
     }
 
     /**
-     * Fold long lines according to RFC 5545 (max 75 characters)
+     * Convert Markdown to readable plain text for ICS descriptions
+     * Preserves the semantic meaning while removing Markdown syntax
+     */
+    private static function markdownToPlainText(string $markdown): string
+    {
+        if (empty($markdown)) {
+            return '';
+        }
+
+        $text = $markdown;
+
+        // Convert headers to plain text with newlines
+        // # Header -> HEADER (uppercase for emphasis)
+        $text = preg_replace('/^#{1,6}\s*(.+)$/m', "\n$1\n", $text);
+
+        // Convert bold **text** or __text__ to *text* (preserve emphasis indicator)
+        $text = preg_replace('/\*\*(.+?)\*\*/s', '*$1*', $text);
+        $text = preg_replace('/__(.+?)__/s', '*$1*', $text);
+
+        // Convert italic *text* or _text_ - keep as is since single asterisks are readable
+        // But ensure we don't double-process already converted bold
+        $text = preg_replace('/(?<!\*)_([^_]+)_(?!\*)/s', '$1', $text);
+
+        // Convert links [text](url) to "text (url)"
+        $text = preg_replace('/\[([^\]]+)\]\(([^)]+)\)/', '$1 ($2)', $text);
+
+        // Convert inline code `code` to 'code'
+        $text = preg_replace('/`([^`]+)`/', "'$1'", $text);
+
+        // Convert code blocks ```code``` to indented text
+        $text = preg_replace('/```[\w]*\n?(.*?)```/s', "\n$1\n", $text);
+
+        // Convert unordered lists - * item or - item to "• item"
+        $text = preg_replace('/^[\*\-]\s+(.+)$/m', '• $1', $text);
+
+        // Convert ordered lists - 1. item to "1. item" (already readable)
+        // No change needed
+
+        // Convert blockquotes > text to "| text"
+        $text = preg_replace('/^>\s*(.+)$/m', '| $1', $text);
+
+        // Convert horizontal rules --- or *** or ___ to a line
+        $text = preg_replace('/^[\-\*_]{3,}$/m', '---', $text);
+
+        // Remove images ![alt](url) - just keep alt text
+        $text = preg_replace('/!\[([^\]]*)\]\([^)]+\)/', '[$1]', $text);
+
+        // Clean up excessive newlines (more than 2 consecutive)
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+
+        // Trim whitespace
+        $text = trim($text);
+
+        return $text;
+    }
+
+    /**
+     * Fold long lines according to RFC 5545 (max 75 octets/bytes per line)
+     * This function is UTF-8 safe and won't break multi-byte characters
      */
     private static function foldLines(array $lines): string
     {
         $folded = [];
 
         foreach ($lines as $line) {
-            if (strlen($line) <= 75) {
-                $folded[] = $line;
-            } else {
-                $folded[] = substr($line, 0, 75);
-                $remaining = substr($line, 75);
-
-                while (strlen($remaining) > 74) {
-                    $folded[] = ' ' . substr($remaining, 0, 74);
-                    $remaining = substr($remaining, 74);
-                }
-
-                if (strlen($remaining) > 0) {
-                    $folded[] = ' ' . $remaining;
-                }
-            }
+            $folded[] = self::foldLine($line);
         }
 
         return implode("\r\n", $folded) . "\r\n";
+    }
+
+    /**
+     * Fold a single line to max 75 bytes without breaking UTF-8 characters
+     * RFC 5545 specifies 75 octets (bytes) per line, not characters
+     */
+    private static function foldLine(string $line): string
+    {
+        // If line is already short enough (in bytes), return as-is
+        if (strlen($line) <= 75) {
+            return $line;
+        }
+
+        $result = [];
+        $currentLine = '';
+        $isFirstLine = true;
+        $maxBytes = 75;
+
+        // Process character by character to avoid breaking UTF-8 sequences
+        $length = mb_strlen($line, 'UTF-8');
+
+        for ($i = 0; $i < $length; $i++) {
+            $char = mb_substr($line, $i, 1, 'UTF-8');
+            $charBytes = strlen($char); // Byte length of this character
+
+            // Calculate the limit for current line
+            // First line: 75 bytes, continuation lines: 74 bytes (plus 1 space prefix)
+            $limit = $isFirstLine ? 75 : 74;
+
+            // Check if adding this character would exceed the limit
+            if (strlen($currentLine) + $charBytes > $limit) {
+                // Save current line and start a new one
+                $result[] = $currentLine;
+                $currentLine = $char;
+                $isFirstLine = false;
+            } else {
+                $currentLine .= $char;
+            }
+        }
+
+        // Add the last line
+        if ($currentLine !== '') {
+            $result[] = $currentLine;
+        }
+
+        // Join with CRLF and space for continuation lines
+        $output = $result[0];
+        for ($i = 1; $i < count($result); $i++) {
+            $output .= "\r\n " . $result[$i];
+        }
+
+        return $output;
     }
 
     /**
@@ -329,7 +433,17 @@ class ICSGenerator
     {
         $icsContent = self::generateCalendarFeed($events);
 
-        // Set appropriate headers
+        // Ensure content is valid UTF-8
+        if (!mb_check_encoding($icsContent, 'UTF-8')) {
+            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
+        }
+
+        // Add UTF-8 BOM for better compatibility with calendar clients
+        // Many clients (Outlook, Apple Calendar) need this to properly detect UTF-8
+        $bom = "\xEF\xBB\xBF";
+        $icsContent = $bom . $icsContent;
+
+        // Set appropriate headers - explicitly set UTF-8 encoding
         header('Content-Type: text/calendar; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Cache-Control: no-cache, must-revalidate');
@@ -346,6 +460,15 @@ class ICSGenerator
     {
         $icsContent = self::generateSingleEvent($event);
         $filename = 'event-' . ($event['slug'] ?? $event['id']) . '.ics';
+
+        // Ensure content is valid UTF-8
+        if (!mb_check_encoding($icsContent, 'UTF-8')) {
+            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
+        }
+
+        // Add UTF-8 BOM for better compatibility with calendar clients
+        $bom = "\xEF\xBB\xBF";
+        $icsContent = $bom . $icsContent;
 
         // Set appropriate headers
         header('Content-Type: text/calendar; charset=utf-8');

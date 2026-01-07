@@ -492,9 +492,17 @@ class Event
                         []
                     );
 
-                    // Convert back to Event objects
-                    foreach ($instances as $instance) {
-                        $expandedEvents[] = self::fromArray($instance);
+                    if (!empty($instances)) {
+                        // Convert back to Event objects
+                        foreach ($instances as $instance) {
+                            $expandedEvents[] = self::fromArray($instance);
+                        }
+                    } else {
+                        // If expansion returned no instances, add base event if in range
+                        $eventStart = Carbon::parse($event->startDatetime);
+                        if ($eventStart->between($startDate, $endDate)) {
+                            $expandedEvents[] = $event;
+                        }
                     }
                 } catch (\Exception $e) {
                     error_log("Error expanding recurring event {$event->id}: " . $e->getMessage());
