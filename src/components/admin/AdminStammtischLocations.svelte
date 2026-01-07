@@ -3,6 +3,12 @@
   import { CountryCode } from "../../enums/countryCode";
   import { LocationStatus } from "../../enums/locationStatus";
   import type { StammtischLocation } from "../../types/stammtisch";
+  import {
+    adminDelete,
+    adminGet,
+    adminPost,
+    adminPut,
+  } from "../../utils/adminApi";
   import { t } from "../../utils/i18n";
   import Portal from "../ui/Portal.svelte";
 
@@ -101,27 +107,15 @@
    * Fetch all stammtisch locations from the API.
    * @returns Promise that resolves when locations are loaded
    */
-  /**
-   * Fetch all stammtisch locations from the API.
-   * @returns Promise that resolves when locations are loaded
-   */
   async function loadLocations(): Promise<void> {
     try {
       loading = true;
       error = "";
 
-      const response = await fetch("/api/admin/stammtisch-locations", {
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const result = await adminGet<StammtischLocation[]>(
+        "/api/admin/stammtisch-locations",
+      );
 
-      if (!response.ok) {
-        throw new Error(`Failed to load locations: ${response.status}`);
-      }
-
-      const result = await response.json();
       if (result.success) {
         locations = result.data || [];
       } else {
@@ -141,15 +135,12 @@
    */
   async function loadStats(): Promise<void> {
     try {
-      const response = await fetch("/api/admin/stammtisch-locations/stats", {
-        credentials: "same-origin",
-      });
+      const result = await adminGet<LocationStats>(
+        "/api/admin/stammtisch-locations/stats",
+      );
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          stats = result.data;
-        }
+      if (result.success) {
+        stats = result.data || null;
       }
     } catch (err) {
       console.error("Error loading stats:", err);
@@ -272,23 +263,10 @@
         ? `/api/admin/stammtisch-locations/${editingLocation.id}`
         : "/api/admin/stammtisch-locations";
 
-      const method = editingLocation ? "PUT" : "POST";
+      const result = editingLocation
+        ? await adminPut(url, formData as unknown as Record<string, unknown>)
+        : await adminPost(url, formData as unknown as Record<string, unknown>);
 
-      const response = await fetch(url, {
-        method,
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-
-      const result = await response.json();
       if (result.success) {
         await loadLocations();
         await loadStats();
@@ -317,19 +295,10 @@
     }
 
     try {
-      const response = await fetch(
+      const result = await adminDelete(
         `/api/admin/stammtisch-locations/${location.id}`,
-        {
-          method: "DELETE",
-          credentials: "same-origin",
-        },
       );
 
-      if (!response.ok) {
-        throw new Error(`Failed to delete location: ${response.status}`);
-      }
-
-      const result = await response.json();
       if (result.success) {
         await loadLocations();
         await loadStats();
@@ -388,26 +357,14 @@
     }
 
     try {
-      const response = await fetch(
+      const result = await adminPost(
         "/api/admin/stammtisch-locations/bulk-status",
         {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ids: selectedLocations,
-            status,
-          }),
+          ids: selectedLocations,
+          status,
         },
       );
 
-      if (!response.ok) {
-        throw new Error(`Failed to update status: ${response.status}`);
-      }
-
-      const result = await response.json();
       if (result.success) {
         await loadLocations();
         await loadStats();

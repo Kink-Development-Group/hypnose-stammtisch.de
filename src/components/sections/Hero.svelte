@@ -144,35 +144,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Scroll indicator -->
-  <div
-    class="absolute bottom-8 left-1/2 transform -translate-x-1/2 {isVisible
-      ? 'animate-bounce'
-      : 'opacity-0'}"
-    style="animation-delay: 1.2s;"
-  >
-    <a
-      href="#content"
-      class="text-smoke-400 hover:text-accent-400 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal-900 rounded-full p-2"
-      aria-label="Zum Inhalt scrollen"
-    >
-      <svg
-        class="w-6 h-6"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M19 14l-7 7m0 0l-7-7m7 7V3"
-        />
-      </svg>
-    </a>
-  </div>
 </section>
 
 <!-- Content anchor for scroll -->
