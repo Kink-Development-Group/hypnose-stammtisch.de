@@ -83,7 +83,11 @@ class Config
                 'head_admin_role_name' => $_ENV['HEAD_ADMIN_ROLE_NAME'] ?? 'head',
 
                 // IP validation settings
-                'allow_private_ips' => filter_var($_ENV['ALLOW_PRIVATE_IPS'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                // In development, automatically allow private IPs (127.0.0.1, etc.)
+                'allow_private_ips' => filter_var(
+                    $_ENV['ALLOW_PRIVATE_IPS'] ?? (in_array($_ENV['APP_ENV'] ?? 'production', ['development', 'local', 'dev']) ? 'true' : 'false'),
+                    FILTER_VALIDATE_BOOLEAN
+                ),
                 'trusted_proxies' => array_filter(array_map('trim', explode(',', $_ENV['TRUSTED_PROXIES'] ?? ''))),
 
                 // Email validation settings

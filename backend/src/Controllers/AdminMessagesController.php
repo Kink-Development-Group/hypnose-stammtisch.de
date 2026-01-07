@@ -7,6 +7,7 @@ namespace HypnoseStammtisch\Controllers;
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Middleware\AdminAuth;
 use HypnoseStammtisch\Utils\Response;
+use HypnoseStammtisch\Utils\EmailService;
 use Exception;
 
 /**
@@ -69,7 +70,7 @@ class AdminMessagesController
 
             // Get messages
             $sql = "SELECT id, name, email, subject, message, status, response_sent,
-                           submitted_at, processed_at, assigned_to
+                           submitted_at, submitted_at as created_at, processed_at, assigned_to
                     FROM contact_submissions
                     {$whereClause}
                     ORDER BY submitted_at DESC
@@ -83,6 +84,8 @@ class AdminMessagesController
                 $message['processed_at_formatted'] = $message['processed_at']
                     ? date('d.m.Y H:i', strtotime($message['processed_at']))
                     : null;
+                // Ensure created_at is in ISO format for JavaScript Date parsing
+                $message['created_at'] = date('c', strtotime($message['submitted_at']));
             }
 
             Response::success([
@@ -125,6 +128,8 @@ class AdminMessagesController
             $message['processed_at_formatted'] = $message['processed_at']
                 ? date('d.m.Y H:i', strtotime($message['processed_at']))
                 : null;
+            // Ensure created_at is in ISO format for JavaScript Date parsing
+            $message['created_at'] = date('c', strtotime($message['submitted_at']));
 
             Response::success($message);
         } catch (Exception $e) {
@@ -534,9 +539,14 @@ class AdminMessagesController
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
         // Validation
-        $required = ['from_email_id', 'subject', 'body'];
-        foreach ($required as $field) {
-            if (!isset($input[$field]) || trim($input[$field]) === '') {
+        if (!isset($input['from_email_id']) || empty($input['from_email_id'])) {
+            Response::error("Field 'from_email_id' is required", 400);
+            return;
+        }
+
+        $stringFields = ['subject', 'body'];
+        foreach ($stringFields as $field) {
+            if (!isset($input[$field]) || trim((string)$input[$field]) === '') {
                 Response::error("Field '$field' is required", 400);
                 return;
             }
@@ -583,9 +593,28 @@ class AdminMessagesController
                 ]
             );
 
-            // Here you would integrate with your email service (PHPMailer, etc.)
-            // For now, we'll mark it as sent
+            // Send the actual email using EmailService
+            $emailSent = EmailService::sendMessageResponse(
+                $message['email'],           // to email
+                $message['name'] ?? '',      // to name
+                $fromEmail['email'],         // from email
+                $fromEmail['display_name'],  // from name
+                trim($input['subject']),     // subject
+                trim($input['body']),        // body
+                $fromEmail['email']          // reply-to
+            );
 
+            if (!$emailSent) {
+                // Update status to failed
+                Database::execute(
+                    "UPDATE message_responses SET status = 'failed', error_message = 'Email sending failed' WHERE id = ?",
+                    [$responseId]
+                );
+                Response::error('Failed to send email. The response has been saved as draft.', 500);
+                return;
+            }
+
+            // Update status to sent
             Database::execute(
                 "UPDATE message_responses SET status = 'sent', sent_at = CURRENT_TIMESTAMP WHERE id = ?",
                 [$responseId]
