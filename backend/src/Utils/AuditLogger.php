@@ -10,8 +10,12 @@ use HypnoseStammtisch\Middleware\AdminAuth;
 class AuditLogger
 {
     /**
-     * Flag to prevent recursive calls during IP resolution
-     * This breaks the circular dependency: AuditLogger::log() -> IpBanManager::getClientIP() -> AuditLogger::log()
+     * Flag to prevent recursive calls during IP resolution.
+     *
+     * This breaks the circular dependency that occurs when AuditLogger::log()
+     * calls IpBanManager::getClientIP(), and getClientIP() in turn attempts to
+     * log an event via AuditLogger (for example, when it encounters untrusted
+     * or suspicious proxy headers and wants to record that situation).
      */
     private static bool $isLogging = false;
 
