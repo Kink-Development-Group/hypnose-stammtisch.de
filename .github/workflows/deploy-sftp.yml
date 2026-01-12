@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev
+      - main
 
 jobs:
   build-and-deploy:
@@ -23,10 +24,16 @@ jobs:
       - name: Build project
         run: bun run build:all
 
-      - name: Create .env file from secret
+      - name: Create .env file from secret (dev)
+        if: github.ref == 'refs/heads/dev'
         run: echo "${{ secrets.ENV }}" > dist/.env
 
-      - name: Deploy via FTP Deploy Action
+      - name: Create .env file from secret (prod)
+        if: github.ref == 'refs/heads/main'
+        run: echo "${{ secrets.PROD_ENV }}" > dist/.env
+
+      - name: Deploy via FTP Deploy Action (dev)
+        if: github.ref == 'refs/heads/dev'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
           server: ${{ secrets.SFTP_HOST }}
@@ -36,3 +43,15 @@ jobs:
           protocol: "ftps"
           local-dir: "./dist/"
           server-dir: ${{ secrets.SFTP_REMOTE_DIR }}
+
+      - name: Deploy via FTP Deploy Action (prod)
+        if: github.ref == 'refs/heads/main'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.PROD_SFTP_HOST }}
+          port: ${{ secrets.PROD_SFTP_PORT }}
+          username: ${{ secrets.PROD_SFTP_USER }}
+          password: ${{ secrets.PROD_SFTP_PASS }}
+          protocol: "ftps"
+          local-dir: "./dist/"
+          server-dir: ${{ secrets.PROD_SFTP_REMOTE_DIR }}
