@@ -144,6 +144,9 @@ class AdminStammtischLocationController
         try {
             $currentUser = AdminAuth::getCurrentUser();
 
+            // Helper to convert empty strings to null for optional fields
+            $emptyToNull = fn($value) => ($value === '' || $value === null) ? null : $value;
+
             // Create location object
             $location = new StammtischLocation(
                 name: $input['name'],
@@ -153,14 +156,14 @@ class AdminStammtischLocationController
                 latitude: (float)$input['latitude'],
                 longitude: (float)$input['longitude'],
                 description: $input['description'] ?? '',
-                contactEmail: $input['contact_email'] ?? null,
-                contactPhone: $input['contact_phone'] ?? null,
-                contactFetLife: $input['contact_telegram'] ?? null,
-                contactWebsite: $input['contact_website'] ?? null,
-                meetingFrequency: $input['meeting_frequency'] ?? null,
-                meetingLocation: $input['meeting_location'] ?? null,
-                meetingAddress: $input['meeting_address'] ?? null,
-                nextMeeting: $input['next_meeting'] ?? null,
+                contactEmail: $emptyToNull($input['contact_email'] ?? null),
+                contactPhone: $emptyToNull($input['contact_phone'] ?? null),
+                contactFetLife: $emptyToNull($input['contact_fetlife'] ?? null),
+                contactWebsite: $emptyToNull($input['contact_website'] ?? null),
+                meetingFrequency: $emptyToNull($input['meeting_frequency'] ?? null),
+                meetingLocation: $emptyToNull($input['meeting_location'] ?? null),
+                meetingAddress: $emptyToNull($input['meeting_address'] ?? null),
+                nextMeeting: $emptyToNull($input['next_meeting'] ?? null),
                 tags: $input['tags'] ?? [],
                 isActive: $input['is_active'] ?? true,
                 status: $input['status'] ?? 'draft',
@@ -268,8 +271,8 @@ class AdminStammtischLocationController
             if (isset($input['contact_phone'])) {
                 $location->contactPhone = $input['contact_phone'] ?: null;
             }
-            if (isset($input['contact_telegram'])) {
-                $location->contactFetLife = $input['contact_telegram'] ?: null;
+            if (isset($input['contact_fetlife'])) {
+                $location->contactFetLife = $input['contact_fetlife'] ?: null;
             }
             if (isset($input['contact_website'])) {
                 $location->contactWebsite = $input['contact_website'] ?: null;

@@ -36,8 +36,7 @@ class StammtischLocation
         public ?string $createdAt = null,
         public ?string $updatedAt = null,
         public ?string $createdByUsername = null
-    ) {
-    }
+    ) {}
 
     /**
      * Get all published and active locations
@@ -149,7 +148,7 @@ class StammtischLocation
 
             $sql = "INSERT INTO stammtisch_locations (
                 id, name, slug, city, region, country, latitude, longitude,
-                description, contact_email, contact_phone, contact_telegram, contact_website,
+                description, contact_email, contact_phone, contact_fetlife, contact_website,
                 meeting_frequency, meeting_location, meeting_address, next_meeting,
                 tags, is_active, status, created_by
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -194,7 +193,7 @@ class StammtischLocation
             $sql = "UPDATE stammtisch_locations SET
                 name = ?, slug = ?, city = ?, region = ?, country = ?,
                 latitude = ?, longitude = ?, description = ?,
-                contact_email = ?, contact_phone = ?, contact_telegram = ?, contact_website = ?,
+                contact_email = ?, contact_phone = ?, contact_fetlife = ?, contact_website = ?,
                 meeting_frequency = ?, meeting_location = ?, meeting_address = ?, next_meeting = ?,
                 tags = ?, is_active = ?, status = ?
                 WHERE id = ?";
@@ -325,7 +324,7 @@ class StammtischLocation
             description: $data['description'] ?? '',
             contactEmail: $data['contact_email'] ?? null,
             contactPhone: $data['contact_phone'] ?? null,
-            contactFetLife: $data['contact_telegram'] ?? null,
+            contactFetLife: $data['contact_fetlife'] ?? $data['contact_telegram'] ?? null,
             contactWebsite: $data['contact_website'] ?? null,
             meetingFrequency: $data['meeting_frequency'] ?? null,
             meetingLocation: $data['meeting_location'] ?? null,

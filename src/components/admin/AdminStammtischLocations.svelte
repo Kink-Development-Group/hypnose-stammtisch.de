@@ -751,6 +751,17 @@
 
         <!-- Scrollable Form Content -->
         <div class="flex-1 overflow-y-auto px-6 py-6">
+          <!-- Required Fields Notice -->
+          <div
+            class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg"
+          >
+            <p class="text-sm text-blue-800 dark:text-blue-300">
+              <span class="font-semibold">Pflichtfelder:</span> Felder mit
+              <span class="text-red-600 dark:text-red-400 font-bold">*</span> müssen
+              ausgefüllt werden. Dies sind: Name, Stadt, Region/Bundesland, Land,
+              Breitengrad und Längengrad.
+            </p>
+          </div>
           <form on:submit|preventDefault={saveLocation} class="space-y-6">
             <!-- Basic Information -->
             <fieldset class="space-y-4">

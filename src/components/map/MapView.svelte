@@ -687,19 +687,38 @@
       system-ui,
       -apple-system,
       sans-serif;
-    z-index: 1 !important;
   }
 
-  /* Ensure map controls don't interfere with overlays */
-  :global(.leaflet-control-container) {
-    z-index: 10 !important;
+  /* Ensure popups and tooltips appear above all map layers */
+  :global(.leaflet-pane) {
+    z-index: 400;
   }
 
-  :global(.leaflet-popup-pane) {
-    z-index: 20 !important;
+  :global(.leaflet-tile-pane) {
+    z-index: 200;
+  }
+
+  :global(.leaflet-overlay-pane) {
+    z-index: 400;
+  }
+
+  :global(.leaflet-shadow-pane) {
+    z-index: 500;
+  }
+
+  :global(.leaflet-marker-pane) {
+    z-index: 600;
   }
 
   :global(.leaflet-tooltip-pane) {
-    z-index: 15 !important;
+    z-index: 650;
+  }
+
+  :global(.leaflet-popup-pane) {
+    z-index: 700;
+  }
+
+  :global(.leaflet-control-container) {
+    z-index: 800;
   }
 </style>
