@@ -246,7 +246,8 @@
   const copyEventLink = async () => {
     if (!event) return;
 
-    const url = `${window.location.origin}/events/${event.id}`;
+    // Use hash-based URL for SPA routing
+    const url = `${window.location.origin}/#/events/${event.id}`;
 
     try {
       await navigator.clipboard.writeText(url);

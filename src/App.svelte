@@ -160,6 +160,16 @@
       });
       handleRouteChanged(customEvent);
     });
+
+    // Handle initial load - check if we should open an event modal
+    if (initialHash) {
+      const initialPath = initialHash.replace("#", "");
+      const initialEvent = new CustomEvent("routeChange", {
+        detail: { location: initialPath },
+      });
+      // Small delay to ensure events are loaded first
+      setTimeout(() => handleRouteChanged(initialEvent), 100);
+    }
   });
 </script>
 

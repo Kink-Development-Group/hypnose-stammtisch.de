@@ -105,11 +105,10 @@ export const openEventModal = (event: Event) => {
   selectedEvent.set(event);
   showEventModal.set(true);
 
-  // Update URL for deep linking
+  // Update URL for deep linking (using hash-based routing)
   if (typeof window !== "undefined") {
-    const url = new URL(window.location.href);
-    url.pathname = `/events/${event.id}`;
-    window.history.pushState({}, "", url.toString());
+    const newHash = `#/events/${event.id}`;
+    window.history.pushState({}, "", `/${newHash}`);
   }
 };
 
@@ -117,11 +116,9 @@ export const closeEventModal = () => {
   selectedEvent.set(null);
   showEventModal.set(false);
 
-  // Restore URL
+  // Restore URL (using hash-based routing)
   if (typeof window !== "undefined") {
-    const url = new URL(window.location.href);
-    url.pathname = "/events";
-    window.history.pushState({}, "", url.toString());
+    window.history.pushState({}, "", "/#/events");
   }
 };
 
