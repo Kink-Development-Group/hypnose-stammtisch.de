@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { StammtischLocationFactory } from "../src/classes/StammtischLocationFactory";
 import { CountryCode } from "../src/enums/countryCode";
-import { LocationStatus } from "../src/enums/locationStatus";
 
 test.describe("StammtischLocationFactory", () => {
   test.describe("uniqueTags method", () => {
@@ -165,7 +164,12 @@ test.describe("StammtischLocationFactory", () => {
       const result = StammtischLocationFactory.fromApi(mockData);
 
       expect(result).not.toBeNull();
-      expect(result?.tags).toEqual(["berlin", "hypnose", "münchen", "stammtisch"]);
+      expect(result?.tags).toEqual([
+        "berlin",
+        "hypnose",
+        "münchen",
+        "stammtisch",
+      ]);
       expect(result?.tags.length).toBe(4);
     });
 
