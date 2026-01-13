@@ -121,12 +121,13 @@
       }
 
       // Handle event modal deep linking
-      const eventMatch = path.match(/^\/events\/(\d+)$/);
+      // Match numeric IDs, UUIDs, or composite series IDs (series_UUID_DATE)
+      const eventMatch = path.match(/^\/events\/([\w-]+)$/);
 
       if (eventMatch) {
-        const eventId = parseInt(eventMatch[1]);
+        const eventId = eventMatch[1];
         // Load event data and show modal
-        fetch(`/api/events/${eventId}`)
+        fetch(`/api/events/${encodeURIComponent(eventId)}`)
           .then((response) => {
             if (!response.ok) {
               throw new Error(`Event not found: ${response.status}`);

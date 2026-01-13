@@ -44,12 +44,12 @@
 
 ### Testing
 
-| Tool                     | Zweck                     |
-| ------------------------ | ------------------------- |
-| **Playwright**           | E2E-Tests                 |
-| **Vitest**               | Frontend Unit-Tests       |
-| **@axe-core/playwright** | Accessibility-Tests       |
-| **PHPUnit**              | Backend Unit-Tests        |
+| Tool                     | Zweck               |
+| ------------------------ | ------------------- |
+| **Playwright**           | E2E-Tests           |
+| **Vitest**               | Frontend Unit-Tests |
+| **@axe-core/playwright** | Accessibility-Tests |
+| **PHPUnit**              | Backend Unit-Tests  |
 
 ---
 

@@ -103,7 +103,6 @@ export function setCookie(
     cookieString += "; Secure";
   }
 
-  console.log("[Compliance] Setting cookie:", cookieString);
   document.cookie = cookieString;
 }
 
@@ -123,14 +122,9 @@ export function getCookie(name: string): string | null {
     let c = cookie.trim();
     if (c.indexOf(nameEQ) === 0) {
       const value = decodeURIComponent(c.substring(nameEQ.length));
-      console.log(`[Compliance] Got cookie ${name}:`, value);
       return value;
     }
   }
-  console.log(
-    `[Compliance] Cookie ${name} not found. All cookies:`,
-    document.cookie,
-  );
   return null;
 }
 

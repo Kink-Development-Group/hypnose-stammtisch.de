@@ -11,8 +11,6 @@
   let authError = "";
 
   onMount(async () => {
-    console.log("AdminGuard: Starting authentication check...");
-
     // Always start with a clean state
     adminAuth.reset();
 
@@ -20,17 +18,10 @@
       // Check authentication status with no cache
       const status = await adminAuth.checkStatus();
 
-      console.log("AdminGuard: Auth check result:", status);
-
       if (status.success && status.data) {
-        console.log("AdminGuard: Authentication successful", status.data);
         isAuthenticated = true;
         authError = "";
       } else {
-        console.log(
-          "AdminGuard: Authentication failed",
-          status.message || "No data",
-        );
         isAuthenticated = false;
         authError = status.message || "Authentication failed";
 

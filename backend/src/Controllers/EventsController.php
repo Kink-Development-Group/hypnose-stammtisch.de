@@ -222,11 +222,92 @@ class EventsController
     /**
      * Get single event by ID or slug
      * GET /api/events/{id}
+     * Supports regular events, UUIDs, and composite series IDs (series_UUID_DATE)
      */
     public function show(string $identifier): void
     {
         try {
-            // Try mock data first since database is not set up
+            // Check if this is a dynamically generated series instance
+            // Format: series_{seriesId}_{date} e.g., series_bc0ffb02-dccc-11f0-8b62-f2fcde57ae25_2026-01-19
+            if (preg_match('/^series_(.+)_(\d{4}-\d{2}-\d{2})$/', $identifier, $matches)) {
+                $seriesId = $matches[1];
+                $instanceDate = $matches[2];
+
+                // First check if there's an override in the events table
+                $override = Database::fetchOne(
+                    "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
+                    [$seriesId, $instanceDate]
+                );
+
+                if ($override) {
+                    Response::json([
+                        'success' => true,
+                        'data' => $override
+                    ]);
+                    return;
+                }
+
+                // Otherwise, generate the instance from the series
+                $series = Database::fetchOne(
+                    "SELECT * FROM event_series WHERE id = ? AND status = 'published'",
+                    [$seriesId]
+                );
+
+                if (!$series) {
+                    Response::json([
+                        'success' => false,
+                        'error' => 'Series not found'
+                    ], 404);
+                    return;
+                }
+
+                // Generate event data for this specific instance
+                $startTime = $series['start_time'] ?? '19:00:00';
+                $endTime = $series['end_time'] ?? null;
+                if (!$endTime) {
+                    $endTime = date('H:i:s', strtotime($startTime) + ($series['default_duration_minutes'] ?? 120) * 60);
+                }
+
+                $eventData = [
+                    'id' => $identifier,
+                    'title' => $series['title'],
+                    'description' => $series['description'] ?? '',
+                    'start_datetime' => $instanceDate . ' ' . $startTime,
+                    'end_datetime' => $instanceDate . ' ' . $endTime,
+                    'timezone' => 'Europe/Berlin',
+                    'is_all_day' => false,
+                    'location_type' => $series['default_location_type'] ?? 'physical',
+                    'location_name' => $series['default_location_name'] ?? '',
+                    'location_address' => $series['default_location_address'] ?? '',
+                    'tags' => $series['tags'] ?? '[]',
+                    'category' => $series['default_category'] ?? 'stammtisch',
+                    'status' => 'published',
+                    'series_id' => $seriesId,
+                    'instance_date' => $instanceDate,
+                    'rrule' => $series['rrule'] ?? null,
+                    'slug' => ($series['slug'] ?? 'series') . '-' . $instanceDate,
+                    'created_at' => $series['created_at'],
+                    'updated_at' => $series['updated_at'],
+                ];
+
+                Response::json([
+                    'success' => true,
+                    'data' => $eventData
+                ]);
+                return;
+            }
+
+            // Try to find regular event by ID (numeric or UUID)
+            $event = Event::findById($identifier);
+            if ($event) {
+                Response::json([
+                    'success' => true,
+                    'data' => $this->eventToArray($event)
+                ]);
+                return;
+            }
+
+            // Try mock data as fallback
             $mockEvent = MockData::getEventByIdOrSlug($identifier);
             if ($mockEvent) {
                 Response::json([

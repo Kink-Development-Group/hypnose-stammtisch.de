@@ -70,11 +70,6 @@ class AdminAuthStore {
     }));
 
     try {
-      console.log("Attempting login with:", {
-        email,
-        api_url: `${API_BASE}/auth/login`,
-      });
-
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: {
@@ -84,14 +79,7 @@ class AdminAuthStore {
         body: JSON.stringify({ email, password, captcha_token: captchaToken }),
       });
 
-      console.log("Response status:", response.status);
-      console.log(
-        "Response headers:",
-        Object.fromEntries(response.headers.entries()),
-      );
-
       const result = await response.json();
-      console.log("Response data:", result);
 
       if (result.success) {
         // Backend now returns twofa flags instead of user directly
@@ -131,7 +119,6 @@ class AdminAuthStore {
           loading: false,
           lastError: result.message,
         }));
-        console.log("Login failed:", result);
       }
 
       return result;
@@ -510,11 +497,6 @@ export class AdminAPI {
   }
 
   static async createEvent(eventData: any) {
-    console.log(
-      "Creating event with data:",
-      JSON.stringify(eventData, null, 2),
-    );
-
     // Optimistische Aktualisierung: Event sofort zur Liste hinzufügen
     const tempEvent = {
       ...eventData,
@@ -531,8 +513,6 @@ export class AdminAPI {
         method: "POST",
         body: JSON.stringify(eventData),
       });
-
-      console.log("Create event result:", result);
 
       if (result.success) {
         // Ersetze das temporäre Event mit den echten Daten
