@@ -39,11 +39,6 @@
     } else {
       expandedSeriesIds.add(seriesId);
     }
-    // SvelteSet is automatically reactive, no need to reassign
-  }
-
-  function isSeriesExpanded(seriesId: string): boolean {
-    return expandedSeriesIds.has(seriesId);
   }
 
   // Reactive subscriptions
@@ -584,7 +579,7 @@
                       type="button"
                       class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
                       on:click={() => toggleSeriesExpanded(seriesItem.id)}
-                      aria-expanded={isSeriesExpanded(seriesItem.id)}
+                      aria-expanded={expandedSeriesIds.has(seriesItem.id)}
                     >
                       <span
                         class="text-sm font-semibold text-gray-700 dark:text-smoke-200"
@@ -592,7 +587,7 @@
                         Instanzen & Ausnahmen verwalten
                       </span>
                       <svg
-                        class="w-5 h-5 text-gray-500 dark:text-smoke-400 transition-transform {isSeriesExpanded(
+                        class="w-5 h-5 text-gray-500 dark:text-smoke-400 transition-transform {expandedSeriesIds.has(
                           seriesItem.id,
                         )
                           ? 'rotate-180'
@@ -609,7 +604,7 @@
                         ></path>
                       </svg>
                     </button>
-                    {#if isSeriesExpanded(seriesItem.id)}
+                    {#if expandedSeriesIds.has(seriesItem.id)}
                       <div class="px-4 pb-4">
                         <SeriesManagement {seriesItem} />
                       </div>
