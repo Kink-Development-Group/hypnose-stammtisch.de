@@ -44,11 +44,12 @@
 
 ### Testing
 
-| Tool                     | Zweck               |
-| ------------------------ | ------------------- |
-| **Playwright**           | E2E-Tests           |
-| **@axe-core/playwright** | Accessibility-Tests |
-| **PHPUnit**              | Backend Unit-Tests  |
+| Tool                     | Zweck                     |
+| ------------------------ | ------------------------- |
+| **Playwright**           | E2E-Tests                 |
+| **Vitest**               | Frontend Unit-Tests       |
+| **@axe-core/playwright** | Accessibility-Tests       |
+| **PHPUnit**              | Backend Unit-Tests        |
 
 ---
 
@@ -110,6 +111,9 @@ bun run format:all             # Formatierung (Frontend + PHP)
 
 ```bash
 bun run test                   # Playwright E2E Tests
+bun run test:unit              # Vitest Unit Tests (watch mode)
+bun run test:unit:run          # Vitest Unit Tests (single run)
+bun run test:unit:coverage     # Vitest with coverage
 bun run test:a11y              # Accessibility Tests (axe-core)
 bun run backend:test           # PHPUnit Tests
 ```

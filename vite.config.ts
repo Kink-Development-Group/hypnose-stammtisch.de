@@ -36,4 +36,10 @@ export default defineConfig({
       "Referrer-Policy": "strict-origin-when-cross-origin",
     },
   },
+  test: {
+    globals: true,
+    environment: "jsdom",
+    include: ["src/**/*.test.ts"],
+    exclude: ["tests/**/*.spec.ts"],
+  },
 });

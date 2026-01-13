@@ -42,6 +42,7 @@ Eine moderne, barrierefreie Webanwendung für die Hypnose-Community mit Kalender
 #### Entwicklung & Testing
 
 - **Playwright** - E2E Testing
+- **Vitest** - Unit Testing
 - **@axe-core/playwright** - Accessibility Testing
 - **ESLint + Prettier** - Code-Qualität
 
@@ -238,24 +239,27 @@ bun run test:a11y
 ### Test-Suites
 
 ```bash
-# Alle Tests ausführen
+# Alle E2E Tests ausführen (Playwright)
 bun test
 
 # Accessibility Tests
 bun run test:a11y
 
-# E2E Tests
-bun run test:e2e
-
-# Unit Tests
+# Unit Tests im Watch-Modus (Vitest)
 bun run test:unit
+
+# Unit Tests einmalig ausführen
+bun run test:unit:run
+
+# Unit Test Coverage
+bun run test:unit:coverage
 ```
 
 ### Coverage Reports
 
 ```bash
 # Test Coverage generieren
-bun run test:coverage
+bun run test:unit:coverage
 ```
 
 ## 📦 Build & Deployment

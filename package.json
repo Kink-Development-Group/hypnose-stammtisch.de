@@ -47,6 +47,9 @@
     "backend:status": "cd backend && composer validate && php -v",
     "frontend:status": "bun pm ls",
     "test": "playwright test",
+    "test:unit": "vitest",
+    "test:unit:run": "vitest run",
+    "test:unit:coverage": "vitest run --coverage",
     "test:a11y": "playwright test tests/accessibility.spec.ts",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
@@ -69,6 +72,7 @@
     "eslint": "^9.39.2",
     "eslint-plugin-svelte": "^3.13.1",
     "google-webfonts-helper": "^0.0.1-security",
+    "jsdom": "^27.4.0",
     "postcss": "^8.5.6",
     "prettier": "^3.7.4",
     "prettier-plugin-svelte": "^3.4.1",
@@ -78,7 +82,8 @@
     "tslib": "^2.8.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
-    "vitepress": "^1.6.4"
+    "vitepress": "^1.6.4",
+    "vitest": "^4.0.17"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
