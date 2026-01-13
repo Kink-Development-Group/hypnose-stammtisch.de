@@ -10,6 +10,7 @@
     adminPut,
   } from "../../utils/adminApi";
   import { t } from "../../utils/i18n";
+  import { DateTimePicker } from "../forms";
   import Portal from "../ui/Portal.svelte";
 
   /**
@@ -1042,17 +1043,11 @@
                 </div>
 
                 <div>
-                  <label
-                    for="next-meeting-input"
-                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300 mb-1"
-                  >
-                    {t("adminLocations.form.nextMeetingLabel")}
-                  </label>
-                  <input
+                  <DateTimePicker
                     id="next-meeting-input"
-                    type="datetime-local"
+                    label={t("adminLocations.form.nextMeetingLabel")}
                     bind:value={formData.next_meeting}
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                    mode="datetime"
                   />
                 </div>
               </div>

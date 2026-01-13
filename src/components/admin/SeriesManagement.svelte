@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { AdminAPI } from "../../stores/admin";
+  import { DatePicker, TimePicker } from "../forms";
   export let seriesItem: any;
 
   let overrides: any[] = [];
@@ -107,43 +108,25 @@
         Overrides (individuelle Instanzen)
       </h4>
       <div class="flex flex-col md:flex-row gap-2 items-end">
-        <div>
-          <label
-            for="ov-date-{seriesItem.id}"
-            class="block text-xs text-slate-600 dark:text-smoke-400 mb-1"
-            >Datum</label
-          >
-          <input
+        <div class="min-w-[150px]">
+          <DatePicker
             id="ov-date-{seriesItem.id}"
-            type="date"
+            label="Datum"
             bind:value={newOverrideDate}
-            class="border dark:border-charcoal-600 rounded px-2 py-1 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
           />
         </div>
-        <div>
-          <label
-            for="ov-start-{seriesItem.id}"
-            class="block text-xs text-slate-600 dark:text-smoke-400 mb-1"
-            >Start (HH:MM)</label
-          >
-          <input
+        <div class="min-w-[130px]">
+          <TimePicker
             id="ov-start-{seriesItem.id}"
-            type="time"
+            label="Start"
             bind:value={newOverrideStart}
-            class="border dark:border-charcoal-600 rounded px-2 py-1 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
           />
         </div>
-        <div>
-          <label
-            for="ov-end-{seriesItem.id}"
-            class="block text-xs text-slate-600 dark:text-smoke-400 mb-1"
-            >Ende (HH:MM)</label
-          >
-          <input
+        <div class="min-w-[130px]">
+          <TimePicker
             id="ov-end-{seriesItem.id}"
-            type="time"
+            label="Ende"
             bind:value={newOverrideEnd}
-            class="border dark:border-charcoal-600 rounded px-2 py-1 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
           />
         </div>
         <div class="flex-1">
@@ -208,17 +191,11 @@
         Ausnahmedaten (EXDATE)
       </h4>
       <div class="flex gap-2 items-end">
-        <div>
-          <label
-            for="exdate-{seriesItem.id}"
-            class="block text-xs text-slate-600 dark:text-smoke-400 mb-1"
-            >Datum</label
-          >
-          <input
+        <div class="min-w-[150px]">
+          <DatePicker
             id="exdate-{seriesItem.id}"
-            type="date"
+            label="Datum"
             bind:value={newExdate}
-            class="border dark:border-charcoal-600 rounded px-2 py-1 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
           />
         </div>
         <button
@@ -253,17 +230,11 @@
         Instanz absagen
       </h4>
       <div class="flex flex-col md:flex-row gap-2 items-end">
-        <div>
-          <label
-            for="cancel-date-{seriesItem.id}"
-            class="block text-xs text-slate-600 dark:text-smoke-400 mb-1"
-            >Datum</label
-          >
-          <input
+        <div class="min-w-[150px]">
+          <DatePicker
             id="cancel-date-{seriesItem.id}"
-            type="date"
+            label="Datum"
             bind:value={cancelDate}
-            class="border dark:border-charcoal-600 rounded px-2 py-1 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
           />
         </div>
         <div class="flex-1">
@@ -293,17 +264,11 @@
         Absage zurücknehmen
       </h4>
       <div class="flex flex-col md:flex-row gap-2 items-end">
-        <div>
-          <label
-            for="restore-date-{seriesItem.id}"
-            class="block text-xs text-slate-600 dark:text-smoke-400 mb-1"
-            >Datum</label
-          >
-          <input
+        <div class="min-w-[150px]">
+          <DatePicker
             id="restore-date-{seriesItem.id}"
-            type="date"
+            label="Datum"
             bind:value={restoreDate}
-            class="border dark:border-charcoal-600 rounded px-2 py-1 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
           />
         </div>
         <button

@@ -6,6 +6,7 @@
   import { z } from "zod";
   import InvisibleCaptcha from "../shared/InvisibleCaptcha.svelte";
   import MarkdownEditor from "../shared/MarkdownEditor.svelte";
+  import DateTimePicker from "./DateTimePicker.svelte";
 
   // CAPTCHA component reference
   let captchaComponent: InvisibleCaptcha;
@@ -450,52 +451,25 @@
 
     <div class="grid gap-6 md:grid-cols-2">
       <!-- Start Date/Time -->
-      <div>
-        <label
-          for="start_datetime"
-          class="block text-sm font-medium text-smoke-100 mb-2"
-        >
-          Beginn <span class="text-boundaries" aria-label="Pflichtfeld">*</span>
-        </label>
-        <input
-          type="datetime-local"
-          id="start_datetime"
-          bind:value={formData.start_datetime}
-          class="w-full px-4 py-3 bg-charcoal-800 border border-charcoal-600 rounded-lg text-smoke-50 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
-          required
-          aria-describedby={errors.start_datetime ? "start-error" : undefined}
-          aria-invalid={errors.start_datetime ? "true" : "false"}
-        />
-        {#if errors.start_datetime}
-          <p id="start-error" class="mt-2 text-sm text-boundaries" role="alert">
-            {errors.start_datetime}
-          </p>
-        {/if}
-      </div>
+      <DateTimePicker
+        id="start_datetime"
+        label="Beginn"
+        bind:value={formData.start_datetime}
+        required
+        mode="datetime"
+        error={errors.start_datetime || ""}
+      />
 
       <!-- End Date/Time -->
-      <div>
-        <label
-          for="end_datetime"
-          class="block text-sm font-medium text-smoke-100 mb-2"
-        >
-          Ende <span class="text-boundaries" aria-label="Pflichtfeld">*</span>
-        </label>
-        <input
-          type="datetime-local"
-          id="end_datetime"
-          bind:value={formData.end_datetime}
-          class="w-full px-4 py-3 bg-charcoal-800 border border-charcoal-600 rounded-lg text-smoke-50 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
-          required
-          aria-describedby={errors.end_datetime ? "end-error" : undefined}
-          aria-invalid={errors.end_datetime ? "true" : "false"}
-        />
-        {#if errors.end_datetime}
-          <p id="end-error" class="mt-2 text-sm text-boundaries" role="alert">
-            {errors.end_datetime}
-          </p>
-        {/if}
-      </div>
+      <DateTimePicker
+        id="end_datetime"
+        label="Ende"
+        bind:value={formData.end_datetime}
+        required
+        mode="datetime"
+        minDate={formData.start_datetime?.split("T")[0]}
+        error={errors.end_datetime || ""}
+      />
 
       <!-- All Day Event -->
       <div class="md:col-span-2">

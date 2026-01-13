@@ -5,6 +5,11 @@
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import RecurrenceBuilder from "../../components/admin/recurrence/RecurrenceBuilder.svelte";
   import SeriesManagement from "../../components/admin/SeriesManagement.svelte";
+  import {
+    DatePicker,
+    DateTimePicker,
+    TimePicker,
+  } from "../../components/forms";
   import MarkdownEditor from "../../components/shared/MarkdownEditor.svelte";
   import Portal from "../../components/ui/Portal.svelte";
   import { AdminAPI, adminAuth } from "../../stores/admin";
@@ -803,90 +808,46 @@
                 >
                 {#if newEvent.event_type === "single"}
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label
-                        for="start-datetime"
-                        class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                        >Start *</label
-                      >
-                      <input
-                        id="start-datetime"
-                        type="datetime-local"
-                        bind:value={newEvent.start_datetime}
-                        required
-                        class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        for="end-datetime"
-                        class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                        >Ende *</label
-                      >
-                      <input
-                        id="end-datetime"
-                        type="datetime-local"
-                        bind:value={newEvent.end_datetime}
-                        required
-                        class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      />
-                    </div>
+                    <DateTimePicker
+                      id="start-datetime"
+                      label="Start"
+                      bind:value={newEvent.start_datetime}
+                      required
+                      mode="datetime"
+                    />
+                    <DateTimePicker
+                      id="end-datetime"
+                      label="Ende"
+                      bind:value={newEvent.end_datetime}
+                      required
+                      mode="datetime"
+                      minDate={newEvent.start_datetime?.split("T")[0]}
+                    />
                   </div>
                 {:else}
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label
-                        for="start-date"
-                        class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                        >Startdatum *</label
-                      >
-                      <input
-                        id="start-date"
-                        type="date"
-                        bind:value={newEvent.start_date}
-                        required
-                        class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        for="end-date"
-                        class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                        >Enddatum (optional)</label
-                      >
-                      <input
-                        id="end-date"
-                        type="date"
-                        bind:value={newEvent.end_date}
-                        class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        for="series-start-time"
-                        class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                        >Serien-Start (HH:MM)</label
-                      >
-                      <input
-                        id="series-start-time"
-                        type="time"
-                        bind:value={newEvent.start_time}
-                        class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        for="series-end-time"
-                        class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                        >Serien-Ende (HH:MM)</label
-                      >
-                      <input
-                        id="series-end-time"
-                        type="time"
-                        bind:value={newEvent.end_time}
-                        class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      />
-                    </div>
+                    <DatePicker
+                      id="start-date"
+                      label="Startdatum"
+                      bind:value={newEvent.start_date}
+                      required
+                    />
+                    <DatePicker
+                      id="end-date"
+                      label="Enddatum (optional)"
+                      bind:value={newEvent.end_date}
+                      minDate={newEvent.start_date}
+                    />
+                    <TimePicker
+                      id="series-start-time"
+                      label="Serien-Start (HH:MM)"
+                      bind:value={newEvent.start_time}
+                    />
+                    <TimePicker
+                      id="series-end-time"
+                      label="Serien-Ende (HH:MM)"
+                      bind:value={newEvent.end_time}
+                    />
                     <div class="md:col-span-2">
                       <label
                         for="rrule-builder"
