@@ -208,9 +208,9 @@
             <p>
               Die wichtigste Voraussetzung für eine sichere Anwendung ist die
               <strong class="text-smoke-50"
-                >Qualifikation des Hypnotiseurs/Therapeuten</strong
-              >. Ein verantwortungsvoller Anwender wird immer eine sorgfältige
-              Anamnese und Diagnostik durchführen, um mögliche
+                >Qualifikation der hypnotisierenden Person</strong
+              >. Eine verantwortungsvolle Anwendung beinhaltet immer eine
+              sorgfältige Anamnese und Diagnostik, um mögliche
               Kontraindikationen zu erkennen.
             </p>
             <p>

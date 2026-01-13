@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { link } from "svelte-spa-router";
+  import { derived } from "svelte/store";
   import Calendar from "../components/calendar/Calendar.svelte";
   import EventFilters from "../components/calendar/EventFilters.svelte";
   import EventList from "../components/calendar/EventList.svelte";
@@ -20,6 +21,31 @@
   let searchTerm = "";
   let loadedMonthKey = ""; // Track which month we've loaded events for
   let unsubscribe: (() => void) | null = null;
+
+  // Derived store for current month's active (non-cancelled) events
+  const currentMonthActiveEvents = derived(
+    [filteredEvents, currentDate],
+    ([$filteredEvents, $currentDate]) => {
+      const currentMonth = $currentDate.getMonth();
+      const currentYear = $currentDate.getFullYear();
+
+      return $filteredEvents.filter((event) => {
+        // Only count events in the current month
+        const eventDate = event.startDate;
+        if (
+          eventDate.getMonth() !== currentMonth ||
+          eventDate.getFullYear() !== currentYear
+        ) {
+          return false;
+        }
+        // Exclude cancelled events from the count
+        if (event.isCancelled) {
+          return false;
+        }
+        return true;
+      });
+    },
+  );
 
   // Function to load events for a given date
   async function loadEventsForDate(date: Date) {
@@ -200,14 +226,12 @@
   </section>
 
   <!-- Event count and pagination info -->
-  {#if !$isLoading && $filteredEvents.length > 0}
+  {#if !$isLoading && $currentMonthActiveEvents.length > 0}
     <footer class="mt-8 text-center text-smoke-400 text-sm">
-      {$filteredEvents.length} Veranstaltung{$filteredEvents.length !== 1
+      {$currentMonthActiveEvents.length} Veranstaltung{$currentMonthActiveEvents.length !==
+      1
         ? "en"
-        : ""}
-      {#if $events.length !== $filteredEvents.length}
-        von {$events.length} gesamt
-      {/if}
+        : ""} diesen Monat
     </footer>
   {/if}
 
