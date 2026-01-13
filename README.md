@@ -245,10 +245,7 @@ npm test
 # Accessibility Tests
 npm run test:a11y
 
-# Unit Tests (Vitest)
-npm run test:unit
-
-# Unit Tests im Watch-Modus
+# Unit Tests im Watch-Modus (Vitest)
 npm run test:unit
 
 # Unit Tests einmalig ausführen

@@ -81,4 +81,21 @@ describe("User.getRoleDisplayName()", () => {
       expect(tSpy).toHaveBeenCalledWith(expectedKey);
     });
   });
+
+  it("should handle default case by returning unknown translation key", () => {
+    // Note: Due to Zod validation with z.nativeEnum(Role), we cannot create
+    // a User instance with an invalid role through the constructor.
+    // This test verifies the method's behavior by directly testing the switch logic.
+    const user = new User({
+      ...baseUserData,
+      role: Role.HEADADMIN,
+    });
+
+    // Temporarily override the role to test the default case
+    // @ts-expect-error - Testing default case behavior
+    user.role = "invalid_role";
+
+    const displayName = user.getRoleDisplayName();
+    expect(displayName).toBe("role.unknown");
+  });
 });
