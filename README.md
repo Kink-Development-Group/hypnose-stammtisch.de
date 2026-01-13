@@ -240,26 +240,26 @@ bun run test:a11y
 
 ```bash
 # Alle E2E Tests ausführen (Playwright)
-npm test
+bun test
 
 # Accessibility Tests
-npm run test:a11y
+bun run test:a11y
 
 # Unit Tests im Watch-Modus (Vitest)
-npm run test:unit
+bun run test:unit
 
 # Unit Tests einmalig ausführen
-npm run test:unit:run
+bun run test:unit:run
 
 # Unit Test Coverage
-npm run test:unit:coverage
+bun run test:unit:coverage
 ```
 
 ### Coverage Reports
 
 ```bash
 # Test Coverage generieren
-npm run test:unit:coverage
+bun run test:unit:coverage
 ```
 
 ## 📦 Build & Deployment
