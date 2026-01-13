@@ -19,15 +19,41 @@ class Validator
      * Can be overridden via config 'security.disposable_email_domains'
      */
     private const DEFAULT_DISPOSABLE_DOMAINS = [
-        'mailinator.com', 'guerrillamail.com', 'tempmail.com', 'temp-mail.org',
-        'throwaway.email', '10minutemail.com', 'fakeinbox.com', 'trashmail.com',
-        'mailnator.com', 'yopmail.com', 'getnada.com', 'getairmail.com',
-        'dispostable.com', 'mintemail.com', 'tempail.com', 'fakemailgenerator.com',
-        'emailondeck.com', 'mohmal.com', 'tempr.email', 'discard.email',
-        'maildrop.cc', 'guerrillamail.info', 'sharklasers.com', 'grr.la',
-        'mailcatch.com', 'mailnesia.com', 'spamgourmet.com', 'tempmailaddress.com',
-        'burnermail.io', 'inboxkitten.com', 'emkei.cz', 'anonymbox.com',
-        'tempinbox.com', 'fakemailgenerator.net', 'temporary-mail.net'
+        'mailinator.com',
+        'guerrillamail.com',
+        'tempmail.com',
+        'temp-mail.org',
+        'throwaway.email',
+        '10minutemail.com',
+        'fakeinbox.com',
+        'trashmail.com',
+        'mailnator.com',
+        'yopmail.com',
+        'getnada.com',
+        'getairmail.com',
+        'dispostable.com',
+        'mintemail.com',
+        'tempail.com',
+        'fakemailgenerator.com',
+        'emailondeck.com',
+        'mohmal.com',
+        'tempr.email',
+        'discard.email',
+        'maildrop.cc',
+        'guerrillamail.info',
+        'sharklasers.com',
+        'grr.la',
+        'mailcatch.com',
+        'mailnesia.com',
+        'spamgourmet.com',
+        'tempmailaddress.com',
+        'burnermail.io',
+        'inboxkitten.com',
+        'emkei.cz',
+        'anonymbox.com',
+        'tempinbox.com',
+        'fakemailgenerator.net',
+        'temporary-mail.net'
     ];
 
     /**
@@ -368,7 +394,7 @@ class Validator
 
         // Check for excessive links
         $linkCount = preg_match_all('/https?:\/\//i', $message);
-        if (($linkCount === false ? 0 : $linkCount) > self::MAX_LINKS_ALLOWED) {
+        if ($linkCount !== false && $linkCount > self::MAX_LINKS_ALLOWED) {
             return true;
         }
 
@@ -380,17 +406,51 @@ class Validator
 
         // Check for suspicious keywords (expanded list)
         $spamKeywords = [
-            'viagra', 'cialis', 'casino', 'lottery', 'winner', 'congratulations',
-            'click here', 'free money', 'guaranteed', 'investment opportunity',
-            'buy now', 'limited time', 'act now', 'urgent', 'make money fast',
-            'million dollars', 'bitcoin investment', 'crypto opportunity',
-            'work from home', 'easy money', 'risk free', 'no obligation',
-            'double your money', 'earn extra cash', 'be your own boss',
-            'financial freedom', 'passive income', 'mlm', 'multi-level marketing',
-            'pyramid scheme', 'adult content', 'xxx', 'porn', 'sex video',
-            'replica watches', 'cheap meds', 'online pharmacy', 'weight loss',
-            'diet pills', 'enhancement pills', 'enlarge', 'medication without',
-            'prescription free', 'herbal remedy', 'miracle cure'
+            'viagra',
+            'cialis',
+            'casino',
+            'lottery',
+            'winner',
+            'congratulations',
+            'click here',
+            'free money',
+            'guaranteed',
+            'investment opportunity',
+            'buy now',
+            'limited time',
+            'act now',
+            'urgent',
+            'make money fast',
+            'million dollars',
+            'bitcoin investment',
+            'crypto opportunity',
+            'work from home',
+            'easy money',
+            'risk free',
+            'no obligation',
+            'double your money',
+            'earn extra cash',
+            'be your own boss',
+            'financial freedom',
+            'passive income',
+            'mlm',
+            'multi-level marketing',
+            'pyramid scheme',
+            'adult content',
+            'xxx',
+            'porn',
+            'sex video',
+            'replica watches',
+            'cheap meds',
+            'online pharmacy',
+            'weight loss',
+            'diet pills',
+            'enhancement pills',
+            'enlarge',
+            'medication without',
+            'prescription free',
+            'herbal remedy',
+            'miracle cure'
         ];
 
         $lowerMessage = strtolower($message);
