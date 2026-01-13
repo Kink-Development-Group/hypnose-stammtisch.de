@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { push } from "svelte-spa-router";
+  import { SvelteSet } from "svelte/reactivity";
   import User from "../../classes/User";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import RecurrenceBuilder from "../../components/admin/recurrence/RecurrenceBuilder.svelte";
@@ -30,11 +31,11 @@
   let currentUser: User | null = null;
 
   // Track which series details are expanded (persists across data refreshes)
-  let expandedSeriesIds = new Set<string>();
+  let expandedSeriesIds = new SvelteSet<string>();
 
   function toggleSeriesExpanded(seriesId: string) {
     // Create new Set to trigger reactivity (Svelte 4 pattern with $: statements)
-    const newSet = new Set(expandedSeriesIds);
+    const newSet = new SvelteSet<string>(expandedSeriesIds);
     if (newSet.has(seriesId)) {
       newSet.delete(seriesId);
     } else {
@@ -520,7 +521,7 @@
           Veranstaltungsreihen
         </h2>
         <div
-          class="overflow-hidden rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 shadow-sm"
+          class="rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 shadow-sm"
         >
           {#if series.length === 0}
             <div class="p-6 text-center text-slate-600 dark:text-smoke-400">
@@ -583,11 +584,11 @@
                   </div>
                   <!-- Overrides & EXDATE Management - Controlled Accordion -->
                   <div
-                    class="mt-4 bg-gray-50 dark:bg-charcoal-700/50 rounded-lg overflow-hidden"
+                    class="mt-4 bg-gray-50 dark:bg-charcoal-700/50 rounded-lg"
                   >
                     <button
                       type="button"
-                      class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                      class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors rounded-lg"
                       on:click={() => toggleSeriesExpanded(seriesItem.id)}
                       aria-expanded={expandedSeriesIds.has(seriesItem.id)}
                     >

@@ -569,10 +569,8 @@ class ICSGenerator
 
         // EXDATE - excluded dates
         if (!empty($series['exdates'])) {
-            $exdates = is_string($series['exdates'])
-                ? json_decode($series['exdates'], true)
-                : $series['exdates'];
-            if (is_array($exdates) && !empty($exdates)) {
+            $exdates = JsonHelper::decodeArray($series['exdates']);
+            if (!empty($exdates)) {
                 foreach ($exdates as $exdate) {
                     $exdateCarbon = Carbon::parse($exdate, $timezone);
                     // Set same time as DTSTART for proper exclusion

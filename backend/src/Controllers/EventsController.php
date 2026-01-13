@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HypnoseStammtisch\Controllers;
 
 use HypnoseStammtisch\Models\Event;
+use HypnoseStammtisch\Utils\JsonHelper;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\Validator;
 use HypnoseStammtisch\Utils\MockData;
@@ -400,12 +401,7 @@ class EventsController
             $eventArray = $this->eventToArray($event);
             if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
                 try {
-                    $exdatesRaw = $eventArray['exdates'] ?? '[]';
-                    $exdatesDecoded = json_decode($exdatesRaw, true);
-                    if ($exdatesDecoded === null && !empty($exdatesRaw)) {
-                        error_log("Invalid exdates JSON for event {$eventArray['id']}: " . $exdatesRaw);
-                        $exdatesDecoded = [];
-                    }
+                    $exdatesDecoded = JsonHelper::decodeArray($eventArray['exdates'] ?? '[]');
                     $instances = RRuleProcessor::expandRecurringEvent(
                         $eventArray,
                         $startDate,
@@ -477,18 +473,7 @@ class EventsController
                     'status' => $series['status'] ?? 'published'
                 ];
 
-                $exdatesRaw = $series['exdates'] ?? '[]';
-                // Handle double-encoded JSON (e.g., "\"[]\"" or "[]")
-                $exdatesDecoded = json_decode($exdatesRaw, true);
-                // If still a string after first decode, try decoding again (double-encoded)
-                if (is_string($exdatesDecoded)) {
-                    $exdatesDecoded = json_decode($exdatesDecoded, true);
-                }
-                if (!is_array($exdatesDecoded)) {
-                    // Not an array, use empty
-                    $exdatesDecoded = [];
-                }
-                $exdates = $exdatesDecoded;
+                $exdates = JsonHelper::decodeArray($series['exdates'] ?? '[]');
 
                 $instances = RRuleProcessor::expandRecurringEvent($pseudo, $startDate, $endDate, $exdates);
 

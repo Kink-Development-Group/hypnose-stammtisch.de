@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HypnoseStammtisch\Models;
 
 use HypnoseStammtisch\Database\Database;
+use HypnoseStammtisch\Utils\JsonHelper;
 use HypnoseStammtisch\Utils\MockData;
 use Carbon\Carbon;
 
@@ -612,8 +613,7 @@ class Event
             $result = Database::fetchOne($sql, [$this->id]);
 
             if ($result && !empty($result['exdates'])) {
-                $exdates = json_decode($result['exdates'], true);
-                return is_array($exdates) ? $exdates : [];
+                return JsonHelper::decodeArray($result['exdates']);
             }
 
             return [];

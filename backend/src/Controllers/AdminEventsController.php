@@ -6,6 +6,7 @@ namespace HypnoseStammtisch\Controllers;
 
 use HypnoseStammtisch\Database\Database;
 use HypnoseStammtisch\Middleware\AdminAuth;
+use HypnoseStammtisch\Utils\JsonHelper;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\Validator;
 use Exception;
@@ -828,7 +829,7 @@ class AdminEventsController
                 Response::notFound(['message' => 'Series not found']);
                 return;
             }
-            $exdates = $series['exdates'] ? json_decode($series['exdates'], true) : [];
+            $exdates = JsonHelper::decodeArray($series['exdates']);
             if (!in_array($input['date'], $exdates)) {
                 $exdates[] = $input['date'];
                 sort($exdates);
@@ -862,7 +863,7 @@ class AdminEventsController
                 Response::notFound(['message' => 'Series not found']);
                 return;
             }
-            $exdates = $series['exdates'] ? json_decode($series['exdates'], true) : [];
+            $exdates = JsonHelper::decodeArray($series['exdates']);
             $exdates = array_values(array_filter($exdates, fn($d) => $d !== $date));
             Database::execute('UPDATE event_series SET exdates = ? WHERE id = ?', [json_encode($exdates), $seriesId]);
             Response::success(['exdates' => $exdates], 'EXDATE removed');
@@ -887,7 +888,7 @@ class AdminEventsController
                 Response::notFound(['message' => 'Series not found']);
                 return;
             }
-            $exdates = $series['exdates'] ? json_decode($series['exdates'], true) : [];
+            $exdates = JsonHelper::decodeArray($series['exdates']);
             Response::success(['exdates' => $exdates]);
         } catch (\Exception $e) {
             Response::error('Failed to get exdates: ' . $e->getMessage(), 500);

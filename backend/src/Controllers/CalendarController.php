@@ -6,6 +6,7 @@ namespace HypnoseStammtisch\Controllers;
 
 use HypnoseStammtisch\Models\Event;
 use HypnoseStammtisch\Database\Database;
+use HypnoseStammtisch\Utils\JsonHelper;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\ICSGenerator;
 use HypnoseStammtisch\Utils\RRuleProcessor;
@@ -430,7 +431,7 @@ class CalendarController
                         $eventArray,
                         $startDate,
                         $endDate,
-                        json_decode($eventArray['exdates'] ?? '[]', true)
+                        JsonHelper::decodeArray($eventArray['exdates'] ?? '[]')
                     );
 
                     if (!empty($instances)) {

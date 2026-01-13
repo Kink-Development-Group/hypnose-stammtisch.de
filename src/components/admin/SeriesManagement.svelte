@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { SvelteDate } from "svelte/reactivity";
   import { AdminAPI } from "../../stores/admin";
   import { adminNotifications } from "../../stores/adminData";
   import { DatePicker, TimePicker } from "../forms";
@@ -47,6 +48,33 @@
     sectionsExpanded[section] = !sectionsExpanded[section];
   }
 
+  /**
+   * Safely parse exdates from API response.
+   * Handles edge cases like double-encoded JSON or invalid data.
+   */
+  function parseExdates(data: unknown): string[] {
+    // Already a valid array of strings
+    if (Array.isArray(data)) {
+      // Filter to only valid date strings (YYYY-MM-DD format)
+      return data.filter(
+        (d): d is string =>
+          typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d),
+      );
+    }
+
+    // If it's a string, try to parse it as JSON (handles double-encoded)
+    if (typeof data === "string") {
+      try {
+        const parsed = JSON.parse(data);
+        return parseExdates(parsed);
+      } catch {
+        return [];
+      }
+    }
+
+    return [];
+  }
+
   async function loadData() {
     loading = true;
     try {
@@ -55,7 +83,7 @@
         AdminAPI.getSeriesExdates(seriesItem.id),
       ]);
       if (ovRes.success) overrides = ovRes.data.overrides || [];
-      if (exRes.success) exdates = exRes.data.exdates || [];
+      if (exRes.success) exdates = parseExdates(exRes.data.exdates);
     } finally {
       loading = false;
     }
@@ -66,8 +94,8 @@
   // Validation helpers
   function isDateInPast(dateStr: string): boolean {
     if (!dateStr) return false;
-    const date = new Date(dateStr);
-    const today = new Date();
+    const date = new SvelteDate(dateStr);
+    const today = new SvelteDate();
     today.setHours(0, 0, 0, 0);
     return date < today;
   }
@@ -136,7 +164,8 @@
     try {
       const res = await AdminAPI.addSeriesExdate(seriesItem.id, newExdate);
       if (res.success) {
-        exdates = res.data?.exdates || [...exdates, newExdate].sort();
+        exdates =
+          parseExdates(res.data?.exdates) || [...exdates, newExdate].sort();
         newExdate = "";
         exdateError = "";
         ondatachanged?.();
@@ -163,7 +192,8 @@
   async function removeExdate(date: string) {
     const res = await AdminAPI.removeSeriesExdate(seriesItem.id, date);
     if (res.success) {
-      exdates = res.data?.exdates || exdates.filter((d) => d !== date);
+      exdates =
+        parseExdates(res.data?.exdates) || exdates.filter((d) => d !== date);
       ondatachanged?.();
     }
   }
