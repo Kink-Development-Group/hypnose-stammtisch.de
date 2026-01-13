@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { push } from "svelte-spa-router";
-  import { SvelteSet } from "svelte/reactivity";
   import User from "../../classes/User";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import RecurrenceBuilder from "../../components/admin/recurrence/RecurrenceBuilder.svelte";
@@ -31,14 +30,17 @@
   let currentUser: User | null = null;
 
   // Track which series details are expanded (persists across data refreshes)
-  let expandedSeriesIds = new SvelteSet<string>();
+  let expandedSeriesIds = new Set<string>();
 
   function toggleSeriesExpanded(seriesId: string) {
-    if (expandedSeriesIds.has(seriesId)) {
-      expandedSeriesIds.delete(seriesId);
+    // Create new Set to trigger reactivity (Svelte 4 pattern with $: statements)
+    const newSet = new Set(expandedSeriesIds);
+    if (newSet.has(seriesId)) {
+      newSet.delete(seriesId);
     } else {
-      expandedSeriesIds.add(seriesId);
+      newSet.add(seriesId);
     }
+    expandedSeriesIds = newSet;
   }
 
   // Reactive subscriptions
@@ -144,7 +146,10 @@
 
       // Event Bus Listener für automatische Updates
       unsubscribeEventBus = adminEventBus.subscribe((event) => {
-        if (event?.data?.autoRefresh || event?.data?.manualRefresh) {
+        if (event?.data?.autoRefresh) {
+          // Auto-Refresh im Hintergrund ohne Loading-Spinner
+          loadEvents(true);
+        } else if (event?.data?.manualRefresh) {
           loadEvents();
         }
       });
@@ -164,16 +169,21 @@
     adminAutoUpdate.stop();
   });
 
-  async function loadEvents() {
-    adminLoading.set(true);
+  async function loadEvents(silent = false) {
+    if (!silent) {
+      adminLoading.set(true);
+    }
     try {
       const result = await AdminAPI.getEvents();
       if (!result.success) {
         error = result.message || "Fehler beim Laden der Veranstaltungen";
       }
     } catch (_e) {
+      // Fehler still ignorieren bei silent refresh
     } finally {
-      adminLoading.set(false);
+      if (!silent) {
+        adminLoading.set(false);
+      }
     }
   }
 

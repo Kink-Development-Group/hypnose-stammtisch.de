@@ -50,7 +50,11 @@
 
     // Event Bus Listener für automatische Updates
     const unsubscribeEventBus = adminEventBus.subscribe((event) => {
-      if (event?.data?.autoRefresh || event?.data?.manualRefresh) {
+      if (event?.data?.autoRefresh) {
+        // Auto-Refresh im Hintergrund ohne Loading-Spinner
+        loadMessages(true);
+        loadStats();
+      } else if (event?.data?.manualRefresh) {
         loadMessages();
         loadStats();
       }
@@ -66,8 +70,10 @@
     adminAutoUpdate.stop();
   });
 
-  async function loadMessages() {
-    adminLoading.set(true);
+  async function loadMessages(silent = false) {
+    if (!silent) {
+      adminLoading.set(true);
+    }
     try {
       const params = {
         page: currentPage,
@@ -81,13 +87,17 @@
 
       if (result.success) {
         totalPages = result.data.pagination?.pages || 1;
-      } else {
+      } else if (!silent) {
         error = result.message || "Fehler beim Laden der Nachrichten";
       }
     } catch {
-      error = "Netzwerkfehler beim Laden der Nachrichten";
+      if (!silent) {
+        error = "Netzwerkfehler beim Laden der Nachrichten";
+      }
     } finally {
-      adminLoading.set(false);
+      if (!silent) {
+        adminLoading.set(false);
+      }
     }
   }
 
@@ -237,7 +247,7 @@
       </div>
       <button
         class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-charcoal-600 px-3 py-2 text-sm font-semibold text-slate-600 dark:text-smoke-300 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-        on:click={loadMessages}
+        on:click={() => loadMessages()}
         title="Nachrichten neu laden"
       >
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
