@@ -672,6 +672,7 @@ class AdminEventsController
     public static function createSeriesOverride(string $seriesId): void
     {
         AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
         $user = AdminAuth::getCurrentUser();
         if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
             Response::error('Insufficient permissions', 403);
@@ -787,6 +788,7 @@ class AdminEventsController
     public static function deleteSeriesOverride(string $seriesId, string $overrideId): void
     {
         AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
         if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
             Response::error('Method not allowed', 405);
             return;
@@ -810,6 +812,7 @@ class AdminEventsController
     public static function addSeriesExdate(string $seriesId): void
     {
         AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             Response::error('Method not allowed', 405);
             return;
@@ -843,6 +846,7 @@ class AdminEventsController
     public static function removeSeriesExdate(string $seriesId): void
     {
         AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
         if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
             Response::error('Method not allowed', 405);
             return;
@@ -898,6 +902,7 @@ class AdminEventsController
     public static function cancelSeriesInstance(string $seriesId): void
     {
         AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             Response::error('Method not allowed', 405);
             return;
@@ -965,6 +970,7 @@ class AdminEventsController
     public static function restoreSeriesInstance(string $seriesId): void
     {
         AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
         if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
             Response::error('Method not allowed', 405);
             return;

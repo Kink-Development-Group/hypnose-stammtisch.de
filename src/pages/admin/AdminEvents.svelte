@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
   import { push } from "svelte-spa-router";
+  import { SvelteSet } from "svelte/reactivity";
   import User from "../../classes/User";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import RecurrenceBuilder from "../../components/admin/recurrence/RecurrenceBuilder.svelte";
@@ -28,6 +29,22 @@
   let editingItem: any = null;
   let deleteConfirm: any = null;
   let currentUser: User | null = null;
+
+  // Track which series details are expanded (persists across data refreshes)
+  let expandedSeriesIds = new SvelteSet<string>();
+
+  function toggleSeriesExpanded(seriesId: string) {
+    if (expandedSeriesIds.has(seriesId)) {
+      expandedSeriesIds.delete(seriesId);
+    } else {
+      expandedSeriesIds.add(seriesId);
+    }
+    // SvelteSet is automatically reactive, no need to reassign
+  }
+
+  function isSeriesExpanded(seriesId: string): boolean {
+    return expandedSeriesIds.has(seriesId);
+  }
 
   // Reactive subscriptions
   $: events = $adminEvents;
@@ -559,16 +576,45 @@
                       {/if}
                     </div>
                   </div>
-                  <!-- Overrides & EXDATE Management -->
-                  <details
-                    class="mt-4 bg-gray-50 dark:bg-charcoal-700/50 rounded p-4"
+                  <!-- Overrides & EXDATE Management - Controlled Accordion -->
+                  <div
+                    class="mt-4 bg-gray-50 dark:bg-charcoal-700/50 rounded-lg overflow-hidden"
                   >
-                    <summary
-                      class="cursor-pointer text-sm font-semibold text-gray-700 dark:text-smoke-200"
-                      >Instanzen & Ausnahmen verwalten</summary
+                    <button
+                      type="button"
+                      class="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                      on:click={() => toggleSeriesExpanded(seriesItem.id)}
+                      aria-expanded={isSeriesExpanded(seriesItem.id)}
                     >
-                    <SeriesManagement {seriesItem} />
-                  </details>
+                      <span
+                        class="text-sm font-semibold text-gray-700 dark:text-smoke-200"
+                      >
+                        Instanzen & Ausnahmen verwalten
+                      </span>
+                      <svg
+                        class="w-5 h-5 text-gray-500 dark:text-smoke-400 transition-transform {isSeriesExpanded(
+                          seriesItem.id,
+                        )
+                          ? 'rotate-180'
+                          : ''}"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 9l-7 7-7-7"
+                        ></path>
+                      </svg>
+                    </button>
+                    {#if isSeriesExpanded(seriesItem.id)}
+                      <div class="px-4 pb-4">
+                        <SeriesManagement {seriesItem} />
+                      </div>
+                    {/if}
+                  </div>
                 </li>
               {/each}
             </ul>

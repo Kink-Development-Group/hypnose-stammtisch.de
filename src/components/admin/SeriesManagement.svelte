@@ -1,21 +1,51 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { AdminAPI } from "../../stores/admin";
+  import { adminNotifications } from "../../stores/adminData";
   import { DatePicker, TimePicker } from "../forms";
   export let seriesItem: any;
+
+  // Callback prop instead of createEventDispatcher (Svelte 5 pattern)
+  export let ondatachanged: (() => void) | undefined = undefined;
 
   let overrides: any[] = [];
   let exdates: string[] = [];
   let loading = false;
+  let savingOverride = false;
+  let savingExdate = false;
+  let cancellingInstance = false;
+  let restoringInstance = false;
+
+  // Override Form
   let newOverrideDate = "";
   let newOverrideStart = "";
   let newOverrideEnd = "";
   let newOverrideTitle = "";
+  let newOverrideDescription = "";
+
+  // EXDATE Form
   let newExdate = "";
-  // Cancellation
+  let exdateError = "";
+
+  // Cancellation Form
   let cancelDate = "";
   let cancelReason = "";
+  let cancelError = "";
+
+  // Restore Form
   let restoreDate = "";
+
+  // Accordion sections state (local, not reset on data load)
+  let sectionsExpanded = {
+    overrides: true,
+    exdates: true,
+    cancel: false,
+    restore: false,
+  };
+
+  function toggleSection(section: keyof typeof sectionsExpanded) {
+    sectionsExpanded[section] = !sectionsExpanded[section];
+  }
 
   async function loadData() {
     loading = true;
@@ -33,250 +63,774 @@
 
   onMount(loadData);
 
+  // Validation helpers
+  function isDateInPast(dateStr: string): boolean {
+    if (!dateStr) return false;
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- non-reactive comparison only
+    const date = new Date(dateStr);
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- non-reactive comparison only
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  }
+
+  function isExdateDuplicate(dateStr: string): boolean {
+    return exdates.includes(dateStr);
+  }
+
   async function addOverride() {
-    if (!newOverrideDate) return;
-    const payload: any = { instance_date: newOverrideDate };
-    if (newOverrideTitle) payload.title = newOverrideTitle;
-    if (newOverrideStart) payload.start_time = newOverrideStart;
-    if (newOverrideEnd) payload.end_time = newOverrideEnd;
-    const res = await AdminAPI.createSeriesOverride(seriesItem.id, payload);
-    if (res.success) {
-      overrides.push({ ...payload, id: res.data.id });
-      overrides = overrides.slice();
-      newOverrideDate = "";
-      newOverrideStart = "";
-      newOverrideEnd = "";
-      newOverrideTitle = "";
+    if (!newOverrideDate) {
+      adminNotifications.error("Bitte wählen Sie ein Datum für den Override.");
+      return;
+    }
+
+    savingOverride = true;
+    try {
+      const payload: any = { instance_date: newOverrideDate };
+      if (newOverrideTitle.trim()) payload.title = newOverrideTitle.trim();
+      if (newOverrideDescription.trim())
+        payload.description = newOverrideDescription.trim();
+      if (newOverrideStart) payload.start_time = newOverrideStart;
+      if (newOverrideEnd) payload.end_time = newOverrideEnd;
+
+      const res = await AdminAPI.createSeriesOverride(seriesItem.id, payload);
+      if (res.success) {
+        // Add to local list without full reload (prevents accordion collapse)
+        overrides = [
+          ...overrides,
+          { ...payload, id: res.data?.id || res.data?.data?.id },
+        ];
+        // Reset form
+        newOverrideDate = "";
+        newOverrideStart = "";
+        newOverrideEnd = "";
+        newOverrideTitle = "";
+        newOverrideDescription = "";
+        ondatachanged?.();
+      }
+    } finally {
+      savingOverride = false;
     }
   }
 
   async function addExdate() {
-    if (!newExdate) return;
-    const res = await AdminAPI.addSeriesExdate(seriesItem.id, newExdate);
-    if (res.success) {
-      exdates = res.data.exdates || [];
-      newExdate = "";
+    exdateError = "";
+
+    if (!newExdate) {
+      exdateError = "Bitte wählen Sie ein Datum.";
+      return;
+    }
+
+    // Client-side validation
+    if (isExdateDuplicate(newExdate)) {
+      exdateError = `Das Datum ${newExdate} ist bereits als Ausnahme hinterlegt.`;
+      adminNotifications.error(exdateError);
+      return;
+    }
+
+    if (isDateInPast(newExdate)) {
+      exdateError =
+        "Hinweis: Das gewählte Datum liegt in der Vergangenheit. Fortfahren?";
+      // Still allow past dates but show warning
+    }
+
+    savingExdate = true;
+    try {
+      const res = await AdminAPI.addSeriesExdate(seriesItem.id, newExdate);
+      if (res.success) {
+        exdates = res.data?.exdates || [...exdates, newExdate].sort();
+        newExdate = "";
+        exdateError = "";
+        ondatachanged?.();
+      } else {
+        // Parse specific API errors
+        const errorMsg = res.message || res.error || "";
+        if (errorMsg.includes("duplicate") || errorMsg.includes("already")) {
+          exdateError = `Das Datum ${newExdate} existiert bereits.`;
+        } else if (errorMsg.includes("not found")) {
+          exdateError = "Serie nicht gefunden. Bitte Seite neu laden.";
+        } else {
+          exdateError =
+            errorMsg || "Fehler beim Hinzufügen. Bitte erneut versuchen.";
+        }
+      }
+    } catch (err: any) {
+      exdateError = "Netzwerkfehler. Bitte Verbindung prüfen.";
+      console.error("addExdate error:", err);
+    } finally {
+      savingExdate = false;
     }
   }
 
   async function removeExdate(date: string) {
     const res = await AdminAPI.removeSeriesExdate(seriesItem.id, date);
-    if (res.success) exdates = res.data.exdates || [];
+    if (res.success) {
+      exdates = res.data?.exdates || exdates.filter((d) => d !== date);
+      ondatachanged?.();
+    }
   }
 
   async function deleteOverride(ovId: string) {
     const res = await AdminAPI.deleteSeriesOverride(seriesItem.id, ovId);
     if (res.success) {
       overrides = overrides.filter((o) => o.id !== ovId);
+      ondatachanged?.();
     }
   }
 
   async function cancelInstance() {
-    if (!cancelDate) return;
-    const res = await AdminAPI.cancelSeriesInstance(
-      seriesItem.id,
-      cancelDate,
-      cancelReason || undefined,
-    );
-    if (res.success) {
-      // Reload overrides to reflect cancellation (it appears as override with status cancelled)
-      loadData();
-      cancelDate = "";
-      cancelReason = "";
+    cancelError = "";
+
+    if (!cancelDate) {
+      cancelError = "Bitte wählen Sie ein Datum.";
+      adminNotifications.error(cancelError);
+      return;
+    }
+
+    // Check if date is in the past
+    if (isDateInPast(cancelDate)) {
+      cancelError = "Vergangene Termine können nicht mehr abgesagt werden.";
+      adminNotifications.error(cancelError);
+      return;
+    }
+
+    cancellingInstance = true;
+    try {
+      const res = await AdminAPI.cancelSeriesInstance(
+        seriesItem.id,
+        cancelDate,
+        cancelReason.trim() || undefined,
+      );
+      if (res.success) {
+        // Reload data to get the new cancelled instance
+        await loadData();
+        cancelDate = "";
+        cancelReason = "";
+        cancelError = "";
+        ondatachanged?.();
+      } else {
+        // Parse specific errors
+        const errorMsg = res.message || res.error || "";
+        if (errorMsg.includes("start_time") || errorMsg.includes("end_time")) {
+          cancelError =
+            "Diese Serie hat keine Start-/Endzeit definiert. Bitte Serie bearbeiten.";
+        } else if (errorMsg.includes("not found")) {
+          cancelError = "Serie nicht gefunden.";
+        } else {
+          cancelError =
+            errorMsg || "Fehler beim Absagen. Bitte erneut versuchen.";
+        }
+        adminNotifications.error(cancelError);
+      }
+    } catch (err: any) {
+      cancelError = "Netzwerkfehler. Bitte Verbindung prüfen.";
+      console.error("cancelInstance error:", err);
+      adminNotifications.error(cancelError);
+    } finally {
+      cancellingInstance = false;
     }
   }
 
   async function restoreInstance() {
-    if (!restoreDate) return;
-    const res = await AdminAPI.restoreSeriesInstance(
-      seriesItem.id,
-      restoreDate,
-    );
-    if (res.success) {
-      loadData();
-      restoreDate = "";
+    if (!restoreDate) {
+      adminNotifications.error("Bitte wählen Sie ein Datum.");
+      return;
+    }
+
+    restoringInstance = true;
+    try {
+      const res = await AdminAPI.restoreSeriesInstance(
+        seriesItem.id,
+        restoreDate,
+      );
+      if (res.success) {
+        await loadData();
+        restoreDate = "";
+        ondatachanged?.();
+      }
+    } finally {
+      restoringInstance = false;
     }
   }
+
+  // Get cancelled instances for display
+  $: cancelledOverrides = overrides.filter(
+    (o) => o.override_type === "cancelled" || o.status === "cancelled",
+  );
+  $: changedOverrides = overrides.filter(
+    (o) =>
+      o.override_type === "changed" ||
+      (o.override_type !== "cancelled" && o.status !== "cancelled"),
+  );
 </script>
 
 <div class="mt-3 space-y-6">
   {#if loading}
-    <div class="text-sm text-slate-500 dark:text-smoke-400">Lade Daten...</div>
+    <div
+      class="flex items-center gap-2 text-sm text-slate-500 dark:text-smoke-400"
+    >
+      <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+          fill="none"
+        />
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        />
+      </svg>
+      Lade Daten...
+    </div>
   {:else}
-    <div class="space-y-2">
-      <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
-        Overrides (individuelle Instanzen)
-      </h4>
-      <div class="flex flex-col md:flex-row gap-2 items-end">
-        <div class="min-w-[150px]">
-          <DatePicker
-            id="ov-date-{seriesItem.id}"
-            label="Datum"
-            bind:value={newOverrideDate}
+    <!-- Section: Overrides (individuelle Instanzen) -->
+    <div class="space-y-3">
+      <button
+        type="button"
+        class="flex items-center gap-2 w-full text-left"
+        on:click={() => toggleSection("overrides")}
+        aria-expanded={sectionsExpanded.overrides}
+      >
+        <svg
+          class="w-4 h-4 text-slate-500 dark:text-smoke-400 transition-transform {sectionsExpanded.overrides
+            ? 'rotate-90'
+            : ''}"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5l7 7-7 7"
           />
-        </div>
-        <div class="min-w-[130px]">
-          <TimePicker
-            id="ov-start-{seriesItem.id}"
-            label="Start"
-            bind:value={newOverrideStart}
-          />
-        </div>
-        <div class="min-w-[130px]">
-          <TimePicker
-            id="ov-end-{seriesItem.id}"
-            label="Ende"
-            bind:value={newOverrideEnd}
-          />
-        </div>
-        <div class="flex-1">
-          <label
-            for="ov-title-{seriesItem.id}"
-            class="block text-xs text-slate-600 dark:text-smoke-400 mb-1"
-            >Titel (optional)</label
+        </svg>
+        <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
+          Overrides (individuelle Instanzen)
+        </h4>
+        <span class="text-xs text-slate-500 dark:text-smoke-400">
+          ({changedOverrides.length})
+        </span>
+      </button>
+
+      {#if sectionsExpanded.overrides}
+        <div class="pl-6 space-y-3">
+          <!-- Override Form - Improved Layout -->
+          <div
+            class="bg-slate-50 dark:bg-charcoal-700/50 rounded-lg p-4 space-y-3"
           >
-          <input
-            id="ov-title-{seriesItem.id}"
-            type="text"
-            bind:value={newOverrideTitle}
-            placeholder="Abweichender Titel"
-            class="w-full border dark:border-charcoal-600 rounded px-2 py-1 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
-          />
-        </div>
-        <button
-          on:click={addOverride}
-          class="bg-blue-600 dark:bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 dark:hover:bg-blue-600"
-          >Override hinzufügen</button
-        >
-      </div>
-      {#if overrides.length === 0}
-        <div class="text-xs text-slate-600 dark:text-smoke-400">
-          Keine Overrides vorhanden.
-        </div>
-      {:else}
-        <ul
-          class="text-xs divide-y divide-gray-200 dark:divide-charcoal-700 border dark:border-charcoal-600 rounded bg-white dark:bg-charcoal-800"
-        >
-          {#each overrides as ov (ov.instance_date || ov.id || Math.random())}
-            <li class="px-2 py-1 flex justify-between items-center gap-3">
-              <div class="flex flex-col">
-                <span class="font-medium text-slate-900 dark:text-smoke-50"
-                  >{ov.instance_date} • {ov.title || seriesItem.title}</span
-                >
-                <span class="text-slate-500 dark:text-smoke-400">
-                  {#if ov.start_datetime && ov.end_datetime}
-                    {ov.start_datetime.slice(11, 16)} - {ov.end_datetime.slice(
-                      11,
-                      16,
-                    )}
-                  {:else if ov.start_time && ov.end_time}
-                    {ov.start_time} - {ov.end_time}
-                  {/if}
-                </span>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <DatePicker
+                  id="ov-date-{seriesItem.id}"
+                  label="Datum *"
+                  bind:value={newOverrideDate}
+                />
               </div>
-              <button
-                class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs"
-                aria-label="Override löschen"
-                title="Override löschen"
-                on:click={() => deleteOverride(ov.id)}>Löschen</button
+              <div>
+                <TimePicker
+                  id="ov-start-{seriesItem.id}"
+                  label="Startzeit"
+                  bind:value={newOverrideStart}
+                />
+              </div>
+              <div>
+                <TimePicker
+                  id="ov-end-{seriesItem.id}"
+                  label="Endzeit"
+                  bind:value={newOverrideEnd}
+                />
+              </div>
+            </div>
+
+            <!-- Improved Title Field - Full Width -->
+            <div>
+              <label
+                for="ov-title-{seriesItem.id}"
+                class="block text-xs font-medium text-slate-600 dark:text-smoke-400 mb-1"
               >
-            </li>
-          {/each}
-        </ul>
+                Abweichender Titel
+              </label>
+              <input
+                id="ov-title-{seriesItem.id}"
+                type="text"
+                bind:value={newOverrideTitle}
+                placeholder="Leer lassen für Originaltitel: {seriesItem.title}"
+                class="w-full border dark:border-charcoal-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50 placeholder:text-slate-400 dark:placeholder:text-smoke-500"
+              />
+            </div>
+
+            <!-- New Description Field - Full Width, Multiline -->
+            <div>
+              <label
+                for="ov-desc-{seriesItem.id}"
+                class="block text-xs font-medium text-slate-600 dark:text-smoke-400 mb-1"
+              >
+                Abweichende Beschreibung
+              </label>
+              <textarea
+                id="ov-desc-{seriesItem.id}"
+                bind:value={newOverrideDescription}
+                placeholder="Leer lassen für Originalbeschreibung"
+                rows="3"
+                class="w-full border dark:border-charcoal-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50 placeholder:text-slate-400 dark:placeholder:text-smoke-500 resize-y"
+              ></textarea>
+            </div>
+
+            <div class="flex justify-end">
+              <button
+                on:click={addOverride}
+                disabled={savingOverride || !newOverrideDate}
+                class="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {#if savingOverride}
+                  <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                      fill="none"
+                    />
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                {/if}
+                Override hinzufügen
+              </button>
+            </div>
+          </div>
+
+          <!-- Existing Overrides List -->
+          {#if changedOverrides.length === 0}
+            <div class="text-xs text-slate-600 dark:text-smoke-400 italic">
+              Keine Overrides vorhanden.
+            </div>
+          {:else}
+            <ul
+              class="text-sm divide-y divide-gray-200 dark:divide-charcoal-700 border dark:border-charcoal-600 rounded-lg bg-white dark:bg-charcoal-800 overflow-hidden"
+            >
+              {#each changedOverrides as ov (ov.id || ov.instance_date)}
+                <li
+                  class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-charcoal-700/50"
+                >
+                  <div class="flex justify-between items-start gap-4">
+                    <div class="flex-1 space-y-1">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span
+                          class="font-medium text-slate-900 dark:text-smoke-50"
+                        >
+                          {ov.instance_date}
+                        </span>
+                        {#if ov.title && ov.title !== seriesItem.title}
+                          <span
+                            class="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded"
+                          >
+                            {ov.title}
+                          </span>
+                        {:else}
+                          <span
+                            class="text-xs text-slate-500 dark:text-smoke-400"
+                          >
+                            (Originaltitel)
+                          </span>
+                        {/if}
+                      </div>
+                      <div class="text-xs text-slate-500 dark:text-smoke-400">
+                        {#if ov.start_datetime && ov.end_datetime}
+                          {ov.start_datetime.slice(11, 16)} – {ov.end_datetime.slice(
+                            11,
+                            16,
+                          )}
+                        {:else if ov.start_time && ov.end_time}
+                          {ov.start_time.slice(0, 5)} – {ov.end_time.slice(
+                            0,
+                            5,
+                          )}
+                        {:else}
+                          Standardzeiten
+                        {/if}
+                      </div>
+                      {#if ov.description}
+                        <div
+                          class="text-xs text-slate-600 dark:text-smoke-300 mt-1 line-clamp-2"
+                        >
+                          {ov.description}
+                        </div>
+                      {/if}
+                    </div>
+                    <button
+                      class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-medium shrink-0"
+                      aria-label="Override löschen"
+                      title="Override löschen"
+                      on:click={() => deleteOverride(ov.id)}
+                    >
+                      Löschen
+                    </button>
+                  </div>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
       {/if}
     </div>
 
-    <div class="space-y-2">
-      <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
-        Ausnahmedaten (EXDATE)
-      </h4>
-      <div class="flex gap-2 items-end">
-        <div class="min-w-[150px]">
-          <DatePicker
-            id="exdate-{seriesItem.id}"
-            label="Datum"
-            bind:value={newExdate}
+    <!-- Section: Ausnahmedaten (EXDATE) -->
+    <div class="space-y-3">
+      <button
+        type="button"
+        class="flex items-center gap-2 w-full text-left"
+        on:click={() => toggleSection("exdates")}
+        aria-expanded={sectionsExpanded.exdates}
+      >
+        <svg
+          class="w-4 h-4 text-slate-500 dark:text-smoke-400 transition-transform {sectionsExpanded.exdates
+            ? 'rotate-90'
+            : ''}"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5l7 7-7 7"
           />
-        </div>
-        <button
-          on:click={addExdate}
-          class="bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-2 rounded text-sm hover:bg-indigo-700 dark:hover:bg-indigo-600"
-          >EXDATE hinzufügen</button
-        >
-      </div>
-      {#if exdates.length === 0}
-        <div class="text-xs text-slate-600 dark:text-smoke-400">
-          Keine EXDATEs definiert.
-        </div>
-      {:else}
-        <ul
-          class="text-xs divide-y divide-gray-200 dark:divide-charcoal-700 border dark:border-charcoal-600 rounded bg-white dark:bg-charcoal-800"
-        >
-          {#each exdates as d (d)}
-            <li class="px-2 py-1 flex justify-between items-center">
-              <span class="text-slate-900 dark:text-smoke-50">{d}</span>
-              <button
-                class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                on:click={() => removeExdate(d)}>Entfernen</button
+        </svg>
+        <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
+          Ausnahmedaten (EXDATE)
+        </h4>
+        <span class="text-xs text-slate-500 dark:text-smoke-400">
+          ({exdates.length})
+        </span>
+      </button>
+
+      {#if sectionsExpanded.exdates}
+        <div class="pl-6 space-y-3">
+          <div class="flex flex-col sm:flex-row gap-3 items-end">
+            <div class="w-full sm:w-48">
+              <DatePicker
+                id="exdate-{seriesItem.id}"
+                label="Datum"
+                bind:value={newExdate}
+              />
+            </div>
+            <button
+              on:click={addExdate}
+              disabled={savingExdate || !newExdate}
+              class="bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+            >
+              {#if savingExdate}
+                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    fill="none"
+                  />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              {/if}
+              EXDATE hinzufügen
+            </button>
+          </div>
+
+          <!-- Error Message -->
+          {#if exdateError}
+            <div
+              class="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2"
+            >
+              <svg
+                class="w-4 h-4 shrink-0 mt-0.5"
+                fill="currentColor"
+                viewBox="0 0 20 20"
               >
-            </li>
-          {/each}
-        </ul>
+                <path
+                  fill-rule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span>{exdateError}</span>
+            </div>
+          {/if}
+
+          {#if exdates.length === 0}
+            <div class="text-xs text-slate-600 dark:text-smoke-400 italic">
+              Keine Ausnahmedaten definiert. Diese Daten werden von der Serie
+              ausgeschlossen.
+            </div>
+          {:else}
+            <ul
+              class="text-sm divide-y divide-gray-200 dark:divide-charcoal-700 border dark:border-charcoal-600 rounded-lg bg-white dark:bg-charcoal-800 overflow-hidden"
+            >
+              {#each exdates as d (d)}
+                <li
+                  class="px-4 py-2 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-charcoal-700/50"
+                >
+                  <span
+                    class="text-slate-900 dark:text-smoke-50 font-mono text-sm"
+                    >{d}</span
+                  >
+                  <button
+                    class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-medium"
+                    on:click={() => removeExdate(d)}
+                  >
+                    Entfernen
+                  </button>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
       {/if}
     </div>
 
-    <div class="space-y-2">
-      <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
-        Instanz absagen
-      </h4>
-      <div class="flex flex-col md:flex-row gap-2 items-end">
-        <div class="min-w-[150px]">
-          <DatePicker
-            id="cancel-date-{seriesItem.id}"
-            label="Datum"
-            bind:value={cancelDate}
+    <!-- Section: Instanz absagen -->
+    <div class="space-y-3">
+      <button
+        type="button"
+        class="flex items-center gap-2 w-full text-left"
+        on:click={() => toggleSection("cancel")}
+        aria-expanded={sectionsExpanded.cancel}
+      >
+        <svg
+          class="w-4 h-4 text-slate-500 dark:text-smoke-400 transition-transform {sectionsExpanded.cancel
+            ? 'rotate-90'
+            : ''}"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5l7 7-7 7"
           />
-        </div>
-        <div class="flex-1">
-          <label
-            for="cancel-reason-{seriesItem.id}"
-            class="block text-xs text-slate-600 dark:text-smoke-400 mb-1"
-            >Grund (optional)</label
+        </svg>
+        <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
+          Einzelne Instanz absagen
+        </h4>
+        {#if cancelledOverrides.length > 0}
+          <span
+            class="text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 px-2 py-0.5 rounded"
           >
-          <input
-            id="cancel-reason-{seriesItem.id}"
-            type="text"
-            bind:value={cancelReason}
-            placeholder="z.B. Ausfall Referent"
-            class="w-full border dark:border-charcoal-600 rounded px-2 py-1 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
-          />
+            {cancelledOverrides.length} abgesagt
+          </span>
+        {/if}
+      </button>
+
+      {#if sectionsExpanded.cancel}
+        <div class="pl-6 space-y-3">
+          <div
+            class="bg-slate-50 dark:bg-charcoal-700/50 rounded-lg p-4 space-y-3"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <DatePicker
+                  id="cancel-date-{seriesItem.id}"
+                  label="Datum der Instanz *"
+                  bind:value={cancelDate}
+                />
+              </div>
+              <div>
+                <label
+                  for="cancel-reason-{seriesItem.id}"
+                  class="block text-xs font-medium text-slate-600 dark:text-smoke-400 mb-1"
+                >
+                  Grund (optional)
+                </label>
+                <input
+                  id="cancel-reason-{seriesItem.id}"
+                  type="text"
+                  bind:value={cancelReason}
+                  placeholder="z.B. Ausfall Referent, Raumprobleme..."
+                  class="w-full border dark:border-charcoal-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
+                />
+              </div>
+            </div>
+
+            <!-- Cancel Error Message -->
+            {#if cancelError}
+              <div
+                class="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2"
+              >
+                <svg
+                  class="w-4 h-4 shrink-0 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                <span>{cancelError}</span>
+              </div>
+            {/if}
+
+            <div class="flex justify-end">
+              <button
+                on:click={cancelInstance}
+                disabled={cancellingInstance || !cancelDate}
+                class="bg-red-600 dark:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {#if cancellingInstance}
+                  <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                      fill="none"
+                    />
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                {/if}
+                Instanz absagen
+              </button>
+            </div>
+          </div>
+
+          <!-- Show cancelled instances -->
+          {#if cancelledOverrides.length > 0}
+            <div class="space-y-2">
+              <h5
+                class="text-xs font-medium text-slate-600 dark:text-smoke-400"
+              >
+                Abgesagte Instanzen:
+              </h5>
+              <ul
+                class="text-sm divide-y divide-gray-200 dark:divide-charcoal-700 border dark:border-charcoal-600 rounded-lg bg-white dark:bg-charcoal-800 overflow-hidden"
+              >
+                {#each cancelledOverrides as ov (ov.id || ov.instance_date)}
+                  <li
+                    class="px-4 py-2 flex justify-between items-center bg-red-50 dark:bg-red-900/10"
+                  >
+                    <div class="flex items-center gap-2">
+                      <span class="text-slate-900 dark:text-smoke-50 font-mono"
+                        >{ov.instance_date}</span
+                      >
+                      {#if ov.cancellation_reason}
+                        <span
+                          class="text-xs text-slate-500 dark:text-smoke-400"
+                        >
+                          – {ov.cancellation_reason}
+                        </span>
+                      {/if}
+                      <span
+                        class="text-xs bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 px-2 py-0.5 rounded"
+                      >
+                        abgesagt
+                      </span>
+                    </div>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
         </div>
-        <button
-          on:click={cancelInstance}
-          class="bg-red-600 dark:bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-700 dark:hover:bg-red-600"
-          >Absagen</button
-        >
-      </div>
+      {/if}
     </div>
 
-    <div class="space-y-2">
-      <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
-        Absage zurücknehmen
-      </h4>
-      <div class="flex flex-col md:flex-row gap-2 items-end">
-        <div class="min-w-[150px]">
-          <DatePicker
-            id="restore-date-{seriesItem.id}"
-            label="Datum"
-            bind:value={restoreDate}
-          />
-        </div>
-        <button
-          on:click={restoreInstance}
-          class="bg-green-600 dark:bg-green-500 text-white px-3 py-2 rounded text-sm hover:bg-green-700 dark:hover:bg-green-600"
-          >Wiederherstellen</button
+    <!-- Section: Absage zurücknehmen -->
+    <div class="space-y-3">
+      <button
+        type="button"
+        class="flex items-center gap-2 w-full text-left"
+        on:click={() => toggleSection("restore")}
+        aria-expanded={sectionsExpanded.restore}
+      >
+        <svg
+          class="w-4 h-4 text-slate-500 dark:text-smoke-400 transition-transform {sectionsExpanded.restore
+            ? 'rotate-90'
+            : ''}"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
         >
-      </div>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+        <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
+          Absage zurücknehmen
+        </h4>
+      </button>
+
+      {#if sectionsExpanded.restore}
+        <div class="pl-6 space-y-3">
+          <div class="flex flex-col sm:flex-row gap-3 items-end">
+            <div class="w-full sm:w-48">
+              <DatePicker
+                id="restore-date-{seriesItem.id}"
+                label="Datum"
+                bind:value={restoreDate}
+              />
+            </div>
+            <button
+              on:click={restoreInstance}
+              disabled={restoringInstance || !restoreDate}
+              class="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
+            >
+              {#if restoringInstance}
+                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                    fill="none"
+                  />
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              {/if}
+              Wiederherstellen
+            </button>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-smoke-400">
+            Wählen Sie das Datum einer abgesagten Instanz, um diese
+            wiederherzustellen.
+          </p>
+        </div>
+      {/if}
     </div>
   {/if}
 </div>
