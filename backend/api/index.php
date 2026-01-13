@@ -116,6 +116,10 @@ function route(string $method, array $segments): void
         handleEventsRoutes($method, $action, $id);
         break;
 
+      case 'series':
+        handleSeriesRoutes($method, $action, $id);
+        break;
+
       case 'forms':
         handleFormRoutes($method, $action);
         break;
@@ -165,6 +169,8 @@ function handleApiInfo(): void
         'GET /events/featured' => 'Get featured events',
         'GET /events/meta' => 'Get event metadata (categories, etc.)',
         'GET /events/{id}' => 'Get single event by ID or slug',
+        'GET /events/{id}/ics' => 'Get ICS for single event',
+        'GET /series/{id}/ics' => 'Get ICS for entire event series with RRULE',
         'POST /contact' => 'Submit contact form',
         'GET /calendar/feed' => 'Get ICS calendar feed',
         'GET /calendar/feed/{token}' => 'Get private ICS calendar feed',
@@ -198,10 +204,10 @@ function handleEventsRoutes(string $method, ?string $action, ?string $id): void
     } elseif ($action === 'meta') {
       // GET /events/meta
       $controller->meta();
-    } elseif (is_numeric($action) && $id === 'ics') {
-      // GET /events/{id}/ics
+    } elseif ($action && $id === 'ics') {
+      // GET /events/{id}/ics - supports numeric, UUID, and composite IDs
       $controller->downloadICS($action);
-    } elseif (is_numeric($action) || !is_numeric($action)) {
+    } elseif ($action) {
       // GET /events/{id} or GET /events/{slug}
       $controller->show($action);
     } else {
@@ -233,6 +239,23 @@ function handleEventsRoutes(string $method, ?string $action, ?string $id): void
       $controller->destroy($action);
     } else {
       Response::error('Invalid events endpoint', 404);
+    }
+  } else {
+    Response::error('Method not allowed', 405);
+  }
+}
+
+// Handle series routes (for ICS downloads)
+function handleSeriesRoutes(string $method, ?string $action, ?string $id): void
+{
+  $controller = new EventsController();
+
+  if ($method === 'GET') {
+    if ($action && $id === 'ics') {
+      // GET /series/{id}/ics - supports numeric and UUID IDs
+      $controller->downloadSeriesICS($action);
+    } else {
+      Response::json(['success' => false, 'error' => 'Invalid series endpoint'], 404);
     }
   } else {
     Response::error('Method not allowed', 405);

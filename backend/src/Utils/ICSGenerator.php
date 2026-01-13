@@ -479,4 +479,231 @@ class ICSGenerator
 
         echo $icsContent;
     }
+
+    /**
+     * Generate ICS content for a recurring event series with RRULE
+     */
+    public static function generateSeriesEvent(array $series): string
+    {
+        $events = [self::formatSeriesEvent($series)];
+        return self::createICSContent($events);
+    }
+
+    /**
+     * Format a recurring event series for ICS with RRULE
+     *
+     * IMPORTANT: The DTSTART must match the first actual occurrence of the RRULE pattern.
+     * For example, if RRULE is "every 3rd Monday", DTSTART must be on a Monday.
+     */
+    private static function formatSeriesEvent(array $series): array
+    {
+        $timezone = $series['timezone'] ?? 'Europe/Berlin';
+        $lines = [];
+
+        // Get start time from series
+        $startTime = $series['start_time'] ?? '19:00:00';
+        $durationMinutes = $series['default_duration_minutes'] ?? 120;
+
+        // We need to find the first actual occurrence using RRuleProcessor
+        // The start_date might not align with the RRULE pattern
+        $seriesStartDate = Carbon::parse($series['start_date'], $timezone);
+
+        // Create a pseudo event to expand using RRuleProcessor
+        $pseudoEvent = [
+            'id' => 'temp',
+            'start_datetime' => $seriesStartDate->format('Y-m-d') . ' ' . $startTime,
+            'end_datetime' => $seriesStartDate->copy()->addMinutes($durationMinutes)->format('Y-m-d H:i:s'),
+            'rrule' => $series['rrule'],
+            'timezone' => $timezone,
+        ];
+
+        // Expand to find the first occurrence (search up to 1 year ahead)
+        $searchEnd = $seriesStartDate->copy()->addYear();
+        $instances = RRuleProcessor::expandRecurringEvent($pseudoEvent, $seriesStartDate, $searchEnd, []);
+
+        if (!empty($instances)) {
+            // Use the first actual occurrence as DTSTART
+            $firstInstance = $instances[0];
+            $startDate = Carbon::parse($firstInstance['start_datetime'], $timezone);
+            // Calculate end time from start time + duration (don't use instance end_datetime as it may be wrong)
+            $endDate = $startDate->copy()->addMinutes($durationMinutes);
+        } else {
+            // Fallback: use the series start_date directly
+            $startDate = $seriesStartDate->copy();
+            $timeParts = explode(':', $startTime);
+            $startDate->setTime((int)($timeParts[0] ?? 19), (int)($timeParts[1] ?? 0));
+            $endDate = $startDate->copy()->addMinutes($durationMinutes);
+        }
+
+        // Event start
+        $lines[] = 'BEGIN:VEVENT';
+
+        // UID - unique identifier for the series
+        $lines[] = 'UID:series-' . $series['id'] . '@' . self::DOMAIN;
+
+        // DTSTAMP - creation timestamp
+        $lines[] = 'DTSTAMP:' . Carbon::now('UTC')->format('Ymd\THis\Z');
+
+        // Dates and times with RRULE for recurrence
+        $lines[] = 'DTSTART;TZID=' . $timezone . ':' . $startDate->format('Ymd\THis');
+        $lines[] = 'DTEND;TZID=' . $timezone . ':' . $endDate->format('Ymd\THis');
+
+        // RRULE for recurrence - enhanced for maximum compatibility
+        if (!empty($series['rrule'])) {
+            // Clean RRULE - remove DTSTART prefix if present
+            $rrule = $series['rrule'];
+            if (str_starts_with($rrule, 'DTSTART')) {
+                // Extract just the RRULE part
+                if (preg_match('/RRULE:(.+)$/m', $rrule, $matches)) {
+                    $rrule = $matches[1];
+                }
+            }
+            // Remove RRULE: prefix if present (we add it ourselves)
+            $rrule = preg_replace('/^RRULE:/i', '', $rrule);
+
+            // Enhance RRULE for maximum compatibility
+            $rrule = self::enhanceRRuleForCompatibility($rrule, $series);
+
+            $lines[] = 'RRULE:' . $rrule;
+        }
+
+        // EXDATE - excluded dates
+        if (!empty($series['exdates'])) {
+            $exdates = is_string($series['exdates'])
+                ? json_decode($series['exdates'], true)
+                : $series['exdates'];
+            if (is_array($exdates) && !empty($exdates)) {
+                foreach ($exdates as $exdate) {
+                    $exdateCarbon = Carbon::parse($exdate, $timezone);
+                    // Set same time as DTSTART for proper exclusion
+                    $exdateCarbon->setTime($startDate->hour, $startDate->minute);
+                    $lines[] = 'EXDATE;TZID=' . $timezone . ':' . $exdateCarbon->format('Ymd\THis');
+                }
+            }
+        }
+
+        // Basic properties
+        $lines[] = 'SUMMARY:' . self::escapeValue($series['title']);
+
+        if (!empty($series['description'])) {
+            $description = self::markdownToPlainText($series['description']);
+            $description = strip_tags($description);
+
+            // Add series URL
+            $description .= "\\n\\nMehr Informationen: https://" . self::DOMAIN . "/events";
+
+            $lines[] = 'DESCRIPTION:' . self::escapeValue($description);
+        }
+
+        // Location
+        if (!empty($series['default_location_name']) || !empty($series['default_location_address'])) {
+            $location = [];
+            if (!empty($series['default_location_name'])) {
+                $location[] = $series['default_location_name'];
+            }
+            if (!empty($series['default_location_address'])) {
+                $location[] = $series['default_location_address'];
+            }
+            $lines[] = 'LOCATION:' . self::escapeValue(implode(', ', $location));
+        }
+
+        // Categories/tags
+        if (!empty($series['tags'])) {
+            $tags = is_string($series['tags']) ? json_decode($series['tags'], true) : $series['tags'];
+            if (is_array($tags) && !empty($tags)) {
+                $lines[] = 'CATEGORIES:' . implode(',', array_map([self::class, 'escapeValue'], $tags));
+            }
+        }
+
+        // Status
+        $status = match ($series['status'] ?? 'published') {
+            'cancelled' => 'CANCELLED',
+            'draft' => 'TENTATIVE',
+            default => 'CONFIRMED'
+        };
+        $lines[] = 'STATUS:' . $status;
+
+        // Timestamps
+        if (!empty($series['created_at'])) {
+            $createdAt = Carbon::parse($series['created_at']);
+            $lines[] = 'CREATED:' . $createdAt->utc()->format('Ymd\THis\Z');
+        }
+
+        if (!empty($series['updated_at'])) {
+            $updatedAt = Carbon::parse($series['updated_at']);
+            $lines[] = 'LAST-MODIFIED:' . $updatedAt->utc()->format('Ymd\THis\Z');
+        }
+
+        // Sequence number
+        $lines[] = 'SEQUENCE:0';
+
+        // Event end
+        $lines[] = 'END:VEVENT';
+
+        return $lines;
+    }
+
+    /**
+     * Enhance RRULE for maximum compatibility across calendar clients
+     *
+     * Some clients (Thunderbird/Betterbird, older Outlook) need additional
+     * parameters to correctly interpret complex recurrence rules.
+     */
+    private static function enhanceRRuleForCompatibility(string $rrule, array $series): string
+    {
+        $parts = explode(';', $rrule);
+        $hasWkst = false;
+        $hasUntil = false;
+        $hasCount = false;
+        $hasByday = false;
+
+        foreach ($parts as $part) {
+            $key = strtoupper(explode('=', $part)[0]);
+            if ($key === 'WKST') $hasWkst = true;
+            if ($key === 'UNTIL') $hasUntil = true;
+            if ($key === 'COUNT') $hasCount = true;
+            if ($key === 'BYDAY') $hasByday = true;
+        }
+
+        // Add WKST=MO (week start Monday) for BYDAY rules - required by some clients
+        if ($hasByday && !$hasWkst) {
+            $parts[] = 'WKST=MO';
+        }
+
+        // If series has an end_date and RRULE has no UNTIL/COUNT, add UNTIL
+        // This helps clients that don't handle infinite recurrences well
+        if (!$hasUntil && !$hasCount && !empty($series['end_date'])) {
+            $endDate = Carbon::parse($series['end_date'])->endOfDay();
+            $parts[] = 'UNTIL=' . $endDate->utc()->format('Ymd\THis\Z');
+        }
+
+        return implode(';', $parts);
+    }
+
+    /**
+     * Output series ICS download with proper HTTP headers
+     */
+    public static function outputSeriesEvent(array $series): void
+    {
+        $icsContent = self::generateSeriesEvent($series);
+        $filename = 'series-' . ($series['slug'] ?? $series['id']) . '.ics';
+
+        // Ensure content is valid UTF-8
+        if (!mb_check_encoding($icsContent, 'UTF-8')) {
+            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
+        }
+
+        // Add UTF-8 BOM for better compatibility with calendar clients
+        $bom = "\xEF\xBB\xBF";
+        $icsContent = $bom . $icsContent;
+
+        // Set appropriate headers
+        header('Content-Type: text/calendar; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+        header('Content-Length: ' . strlen($icsContent));
+
+        echo $icsContent;
+    }
 }

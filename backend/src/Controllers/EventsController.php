@@ -10,6 +10,7 @@ use HypnoseStammtisch\Utils\Validator;
 use HypnoseStammtisch\Utils\MockData;
 use HypnoseStammtisch\Utils\RRuleProcessor;
 use HypnoseStammtisch\Utils\ICSGenerator;
+use HypnoseStammtisch\Database\Database;
 use Carbon\Carbon;
 
 /**
@@ -379,6 +380,7 @@ class EventsController
 
                 $pseudo = [
                     'id' => 'series_' . $series['id'],
+                    'series_id' => $series['id'], // Include series_id for frontend reference
                     'title' => $series['title'],
                     'description' => $series['description'] ?? '',
                     'start_datetime' => $eventStartTemplate->toDateTimeString(),
@@ -468,10 +470,75 @@ class EventsController
     /**
      * Download single event as ICS
      * GET /api/events/{id}/ics
+     * Supports regular events and dynamically generated series instances (e.g., series_UUID_2026-01-19)
      */
     public function downloadICS(string $id): void
     {
         try {
+            // Check if this is a dynamically generated series instance
+            // Format: series_{seriesId}_{date} e.g., series_bc0ffb02-dccc-11f0-8b62-f2fcde57ae25_2026-01-19
+            if (preg_match('/^series_(.+)_(\d{4}-\d{2}-\d{2})$/', $id, $matches)) {
+                $seriesId = $matches[1];
+                $instanceDate = $matches[2];
+
+                // First check if there's an override in the events table
+                $override = Database::fetchOne(
+                    "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
+                    [$seriesId, $instanceDate]
+                );
+
+                if ($override) {
+                    // Use the override
+                    ICSGenerator::outputSingleEvent($override);
+                    return;
+                }
+
+                // Otherwise, generate the instance from the series
+                $series = Database::fetchOne(
+                    "SELECT * FROM event_series WHERE id = ? AND status = 'published'",
+                    [$seriesId]
+                );
+
+                if (!$series) {
+                    Response::json([
+                        'success' => false,
+                        'error' => 'Series not found'
+                    ], 404);
+                    return;
+                }
+
+                // Generate event data for this specific instance
+                $startTime = $series['start_time'] ?? '19:00:00';
+                $endTime = $series['end_time'] ?? null;
+                if (!$endTime) {
+                    $endTime = date('H:i:s', strtotime($startTime) + ($series['default_duration_minutes'] ?? 120) * 60);
+                }
+
+                $eventData = [
+                    'id' => $id,
+                    'title' => $series['title'],
+                    'description' => $series['description'] ?? '',
+                    'start_datetime' => $instanceDate . ' ' . $startTime,
+                    'end_datetime' => $instanceDate . ' ' . $endTime,
+                    'timezone' => 'Europe/Berlin',
+                    'location_type' => $series['default_location_type'] ?? 'physical',
+                    'location_name' => $series['default_location_name'] ?? '',
+                    'location_address' => $series['default_location_address'] ?? '',
+                    'tags' => $series['tags'] ?? '[]',
+                    'category' => $series['default_category'] ?? 'stammtisch',
+                    'status' => 'published',
+                    'series_id' => $seriesId,
+                    'instance_date' => $instanceDate,
+                    'slug' => $series['slug'] . '-' . $instanceDate,
+                    'created_at' => $series['created_at'],
+                    'updated_at' => $series['updated_at'],
+                ];
+
+                ICSGenerator::outputSingleEvent($eventData);
+                return;
+            }
+
+            // Regular event lookup
             $event = Event::findById($id);
             if (!$event) {
                 Response::json([
@@ -485,6 +552,33 @@ class EventsController
             ICSGenerator::outputSingleEvent($eventArray);
         } catch (\Exception $e) {
             error_log("Error generating ICS for event {$id}: " . $e->getMessage());
+            Response::json([
+                'success' => false,
+                'error' => 'Failed to generate calendar file'
+            ], 500);
+        }
+    }
+
+    /**
+     * Download entire event series as ICS with RRULE
+     * GET /api/series/{id}/ics
+     */
+    public function downloadSeriesICS(string $id): void
+    {
+        try {
+            $series = Database::fetchOne("SELECT * FROM event_series WHERE id = ? AND status = 'published'", [$id]);
+
+            if (!$series) {
+                Response::json([
+                    'success' => false,
+                    'error' => 'Series not found'
+                ], 404);
+                return;
+            }
+
+            ICSGenerator::outputSeriesEvent($series);
+        } catch (\Exception $e) {
+            error_log("Error generating ICS for series {$id}: " . $e->getMessage());
             Response::json([
                 'success' => false,
                 'error' => 'Failed to generate calendar file'
