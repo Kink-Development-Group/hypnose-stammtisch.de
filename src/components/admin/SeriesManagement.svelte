@@ -66,9 +66,7 @@
   // Validation helpers
   function isDateInPast(dateStr: string): boolean {
     if (!dateStr) return false;
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- non-reactive comparison only
     const date = new Date(dateStr);
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- non-reactive comparison only
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return date < today;
