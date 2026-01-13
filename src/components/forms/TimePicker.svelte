@@ -418,7 +418,7 @@
           Schnellauswahl
         </div>
         <div class="grid grid-cols-5 gap-1.5">
-          {#each timePresets as preset}
+          {#each timePresets as preset (preset.label)}
             <button
               type="button"
               on:click={() => selectTimePreset(preset)}

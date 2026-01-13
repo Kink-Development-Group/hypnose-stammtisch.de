@@ -26,7 +26,10 @@
 
   // Parse current value
   $: parsedValue = value ? dayjs(value) : null;
-  $: selectedDate = parsedValue?.format("YYYY-MM-DD") || "";
+  let selectedDate = "";
+  $: if (parsedValue) {
+    selectedDate = parsedValue.format("YYYY-MM-DD");
+  }
 
   // Calendar state
   let viewDate = parsedValue || dayjs();
@@ -545,7 +548,7 @@
 
           <!-- Weekday Headers -->
           <div class="grid grid-cols-7 gap-1 mb-2">
-            {#each weekdays as day}
+            {#each weekdays as day (day)}
               <div
                 class="text-center text-xs font-medium text-gray-500 dark:text-smoke-500 py-1"
               >
@@ -560,7 +563,7 @@
             role="grid"
             aria-label="Kalender"
           >
-            {#each calendarDays as day}
+            {#each calendarDays as day, index (index)}
               {#if day === null}
                 <div class="w-10 h-10 sm:w-9 sm:h-9"></div>
               {:else}
@@ -722,7 +725,7 @@
 
           <!-- Time Presets -->
           <div class="flex flex-wrap gap-2 justify-center">
-            {#each timePresets as preset}
+            {#each timePresets as preset (preset.label)}
               <button
                 type="button"
                 on:click={() => selectTimePreset(preset)}

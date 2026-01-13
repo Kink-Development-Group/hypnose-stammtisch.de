@@ -418,7 +418,7 @@
 
         <!-- Weekday Headers -->
         <div class="grid grid-cols-7 gap-1 mb-2">
-          {#each weekdays as day}
+          {#each weekdays as day (day)}
             <div
               class="text-center text-xs font-medium text-gray-500 dark:text-smoke-500 py-1"
             >
@@ -433,7 +433,7 @@
           role="grid"
           aria-label="Kalender"
         >
-          {#each calendarDays as day}
+          {#each calendarDays as day, index (index)}
             {#if day === null}
               <div class="w-10 h-10 sm:w-9 sm:h-9"></div>
             {:else}
