@@ -24,72 +24,50 @@ cp .env.example .env
 # Bearbeite .env mit deinen Datenbankdaten
 ```
 
-3. **Datenbank erstellen und migrieren:**
+3. **Setup via CLI (empfohlen):**
 
 ```bash
-# MySQL/MariaDB
-mysql -u root -p -e "CREATE DATABASE hypnose_stammtisch CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+# Vollständiges Setup: DB erstellen, Migrationen, Seed, Admin
+php cli/cli.php setup
 
-# Migration ausführen
-php migrations/migrate.php
+# Oder einzelne Schritte:
+php cli/cli.php setup database    # Nur Datenbank
+php cli/cli.php migrate           # Nur Migrationen
+php cli/cli.php setup admin       # Nur Admin erstellen
 ```
 
 4. **Development Server starten:**
 
 ```bash
-cd api
-php -S localhost:8000
+php cli/cli.php dev serve
+# Oder direkt:
+cd api && php -S localhost:8000
 ```
 
 Die API ist dann unter `http://localhost:8000` verfügbar.
 
 ## Hetzner Webspace Deployment
 
-### Vorbereitung
+Siehe [DEPLOY_APACHE_SHARED_HOSTING.md](DEPLOY_APACHE_SHARED_HOSTING.md) für die vollständige Deployment-Anleitung.
 
-1. **Dateien hochladen:**
-   - Lade den gesamten `backend`-Ordner in dein Webspace-Verzeichnis hoch
-   - Die `api`-Datei sollte über HTTP erreichbar sein (z.B. `https://yourdomain.de/api/`)
+### Kurzübersicht
 
-2. **Dependencies installieren:**
+1. **Dateien hochladen:** `backend/` Ordner auf Webspace
 
-```bash
-# Per SSH auf dem Server (wenn verfügbar)
-cd /path/to/your/backend
-composer install --no-dev --optimize-autoloader
+2. **Dependencies:** `composer install --no-dev --optimize-autoloader`
 
-# Alternativ: Lade den vendor-Ordner lokal runter und lade ihn hoch
+3. **.env konfigurieren:** DB-Daten, `SETUP_TOKEN`, `APP_ENV=production`
+
+4. **Setup via Web (ohne SSH):**
+
+```text
+https://yourdomain.de/api/setup.php?action=full&token=YOUR_SETUP_TOKEN
 ```
 
-3. **Datenbank einrichten:**
-   - Erstelle eine MySQL-Datenbank über das Hetzner Control Panel
-   - Notiere dir die Datenbankdaten (Host, Username, Password, Datenbankname)
-
-4. **Umgebungsvariablen konfigurieren:**
+5. **Setup via CLI (mit SSH):**
 
 ```bash
-# Erstelle .env basierend auf .env.example
-# Füge deine Hetzner-Datenbankdaten ein:
-
-DB_HOST=your-database-host.your-server.de
-DB_PORT=3306
-DB_NAME=your_database_name
-DB_USER=your_username
-DB_PASS=your_password
-
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://yourdomain.de
-```
-
-5. **Datenbankschema erstellen:**
-
-```bash
-# Per SSH oder PHPMyAdmin:
-php migrations/migrate.php
-
-# Oder importiere die SQL-Datei direkt:
-# mysql -u username -p database_name < migrations/001_initial_schema.sql
+php cli/cli.php setup
 ```
 
 ### Apache-Konfiguration

@@ -16,8 +16,8 @@ web/              # Document Root (z.B. /usr/home/XYZ/html)
   api/            # -> Inhalt aus backend/api
     index.php
     admin.php
+    setup.php     # Einheitlicher Setup-Endpunkt
     .htaccess
-    install.php   # Nur temporär für Migration/Seeding!
   assets/ (optional falls benötigt)
   ... Frontend Build (dist) falls SPA ausgeliefert wird ...
 
@@ -42,7 +42,8 @@ DB_USER=yourdbuser
 DB_PASS=secret
 DB_CHARSET=utf8mb4
 
-INSTALL_TOKEN=ein-langes-einmaliges-token
+# Setup-Token für Web-basiertes Setup (Required in Production!)
+SETUP_TOKEN=ein-langes-einmaliges-token
 ```
 
 ## 4. Abhängigkeiten (Composer)
@@ -56,57 +57,101 @@ composer install --no-dev --optimize-autoloader
 
 Dann komplettes `backend/vendor` hochladen.
 
-## 5. Migration & Seeding ohne CLI
+## 5. Setup ohne CLI (Web-basiert)
 
-Rufe im Browser auf:
-
-```text
-https://example.org/api/install.php?token=INSTALL_TOKEN&action=migrate
-```
-
-Optional anschließend:
+### 5.1 Status prüfen
 
 ```text
-https://example.org/api/install.php?token=INSTALL_TOKEN&action=seed
+https://example.org/api/setup.php?action=status&token=SETUP_TOKEN
 ```
 
-ODER in einem Schritt:
+### 5.2 System-Anforderungen validieren
 
 ```text
-https://example.org/api/install.php?token=INSTALL_TOKEN&action=fresh
+https://example.org/api/setup.php?action=validate&token=SETUP_TOKEN
 ```
 
-Wenn alles durchgelaufen ist: `install.php` löschen oder `INSTALL_TOKEN` entfernen / ändern.
+### 5.3 Vollständiges Setup (empfohlen für Erstinstallation)
 
-## 6. Sicherheit / Hardening
+```text
+https://example.org/api/setup.php?action=full&token=SETUP_TOKEN
+```
 
-- `install.php` nach Deployment entfernen
+Dies führt aus:
+
+1. Datenbank erstellen (falls nicht vorhanden)
+2. Alle Migrationen ausführen
+3. Beispieldaten einspielen
+4. Standard Head-Admin anlegen
+
+### 5.4 Nur Migrationen
+
+```text
+https://example.org/api/setup.php?action=migrate&token=SETUP_TOKEN
+```
+
+### 5.5 Custom Admin erstellen
+
+```text
+https://example.org/api/setup.php?action=admin&admin_email=admin@example.com&admin_pass=sicheres-passwort&token=SETUP_TOKEN
+```
+
+### 5.6 Verfügbare Aktionen
+
+| Aktion     | Beschreibung                                      |
+| ---------- | ------------------------------------------------- |
+| `status`   | Zeigt Status und verfügbare Aktionen              |
+| `validate` | Prüft System-Anforderungen                        |
+| `migrate`  | Führt nur Datenbank-Migrationen aus               |
+| `seed`     | Spielt nur Beispieldaten ein                      |
+| `fresh`    | Migrate + Seed (Clean Install)                    |
+| `admin`    | Erstellt/Aktualisiert Admin-Benutzer              |
+| `full`     | Komplettes Setup (empfohlen für Erstinstallation) |
+
+### 5.7 Parameter
+
+| Parameter     | Beschreibung                                         |
+| ------------- | ---------------------------------------------------- |
+| `action`      | Auszuführende Aktion (required)                      |
+| `token`       | Setup-Token aus .env (required in production)        |
+| `force`       | `1` = Erzwingt Ausführung auch wenn bereits gesperrt |
+| `admin_email` | E-Mail für Admin (bei action=admin/full)             |
+| `admin_pass`  | Passwort für Admin (bei action=admin/full)           |
+| `no_seed`     | `1` = Überspringt Seeding bei full Setup             |
+
+## 6. Setup mit CLI (falls SSH verfügbar)
+
+Falls SSH-Zugang besteht, ist das CLI-Tool zu bevorzugen:
+
+```bash
+cd backend
+php cli/cli.php setup              # Vollständiges Setup
+php cli/cli.php setup database     # Nur Datenbank
+php cli/cli.php setup admin        # Nur Admin erstellen
+php cli/cli.php migrate            # Nur Migrationen
+```
+
+## 7. Sicherheit / Hardening
+
+- **SETUP_TOKEN nach Deployment ändern** oder Setup sperren (`.setup.lock` wird automatisch erstellt)
 - `APP_DEBUG=false`
-- Starke `INSTALL_TOKEN` Zufallszeichenkette verwenden
-- Regelmäßige Rotation der Backup Codes für 2FA nur intern möglich — kein öffentliches Listing hinzufügen
-- Falls `backend/` innerhalb des Document Roots liegen muss: zusätzliche `.htaccess` mit Deny für `migrations/`, `vendor/`, `logs/`, `config/` hinzufügen.
+- Starke Zufallszeichenkette für `SETUP_TOKEN` verwenden
+- Regelmäßige Rotation der Backup Codes für 2FA
+- Falls `backend/` innerhalb des Document Roots liegen muss: `.htaccess` Härtung beachten (bereits enthalten)
 
-Beispiel zusätzliche `.htaccess` (im `backend/` Hauptordner, falls öffentlich erreichbar):
+### Automatische Sperrung
 
-```apacheconf
-<IfModule mod_authz_core.c>
-  <Directory "migrations">
-    Require all denied
-  </Directory>
-  <Directory "vendor">
-    Require all denied
-  </Directory>
-</IfModule>
-<FilesMatch "(\.env|\.log|composer\.(json|lock))$">
-  Require all denied
-</FilesMatch>
-```
+Nach erfolgreichem Setup in Production wird automatisch eine `.setup.lock` Datei erstellt.
+Weitere Setup-Aufrufe werden blockiert, es sei denn:
 
-## 7. Frontend (Svelte) Deployment
+- Parameter `force=1` wird übergeben
+- Die `.setup.lock` Datei wird manuell gelöscht
 
-Frontend per `npm run build` erzeugen und den Inhalt des `dist` Ordners (oder Vite Build Output) ins Document Root kopieren. API-Aufrufe verweisen auf `/api/...`.
+## 8. Frontend (Svelte) Deployment
 
-## 8. Cron / Geplante Aufgaben
+Frontend per `bun run build` erzeugen und den Inhalt des `dist` Ordners (oder Vite Build Output) ins Document Root kopieren. API-Aufrufe verweisen auf `/api/...`.
+
+## 9. Cron / Geplante Aufgaben
 
 Hetzner Webhosting erlaubt Cronjobs über KonsoleH. Beispiel (täglich Cache Räumung o.ä.):
 
@@ -116,7 +161,7 @@ php /pfad/zum/backend/scripts/maintenance.php
 
 (Datei nach Bedarf anlegen.)
 
-## 9. Fehlerbehebung
+## 10. Fehlerbehebung
 
 - 500 Fehler: Logs prüfen (falls eingerichtet) oder temporär `APP_DEBUG=true` setzen (kurzzeitig!)
 - CORS Probleme: `config/app.php` Eintrag `cors.allowed_origins` prüfen (BASE_URL korrekt?)
