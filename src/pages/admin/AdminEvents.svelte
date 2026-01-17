@@ -521,7 +521,7 @@
           Veranstaltungsreihen
         </h2>
         <div
-          class="rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 shadow-sm"
+          class="rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 shadow-sm overflow-visible"
         >
           {#if series.length === 0}
             <div class="p-6 text-center text-slate-600 dark:text-smoke-400">
@@ -584,7 +584,7 @@
                   </div>
                   <!-- Overrides & EXDATE Management - Controlled Accordion -->
                   <div
-                    class="mt-4 bg-gray-50 dark:bg-charcoal-700/50 rounded-lg"
+                    class="mt-4 bg-gray-50 dark:bg-charcoal-700/50 rounded-lg overflow-visible"
                   >
                     <button
                       type="button"

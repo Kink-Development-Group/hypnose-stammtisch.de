@@ -670,9 +670,9 @@
       </button>
 
       {#if sectionsExpanded.cancel}
-        <div class="pl-6 space-y-3">
+        <div class="pl-6 space-y-3 overflow-visible">
           <div
-            class="bg-slate-50 dark:bg-charcoal-700/50 rounded-lg p-4 space-y-3"
+            class="bg-slate-50 dark:bg-charcoal-700/50 rounded-lg p-4 space-y-3 overflow-visible"
           >
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
@@ -818,8 +818,10 @@
       </button>
 
       {#if sectionsExpanded.restore}
-        <div class="pl-6 space-y-3">
-          <div class="flex flex-col sm:flex-row gap-3 items-end">
+        <div class="pl-6 space-y-3 overflow-visible">
+          <div
+            class="flex flex-col sm:flex-row gap-3 items-end overflow-visible"
+          >
             <div class="w-full sm:w-48">
               <DatePicker
                 id="restore-date-{seriesItem.id}"
