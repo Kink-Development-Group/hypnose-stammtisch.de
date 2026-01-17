@@ -308,7 +308,12 @@ class Validator
             return false;
         }
 
-        $domain = strtolower($parts[1]);
+        $domain = strtolower(trim($parts[1]));
+
+        // Reject empty domains
+        if ($domain === '') {
+            return false;
+        }
 
         // Get disposable domains from config or use defaults
         $disposableDomains = Config::get('security.disposable_email_domains') ?? self::DEFAULT_DISPOSABLE_DOMAINS;

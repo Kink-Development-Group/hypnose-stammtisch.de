@@ -576,8 +576,18 @@ class IpBanManager
             return '';
         }
 
-        // Perform explicit byte-by-byte AND to avoid string bitwise operations
-        // which may produce unexpected results in PHP 8.0+
+        // IMPORTANT: Manual byte-by-byte AND operation
+        // -----------------------------------------------------------------
+        // In PHP 8.0+, using the bitwise AND operator (&) directly on binary
+        // strings (e.g., $ipBinary & $maskBytes) can produce unexpected results
+        // due to changes in string handling. The direct string bitwise operation
+        // may not correctly apply the mask to each byte, leading to incorrect
+        // network address calculations and CIDR matching failures.
+        //
+        // This explicit loop converts each byte to its integer ordinal value,
+        // performs the bitwise AND on integers, and converts back to a character,
+        // ensuring consistent behavior across all PHP versions.
+        // -----------------------------------------------------------------
         $result = '';
         $length = strlen($ipBinary);
         for ($i = 0; $i < $length; $i++) {

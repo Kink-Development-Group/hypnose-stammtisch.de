@@ -382,52 +382,78 @@ class RRuleProcessor
         $endOfMonth = $month->copy()->endOfMonth();
 
         if ($position > 0) {
-            // Find n-th occurrence from start of month
-            $current = $startOfMonth->copy();
-
-            // Find first occurrence of the weekday
-            while ($current->dayOfWeek !== $weekday && $current->lte($endOfMonth)) {
-                $current->addDay();
-            }
-
-            if ($current->gt($endOfMonth)) {
-                return null;
-            }
-
-            // Move to n-th occurrence
-            $current->addWeeks($position - 1);
-
-            // Check if still in same month
-            if ($current->month !== $startOfMonth->month) {
-                return null;
-            }
-
-            return $current;
-        } else {
-            // Find n-th occurrence from end of month (-1 = last, -2 = second to last)
-            $current = $endOfMonth->copy();
-
-            // Find last occurrence of the weekday
-            while ($current->dayOfWeek !== $weekday && $current->gte($startOfMonth)) {
-                $current->subDay();
-            }
-
-            if ($current->lt($startOfMonth)) {
-                return null;
-            }
-
-            // Move backwards for -2, -3, etc.
-            if ($position < -1) {
-                $current->subWeeks(abs($position) - 1);
-            }
-
-            // Check if still in same month
-            if ($current->month !== $startOfMonth->month) {
-                return null;
-            }
-
-            return $current;
+            return self::findNthWeekdayFromStart($startOfMonth, $endOfMonth, $weekday, $position);
         }
+
+        return self::findNthWeekdayFromEnd($startOfMonth, $endOfMonth, $weekday, $position);
+    }
+
+    /**
+     * Find the n-th occurrence of a weekday counting from the start of the month
+     *
+     * @param Carbon $startOfMonth First day of the month
+     * @param Carbon $endOfMonth Last day of the month
+     * @param int $weekday Day of week (0=Sunday, 1=Monday, etc.)
+     * @param int $position Positive position (1=first, 2=second, etc.)
+     * @return Carbon|null The date or null if not found
+     */
+    private static function findNthWeekdayFromStart(Carbon $startOfMonth, Carbon $endOfMonth, int $weekday, int $position): ?Carbon
+    {
+        $current = $startOfMonth->copy();
+
+        // Find first occurrence of the weekday
+        while ($current->dayOfWeek !== $weekday && $current->lte($endOfMonth)) {
+            $current->addDay();
+        }
+
+        if ($current->gt($endOfMonth)) {
+            return null;
+        }
+
+        // Move to n-th occurrence
+        $current->addWeeks($position - 1);
+
+        // Check if still in same month
+        if ($current->month !== $startOfMonth->month) {
+            return null;
+        }
+
+        return $current;
+    }
+
+    /**
+     * Find the n-th occurrence of a weekday counting from the end of the month
+     *
+     * @param Carbon $startOfMonth First day of the month
+     * @param Carbon $endOfMonth Last day of the month
+     * @param int $weekday Day of week (0=Sunday, 1=Monday, etc.)
+     * @param int $position Negative position (-1=last, -2=second to last, etc.)
+     * @return Carbon|null The date or null if not found
+     */
+    private static function findNthWeekdayFromEnd(Carbon $startOfMonth, Carbon $endOfMonth, int $weekday, int $position): ?Carbon
+    {
+        $current = $endOfMonth->copy();
+
+        // Find last occurrence of the weekday
+        while ($current->dayOfWeek !== $weekday && $current->gte($startOfMonth)) {
+            $current->subDay();
+        }
+
+        if ($current->lt($startOfMonth)) {
+            return null;
+        }
+
+        // Move backwards for -2, -3, etc.
+        if ($position < -1) {
+            $current->subWeeks(abs($position) - 1);
+        }
+
+        // Check if still in same month
+        if ($current->month !== $startOfMonth->month) {
+            return null;
+        }
+
+        return $current;
     }
 
     /**
