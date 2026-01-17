@@ -896,6 +896,143 @@ class AdminEventsController
     }
 
     /**
+     * Get upcoming instances for a series
+     * GET /admin/events/series/{seriesId}/upcoming-instances?limit=10
+     * Returns next N instances based on RRULE, excluding already cancelled ones
+     */
+    public static function getUpcomingInstances(string $seriesId): void
+    {
+        AdminAuth::requireAuth();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            Response::error('Method not allowed', 405);
+            return;
+        }
+
+        $limit = isset($_GET['limit']) ? min((int) $_GET['limit'], 52) : 10;
+
+        try {
+            $series = Database::fetchOne('SELECT * FROM event_series WHERE id = ?', [$seriesId]);
+            if (!$series) {
+                Response::notFound(['message' => 'Series not found']);
+                return;
+            }
+
+            // Check required fields for RRULE expansion
+            if (empty($series['rrule']) || empty($series['start_time']) || empty($series['end_time'])) {
+                Response::error('Series missing rrule or time configuration', 400);
+                return;
+            }
+
+            // Get existing cancelled instances
+            $cancelledInstances = Database::fetchAll(
+                "SELECT instance_date FROM events WHERE series_id = ? AND override_type = 'cancelled'",
+                [$seriesId]
+            );
+            $cancelledDates = array_column($cancelledInstances, 'instance_date');
+
+            // Get exdates
+            $exdates = JsonHelper::decodeArray($series['exdates']);
+
+            // Calculate upcoming instances using RRuleProcessor
+            $tz = 'Europe/Berlin';
+            $startDate = \Carbon\Carbon::now($tz)->startOfDay();
+            // Look ahead up to 2 years to find enough instances
+            $endDate = $startDate->copy()->addYears(2);
+
+            // Create a pseudo-event for the RRuleProcessor
+            $pseudoEvent = [
+                'id' => $seriesId,
+                'rrule' => $series['rrule'],
+                'start_datetime' => $series['start_date'] . ' ' . $series['start_time'],
+                'end_datetime' => $series['start_date'] . ' ' . $series['end_time'],
+                'timezone' => $tz,
+            ];
+
+            $instances = \HypnoseStammtisch\Utils\RRuleProcessor::expandRecurringEvent(
+                $pseudoEvent,
+                $startDate,
+                $endDate,
+                $exdates
+            );
+
+            // Filter out already cancelled instances and build result
+            $upcomingInstances = [];
+            foreach ($instances as $instance) {
+                $instanceDate = $instance['instance_date'];
+
+                // Skip if already cancelled
+                if (in_array($instanceDate, $cancelledDates)) {
+                    continue;
+                }
+
+                $upcomingInstances[] = [
+                    'date' => $instanceDate,
+                    'start_datetime' => $instance['start_datetime'],
+                    'end_datetime' => $instance['end_datetime'],
+                    'title' => $series['title'],
+                ];
+
+                if (count($upcomingInstances) >= $limit) {
+                    break;
+                }
+            }
+
+            Response::success([
+                'instances' => $upcomingInstances,
+                'series_title' => $series['title'],
+            ]);
+        } catch (\Exception $e) {
+            Response::error('Failed to get upcoming instances: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Validate that a date is a valid RRULE occurrence for a series
+     * Returns true if the date matches the RRULE pattern
+     */
+    private static function isValidRRuleOccurrence(string $seriesId, string $instanceDate): bool
+    {
+        $series = Database::fetchOne('SELECT * FROM event_series WHERE id = ?', [$seriesId]);
+        if (!$series || empty($series['rrule']) || empty($series['start_time']) || empty($series['end_time'])) {
+            return false;
+        }
+
+        $tz = 'Europe/Berlin';
+        $targetDate = \Carbon\Carbon::parse($instanceDate, $tz);
+
+        // Check +/- 1 day to account for timezone edge cases
+        $startDate = $targetDate->copy()->subDay();
+        $endDate = $targetDate->copy()->addDay();
+
+        // Get exdates
+        $exdates = JsonHelper::decodeArray($series['exdates']);
+
+        $pseudoEvent = [
+            'id' => $seriesId,
+            'rrule' => $series['rrule'],
+            'start_datetime' => $series['start_date'] . ' ' . $series['start_time'],
+            'end_datetime' => $series['start_date'] . ' ' . $series['end_time'],
+            'timezone' => $tz,
+        ];
+
+        $instances = \HypnoseStammtisch\Utils\RRuleProcessor::expandRecurringEvent(
+            $pseudoEvent,
+            $startDate,
+            $endDate,
+            $exdates
+        );
+
+        foreach ($instances as $instance) {
+            if ($instance['instance_date'] === $instanceDate) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Cancel a single instance of a series (creates or updates override_type=cancelled)
      * POST /admin/events/series/{seriesId}/cancel
      * Body: { instance_date: 'YYYY-MM-DD', reason?: string }
@@ -913,13 +1050,21 @@ class AdminEventsController
             Response::error('instance_date required', 400);
             return;
         }
+
+        $instanceDate = $input['instance_date'];
+
+        // Validate that this date is a valid RRULE occurrence
+        if (!self::isValidRRuleOccurrence($seriesId, $instanceDate)) {
+            Response::error('Das gewählte Datum ist kein gültiger Termin dieser Serie.', 400);
+            return;
+        }
+
         try {
             $series = Database::fetchOne('SELECT * FROM event_series WHERE id = ?', [$seriesId]);
             if (!$series) {
                 Response::notFound(['message' => 'Series not found']);
                 return;
             }
-            $instanceDate = $input['instance_date'];
             // Versuche bestehendes Override zu finden
             $existing = Database::fetchOne('SELECT id, override_type FROM events WHERE series_id = ? AND instance_date = ?', [$seriesId, $instanceDate]);
             if ($existing) {

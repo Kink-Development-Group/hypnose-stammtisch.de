@@ -386,18 +386,6 @@
       </div>
     </div>
   {/if}
-
-  <!-- Events summary -->
-  <footer
-    class="mt-6 text-center text-sm text-smoke-400"
-    aria-live="polite"
-    aria-atomic="true"
-  >
-    <span id="events-summary">
-      {events.length} Veranstaltung{events.length !== 1 ? "en" : ""}
-      {view === "month" ? "in diesem Monat" : "in dieser Woche"}
-    </span>
-  </footer>
 </div>
 
 <style>

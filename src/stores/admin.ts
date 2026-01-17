@@ -862,6 +862,16 @@ export class AdminAPI {
     return this.request(`/events/series/${seriesId}/overrides`);
   }
 
+  // Get upcoming series instances based on RRULE
+  static async getUpcomingSeriesInstances(
+    seriesId: string,
+    limit: number = 10,
+  ) {
+    return this.request(
+      `/events/series/${seriesId}/upcoming-instances?limit=${limit}`,
+    );
+  }
+
   static async createSeriesOverride(seriesId: string, data: any) {
     adminNotifications.info("Override wird erstellt...");
     const res = await this.request(`/events/series/${seriesId}/overrides`, {

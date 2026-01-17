@@ -1,12 +1,29 @@
 <script lang="ts">
   import dayjs from "dayjs";
   import "dayjs/locale/de";
+  import { currentDate, navigateCalendar } from "../../stores/calendar";
   import type { Event } from "../../types/calendar";
   import EventCard from "./EventCard.svelte";
 
   export let events: Event[] = [];
 
   dayjs.locale("de");
+
+  // Current month display
+  $: currentMonth = dayjs($currentDate).format("MMMM YYYY");
+
+  // Navigation handlers
+  const goToPrevious = () => {
+    navigateCalendar("prev");
+  };
+
+  const goToNext = () => {
+    navigateCalendar("next");
+  };
+
+  const goToToday = () => {
+    currentDate.set(new Date());
+  };
 
   // Group events by date
   $: groupedEvents = events
@@ -66,6 +83,69 @@
 </script>
 
 <div class="space-y-8">
+  <!-- Navigation header -->
+  <header class="flex items-center justify-between mb-6">
+    <h2 class="text-2xl font-display font-semibold text-smoke-50">
+      {currentMonth}
+    </h2>
+
+    <div
+      class="flex items-center space-x-2"
+      role="toolbar"
+      aria-label="Listen Navigation"
+    >
+      <button
+        class="btn btn-ghost p-2 focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-900"
+        on:click={goToPrevious}
+        aria-label="Vorheriger Monat"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+      </button>
+
+      <button
+        class="btn btn-outline px-4 py-2 focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-900"
+        on:click={goToToday}
+        aria-label="Zu heute navigieren"
+      >
+        Heute
+      </button>
+
+      <button
+        class="btn btn-ghost p-2 focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-900"
+        on:click={goToNext}
+        aria-label="Nächster Monat"
+      >
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 5l7 7-7 7"
+          />
+        </svg>
+      </button>
+    </div>
+  </header>
+
   {#if events.length > 0}
     {#each sortedDateKeys as dateKey (dateKey)}
       <section aria-labelledby="date-{dateKey}">

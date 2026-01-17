@@ -47,6 +47,23 @@
     },
   );
 
+  // Derived store for current month's events (including cancelled for display)
+  const currentMonthEvents = derived(
+    [filteredEvents, currentDate],
+    ([$filteredEvents, $currentDate]) => {
+      const currentMonth = $currentDate.getMonth();
+      const currentYear = $currentDate.getFullYear();
+
+      return $filteredEvents.filter((event) => {
+        const eventDate = event.startDate;
+        return (
+          eventDate.getMonth() === currentMonth &&
+          eventDate.getFullYear() === currentYear
+        );
+      });
+    },
+  );
+
   // Function to load events for a given date
   async function loadEventsForDate(date: Date) {
     // Calculate month key to avoid reloading same month
@@ -219,7 +236,7 @@
         </div>
       </div>
     {:else if $calendarView === "list"}
-      <EventList events={$filteredEvents} />
+      <EventList events={$currentMonthEvents} />
     {:else}
       <Calendar view={$calendarView} events={$filteredEvents} />
     {/if}

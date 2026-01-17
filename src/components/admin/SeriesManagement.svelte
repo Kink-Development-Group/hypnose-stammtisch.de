@@ -11,11 +11,12 @@
 
   let overrides: any[] = [];
   let exdates: string[] = [];
+  let upcomingInstances: any[] = [];
   let loading = false;
   let savingOverride = false;
   let savingExdate = false;
   let cancellingInstance = false;
-  let restoringInstance = false;
+  let restoringInstance: string | null = null; // track which instance is being restored
 
   // Override Form
   let newOverrideDate = "";
@@ -29,19 +30,15 @@
   let exdateError = "";
 
   // Cancellation Form
-  let cancelDate = "";
+  let selectedCancelInstance = "";
   let cancelReason = "";
   let cancelError = "";
-
-  // Restore Form
-  let restoreDate = "";
 
   // Accordion sections state (local, not reset on data load)
   let sectionsExpanded = {
     overrides: true,
     exdates: true,
     cancel: false,
-    restore: false,
   };
 
   function toggleSection(section: keyof typeof sectionsExpanded) {
@@ -78,12 +75,15 @@
   async function loadData() {
     loading = true;
     try {
-      const [ovRes, exRes] = await Promise.all([
+      const [ovRes, exRes, upcomingRes] = await Promise.all([
         AdminAPI.getSeriesOverrides(seriesItem.id),
         AdminAPI.getSeriesExdates(seriesItem.id),
+        AdminAPI.getUpcomingSeriesInstances(seriesItem.id, 12),
       ]);
       if (ovRes.success) overrides = ovRes.data.overrides || [];
       if (exRes.success) exdates = parseExdates(exRes.data.exdates);
+      if (upcomingRes.success)
+        upcomingInstances = upcomingRes.data?.instances || [];
     } finally {
       loading = false;
     }
@@ -206,35 +206,22 @@
     }
   }
 
-  async function cancelInstance() {
+  async function cancelInstance(instanceDate: string) {
     cancelError = "";
-
-    if (!cancelDate) {
-      cancelError = "Bitte wählen Sie ein Datum.";
-      adminNotifications.error(cancelError);
-      return;
-    }
-
-    // Check if date is in the past
-    if (isDateInPast(cancelDate)) {
-      cancelError = "Vergangene Termine können nicht mehr abgesagt werden.";
-      adminNotifications.error(cancelError);
-      return;
-    }
-
     cancellingInstance = true;
+
     try {
       const res = await AdminAPI.cancelSeriesInstance(
         seriesItem.id,
-        cancelDate,
+        instanceDate,
         cancelReason.trim() || undefined,
       );
       if (res.success) {
-        // Reload data to get the new cancelled instance
+        // Reload data to get the new cancelled instance and updated upcoming instances
         await loadData();
-        cancelDate = "";
         cancelReason = "";
         cancelError = "";
+        selectedCancelInstance = "";
         ondatachanged?.();
       } else {
         // Parse specific errors
@@ -244,6 +231,8 @@
             "Diese Serie hat keine Start-/Endzeit definiert. Bitte Serie bearbeiten.";
         } else if (errorMsg.includes("not found")) {
           cancelError = "Serie nicht gefunden.";
+        } else if (errorMsg.includes("kein gültiger Termin")) {
+          cancelError = errorMsg;
         } else {
           cancelError =
             errorMsg || "Fehler beim Absagen. Bitte erneut versuchen.";
@@ -259,25 +248,19 @@
     }
   }
 
-  async function restoreInstance() {
-    if (!restoreDate) {
-      adminNotifications.error("Bitte wählen Sie ein Datum.");
-      return;
-    }
-
-    restoringInstance = true;
+  async function restoreInstance(instanceDate: string) {
+    restoringInstance = instanceDate;
     try {
       const res = await AdminAPI.restoreSeriesInstance(
         seriesItem.id,
-        restoreDate,
+        instanceDate,
       );
       if (res.success) {
         await loadData();
-        restoreDate = "";
         ondatachanged?.();
       }
     } finally {
-      restoringInstance = false;
+      restoringInstance = null;
     }
   }
 
@@ -658,7 +641,7 @@
           />
         </svg>
         <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
-          Einzelne Instanz absagen
+          Termine absagen / wiederherstellen
         </h4>
         {#if cancelledOverrides.length > 0}
           <span
@@ -670,18 +653,75 @@
       </button>
 
       {#if sectionsExpanded.cancel}
-        <div class="pl-6 space-y-3 overflow-visible">
-          <div
-            class="bg-slate-50 dark:bg-charcoal-700/50 rounded-lg p-4 space-y-3 overflow-visible"
-          >
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <DatePicker
-                  id="cancel-date-{seriesItem.id}"
-                  label="Datum der Instanz *"
-                  bind:value={cancelDate}
-                />
+        <div class="pl-6 space-y-4">
+          <!-- Upcoming instances to cancel -->
+          <div class="space-y-2">
+            <h5 class="text-xs font-medium text-slate-600 dark:text-smoke-400">
+              Kommende Termine:
+            </h5>
+
+            {#if upcomingInstances.length === 0}
+              <p class="text-xs text-slate-500 dark:text-smoke-400 italic">
+                Keine kommenden Termine für diese Serie gefunden.
+              </p>
+            {:else}
+              <ul
+                class="text-sm divide-y divide-gray-200 dark:divide-charcoal-700 border dark:border-charcoal-600 rounded-lg bg-white dark:bg-charcoal-800 overflow-hidden"
+              >
+                {#each upcomingInstances as instance (instance.date)}
+                  <li
+                    class="px-4 py-3 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-charcoal-700/50"
+                  >
+                    <div class="flex items-center gap-3">
+                      <span
+                        class="text-slate-900 dark:text-smoke-50 font-mono text-sm"
+                      >
+                        {instance.date}
+                      </span>
+                      <span class="text-xs text-slate-500 dark:text-smoke-400">
+                        {instance.start_datetime?.slice(11, 16) || ""}
+                      </span>
+                    </div>
+                    <button
+                      on:click={() => {
+                        selectedCancelInstance = instance.date;
+                      }}
+                      disabled={cancellingInstance}
+                      class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-xs font-medium px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      aria-label="Termin {instance.date} absagen"
+                    >
+                      Absagen
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+
+          <!-- Cancellation confirmation dialog -->
+          {#if selectedCancelInstance}
+            <div
+              class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 space-y-3"
+            >
+              <div class="flex items-start gap-2">
+                <svg
+                  class="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                <div>
+                  <p class="text-sm font-medium text-red-800 dark:text-red-200">
+                    Termin am {selectedCancelInstance} absagen?
+                  </p>
+                </div>
               </div>
+
               <div>
                 <label
                   for="cancel-reason-{seriesItem.id}"
@@ -697,64 +737,74 @@
                   class="w-full border dark:border-charcoal-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-charcoal-700 text-slate-900 dark:text-smoke-50"
                 />
               </div>
-            </div>
 
-            <!-- Cancel Error Message -->
-            {#if cancelError}
-              <div
-                class="flex items-start gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2"
-              >
-                <svg
-                  class="w-4 h-4 shrink-0 mt-0.5"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
+              <!-- Cancel Error Message -->
+              {#if cancelError}
+                <div
+                  class="flex items-start gap-2 text-sm text-red-600 dark:text-red-400"
                 >
-                  <path
-                    fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <span>{cancelError}</span>
-              </div>
-            {/if}
-
-            <div class="flex justify-end">
-              <button
-                on:click={cancelInstance}
-                disabled={cancellingInstance || !cancelDate}
-                class="bg-red-600 dark:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {#if cancellingInstance}
-                  <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                      fill="none"
-                    />
+                  <svg
+                    class="w-4 h-4 shrink-0 mt-0.5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
                     <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clip-rule="evenodd"
                     />
                   </svg>
-                {/if}
-                Instanz absagen
-              </button>
-            </div>
-          </div>
+                  <span>{cancelError}</span>
+                </div>
+              {/if}
 
-          <!-- Show cancelled instances -->
+              <div class="flex gap-2 justify-end">
+                <button
+                  on:click={() => {
+                    selectedCancelInstance = "";
+                    cancelReason = "";
+                    cancelError = "";
+                  }}
+                  class="px-3 py-1.5 text-sm text-slate-600 dark:text-smoke-400 hover:bg-slate-100 dark:hover:bg-charcoal-700 rounded-lg"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  on:click={() => cancelInstance(selectedCancelInstance)}
+                  disabled={cancellingInstance}
+                  class="bg-red-600 dark:bg-red-500 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {#if cancellingInstance}
+                    <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                        fill="none"
+                      />
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  {/if}
+                  Bestätigen
+                </button>
+              </div>
+            </div>
+          {/if}
+
+          <!-- Show cancelled instances with restore button -->
           {#if cancelledOverrides.length > 0}
             <div class="space-y-2">
               <h5
                 class="text-xs font-medium text-slate-600 dark:text-smoke-400"
               >
-                Abgesagte Instanzen:
+                Abgesagte Termine:
               </h5>
               <ul
                 class="text-sm divide-y divide-gray-200 dark:divide-charcoal-700 border dark:border-charcoal-600 rounded-lg bg-white dark:bg-charcoal-800 overflow-hidden"
@@ -763,10 +813,12 @@
                   <li
                     class="px-4 py-2 flex justify-between items-center bg-red-50 dark:bg-red-900/10"
                   >
-                    <div class="flex items-center gap-2">
-                      <span class="text-slate-900 dark:text-smoke-50 font-mono"
-                        >{ov.instance_date}</span
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span
+                        class="text-slate-900 dark:text-smoke-50 font-mono text-sm"
                       >
+                        {ov.instance_date}
+                      </span>
                       {#if ov.cancellation_reason}
                         <span
                           class="text-xs text-slate-500 dark:text-smoke-400"
@@ -780,85 +832,52 @@
                         abgesagt
                       </span>
                     </div>
+                    <button
+                      on:click={() => restoreInstance(ov.instance_date)}
+                      disabled={restoringInstance === ov.instance_date}
+                      class="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 p-1.5 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
+                      aria-label="Absage für {ov.instance_date} zurücknehmen"
+                      title="Absage zurücknehmen"
+                    >
+                      {#if restoringInstance === ov.instance_date}
+                        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                            fill="none"
+                          />
+                          <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                      {:else}
+                        <!-- Trash/Restore icon -->
+                        <svg
+                          class="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                      {/if}
+                    </button>
                   </li>
                 {/each}
               </ul>
             </div>
           {/if}
-        </div>
-      {/if}
-    </div>
-
-    <!-- Section: Absage zurücknehmen -->
-    <div class="space-y-3">
-      <button
-        type="button"
-        class="flex items-center gap-2 w-full text-left"
-        on:click={() => toggleSection("restore")}
-        aria-expanded={sectionsExpanded.restore}
-      >
-        <svg
-          class="w-4 h-4 text-slate-500 dark:text-smoke-400 transition-transform {sectionsExpanded.restore
-            ? 'rotate-90'
-            : ''}"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-        <h4 class="text-sm font-semibold text-slate-700 dark:text-smoke-200">
-          Absage zurücknehmen
-        </h4>
-      </button>
-
-      {#if sectionsExpanded.restore}
-        <div class="pl-6 space-y-3 overflow-visible">
-          <div
-            class="flex flex-col sm:flex-row gap-3 items-end overflow-visible"
-          >
-            <div class="w-full sm:w-48">
-              <DatePicker
-                id="restore-date-{seriesItem.id}"
-                label="Datum"
-                bind:value={restoreDate}
-              />
-            </div>
-            <button
-              on:click={restoreInstance}
-              disabled={restoringInstance || !restoreDate}
-              class="bg-green-600 dark:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
-            >
-              {#if restoringInstance}
-                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                    fill="none"
-                  />
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-              {/if}
-              Wiederherstellen
-            </button>
-          </div>
-          <p class="text-xs text-slate-500 dark:text-smoke-400">
-            Wählen Sie das Datum einer abgesagten Instanz, um diese
-            wiederherzustellen.
-          </p>
         </div>
       {/if}
     </div>

@@ -81,12 +81,12 @@ try {
     PasswordResetController::requestReset();
     return;
   }
-  
+
   if ($path === '/auth/password-reset/verify' && $method === 'GET') {
     PasswordResetController::verifyToken();
     return;
   }
-  
+
   if ($path === '/auth/password-reset/reset' && $method === 'POST') {
     PasswordResetController::resetPassword();
     return;
@@ -170,6 +170,12 @@ try {
         return;
       } elseif ($method === 'GET') {
         \HypnoseStammtisch\Controllers\AdminEventsController::getSeriesExdates($seriesId);
+        return;
+      }
+    } elseif (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/upcoming-instances$#', $path, $matches)) {
+      $seriesId = (string)$matches[1];
+      if ($method === 'GET') {
+        \HypnoseStammtisch\Controllers\AdminEventsController::getUpcomingInstances($seriesId);
         return;
       }
     } elseif (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/cancel$#', $path, $matches)) {
