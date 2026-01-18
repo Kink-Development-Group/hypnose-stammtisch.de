@@ -275,43 +275,115 @@
 
     const icon = ensureStammtischIcon();
 
-    locations.forEach((location) => {
+    locations.forEach((location, index) => {
       const marker = L.marker(
         [location.coordinates.lat, location.coordinates.lng],
         {
           icon,
+          alt: t("map.marker.ariaLabel", {
+            values: { name: location.name, city: location.city },
+          }),
+          keyboard: true,
+          riseOnHover: true,
         },
       ).addTo(map!);
 
-      const popupContent = createPopupContent(location);
-      marker.bindPopup(popupContent, {
-        maxWidth: 300,
-        className: "stammtisch-popup",
+      // Tooltip beim Hover anzeigen
+      const tooltipContent = createTooltipContent(location);
+      marker.bindTooltip(tooltipContent, {
+        permanent: false,
+        direction: "top",
+        offset: [0, -35],
+        className: "stammtisch-tooltip",
+        opacity: 1,
       });
 
+      // Popup mit verbessertem Styling
+      const popupContent = createPopupContent(location);
+      marker.bindPopup(popupContent, {
+        maxWidth: 320,
+        minWidth: 240,
+        className: "stammtisch-popup",
+        closeButton: true,
+        autoClose: true,
+        closeOnEscapeKey: true,
+        autoPan: true,
+        autoPanPadding: [50, 50],
+      });
+
+      // Animiertes Erscheinen der Marker
+      const markerElement = marker.getElement();
+      if (markerElement) {
+        markerElement.style.opacity = "0";
+        markerElement.style.transform = "translateY(-10px)";
+        setTimeout(() => {
+          markerElement.style.transition =
+            "opacity 0.3s ease-out, transform 0.3s ease-out";
+          markerElement.style.opacity = "1";
+          markerElement.style.transform = "translateY(0)";
+        }, index * 50); // Gestaffeltes Erscheinen
+      }
+
+      // Click öffnet Details-Panel
       marker.on("click", () => {
         openLocationDetails(location);
+      });
+
+      // Hover-Effekte für besseres visuelles Feedback
+      marker.on("mouseover", () => {
+        const el = marker.getElement();
+        if (el) {
+          el.style.zIndex = "1000";
+        }
+      });
+
+      marker.on("mouseout", () => {
+        const el = marker.getElement();
+        if (el) {
+          el.style.zIndex = "";
+        }
       });
 
       markers.push(marker);
     });
   }
 
+  function createTooltipContent(location: StammtischLocation): string {
+    const countryInfo = CountryMetadata.getCountryInfo(location.country);
+    const name = escapeHtml(location.name);
+    const city = escapeHtml(location.city);
+    const hint = escapeHtml(t("map.tooltip.clickForDetails"));
+
+    return `
+      <div class="tooltip-content">
+        <strong>${countryInfo.flag} ${name}</strong>
+        <span class="tooltip-city">${city}</span>
+        <span class="tooltip-hint">${hint}</span>
+      </div>
+    `;
+  }
+
   function ensureStammtischIcon(): DivIcon {
     if (!stammtischIcon && L) {
       stammtischIcon = L.divIcon({
         html: `
-          <div class="stammtisch-marker">
+          <div class="stammtisch-marker" role="img">
             <div class="marker-pin">
-              <div class="marker-icon">📍</div>
+              <div class="marker-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+              </div>
             </div>
+            <div class="marker-pulse"></div>
             <div class="marker-shadow"></div>
           </div>
         `,
         className: "custom-stammtisch-marker",
-        iconSize: [30, 40],
-        iconAnchor: [15, 40],
-        popupAnchor: [0, -40],
+        iconSize: [36, 48],
+        iconAnchor: [18, 48],
+        popupAnchor: [0, -48],
+        tooltipAnchor: [0, -40],
       });
     }
 
@@ -320,9 +392,16 @@
 
   function createPopupContent(location: StammtischLocation): string {
     const countryInfo = CountryMetadata.getCountryInfo(location.country);
-    const tagsHtml = location.tags
-      .map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`)
-      .join("");
+    const tagsHtml =
+      location.tags.length > 0
+        ? location.tags
+            .slice(0, 3) // Maximal 3 Tags im Popup zeigen
+            .map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`)
+            .join("") +
+          (location.tags.length > 3
+            ? `<span class="tag tag-more">+${location.tags.length - 3}</span>`
+            : "")
+        : "";
 
     const locationText = escapeHtml(
       t("map.popup.location", {
@@ -348,24 +427,43 @@
     const buttonLabel = escapeHtml(t("map.popup.more"));
     const locationName = escapeHtml(location.name);
     const locationId = escapeForJsString(location.id);
+    const isActive = location.isActive;
+    const statusClass = isActive ? "active" : "inactive";
+    const statusIcon = isActive ? "🟢" : "🔴";
+    const statusLabel = isActive ? "Aktiv" : "Inaktiv";
 
     return `
-      <div class="popup-content">
-        <h3 class="popup-title">
-          ${countryInfo.flag} ${locationName}
-        </h3>
-        <p class="popup-location">
-          ${locationText}
-        </p>
-        <p class="popup-frequency">
-          ${frequencyText}
-        </p>
-        <div class="popup-tags">
-          ${tagsHtml}
+      <div class="popup-content" role="article" aria-label="${locationName}">
+        <header class="popup-header">
+          <h3 class="popup-title">
+            <span class="popup-flag">${countryInfo.flag}</span>
+            ${locationName}
+          </h3>
+          <span class="popup-status ${statusClass}" aria-label="${statusLabel}">
+            ${statusIcon}
+          </span>
+        </header>
+        <div class="popup-body">
+          <p class="popup-location">
+            ${locationText}
+          </p>
+          <p class="popup-frequency">
+            ${frequencyText}
+          </p>
+          ${tagsHtml ? `<div class="popup-tags">${tagsHtml}</div>` : ""}
         </div>
-        <button class="popup-button" onclick="this.dispatchEvent(new CustomEvent('show-details', { bubbles: true, detail: '${locationId}' }))">
-          ${buttonLabel}
-        </button>
+        <footer class="popup-footer">
+          <button
+            class="popup-button"
+            onclick="this.dispatchEvent(new CustomEvent('show-details', { bubbles: true, detail: '${locationId}' }))"
+            aria-label="${buttonLabel} zu ${locationName}"
+          >
+            <span class="popup-button-text">${buttonLabel}</span>
+            <svg class="popup-button-icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+              <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+        </footer>
       </div>
     `;
   }
@@ -554,23 +652,41 @@
 
   :global(.stammtisch-marker) {
     position: relative;
-    width: 30px;
-    height: 40px;
+    width: 36px;
+    height: 48px;
+    cursor: pointer;
+    transition: transform 0.2s ease-out;
+  }
+
+  :global(.stammtisch-marker:hover) {
+    transform: scale(1.15);
   }
 
   :global(.marker-pin) {
     position: absolute;
     top: 0;
     left: 50%;
-    transform: translateX(-50%);
-    width: 30px;
-    height: 30px;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(145deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
     border: 3px solid #ffffff;
     border-radius: 50% 50% 50% 0;
     transform: translateX(-50%) rotate(-45deg);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow:
+      0 4px 12px rgba(79, 70, 229, 0.4),
+      0 2px 4px rgba(0, 0, 0, 0.2),
+      inset 0 1px 2px rgba(255, 255, 255, 0.3);
     z-index: 2;
+    transition: all 0.2s ease-out;
+  }
+
+  :global(.custom-stammtisch-marker:hover .marker-pin) {
+    background: linear-gradient(145deg, #818cf8 0%, #6366f1 50%, #4f46e5 100%);
+    box-shadow:
+      0 6px 16px rgba(79, 70, 229, 0.5),
+      0 3px 6px rgba(0, 0, 0, 0.25),
+      inset 0 1px 3px rgba(255, 255, 255, 0.4);
+    transform: translateX(-50%) rotate(-45deg) scale(1.05);
   }
 
   :global(.marker-icon) {
@@ -578,9 +694,40 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(45deg);
-    font-size: 14px;
+    width: 16px;
+    height: 16px;
     color: white;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  }
+
+  :global(.marker-icon svg) {
+    width: 100%;
+    height: 100%;
+  }
+
+  :global(.marker-pulse) {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 50%;
+    animation: markerPulse 2s ease-in-out infinite;
+    z-index: 0;
+  }
+
+  @keyframes markerPulse {
+    0%,
+    100% {
+      transform: translateX(-50%) scale(0.8);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translateX(-50%) scale(1.2);
+      opacity: 0;
+    }
   }
 
   :global(.marker-shadow) {
@@ -588,98 +735,249 @@
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 20px;
-    height: 8px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 50%;
-    filter: blur(2px);
+    width: 24px;
+    height: 10px;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(0, 0, 0, 0.25) 0%,
+      transparent 70%
+    );
     z-index: 1;
   }
 
-  /* Hover effect for markers */
-  :global(.custom-stammtisch-marker:hover .marker-pin) {
-    transform: translateX(-50%) rotate(-45deg) scale(1.1);
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
-    transition: all 0.2s ease-in-out;
+  /* Tooltip Styles */
+  :global(.stammtisch-tooltip) {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%) !important;
+    border: 1px solid rgba(99, 102, 241, 0.3) !important;
+    border-radius: 8px !important;
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.3),
+      0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    padding: 0 !important;
+  }
+
+  :global(.stammtisch-tooltip::before) {
+    border-top-color: #1f2937 !important;
+  }
+
+  :global(.leaflet-tooltip-top.stammtisch-tooltip::before) {
+    border-top-color: #1f2937 !important;
+    margin-left: -8px;
+  }
+
+  :global(.tooltip-content) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 14px;
+    text-align: center;
+  }
+
+  :global(.tooltip-content strong) {
+    color: #f3f4f6;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  :global(.tooltip-city) {
+    color: #9ca3af;
+    font-size: 0.8rem;
+  }
+
+  :global(.tooltip-hint) {
+    color: #6366f1;
+    font-size: 0.7rem;
+    margin-top: 2px;
+    font-style: italic;
   }
 
   /* Updated Popup Styles */
   :global(.leaflet-popup-content-wrapper) {
-    background: #1f2937 !important;
-    border-radius: 8px !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+    background: linear-gradient(145deg, #1f2937 0%, #111827 100%) !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+    border-radius: 12px !important;
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.35),
+      0 8px 16px rgba(0, 0, 0, 0.25) !important;
+    overflow: hidden;
   }
 
   :global(.leaflet-popup-content) {
     margin: 0 !important;
-    padding: 1rem !important;
+    padding: 0 !important;
     color: #e5e7eb !important;
+    min-width: 220px;
   }
 
   :global(.leaflet-popup-tip) {
     background: #1f2937 !important;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+    border-top: none !important;
+    border-left: none !important;
   }
 
-  /* Popup Styles */
+  :global(.leaflet-popup-close-button) {
+    color: #9ca3af !important;
+    font-size: 20px !important;
+    padding: 8px 12px !important;
+    transition: color 0.2s ease !important;
+  }
+
+  :global(.leaflet-popup-close-button:hover) {
+    color: #f3f4f6 !important;
+    background: transparent !important;
+  }
+
+  /* Popup Animation */
+  :global(.leaflet-popup) {
+    animation: popupAppear 0.25s ease-out;
+  }
+
+  @keyframes popupAppear {
+    from {
+      opacity: 0;
+      transform: translate3d(-50%, -10px, 0) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(-50%, 0, 0) scale(1);
+    }
+  }
+
+  /* Popup Content Styles */
   :global(.stammtisch-popup .popup-content) {
     font-family:
       system-ui,
       -apple-system,
       sans-serif;
-    padding: 0.5rem;
+    padding: 0;
+  }
+
+  :global(.stammtisch-popup .popup-header) {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(99, 102, 241, 0.05);
   }
 
   :global(.stammtisch-popup .popup-title) {
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 600;
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     color: #f3f4f6 !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.3;
+    flex: 1;
+    padding-right: 8px;
+  }
+
+  :global(.stammtisch-popup .popup-flag) {
+    font-size: 1.2em;
+    flex-shrink: 0;
+  }
+
+  :global(.stammtisch-popup .popup-status) {
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  :global(.stammtisch-popup .popup-body) {
+    padding: 12px 16px;
   }
 
   :global(.stammtisch-popup .popup-location) {
-    margin: 0.25rem 0;
+    margin: 0 0 6px;
     color: #d1d5db !important;
     font-size: 0.875rem;
+    line-height: 1.4;
   }
 
   :global(.stammtisch-popup .popup-frequency) {
-    margin: 0.25rem 0 0.5rem 0;
-    color: #d1d5db !important;
-    font-size: 0.875rem;
+    margin: 0 0 10px;
+    color: #9ca3af !important;
+    font-size: 0.8rem;
+    line-height: 1.4;
   }
 
   :global(.stammtisch-popup .popup-tags) {
-    margin: 0.5rem 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.25rem;
+    gap: 6px;
+    margin-top: 8px;
   }
 
   :global(.stammtisch-popup .tag) {
-    background-color: #4f46e5;
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
     color: white;
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
     font-weight: 500;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3);
+  }
+
+  :global(.stammtisch-popup .tag-more) {
+    background: rgba(255, 255, 255, 0.1);
+    color: #9ca3af;
+    box-shadow: none;
+  }
+
+  :global(.stammtisch-popup .popup-footer) {
+    padding: 12px 16px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   :global(.stammtisch-popup .popup-button) {
-    background-color: #4f46e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
     color: white;
     border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
+    padding: 10px 16px;
+    border-radius: 8px;
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
     width: 100%;
-    margin-top: 0.5rem;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
   }
 
   :global(.stammtisch-popup .popup-button:hover) {
-    background-color: #3730a3;
+    background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+  }
+
+  :global(.stammtisch-popup .popup-button:active) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  }
+
+  :global(.stammtisch-popup .popup-button:focus-visible) {
+    outline: 2px solid #818cf8;
+    outline-offset: 2px;
+  }
+
+  :global(.stammtisch-popup .popup-button-text) {
+    flex: 1;
+  }
+
+  :global(.stammtisch-popup .popup-button-icon) {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+  }
+
+  :global(.stammtisch-popup .popup-button:hover .popup-button-icon) {
+    transform: translateX(3px);
   }
 
   :global(.leaflet-container) {
