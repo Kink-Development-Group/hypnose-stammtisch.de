@@ -403,9 +403,37 @@
   }
 
   .description {
-    color: #6b7280;
     line-height: 1.6;
     margin: 0;
+  }
+
+  /* Prose overrides for proper dark mode support */
+  .description :global(h1),
+  .description :global(h2),
+  .description :global(h3),
+  .description :global(h4),
+  .description :global(h5),
+  .description :global(h6) {
+    color: #374151;
+  }
+
+  :global(.dark) .description :global(h1),
+  :global(.dark) .description :global(h2),
+  :global(.dark) .description :global(h3),
+  :global(.dark) .description :global(h4),
+  :global(.dark) .description :global(h5),
+  :global(.dark) .description :global(h6) {
+    color: #f3f4f6;
+  }
+
+  .description :global(p),
+  .description :global(li) {
+    color: #6b7280;
+  }
+
+  :global(.dark) .description :global(p),
+  :global(.dark) .description :global(li) {
+    color: #d1d5db;
   }
 
   .meeting-info {
