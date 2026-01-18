@@ -308,7 +308,10 @@
         autoClose: true,
         closeOnEscapeKey: true,
         autoPan: true,
-        autoPanPadding: [50, 50],
+        autoPanPadding: [80, 120], // [horizontal, vertikal] - mehr Platz oben für Popup
+        autoPanPaddingTopLeft: [50, 150], // Extra Padding oben-links
+        autoPanPaddingBottomRight: [50, 50], // Weniger Padding unten-rechts
+        keepInView: true, // Popup bleibt immer im sichtbaren Bereich
       });
 
       // Animiertes Erscheinen der Marker
@@ -565,12 +568,23 @@
   .map-container {
     position: relative;
     border-radius: 0.5rem;
-    overflow: hidden;
+    overflow: visible; /* Popups dürfen über den Rand hinausragen */
     box-shadow:
       0 4px 6px -1px rgba(0, 0, 0, 0.1),
       0 2px 4px -1px rgba(0, 0, 0, 0.06);
     background-color: #f3f4f6;
     z-index: 1;
+  }
+
+  /* Leaflet-Container behält sein Clipping für Tiles */
+  .map-container :global(.leaflet-container) {
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  /* Popup-Pane darf über den Container hinausragen */
+  .map-container :global(.leaflet-pane.leaflet-popup-pane) {
+    overflow: visible !important;
   }
 
   .map-loading {
@@ -832,6 +846,16 @@
   /* Popup Animation */
   :global(.leaflet-popup) {
     animation: popupAppear 0.25s ease-out;
+  }
+
+  /* Sicherstellen, dass Popups nicht über den Kartenrand hinausragen */
+  :global(.leaflet-popup-pane) {
+    overflow: visible;
+  }
+
+  :global(.map-container .leaflet-popup) {
+    /* Verhindert Clipping am Rand */
+    margin-top: 0;
   }
 
   @keyframes popupAppear {
