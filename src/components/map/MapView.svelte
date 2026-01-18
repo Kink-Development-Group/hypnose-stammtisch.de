@@ -270,7 +270,14 @@
   function updateMarkers(locations: StammtischLocation[]): void {
     if (!map || !L) return;
 
-    markers.forEach((marker) => marker.remove());
+    // Bestehende Marker entfernen
+    markers.forEach((marker) => {
+      try {
+        marker.remove();
+      } catch {
+        // Marker war bereits entfernt
+      }
+    });
     markers = [];
 
     const icon = ensureStammtischIcon();
@@ -308,42 +315,63 @@
         autoClose: true,
         closeOnEscapeKey: true,
         autoPan: true,
-        autoPanPadding: [80, 120], // [horizontal, vertikal] - mehr Platz oben für Popup
-        autoPanPaddingTopLeft: [50, 150], // Extra Padding oben-links
-        autoPanPaddingBottomRight: [50, 50], // Weniger Padding unten-rechts
-        keepInView: true, // Popup bleibt immer im sichtbaren Bereich
+        autoPanPadding: [80, 120],
+        autoPanPaddingTopLeft: [50, 150],
+        autoPanPaddingBottomRight: [50, 50],
+        keepInView: true,
       });
 
-      // Animiertes Erscheinen der Marker
-      const markerElement = marker.getElement();
-      if (markerElement) {
-        markerElement.style.opacity = "0";
-        markerElement.style.transform = "translateY(-10px)";
-        setTimeout(() => {
-          markerElement.style.transition =
-            "opacity 0.3s ease-out, transform 0.3s ease-out";
-          markerElement.style.opacity = "1";
-          markerElement.style.transform = "translateY(0)";
-        }, index * 50); // Gestaffeltes Erscheinen
-      }
-
-      // Click öffnet Details-Panel
+      // Click öffnet Details-Panel (mit Fehlerbehandlung)
       marker.on("click", () => {
-        openLocationDetails(location);
+        try {
+          openLocationDetails(location);
+        } catch (error) {
+          console.error("Error opening location details:", error);
+        }
       });
+
+      // Animiertes Erscheinen der Marker (verzögert, damit Element existiert)
+      setTimeout(
+        () => {
+          try {
+            const markerElement = marker.getElement();
+            if (markerElement) {
+              markerElement.style.opacity = "0";
+              markerElement.style.transform = "translateY(-10px)";
+              requestAnimationFrame(() => {
+                markerElement.style.transition =
+                  "opacity 0.3s ease-out, transform 0.3s ease-out";
+                markerElement.style.opacity = "1";
+                markerElement.style.transform = "translateY(0)";
+              });
+            }
+          } catch {
+            // Element nicht verfügbar, Animation überspringen
+          }
+        },
+        index * 30 + 50,
+      ); // Gestaffeltes Erscheinen mit kurzem Delay
 
       // Hover-Effekte für besseres visuelles Feedback
       marker.on("mouseover", () => {
-        const el = marker.getElement();
-        if (el) {
-          el.style.zIndex = "1000";
+        try {
+          const el = marker.getElement();
+          if (el) {
+            el.style.zIndex = "1000";
+          }
+        } catch {
+          // Ignorieren
         }
       });
 
       marker.on("mouseout", () => {
-        const el = marker.getElement();
-        if (el) {
-          el.style.zIndex = "";
+        try {
+          const el = marker.getElement();
+          if (el) {
+            el.style.zIndex = "";
+          }
+        } catch {
+          // Ignorieren
         }
       });
 
@@ -497,9 +525,20 @@
       .replace(/'/g, "\\'");
   }
 
-  // React to store changes
-  $: if (map && L) {
-    updateMarkers($filteredStammtischLocations);
+  // Track last rendered locations to avoid unnecessary re-renders
+  let lastRenderedLocationsHash = "";
+
+  function getLocationsHash(locations: StammtischLocation[]): string {
+    return locations.map((l) => l.id).join(",");
+  }
+
+  // React to store changes - mit Deduplication
+  $: if (map && L && $filteredStammtischLocations) {
+    const currentHash = getLocationsHash($filteredStammtischLocations);
+    if (currentHash !== lastRenderedLocationsHash) {
+      lastRenderedLocationsHash = currentHash;
+      updateMarkers($filteredStammtischLocations);
+    }
   }
 
   // Update map view when viewport changes (from external sources)
