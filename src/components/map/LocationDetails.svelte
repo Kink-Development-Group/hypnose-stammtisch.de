@@ -1,4 +1,6 @@
 <script lang="ts">
+  import DOMPurify from "dompurify";
+  import { marked } from "marked";
   import { CountryMetadata } from "../../classes/CountryMetadata";
   import { CountryCode } from "../../enums/countryCode";
   import {
@@ -11,6 +13,13 @@
   export let location: StammtischLocation | null = null;
 
   $: currentLocation = location || $selectedLocation;
+
+  // Process markdown description
+  $: processedDescription = currentLocation
+    ? DOMPurify.sanitize(
+        marked.parse(currentLocation.description || "") as string,
+      )
+    : "";
 
   type ContactChannel = keyof StammtischLocation["contact"];
 
@@ -164,9 +173,13 @@
       <!-- Description -->
       <section class="content-section">
         <h3 class="section-title">{t("map.details.aboutTitle")}</h3>
-        <p id="location-description" class="description">
-          {currentLocation.description}
-        </p>
+        <div
+          id="location-description"
+          class="description prose prose-sm dark:prose-invert max-w-none"
+        >
+          <!-- Sichere HTML-Injektion: description wird via marked.parse gerendert und mit DOMPurify.sanitize bereinigt -->
+          {@html processedDescription}
+        </div>
       </section>
 
       <!-- Meeting Info -->
