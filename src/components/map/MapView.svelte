@@ -282,7 +282,7 @@
 
     const icon = ensureStammtischIcon();
 
-    locations.forEach((location, index) => {
+    locations.forEach((location) => {
       const marker = L.marker(
         [location.coordinates.lat, location.coordinates.lng],
         {
@@ -315,10 +315,8 @@
         autoClose: true,
         closeOnEscapeKey: true,
         autoPan: true,
-        autoPanPadding: [80, 120],
-        autoPanPaddingTopLeft: [50, 150],
-        autoPanPaddingBottomRight: [50, 50],
-        keepInView: true,
+        autoPanPadding: [40, 60],
+        // Kein keepInView - verursacht Freeze mit maxBounds
       });
 
       // Click öffnet Details-Panel (mit Fehlerbehandlung)
@@ -327,51 +325,6 @@
           openLocationDetails(location);
         } catch (error) {
           console.error("Error opening location details:", error);
-        }
-      });
-
-      // Animiertes Erscheinen der Marker (verzögert, damit Element existiert)
-      setTimeout(
-        () => {
-          try {
-            const markerElement = marker.getElement();
-            if (markerElement) {
-              markerElement.style.opacity = "0";
-              markerElement.style.transform = "translateY(-10px)";
-              requestAnimationFrame(() => {
-                markerElement.style.transition =
-                  "opacity 0.3s ease-out, transform 0.3s ease-out";
-                markerElement.style.opacity = "1";
-                markerElement.style.transform = "translateY(0)";
-              });
-            }
-          } catch {
-            // Element nicht verfügbar, Animation überspringen
-          }
-        },
-        index * 30 + 50,
-      ); // Gestaffeltes Erscheinen mit kurzem Delay
-
-      // Hover-Effekte für besseres visuelles Feedback
-      marker.on("mouseover", () => {
-        try {
-          const el = marker.getElement();
-          if (el) {
-            el.style.zIndex = "1000";
-          }
-        } catch {
-          // Ignorieren
-        }
-      });
-
-      marker.on("mouseout", () => {
-        try {
-          const el = marker.getElement();
-          if (el) {
-            el.style.zIndex = "";
-          }
-        } catch {
-          // Ignorieren
         }
       });
 
