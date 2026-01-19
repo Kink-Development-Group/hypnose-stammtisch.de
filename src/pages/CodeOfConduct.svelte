@@ -10,7 +10,7 @@
   />
 </svelte:head>
 
-<main class="container mx-auto px-4 py-8 max-w-4xl">
+<div class="container mx-auto px-4 py-8 max-w-4xl">
   <!-- Header -->
   <header class="text-center mb-12">
     <h1 class="text-4xl md:text-5xl font-display font-bold text-smoke-50 mb-4">
@@ -217,10 +217,22 @@
             <li>• Sexuelle Belästigung oder Übergriffe</li>
             <li>• Physische Gewalt oder Bedrohungen</li>
             <li>• Aktivitäten ohne Einverständnis</li>
-            <li>• Diskriminierung aufgrund von Identität</li>
+            <li>
+              • Diskriminierung aufgrund von Identität (z.B. Beleidigungen,
+              Ausschluss aus Community-Aktivitäten, abwertende Kommentare)
+            </li>
             <li>• Verletzung der Vertraulichkeit</li>
-            <li>• Substanzmissbrauch während Events</li>
+            <li>
+              • Substanzmissbrauch / bewusstseinsverändernde Substanzen während
+              Events
+            </li>
           </ul>
+          <p class="mt-3 text-smoke-400 text-xs italic">
+            Hinweis: Persönliche Präferenzen bei intimen Aktivitäten sind keine
+            Diskriminierung. Dein Recht, selbst zu entscheiden, mit wem du
+            welche Aktivitäten durchführst, ist Teil deines Einverständnisrechts
+            – nicht dessen Verletzung.
+          </p>
         </div>
 
         <div>
@@ -252,7 +264,9 @@
         </h3>
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="font-medium text-boundaries">"Stopp"/"Rot"</span>
+            <span class="font-medium text-boundaries"
+              >"Stopp"/"Rot"/"Mayday"</span
+            >
             <span class="text-smoke-300">Sofortiger Abbruch</span>
           </div>
           <div class="flex justify-between">
@@ -393,7 +407,7 @@
       </p>
 
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/resources" use:link class="btn btn-outline">
+        <a href="/ressourcen" use:link class="btn btn-outline">
           Weitere Ressourcen
         </a>
         <a href="/contact" use:link class="btn btn-primary">
@@ -406,4 +420,4 @@
       </div>
     </div>
   </footer>
-</main>
+</div>

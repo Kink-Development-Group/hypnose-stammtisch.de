@@ -6,6 +6,7 @@ namespace HypnoseStammtisch\Controllers;
 
 use HypnoseStammtisch\Models\Event;
 use HypnoseStammtisch\Database\Database;
+use HypnoseStammtisch\Utils\JsonHelper;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\ICSGenerator;
 use HypnoseStammtisch\Utils\RRuleProcessor;
@@ -25,8 +26,15 @@ class CalendarController
     public function feed(string $token = null): void
     {
         try {
+            // Normalize special values that represent the public feed
+            $normalizedToken = $token !== null ? trim($token) : null;
+
+            if ($normalizedToken === '' || strcasecmp($normalizedToken, 'public') === 0) {
+                $normalizedToken = null;
+            }
+
             // Validate token if provided
-            if ($token && !$this->validateFeedToken($token)) {
+            if ($normalizedToken && !$this->validateFeedToken($normalizedToken)) {
                 Response::json(['success' => false, 'error' => 'Invalid calendar feed token'], 403);
                 return;
             }
@@ -35,12 +43,12 @@ class CalendarController
             $events = $this->getExpandedEventsForFeed();
 
             // Generate ICS content using the new ICSGenerator
-            $filename = $token ? 'private-calendar.ics' : 'public-calendar.ics';
+            $filename = $normalizedToken ? 'private-calendar.ics' : 'public-calendar.ics';
             ICSGenerator::outputCalendarFeed($events, $filename);
 
             // Update token access tracking
-            if ($token) {
-                $this->updateTokenAccess($token);
+            if ($normalizedToken) {
+                $this->updateTokenAccess($normalizedToken);
             }
         } catch (\Exception $e) {
             error_log("Calendar feed error: " . $e->getMessage());
@@ -104,9 +112,10 @@ class CalendarController
     private function generateIcsContent(array $events): string
     {
         $timezone = Config::get('calendar.timezone', 'Europe/Berlin');
-        $prodId = '-//Hypnose Stammtisch//Calendar Feed//DE';
-        $calName = 'Hypnose Stammtisch';
-        $calDesc = 'Events der Hypnose Stammtisch Community';
+        $appName = Config::getAppName(true);
+        $prodId = '-//' . $appName . '//Calendar Feed//DE';
+        $calName = $appName;
+        $calDesc = 'Events der ' . $appName . ' Community';
 
         $ics = [
             'BEGIN:VCALENDAR',
@@ -422,17 +431,30 @@ class CalendarController
                         $eventArray,
                         $startDate,
                         $endDate,
-                        json_decode($eventArray['exdates'] ?? '[]', true)
+                        JsonHelper::decodeArray($eventArray['exdates'] ?? '[]')
                     );
-                    $expandedEvents = array_merge($expandedEvents, $instances);
+
+                    if (!empty($instances)) {
+                        $expandedEvents = array_merge($expandedEvents, $instances);
+                    } else {
+                        // If expansion returned no instances (e.g., all dates in past),
+                        // add base event if it falls within range
+                        $eventStart = Carbon::parse($eventArray['start_datetime']);
+                        if ($eventStart->between($startDate, $endDate)) {
+                            $expandedEvents[] = $eventArray;
+                        }
+                    }
                 } catch (\Exception $e) {
                     error_log("Error expanding recurring event {$eventArray['id']}: " . $e->getMessage());
                     // Add the base event if expansion fails
                     $expandedEvents[] = $eventArray;
                 }
             } else {
-                // Add single event
-                $expandedEvents[] = $eventArray;
+                // Add single event (also handles is_recurring=true with empty rrule)
+                $eventStart = Carbon::parse($eventArray['start_datetime']);
+                if ($eventStart->between($startDate, $endDate)) {
+                    $expandedEvents[] = $eventArray;
+                }
             }
         }
 

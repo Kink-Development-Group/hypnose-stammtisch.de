@@ -10,6 +10,10 @@
   let modalElement: HTMLElement;
   let previousFocus: HTMLElement | null = null;
 
+  // Download dropdown state
+  let showDownloadOptions = false;
+  let downloadDropdownRef: HTMLElement;
+
   dayjs.locale("de");
 
   // Focus trap elements
@@ -134,9 +138,15 @@
     }
   };
 
+  // Toggle download options dropdown
+  const toggleDownloadOptions = () => {
+    showDownloadOptions = !showDownloadOptions;
+  };
+
   // Download ICS file for single event
-  const downloadICS = async () => {
+  const downloadSingleEvent = async () => {
     if (!event) return;
+    showDownloadOptions = false;
 
     try {
       // Use backend endpoint for ICS generation
@@ -181,6 +191,35 @@
     }
   };
 
+  // Download ICS file for entire series with RRULE
+  const downloadEntireSeries = async () => {
+    if (!event || !event.seriesId) return;
+    showDownloadOptions = false;
+
+    try {
+      const response = await fetch(`/api/series/${event.seriesId}/ics`);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `series-${event.seriesId}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading series ICS file:", error);
+      alert(
+        "Fehler beim Erstellen der Serien-Kalenderdatei. Bitte versuchen Sie es später erneut.",
+      );
+    }
+  };
+
   // Client-side ICS generation as fallback
   const generateClientSideICS = (): string => {
     if (!event) throw new Error("No event data");
@@ -207,7 +246,8 @@
   const copyEventLink = async () => {
     if (!event) return;
 
-    const url = `${window.location.origin}/events/${event.id}`;
+    // Use hash-based URL for SPA routing
+    const url = `${window.location.origin}/#/events/${event.id}`;
 
     try {
       await navigator.clipboard.writeText(url);
@@ -219,6 +259,17 @@
     }
   };
 
+  // Close dropdown when clicking outside
+  const handleWindowClick = (e: MouseEvent) => {
+    if (
+      showDownloadOptions &&
+      downloadDropdownRef &&
+      !downloadDropdownRef.contains(e.target as Node)
+    ) {
+      showDownloadOptions = false;
+    }
+  };
+
   onMount(() => {
     return () => {
       // Cleanup: restore body scroll
@@ -227,7 +278,7 @@
   });
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} on:click={handleWindowClick} />
 
 {#if isOpen && event}
   <!-- Modal backdrop -->
@@ -258,7 +309,7 @@
               {event.title}
             </h2>
             <div class="flex flex-wrap gap-2">
-              {#each event.tags as tag}
+              {#each event.tags as tag (tag)}
                 <span
                   class="px-2 py-1 text-xs font-medium bg-primary-600 text-smoke-50 rounded-full"
                 >
@@ -445,12 +496,104 @@
         <footer
           class="flex-shrink-0 flex flex-col sm:flex-row gap-3 p-6 border-t border-charcoal-700"
         >
-          <button
-            class="flex-1 px-6 py-3 bg-accent-600 hover:bg-accent-700 text-charcoal-900 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-800"
-            on:click={downloadICS}
-          >
-            📅 Kalendereintrag herunterladen
-          </button>
+          <!-- Download button with dropdown for series events -->
+          <div class="flex-1 relative" bind:this={downloadDropdownRef}>
+            {#if event.seriesId}
+              <!-- Series event: show dropdown -->
+              <button
+                class="w-full px-6 py-3 bg-accent-600 hover:bg-accent-700 text-charcoal-900 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-800 flex items-center justify-center gap-2"
+                on:click={toggleDownloadOptions}
+                aria-expanded={showDownloadOptions}
+                aria-haspopup="menu"
+              >
+                <span>📅 Kalendereintrag herunterladen</span>
+                <svg
+                  class="w-4 h-4 transition-transform {showDownloadOptions
+                    ? 'rotate-180'
+                    : ''}"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              <!-- Dropdown menu -->
+              {#if showDownloadOptions}
+                <div
+                  class="absolute bottom-full left-0 right-0 mb-2 bg-charcoal-700 border border-charcoal-600 rounded-lg shadow-lg overflow-hidden z-50"
+                  role="menu"
+                  aria-label="Download-Optionen"
+                >
+                  <button
+                    class="w-full px-4 py-3 text-left text-smoke-200 hover:bg-charcoal-600 transition-colors flex items-center gap-3 focus:outline-none focus:bg-charcoal-600"
+                    on:click={downloadSingleEvent}
+                    role="menuitem"
+                  >
+                    <svg
+                      class="w-5 h-5 text-accent-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <div>
+                      <div class="font-medium">Nur diesen Termin</div>
+                      <div class="text-xs text-smoke-400">
+                        Einzelnes Event herunterladen
+                      </div>
+                    </div>
+                  </button>
+                  <button
+                    class="w-full px-4 py-3 text-left text-smoke-200 hover:bg-charcoal-600 transition-colors flex items-center gap-3 border-t border-charcoal-600 focus:outline-none focus:bg-charcoal-600"
+                    on:click={downloadEntireSeries}
+                    role="menuitem"
+                  >
+                    <svg
+                      class="w-5 h-5 text-primary-400"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                    <div>
+                      <div class="font-medium">Gesamte Serie</div>
+                      <div class="text-xs text-smoke-400">
+                        Alle Termine dieser Reihe herunterladen
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              {/if}
+            {:else}
+              <!-- Single event: direct download -->
+              <button
+                class="w-full px-6 py-3 bg-accent-600 hover:bg-accent-700 text-charcoal-900 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-800"
+                on:click={downloadSingleEvent}
+              >
+                📅 Kalendereintrag herunterladen
+              </button>
+            {/if}
+          </div>
           <button
             class="flex-1 px-6 py-3 border border-accent-600 text-accent-400 hover:bg-accent-600 hover:text-charcoal-900 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-accent-400 focus:ring-offset-2 focus:ring-offset-charcoal-800"
             on:click={copyEventLink}
@@ -473,7 +616,7 @@
   /* Additional styles for better accessibility */
   .modal-container {
     scrollbar-width: thin;
-    scrollbar-color: theme("colors.charcoal.600") theme("colors.charcoal.800");
+    scrollbar-color: #4d5a78 #363d53; /* charcoal-600 on charcoal-800 */
   }
 
   /* Webkit scrollbar styling */
@@ -482,16 +625,16 @@
   }
 
   .modal-container::-webkit-scrollbar-track {
-    background: theme("colors.charcoal.800");
+    background: #363d53; /* charcoal-800 */
   }
 
   .modal-container::-webkit-scrollbar-thumb {
-    background: theme("colors.charcoal.600");
+    background: #4d5a78; /* charcoal-600 */
     border-radius: 4px;
   }
 
   .modal-container::-webkit-scrollbar-thumb:hover {
-    background: theme("colors.charcoal.500");
+    background: #617091; /* charcoal-500 */
   }
 
   /* Focus styles for better accessibility */

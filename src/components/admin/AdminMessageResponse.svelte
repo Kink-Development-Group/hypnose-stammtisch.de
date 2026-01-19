@@ -122,7 +122,9 @@
 
 <div class="admin-message-response">
   <div class="flex items-center justify-between mb-4">
-    <h3 class="text-lg font-semibold">E-Mail Antworten</h3>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-smoke-50">
+      E-Mail Antworten
+    </h3>
     <button
       on:click={openComposer}
       class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
@@ -133,20 +135,22 @@
 
   <!-- Email Composer -->
   {#if showComposer}
-    <div class="mb-6 p-4 bg-gray-50 rounded-lg border">
+    <div
+      class="mb-6 p-4 bg-gray-50 dark:bg-charcoal-700 rounded-lg border dark:border-charcoal-600"
+    >
       <div class="space-y-4">
         <!-- From Email Selection -->
         <div>
           <label
             for="from-email-select"
-            class="block text-sm font-medium text-gray-700 mb-2"
+            class="block text-sm font-medium text-gray-700 dark:text-smoke-300 mb-2"
           >
             Absender
           </label>
           <select
             id="from-email-select"
             bind:value={selectedEmailId}
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             {#each emailAddresses as emailAddr (emailAddr.id)}
               <option value={emailAddr.id}>
@@ -160,7 +164,7 @@
         <div>
           <label
             for="to-email-input"
-            class="block text-sm font-medium text-gray-700 mb-2"
+            class="block text-sm font-medium text-gray-700 dark:text-smoke-300 mb-2"
           >
             Empfänger
           </label>
@@ -169,7 +173,7 @@
             type="email"
             value={contactEmail}
             readonly
-            class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 rounded-md bg-gray-100 dark:bg-charcoal-900 text-slate-600 dark:text-smoke-400"
           />
         </div>
 
@@ -177,7 +181,7 @@
         <div>
           <label
             for="subject-input"
-            class="block text-sm font-medium text-gray-700 mb-2"
+            class="block text-sm font-medium text-gray-700 dark:text-smoke-300 mb-2"
           >
             Betreff
           </label>
@@ -185,7 +189,7 @@
             id="subject-input"
             type="text"
             bind:value={subject}
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400 dark:placeholder:text-smoke-500"
             placeholder="E-Mail Betreff"
           />
         </div>
@@ -194,7 +198,7 @@
         <div>
           <label
             for="body-textarea"
-            class="block text-sm font-medium text-gray-700 mb-2"
+            class="block text-sm font-medium text-gray-700 dark:text-smoke-300 mb-2"
           >
             Nachricht
           </label>
@@ -202,7 +206,7 @@
             id="body-textarea"
             bind:value={body}
             rows="10"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y placeholder:text-gray-400 dark:placeholder:text-smoke-500"
             placeholder="Ihre Antwort..."
           ></textarea>
         </div>
@@ -211,7 +215,7 @@
         <div class="flex justify-end space-x-3">
           <button
             on:click={() => (showComposer = false)}
-            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            class="px-4 py-2 border border-gray-300 dark:border-charcoal-600 rounded-md text-gray-700 dark:text-smoke-300 hover:bg-gray-50 dark:hover:bg-charcoal-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-charcoal-800"
           >
             Abbrechen
           </button>
@@ -237,7 +241,7 @@
 
   <!-- Sent Responses -->
   <div>
-    <h4 class="text-md font-medium mb-3">
+    <h4 class="text-md font-medium mb-3 text-gray-900 dark:text-smoke-50">
       Gesendete Antworten ({responses.length})
     </h4>
 
@@ -246,35 +250,39 @@
         <div
           class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"
         ></div>
-        <span class="ml-2 text-gray-600">Lade Antworten...</span>
+        <span class="ml-2 text-slate-600 dark:text-smoke-400"
+          >Lade Antworten...</span
+        >
       </div>
     {:else if responses.length === 0}
-      <div class="text-center py-8 text-gray-500">
+      <div class="text-center py-8 text-slate-600 dark:text-smoke-400">
         <p>Noch keine Antworten gesendet.</p>
       </div>
     {:else}
       <div class="space-y-4">
         {#each responses as response (response.id)}
-          <div class="border border-gray-200 rounded-lg p-4 bg-white">
+          <div
+            class="border border-gray-200 dark:border-charcoal-600 rounded-lg p-4 bg-white dark:bg-charcoal-800"
+          >
             <div class="flex items-start justify-between mb-3">
               <div>
-                <div class="font-medium text-gray-900">
+                <div class="font-medium text-gray-900 dark:text-smoke-50">
                   {response.subject}
                 </div>
-                <div class="text-sm text-gray-600 mt-1">
+                <div class="text-sm text-slate-600 dark:text-smoke-400 mt-1">
                   Von: {response.from_name} ({response.from_email})
                 </div>
-                <div class="text-sm text-gray-600">
+                <div class="text-sm text-slate-600 dark:text-smoke-400">
                   An: {response.to_email}
                 </div>
               </div>
-              <div class="text-xs text-gray-500">
+              <div class="text-xs text-slate-500 dark:text-smoke-400">
                 {formatDate(response.sent_at)}
               </div>
             </div>
 
             <div
-              class="text-gray-800 whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border"
+              class="text-gray-800 dark:text-smoke-200 whitespace-pre-wrap text-sm bg-gray-50 dark:bg-charcoal-700 p-3 rounded border dark:border-charcoal-600"
             >
               {response.body}
             </div>

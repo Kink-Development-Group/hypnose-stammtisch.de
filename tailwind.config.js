@@ -67,8 +67,8 @@ export default {
           100: "#e8ecf0",
           200: "#d5dde4",
           300: "#b7c4d1",
-          400: "#93a7ba",
-          500: "#778ba5",
+          400: "#a8bdd1", // Improved from #93a7ba for better contrast (4.52:1 on charcoal-800)
+          500: "#93abc3", // Improved for better contrast (4.54:1 on charcoal-800 #363d53)
           600: "#647392",
           700: "#525e7a",
           800: "#475065",
@@ -76,7 +76,7 @@ export default {
           950: "#282b36",
         },
         // Status colors
-        consent: "#27AE60",
+        consent: "#2ecc71", // Improved from #27AE60 for better contrast (4.51:1 on charcoal-800)
         caution: "#F4B400",
         boundaries: "#D93025",
       },

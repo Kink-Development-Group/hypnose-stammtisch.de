@@ -10,7 +10,7 @@
   />
 </svelte:head>
 
-<main class="container mx-auto px-4 py-16 max-w-4xl text-center">
+<div class="container mx-auto px-4 py-16 max-w-4xl text-center">
   <!-- 404 Hero -->
   <div class="mb-12">
     <!-- Large 404 Text -->
@@ -86,8 +86,8 @@
         </div>
       </a>
 
-      <!-- Resources -->
-      <a href="/resources" use:link class="card-hover group">
+      <!-- ressourcen -->
+      <a href="/ressourcen" use:link class="card-hover group">
         <div class="card">
           <div class="text-4xl mb-4">📚</div>
           <h3
@@ -240,4 +240,4 @@
       />
     </svg>
   </div>
-</main>
+</div>

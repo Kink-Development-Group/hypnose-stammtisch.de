@@ -1,5 +1,6 @@
 <script lang="ts">
   import { link } from "svelte-spa-router";
+  import { complianceStore } from "../../stores/compliance";
   import BrandLogo from "../ui/BrandLogo.svelte";
 
   const currentYear = new Date().getFullYear();
@@ -8,6 +9,8 @@
     legal: [
       { href: "/privacy", label: "Datenschutz" },
       { href: "/imprint", label: "Impressum" },
+      { href: "/cookies", label: "Cookie-Richtlinie" },
+      { href: "/terms", label: "Nutzungsbedingungen" },
       { href: "/code-of-conduct", label: "Verhaltenskodex" },
     ],
     community: [
@@ -24,6 +27,10 @@
       },
     ],
   };
+
+  function openCookieSettings() {
+    complianceStore.openSettings();
+  }
 </script>
 
 <footer class="bg-charcoal-800 border-t border-charcoal-700 mt-auto">
@@ -55,7 +62,7 @@
         <h3 class="text-smoke-50 font-semibold mb-4">Community</h3>
         <nav aria-label="Community-Navigation">
           <ul class="space-y-2">
-            {#each footerLinks.community as linkItem}
+            {#each footerLinks.community as linkItem (linkItem.href)}
               <li>
                 <a
                   href={linkItem.href}
@@ -75,7 +82,7 @@
         <h3 class="text-smoke-50 font-semibold mb-4">Rechtliches</h3>
         <nav aria-label="Rechtliche Navigation">
           <ul class="space-y-2">
-            {#each footerLinks.legal as linkItem}
+            {#each footerLinks.legal as linkItem (linkItem.href)}
               <li>
                 <a
                   href={linkItem.href}
@@ -114,7 +121,7 @@
 
         <!-- Social links -->
         <div class="flex items-center space-x-4">
-          {#each footerLinks.social as socialLink}
+          {#each footerLinks.social as socialLink (socialLink.href)}
             <a
               href={socialLink.href}
               target="_blank"
@@ -140,7 +147,26 @@
         </div>
 
         <!-- GDPR/Privacy notice -->
-        <div class="text-smoke-400 text-xs">
+        <div class="text-smoke-400 text-xs flex items-center gap-3">
+          <button
+            type="button"
+            on:click={openCookieSettings}
+            class="inline-flex items-center hover:text-accent-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 rounded-sm cursor-pointer"
+          >
+            <svg
+              class="w-3 h-3 mr-1"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              aria-hidden="true"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Cookie-Einstellungen
+          </button>
           <span class="inline-flex items-center">
             <svg
               class="w-3 h-3 mr-1"

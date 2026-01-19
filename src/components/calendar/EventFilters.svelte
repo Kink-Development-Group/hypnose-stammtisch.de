@@ -97,7 +97,7 @@
   <!-- Filter section -->
   <div class="bg-charcoal-800 border border-charcoal-700 rounded-lg p-6">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-lg font-semibold text-smoke-50">Filter</h3>
+      <h2 class="text-lg font-semibold text-smoke-50">Filter</h2>
       <button
         class="btn btn-ghost text-sm"
         on:click={handleClearFilters}
@@ -188,7 +188,7 @@
             <span class="badge badge-caution"> Fortgeschritten </span>
           {/if}
 
-          {#each $eventFilters.tags as tag}
+          {#each $eventFilters.tags as tag (tag)}
             <span class="badge badge-accent">
               {tag}
             </span>
@@ -207,13 +207,13 @@
     <div class="mt-6">
       <div class="form-label mb-3">Tags</div>
       <div class="flex flex-wrap gap-2">
-        {#each availableTags as tag}
+        {#each availableTags as tag, index (index)}
           <button
             class="badge transition-all duration-200 {$eventFilters.tags.includes(
               tag,
             )
               ? 'badge-accent'
-              : 'badge-primary opacity-60 hover:opacity-100'}"
+              : 'badge-primary opacity-70 hover:opacity-100'}"
             on:click={() => toggleTag(tag)}
             aria-pressed={$eventFilters.tags.includes(tag)}
           >

@@ -79,15 +79,15 @@
 
     switch (type) {
       case "success":
-        return `${baseClasses} bg-green-50 border-green-400 text-green-800`;
+        return `${baseClasses} bg-green-50 dark:bg-green-900/30 border-green-400 dark:border-green-600 text-green-800 dark:text-green-200`;
       case "error":
-        return `${baseClasses} bg-red-50 border-red-400 text-red-800`;
+        return `${baseClasses} bg-red-50 dark:bg-red-900/30 border-red-400 dark:border-red-600 text-red-800 dark:text-red-200`;
       case "warning":
-        return `${baseClasses} bg-yellow-50 border-yellow-400 text-yellow-800`;
+        return `${baseClasses} bg-yellow-50 dark:bg-yellow-900/30 border-yellow-400 dark:border-yellow-600 text-yellow-800 dark:text-yellow-200`;
       case "info":
-        return `${baseClasses} bg-blue-50 border-blue-400 text-blue-800`;
+        return `${baseClasses} bg-blue-50 dark:bg-blue-900/30 border-blue-400 dark:border-blue-600 text-blue-800 dark:text-blue-200`;
       default:
-        return `${baseClasses} bg-gray-50 border-gray-400 text-gray-800`;
+        return `${baseClasses} bg-gray-50 dark:bg-charcoal-700 border-gray-400 dark:border-charcoal-500 text-gray-800 dark:text-smoke-200`;
     }
   }
 

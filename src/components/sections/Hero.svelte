@@ -33,7 +33,7 @@
 
 <section
   bind:this={heroRef}
-  class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-charcoal-900 via-primary-950 to-charcoal-900"
+  class="relative min-h-[calc(100vh-6.5rem)] flex items-center justify-center overflow-hidden bg-gradient-to-br from-charcoal-900 via-primary-950 to-charcoal-900"
   aria-labelledby="hero-heading"
 >
   <!-- Background spiral gradient -->
@@ -116,9 +116,9 @@
     >
       <div class="space-y-2">
         <div class="text-consent text-2xl mb-2" aria-hidden="true">✓</div>
-        <h3 class="text-lg font-semibold text-smoke-50">
+        <p class="text-lg font-semibold text-smoke-50">
           Einverständnis-zentriert
-        </h3>
+        </p>
         <p class="text-smoke-300 text-sm">
           Alle Aktivitäten basieren auf ausdrücklichem und informiertem
           Einverständnis
@@ -127,9 +127,7 @@
 
       <div class="space-y-2">
         <div class="text-accent-400 text-2xl mb-2" aria-hidden="true">🤝</div>
-        <h3 class="text-lg font-semibold text-smoke-50">
-          Community-fokussiert
-        </h3>
+        <p class="text-lg font-semibold text-smoke-50">Community-fokussiert</p>
         <p class="text-smoke-300 text-sm">
           Eine unterstützende Gemeinschaft für Lernende aller Erfahrungsstufen
         </p>
@@ -139,43 +137,12 @@
         <div class="text-secondary-400 text-2xl mb-2" aria-hidden="true">
           🛡️
         </div>
-        <h3 class="text-lg font-semibold text-smoke-50">
-          Sicher & Respektvoll
-        </h3>
+        <p class="text-lg font-semibold text-smoke-50">Sicher & Respektvoll</p>
         <p class="text-smoke-300 text-sm">
           Klare Grenzen und professionelle Standards für alle Veranstaltungen
         </p>
       </div>
     </div>
-  </div>
-
-  <!-- Scroll indicator -->
-  <div
-    class="absolute bottom-8 left-1/2 transform -translate-x-1/2 {isVisible
-      ? 'animate-bounce'
-      : 'opacity-0'}"
-    style="animation-delay: 1.2s;"
-  >
-    <a
-      href="#content"
-      class="text-smoke-400 hover:text-accent-400 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 focus-visible:ring-offset-2 focus-visible:ring-offset-charcoal-900 rounded-full p-2"
-      aria-label="Zum Inhalt scrollen"
-    >
-      <svg
-        class="w-6 h-6"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-        aria-hidden="true"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M19 14l-7 7m0 0l-7-7m7 7V3"
-        />
-      </svg>
-    </a>
   </div>
 </section>
 

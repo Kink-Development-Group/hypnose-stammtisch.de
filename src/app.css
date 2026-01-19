@@ -1,6 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "./fonts.css";
+@import "./styles/adminTheme.css";
+
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
 /* CSS Custom Properties für Design Tokens */
 :root {
@@ -78,7 +80,7 @@
 
   /* Skip link */
   .skip-link {
-    @apply absolute -top-10 left-4 z-50 bg-accent-400 text-charcoal-900 px-4 py-2 rounded-md font-medium;
+    @apply absolute -top-10 left-4 z-50 bg-accent-400 text-gray-900 px-4 py-2 rounded-md font-medium;
     @apply focus:top-4 transition-all duration-300;
   }
 
@@ -135,7 +137,7 @@
   }
 
   .btn-primary {
-    @apply bg-accent-400 text-charcoal-900 hover:bg-accent-300 hover:shadow-glow;
+    @apply bg-accent-400 text-black hover:bg-accent-300 hover:shadow-glow;
     @apply focus-visible:ring-accent-400 focus-visible:ring-offset-charcoal-900;
   }
 
@@ -169,7 +171,7 @@
   }
 
   .badge-accent {
-    @apply bg-accent-400 text-charcoal-900;
+    @apply bg-accent-400 text-gray-900;
   }
 
   .badge-consent {
@@ -195,7 +197,7 @@
 
   /* Modal backdrop */
   .modal-backdrop {
-    @apply fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-40;
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-40;
   }
 
   /* Modal content */
@@ -221,7 +223,7 @@
   }
 
   .form-textarea {
-    @apply w-full px-3 py-2 text-base resize-vertical min-h-[100px];
+    @apply w-full px-3 py-2 text-base resize-y min-h-[100px];
   }
 
   .form-select {
@@ -250,7 +252,7 @@
   }
 
   .calendar-day-today {
-    @apply bg-accent-400 text-charcoal-900;
+    @apply bg-accent-400 text-gray-900;
   }
 
   .calendar-day-other-month {

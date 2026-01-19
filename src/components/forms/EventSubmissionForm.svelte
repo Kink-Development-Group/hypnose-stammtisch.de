@@ -4,6 +4,12 @@
   import utc from "dayjs/plugin/utc";
   import { onMount } from "svelte";
   import { z } from "zod";
+  import InvisibleCaptcha from "../shared/InvisibleCaptcha.svelte";
+  import MarkdownEditor from "../shared/MarkdownEditor.svelte";
+  import DateTimePicker from "./DateTimePicker.svelte";
+
+  // CAPTCHA component reference
+  let captchaComponent: InvisibleCaptcha;
 
   dayjs.extend(utc);
   dayjs.extend(timezone);
@@ -166,11 +172,24 @@
         return;
       }
 
+      // Execute CAPTCHA and get token
+      let captchaToken = "";
+      try {
+        captchaToken = await captchaComponent.execute();
+      } catch (captchaError) {
+        console.error("CAPTCHA error:", captchaError);
+        submitError =
+          "CAPTCHA-Überprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.";
+        isSubmitting = false;
+        return;
+      }
+
       // Prepare submission data
       const submissionData = {
         ...validation.data,
         honeypot, // Should be empty
         timestamp, // Form load time
+        captcha_token: captchaToken, // CAPTCHA token
         tags: formData.tags.filter((tag) => tag.trim() !== ""),
       };
 
@@ -319,6 +338,9 @@
 {/if}
 
 <form on:submit={handleSubmit} class="space-y-8" novalidate>
+  <!-- Invisible CAPTCHA for spam protection -->
+  <InvisibleCaptcha bind:this={captchaComponent} action="event_submission" />
+
   <!-- Honeypot field for spam protection -->
   <input
     type="text"
@@ -365,39 +387,17 @@
 
       <!-- Description -->
       <div class="md:col-span-2">
-        <label
-          for="description"
-          class="block text-sm font-medium text-smoke-100 mb-2"
-        >
-          Beschreibung <span class="text-boundaries" aria-label="Pflichtfeld"
-            >*</span
-          >
-        </label>
-        <textarea
+        <MarkdownEditor
           id="description"
+          label="Beschreibung"
           bind:value={formData.description}
-          rows="4"
-          class="w-full px-4 py-3 bg-charcoal-800 border border-charcoal-600 rounded-lg text-smoke-50 placeholder-smoke-400 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
-          placeholder="Beschreiben Sie Ihr Event... (Markdown wird unterstützt)"
-          required
-          aria-describedby={errors.description
-            ? "description-error"
-            : "description-help"}
-          aria-invalid={errors.description ? "true" : "false"}
-        ></textarea>
-        <p id="description-help" class="mt-2 text-sm text-smoke-400">
-          Sie können Markdown verwenden für Formatierung (z.B. **fett**,
-          *kursiv*, [Link](URL))
-        </p>
-        {#if errors.description}
-          <p
-            id="description-error"
-            class="mt-2 text-sm text-boundaries"
-            role="alert"
-          >
-            {errors.description}
-          </p>
-        {/if}
+          rows={4}
+          placeholder="Beschreiben Sie Ihr Event..."
+          required={true}
+          error={errors.description || ""}
+          maxLength={2000}
+          theme="dark"
+        />
       </div>
 
       <!-- Category -->
@@ -451,52 +451,25 @@
 
     <div class="grid gap-6 md:grid-cols-2">
       <!-- Start Date/Time -->
-      <div>
-        <label
-          for="start_datetime"
-          class="block text-sm font-medium text-smoke-100 mb-2"
-        >
-          Beginn <span class="text-boundaries" aria-label="Pflichtfeld">*</span>
-        </label>
-        <input
-          type="datetime-local"
-          id="start_datetime"
-          bind:value={formData.start_datetime}
-          class="w-full px-4 py-3 bg-charcoal-800 border border-charcoal-600 rounded-lg text-smoke-50 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
-          required
-          aria-describedby={errors.start_datetime ? "start-error" : undefined}
-          aria-invalid={errors.start_datetime ? "true" : "false"}
-        />
-        {#if errors.start_datetime}
-          <p id="start-error" class="mt-2 text-sm text-boundaries" role="alert">
-            {errors.start_datetime}
-          </p>
-        {/if}
-      </div>
+      <DateTimePicker
+        id="start_datetime"
+        label="Beginn"
+        bind:value={formData.start_datetime}
+        required
+        mode="datetime"
+        error={errors.start_datetime || ""}
+      />
 
       <!-- End Date/Time -->
-      <div>
-        <label
-          for="end_datetime"
-          class="block text-sm font-medium text-smoke-100 mb-2"
-        >
-          Ende <span class="text-boundaries" aria-label="Pflichtfeld">*</span>
-        </label>
-        <input
-          type="datetime-local"
-          id="end_datetime"
-          bind:value={formData.end_datetime}
-          class="w-full px-4 py-3 bg-charcoal-800 border border-charcoal-600 rounded-lg text-smoke-50 focus:outline-none focus:ring-2 focus:ring-accent-400 focus:border-transparent"
-          required
-          aria-describedby={errors.end_datetime ? "end-error" : undefined}
-          aria-invalid={errors.end_datetime ? "true" : "false"}
-        />
-        {#if errors.end_datetime}
-          <p id="end-error" class="mt-2 text-sm text-boundaries" role="alert">
-            {errors.end_datetime}
-          </p>
-        {/if}
-      </div>
+      <DateTimePicker
+        id="end_datetime"
+        label="Ende"
+        bind:value={formData.end_datetime}
+        required
+        mode="datetime"
+        minDate={formData.start_datetime?.split("T")[0]}
+        error={errors.end_datetime || ""}
+      />
 
       <!-- All Day Event -->
       <div class="md:col-span-2">
@@ -848,7 +821,7 @@
             role="group"
             aria-labelledby="event-tags"
           >
-            {#each availableTags as tag}
+            {#each availableTags as tag, index (index)}
               <button
                 type="button"
                 on:click={() => addTag(tag)}
@@ -870,7 +843,7 @@
 
         {#if formData.tags.length > 0}
           <div class="flex flex-wrap gap-2">
-            {#each formData.tags as tag}
+            {#each formData.tags as tag (tag)}
               <span
                 class="inline-flex items-center px-3 py-1 text-sm bg-accent-600 text-charcoal-900 rounded-full"
               >

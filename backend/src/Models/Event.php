@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HypnoseStammtisch\Models;
 
 use HypnoseStammtisch\Database\Database;
+use HypnoseStammtisch\Utils\JsonHelper;
 use HypnoseStammtisch\Utils\MockData;
 use Carbon\Carbon;
 
@@ -81,12 +82,16 @@ class Event
             }
 
             if (!empty($filters['from_date'])) {
-                $sql .= " AND start_datetime >= ?";
+                // For recurring events, don't filter by from_date since the RRULE expansion
+                // will generate instances within the date range
+                $sql .= " AND (is_recurring = 1 OR start_datetime >= ?)";
                 $params[] = $filters['from_date'];
             }
 
             if (!empty($filters['to_date'])) {
-                $sql .= " AND start_datetime <= ?";
+                // For recurring events, don't filter by to_date since the RRULE expansion
+                // handles the date range. For non-recurring, limit to events starting before to_date
+                $sql .= " AND (is_recurring = 1 OR start_datetime <= ?)";
                 $params[] = $filters['to_date'];
             }
 
@@ -488,9 +493,17 @@ class Event
                         []
                     );
 
-                    // Convert back to Event objects
-                    foreach ($instances as $instance) {
-                        $expandedEvents[] = self::fromArray($instance);
+                    if (!empty($instances)) {
+                        // Convert back to Event objects
+                        foreach ($instances as $instance) {
+                            $expandedEvents[] = self::fromArray($instance);
+                        }
+                    } else {
+                        // If expansion returned no instances, add base event if in range
+                        $eventStart = Carbon::parse($event->startDatetime);
+                        if ($eventStart->between($startDate, $endDate)) {
+                            $expandedEvents[] = $event;
+                        }
                     }
                 } catch (\Exception $e) {
                     error_log("Error expanding recurring event {$event->id}: " . $e->getMessage());
@@ -600,8 +613,7 @@ class Event
             $result = Database::fetchOne($sql, [$this->id]);
 
             if ($result && !empty($result['exdates'])) {
-                $exdates = json_decode($result['exdates'], true);
-                return is_array($exdates) ? $exdates : [];
+                return JsonHelper::decodeArray($result['exdates']);
             }
 
             return [];

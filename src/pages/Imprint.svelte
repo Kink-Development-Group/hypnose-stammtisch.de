@@ -10,19 +10,21 @@
   />
 </svelte:head>
 
-<main class="container mx-auto px-4 py-8 max-w-4xl">
+<div class="container mx-auto px-4 py-8 max-w-4xl">
   <!-- Header -->
   <header class="text-center mb-12">
     <h1 class="text-4xl md:text-5xl font-display font-bold text-smoke-50 mb-4">
       Impressum
     </h1>
-    <p class="text-xl text-smoke-300">Rechtliche Informationen gemäß § 5 TMG</p>
+    <p class="text-xl text-smoke-300">
+      Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz)
+    </p>
   </header>
 
   <!-- Responsible Party -->
   <section class="mb-12">
     <h2 class="text-2xl font-display font-semibold text-smoke-50 mb-6">
-      Angaben gemäß § 5 TMG
+      Angaben gemäß § 5 DDG
     </h2>
 
     <div class="card">
@@ -32,10 +34,18 @@
             Verantwortlich für den Inhalt:
           </h3>
           <div class="text-smoke-300 space-y-1">
-            <p class="font-medium">Hypnose Stammtisch Community</p>
-            <p>Max Mustermann (Community-Manager)</p>
-            <p>Musterstraße 123</p>
-            <p>12345 Musterstadt</p>
+            <!--
+              ============================================
+              PLATZHALTER - BITTE AUSFÜLLEN
+              ============================================
+              Hier müssen deine echten Daten eingetragen werden:
+              - Vor- und Nachname
+              - Vollständige Anschrift (Straße, Hausnummer, PLZ, Ort)
+              - Land
+            -->
+            <p class="font-medium">Jonas Pfalzgraf</p>
+            <p>Alter Heidberg 22</p>
+            <p>22846 Norderstedt</p>
             <p>Deutschland</p>
           </div>
         </div>
@@ -43,7 +53,13 @@
         <div>
           <h3 class="text-lg font-semibold text-smoke-50 mb-3">Kontakt:</h3>
           <div class="text-smoke-300 space-y-1">
-            <p>Telefon: +49 (0) 123 456789</p>
+            <!--
+              ============================================
+              PLATZHALTER - BITTE AUSFÜLLEN
+              ============================================
+              Mindestens E-Mail ist Pflicht.
+              Telefon ist optional, aber empfohlen.
+            -->
             <p>
               E-Mail: <a
                 href="mailto:info@hypnose-stammtisch.de"
@@ -51,36 +67,42 @@
                 >info@hypnose-stammtisch.de</a
               >
             </p>
-            <p>
-              Website: <a
-                href="https://hypnose-stammtisch.de"
-                class="text-accent-400 hover:text-accent-300"
-                >hypnose-stammtisch.de</a
-              >
-            </p>
           </div>
         </div>
 
-        <div>
-          <h3 class="text-lg font-semibold text-smoke-50 mb-3">
-            Rechtliche Form:
-          </h3>
-          <p class="text-smoke-300">
-            Eingetragener Verein (e.V.) • Vereinsregister: VR 12345 •
-            Amtsgericht Musterstadt
+        <div
+          class="p-4 rounded-lg bg-accent-400/10 border border-accent-400/30"
+        >
+          <p class="text-smoke-300 text-sm">
+            <strong class="text-accent-400">Hinweis:</strong>
+            Diese Website wird von einer Privatperson betrieben. Es handelt sich nicht
+            um ein Unternehmen oder einen eingetragenen Verein.
           </p>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div>
-          <h3 class="text-lg font-semibold text-smoke-50 mb-3">
-            Vertretungsberechtigter Vorstand:
-          </h3>
-          <div class="text-smoke-300 space-y-1">
-            <p>1. Vorsitzende: Max Mustermann</p>
-            <p>2. Vorsitzende: Maria Musterfrau</p>
-            <p>Kassenwart: Dr. Hans Beispiel</p>
-          </div>
-        </div>
+  <!-- Content Responsibility according to § 18 MStV -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-display font-semibold text-smoke-50 mb-6">
+      Verantwortlich für redaktionelle Inhalte
+    </h2>
+
+    <div class="card">
+      <p class="text-smoke-300 text-sm mb-4">
+        Verantwortlich im Sinne des § 18 Abs. 2 Medienstaatsvertrag (MStV):
+      </p>
+      <div class="text-smoke-300 space-y-1">
+        <!--
+          ============================================
+          PLATZHALTER - BITTE AUSFÜLLEN
+          ============================================
+          Gleiche Person wie oben, bei journalistisch-redaktionellen Inhalten erforderlich.
+        -->
+        <p class="font-medium">Jonas Pfalzgraf</p>
+        <p>Alter Heidberg 22</p>
+        <p>22846 Norderstedt</p>
       </div>
     </div>
   </section>
@@ -107,8 +129,9 @@
         </a>
       </p>
       <p class="text-smoke-300 text-sm">
-        Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren
-        vor einer Verbraucherschlichtungsstelle teilzunehmen.
+        Da diese Plattform ausschließlich kostenlose, nicht-kommerzielle Dienste
+        anbietet, besteht keine Verpflichtung zur Teilnahme an
+        Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle.
       </p>
     </div>
   </section>
@@ -122,12 +145,12 @@
     <div class="card">
       <div class="prose prose-invert max-w-none text-sm">
         <p class="text-smoke-300 mb-4">
-          Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte
-          auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach
-          §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht unter der
-          Verpflichtung, übermittelte oder gespeicherte fremde Informationen zu
-          überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige
-          Tätigkeit hinweisen.
+          Als Diensteanbieter bin ich gemäß § 7 Abs.1 DDG für eigene Inhalte auf
+          diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8
+          bis 10 DDG bin ich als Diensteanbieter jedoch nicht verpflichtet,
+          übermittelte oder gespeicherte fremde Informationen zu überwachen oder
+          nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit
+          hinweisen.
         </p>
 
         <p class="text-smoke-300 mb-4">
@@ -135,8 +158,8 @@
           Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt.
           Eine diesbezügliche Haftung ist jedoch erst ab dem Zeitpunkt der
           Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden
-          von entsprechenden Rechtsverletzungen werden wir diese Inhalte
-          umgehend entfernen.
+          von entsprechenden Rechtsverletzungen werde ich diese Inhalte umgehend
+          entfernen.
         </p>
       </div>
     </div>
@@ -151,11 +174,11 @@
     <div class="card">
       <div class="prose prose-invert max-w-none text-sm">
         <p class="text-smoke-300 mb-4">
-          Unser Angebot enthält Links zu externen Websites Dritter, auf deren
-          Inhalte wir keinen Einfluss haben. Deshalb können wir für diese
-          fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der
-          verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der
-          Seiten verantwortlich.
+          Diese Website enthält Links zu externen Websites Dritter, auf deren
+          Inhalte ich keinen Einfluss habe. Deshalb kann ich für diese fremden
+          Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten
+          Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten
+          verantwortlich.
         </p>
 
         <p class="text-smoke-300 mb-4">
@@ -164,7 +187,7 @@
           der Verlinkung nicht erkennbar. Eine permanente inhaltliche Kontrolle
           der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer
           Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von
-          Rechtsverletzungen werden wir derartige Links umgehend entfernen.
+          Rechtsverletzungen werde ich derartige Links umgehend entfernen.
         </p>
       </div>
     </div>
@@ -179,26 +202,35 @@
     <div class="card">
       <div class="prose prose-invert max-w-none text-sm">
         <p class="text-smoke-300 mb-4">
-          Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen
-          Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung,
+          Die durch mich erstellten Inhalte und Werke auf diesen Seiten
+          unterliegen dem deutschen Urheberrecht. Die Vervielfältigung,
           Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der
-          Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des
-          jeweiligen Autors bzw. Erstellers.
+          Grenzen des Urheberrechtes bedürfen meiner schriftlichen Zustimmung.
         </p>
 
         <p class="text-smoke-300 mb-4">
           Downloads und Kopien dieser Seite sind nur für den privaten, nicht
           kommerziellen Gebrauch gestattet. Soweit die Inhalte auf dieser Seite
-          nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter
+          nicht von mir erstellt wurden, werden die Urheberrechte Dritter
           beachtet. Insbesondere werden Inhalte Dritter als solche
           gekennzeichnet.
         </p>
 
+        <p class="text-smoke-300 mb-4">
+          Solltest du trotzdem auf eine Urheberrechtsverletzung aufmerksam
+          werden, bitte ich um einen entsprechenden Hinweis. Bei Bekanntwerden
+          von Rechtsverletzungen werde ich derartige Inhalte umgehend entfernen.
+        </p>
+
         <p class="text-smoke-300">
-          Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam
-          werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden
-          von Rechtsverletzungen werden wir derartige Inhalte umgehend
-          entfernen.
+          <strong class="text-smoke-100">Open Source:</strong> Der Quellcode
+          dieser Website ist Open Source und unter der MIT-Lizenz auf
+          <a
+            href="https://github.com/Kink-Development-Group/hypnose-stammtisch.de"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-accent-400 hover:text-accent-300">GitHub</a
+          > verfügbar.
         </p>
       </div>
     </div>
@@ -214,6 +246,12 @@
       <div class="card">
         <h3 class="text-lg font-semibold text-smoke-50 mb-3">Hosting</h3>
         <div class="text-smoke-300 text-sm space-y-1">
+          <!--
+            ============================================
+            PLATZHALTER - BITTE AUSFÜLLEN
+            ============================================
+            Hier die Daten deines Hosting-Anbieters eintragen.
+          -->
           <p><strong>Anbieter:</strong> Hetzner Online GmbH</p>
           <p>Industriestr. 25</p>
           <p>91710 Gunzenhausen, Deutschland</p>
@@ -232,9 +270,9 @@
       <div class="card">
         <h3 class="text-lg font-semibold text-smoke-50 mb-3">Entwicklung</h3>
         <div class="text-smoke-300 text-sm space-y-1">
-          <p><strong>Framework:</strong> Svelte + TypeScript</p>
-          <p><strong>Styling:</strong> Tailwind CSS</p>
-          <p><strong>Fonts:</strong> Google Fonts (Playfair Display, Inter)</p>
+          <p><strong>Framework:</strong> Svelte 5 + TypeScript</p>
+          <p><strong>Styling:</strong> Tailwind CSS v4</p>
+          <p><strong>Backend:</strong> PHP 8.1+ mit MySQL</p>
           <p><strong>SSL:</strong> Let's Encrypt</p>
         </div>
       </div>
@@ -251,15 +289,26 @@
       <div class="prose prose-invert max-w-none text-sm">
         <p class="text-smoke-300 mb-4">
           Die Inhalte dieser Website dienen ausschließlich der Information über
-          unsere Community und Events. Sie stellen keine medizinische Beratung
-          oder therapeutische Anleitung dar.
+          die Hypnose-Stammtisch-Community und deren Events. Sie stellen keine
+          medizinische Beratung oder therapeutische Anleitung dar.
         </p>
+
+        <div
+          class="bg-boundaries/10 border border-boundaries/30 rounded-lg p-4 mb-4"
+        >
+          <p class="text-smoke-300 text-sm">
+            <strong class="text-boundaries">Altersfreigabe:</strong>
+            Diese Website enthält Inhalte, die ausschließlich für Erwachsene (18+)
+            bestimmt sind. Die Inhalte behandeln Themen der erotischen Hypnose und
+            verwandter Bereiche.
+          </p>
+        </div>
 
         <div class="bg-caution/10 border border-caution/30 rounded-lg p-4">
           <p class="text-smoke-300 text-sm">
-            <strong class="text-caution">Wichtiger Hinweis:</strong>
+            <strong class="text-caution">Gesundheitshinweis:</strong>
             Hypnose sollte nur von qualifizierten Fachkräften durchgeführt werden.
-            Bei gesundheitlichen Problemen wenden Sie sich an einen Arzt oder Therapeuten.
+            Bei gesundheitlichen Problemen wende dich an einen Arzt oder Therapeuten.
             Unsere Community-Events ersetzen keine professionelle medizinische oder
             therapeutische Behandlung.
           </p>
@@ -277,7 +326,7 @@
     <div class="card">
       <p class="text-smoke-300 text-sm mb-4">
         Für rechtliche Anfragen, Beschwerden oder Hinweise auf
-        Rechtsverletzungen kontaktieren Sie uns bitte unter:
+        Rechtsverletzungen kontaktiere mich bitte unter:
       </p>
 
       <div class="space-y-2 text-smoke-300 text-sm">
@@ -289,38 +338,103 @@
             >legal@hypnose-stammtisch.de</a
           >
         </p>
+        <!--
+          ============================================
+          PLATZHALTER - BITTE AUSFÜLLEN
+          ============================================
+        -->
         <p>
-          <strong>Post:</strong> Hypnose Stammtisch Community, Rechtsabteilung, Musterstraße
-          123, 12345 Musterstadt
+          <strong>Post:</strong> Jonas Pfalzgraf, Postfach 7222, 22846 Norderstedt
         </p>
       </div>
 
       <p class="text-smoke-400 text-xs mt-4">
-        Bitte geben Sie bei rechtlichen Anfragen immer die betroffene URL und
-        eine detaillierte Beschreibung des Problems an.
+        Bitte gib bei rechtlichen Anfragen immer die betroffene URL und eine
+        detaillierte Beschreibung des Problems an.
       </p>
+    </div>
+  </section>
+
+  <!-- Related Pages -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-display font-semibold text-smoke-50 mb-6">
+      Verwandte Seiten
+    </h2>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <a
+        href="/privacy"
+        use:link
+        class="card hover:border-accent-400/50 transition-colors group"
+      >
+        <div class="flex items-center gap-4">
+          <div
+            class="w-12 h-12 rounded-lg bg-accent-400/20 flex items-center justify-center"
+          >
+            <span class="text-2xl" aria-hidden="true">🔐</span>
+          </div>
+          <div>
+            <h3
+              class="font-semibold text-smoke-50 group-hover:text-accent-400 transition-colors"
+            >
+              Datenschutz
+            </h3>
+            <p class="text-smoke-400 text-sm">Datenschutzerklärung</p>
+          </div>
+        </div>
+      </a>
+      <a
+        href="/terms"
+        use:link
+        class="card hover:border-accent-400/50 transition-colors group"
+      >
+        <div class="flex items-center gap-4">
+          <div
+            class="w-12 h-12 rounded-lg bg-accent-400/20 flex items-center justify-center"
+          >
+            <span class="text-2xl" aria-hidden="true">📜</span>
+          </div>
+          <div>
+            <h3
+              class="font-semibold text-smoke-50 group-hover:text-accent-400 transition-colors"
+            >
+              Nutzungsbedingungen
+            </h3>
+            <p class="text-smoke-400 text-sm">AGB der Plattform</p>
+          </div>
+        </div>
+      </a>
+      <a
+        href="/cookies"
+        use:link
+        class="card hover:border-accent-400/50 transition-colors group"
+      >
+        <div class="flex items-center gap-4">
+          <div
+            class="w-12 h-12 rounded-lg bg-accent-400/20 flex items-center justify-center"
+          >
+            <span class="text-2xl" aria-hidden="true">🍪</span>
+          </div>
+          <div>
+            <h3
+              class="font-semibold text-smoke-50 group-hover:text-accent-400 transition-colors"
+            >
+              Cookies
+            </h3>
+            <p class="text-smoke-400 text-sm">Cookie-Richtlinie</p>
+          </div>
+        </div>
+      </a>
     </div>
   </section>
 
   <!-- Footer -->
   <footer class="text-center">
-    <div class="space-y-6">
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/privacy" use:link class="btn btn-outline">
-          Datenschutzerklärung
-        </a>
-        <a href="/code-of-conduct" use:link class="btn btn-outline">
-          Verhaltenskodex
-        </a>
-        <a href="/contact" use:link class="btn btn-outline"> Kontakt </a>
-      </div>
-
-      <div class="text-xs text-smoke-500 space-y-1">
-        <p>Stand: 15. Januar 2025</p>
-        <p>
-          Dieses Impressum wurde sorgfältig erstellt und regelmäßig überprüft.
-        </p>
-      </div>
+    <div class="text-xs text-smoke-500 space-y-1">
+      <p>Stand: 28. Dezember 2024</p>
+      <p>
+        Dieses Impressum wurde nach den Anforderungen des § 5 DDG und § 18 MStV
+        erstellt.
+      </p>
     </div>
   </footer>
-</main>
+</div>

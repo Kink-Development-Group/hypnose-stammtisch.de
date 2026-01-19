@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<ruleset name="Hypnose Stammtisch Backend">
+    <description>Code style rules for the Hypnose Stammtisch PHP backend.</description>
+
+    <!-- Analyse backend source files by default -->
+    <file>src</file>
+
+    <!-- Exclude generated / vendor directories -->
+    <exclude-pattern>vendor</exclude-pattern>
+    <exclude-pattern>temp</exclude-pattern>
+
+    <!-- Base standard -->
+    <rule ref="PSR12" />
+
+    <!-- Enforce a soft 120 character line length without failing on longer lines -->
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="120" />
+            <property name="absoluteLineLimit" value="0" />
+            <property name="ignoreComments" value="false" />
+        </properties>
+    </rule>
+
+    <!-- Ensure tabs are not used for indentation -->
+    <rule ref="Generic.WhiteSpace.DisallowTabIndent" />
+
+</ruleset>

@@ -8,6 +8,9 @@ RewriteEngine On
 RewriteCond %{REQUEST_METHOD} OPTIONS
 RewriteRule ^(.*)$ index.php [QSA,L]
 
+# Friendly shortcut for calendar feed subscriptions
+RewriteRule ^calendar\.ics$ calendar/feed [QSA,L]
+
 # Route all API requests to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
@@ -31,16 +34,38 @@ Header always set Referrer-Policy "strict-origin-when-cross-origin"
 # Disable server signature
 ServerSignature Off
 
-# Prevent access to sensitive files
-<Files ~ "^\.">
-    Order allow,deny
-    Deny from all
-</Files>
+# Prevent access to ALL dotfiles (including .env)
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
 
-<Files ~ "(composer\.(json|lock)|\.env|\.log)$">
-    Order allow,deny
-    Deny from all
-</Files>
+# Explicitly block .env files with any extension
+<FilesMatch "^\.env(\..+)?$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Block other sensitive files
+<FilesMatch "(composer\.(json|lock)|\.log|phpunit\.xml|phpcs\.xml)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
 
 # Enable compression
 <IfModule mod_deflate.c>

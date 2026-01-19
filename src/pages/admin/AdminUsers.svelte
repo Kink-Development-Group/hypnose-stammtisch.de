@@ -4,7 +4,7 @@
   import User from "../../classes/User";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import { Role } from "../../enums/role";
-  import { adminAuth } from "../../stores/admin";
+  import { AdminAPI, adminAuth } from "../../stores/admin";
   import { UserHelpers } from "../../utils/userHelpers";
 
   interface UserFormData {
@@ -31,6 +31,10 @@
     is_active: true,
   };
 
+  $: totalUsers = users.length;
+  $: activeUsers = users.filter((user) => user.is_active).length;
+  $: inactiveUsers = totalUsers - activeUsers;
+
   onMount(async () => {
     // Check authentication and permissions
     const status = await adminAuth.checkStatus();
@@ -56,12 +60,9 @@
       loading = true;
       error = "";
 
-      console.log("AdminUsers: Loading users...");
       const response = await fetch("/api/admin/users", {
         credentials: "include",
       });
-
-      console.log("AdminUsers: Response status:", response.status);
 
       if (!response.ok) {
         if (response.status === 403) {
@@ -73,11 +74,9 @@
       }
 
       const result = await response.json();
-      console.log("AdminUsers: API result:", result);
 
       if (result.success) {
         users = UserHelpers.fromApiArray(result.data || []);
-        console.log("AdminUsers: Loaded users:", users);
       } else {
         error = result.message || "Fehler beim Laden der Benutzer";
       }
@@ -91,42 +90,13 @@
 
   async function createUser() {
     try {
-      console.log("AdminUsers: Creating user...", formData);
-
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(formData),
+      const result = await AdminAPI.createUser({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password || "",
+        role: formData.role,
+        is_active: formData.is_active,
       });
-
-      console.log("AdminUsers: Create response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AdminUsers: Create error:", errorText);
-        try {
-          const errorData = JSON.parse(errorText);
-          if (errorData.details) {
-            const fieldErrors = Object.entries(errorData.details)
-              .map(([field, message]) => `${field}: ${message}`)
-              .join(", ");
-            error = `Validierungsfehler: ${fieldErrors}`;
-          } else {
-            error =
-              errorData.error ||
-              `Fehler beim Erstellen des Benutzers: ${response.status}`;
-          }
-        } catch {
-          error = `Fehler beim Erstellen des Benutzers: ${response.status}`;
-        }
-        return;
-      }
-
-      const result = await response.json();
-      console.log("AdminUsers: Create result:", result);
 
       if (result.success) {
         success = `Benutzer "${formData.username}" wurde erfolgreich erstellt.`;
@@ -134,7 +104,14 @@
         resetForm();
         await loadUsers();
       } else {
-        error = result.message || "Fehler beim Erstellen des Benutzers";
+        if (result.details) {
+          const fieldErrors = Object.entries(result.details)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join(", ");
+          error = `Validierungsfehler: ${fieldErrors}`;
+        } else {
+          error = result.message || "Fehler beim Erstellen des Benutzers";
+        }
       }
     } catch (err) {
       console.error("AdminUsers: Error creating user:", err);
@@ -146,50 +123,25 @@
     if (!editingUser) return;
 
     try {
-      console.log("AdminUsers: Updating user...", editingUser.id, formData);
-
       // Prepare the data - exclude password if it's empty
-      const updateData = { ...formData };
-      if (!updateData.password || updateData.password.trim() === "") {
+      const updateData: Record<string, unknown> = { ...formData };
+      if (
+        !updateData.password ||
+        (updateData.password as string).trim() === ""
+      ) {
         delete updateData.password;
       }
 
-      console.log("AdminUsers: Sending update data:", updateData);
-
-      const response = await fetch(`/api/admin/users/${editingUser.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+      const result = await AdminAPI.updateUser(
+        editingUser.id,
+        updateData as {
+          username?: string;
+          email?: string;
+          password?: string;
+          role?: string;
+          is_active?: boolean;
         },
-        credentials: "include",
-        body: JSON.stringify(updateData),
-      });
-
-      console.log("AdminUsers: Update response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AdminUsers: Update error:", errorText);
-        try {
-          const errorData = JSON.parse(errorText);
-          if (errorData.details) {
-            const fieldErrors = Object.entries(errorData.details)
-              .map(([field, message]) => `${field}: ${message}`)
-              .join(", ");
-            error = `Validierungsfehler: ${fieldErrors}`;
-          } else {
-            error =
-              errorData.error ||
-              `Fehler beim Aktualisieren des Benutzers: ${response.status}`;
-          }
-        } catch {
-          error = `Fehler beim Aktualisieren des Benutzers: ${response.status}`;
-        }
-        return;
-      }
-
-      const result = await response.json();
-      console.log("AdminUsers: Update result:", result);
+      );
 
       if (result.success) {
         success = `Benutzer "${formData.username}" wurde erfolgreich aktualisiert.`;
@@ -197,7 +149,14 @@
         resetForm();
         await loadUsers();
       } else {
-        error = result.message || "Fehler beim Aktualisieren des Benutzers";
+        if (result.details) {
+          const fieldErrors = Object.entries(result.details)
+            .map(([field, message]) => `${field}: ${message}`)
+            .join(", ");
+          error = `Validierungsfehler: ${fieldErrors}`;
+        } else {
+          error = result.message || "Fehler beim Aktualisieren des Benutzers";
+        }
       }
     } catch (err) {
       console.error("AdminUsers: Error updating user:", err);
@@ -215,24 +174,7 @@
     }
 
     try {
-      console.log("AdminUsers: Deleting user...", user.id);
-
-      const response = await fetch(`/api/admin/users/${user.id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      console.log("AdminUsers: Delete response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("AdminUsers: Delete error:", errorText);
-        error = `Fehler beim Löschen des Benutzers: ${response.status}`;
-        return;
-      }
-
-      const result = await response.json();
-      console.log("AdminUsers: Delete result:", result);
+      const result = await AdminAPI.deleteUser(user.id);
 
       if (result.success) {
         await loadUsers();
@@ -247,25 +189,37 @@
 
   function startEdit(user: User) {
     editingUser = user;
-    formData = {
-      username: user.username,
-      email: user.email,
-      password: "", // Don't prefill password
-      role: user.role,
-      is_active: user.is_active,
-    };
+    applyFormDefaults(user);
     showCreateForm = true;
   }
 
+  function applyFormDefaults(user: User | null = null) {
+    if (user) {
+      formData = {
+        username: user.username,
+        email: user.email,
+        password: "", // Don't prefill password
+        role: user.role,
+        is_active: user.is_active,
+      };
+    } else {
+      formData = {
+        username: "",
+        email: "",
+        password: "",
+        role: Role.ADMIN,
+        is_active: true,
+      };
+    }
+  }
+
+  function clearFormFields() {
+    applyFormDefaults(editingUser);
+  }
+
   function resetForm() {
-    formData = {
-      username: "",
-      email: "",
-      password: "",
-      role: Role.ADMIN,
-      is_active: true,
-    };
     editingUser = null;
+    applyFormDefaults();
     showCreateForm = false;
     error = "";
     success = "";
@@ -289,102 +243,32 @@
 </svelte:head>
 
 <AdminLayout>
-  <div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900">Admin-Benutzer</h1>
-      <p class="mt-1 text-sm text-gray-600">
-        Verwalten Sie Admin-Benutzer, deren Rollen und Berechtigungen
-      </p>
-    </div>
-
-    {#if success}
-      <div class="mb-6 bg-green-50 border border-green-200 rounded-md p-4">
-        <div class="flex items-center">
-          <svg
-            class="w-5 h-5 text-green-400 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <div class="text-green-800">{success}</div>
-        </div>
-        <button
-          on:click={() => (success = "")}
-          class="mt-2 text-green-600 text-sm underline"
+  <div class="space-y-8">
+    <header
+      class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div>
+        <h1
+          class="text-3xl font-semibold tracking-tight text-slate-800 dark:text-smoke-50"
         >
-          Schließen
-        </button>
+          Admin-Benutzer
+        </h1>
+        <p class="mt-1 text-sm text-slate-600 dark:text-smoke-400">
+          Verwalten Sie Admin-Benutzer, ihre Rollen und Zugänge.
+        </p>
       </div>
-    {/if}
-
-    {#if error}
-      <div class="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-        <div class="flex items-center">
-          <svg
-            class="w-5 h-5 text-red-400 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <div class="text-red-800">{error}</div>
-        </div>
-        <button
-          on:click={() => (error = "")}
-          class="mt-2 text-red-600 text-sm underline"
-        >
-          Schließen
-        </button>
-      </div>
-    {/if}
-
-    <!-- Action Bar -->
-    <div class="mb-6 bg-white shadow rounded-lg p-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <h2 class="text-lg font-medium text-gray-900">Benutzer-Übersicht</h2>
-          {#if loading}
-            <div
-              class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"
-            ></div>
-          {/if}
-        </div>
-
+      <div class="flex items-center gap-3">
         <button
           on:click={() => {
             showCreateForm = true;
             editingUser = null;
-            formData = {
-              username: "",
-              email: "",
-              password: "",
-              role: Role.ADMIN,
-              is_active: true,
-            };
+            applyFormDefaults();
             error = "";
             success = "";
           }}
-          class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105"
+          class="inline-flex items-center gap-2 rounded-xl bg-blue-600 dark:bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-blue-700 dark:hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
         >
-          <svg
-            class="-ml-1 mr-2 h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
+          <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path
               fill-rule="evenodd"
               d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
@@ -394,70 +278,227 @@
           Neuen Benutzer erstellen
         </button>
       </div>
-    </div>
+    </header>
+
+    {#if success}
+      <div
+        class="rounded-xl border border-green-200 dark:border-green-800 bg-green-50/80 dark:bg-green-900/30 p-4 text-sm text-green-800 dark:text-green-200 shadow-sm"
+        role="status"
+      >
+        <div class="flex items-start gap-2">
+          <svg
+            class="mt-0.5 h-5 w-5 text-green-500 dark:text-green-400"
+            viewBox="0 0 24 24"
+          >
+            <path
+              fill="currentColor"
+              d="M12 2a10 10 0 1010 10A10.011 10.011 0 0012 2zm-1 14l-4-4 1.41-1.41L11 13.17l5.59-5.59L18 9z"
+            />
+          </svg>
+          <div class="flex-1">
+            <p class="font-medium">{success}</p>
+            <button
+              on:click={() => (success = "")}
+              class="mt-2 inline-flex items-center text-xs font-semibold text-green-700 dark:text-green-300 underline-offset-2 hover:underline"
+            >
+              Ausblenden
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    {#if error}
+      <div
+        class="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/90 dark:bg-red-900/30 p-4 text-sm text-red-800 dark:text-red-200 shadow-sm"
+        role="alert"
+      >
+        <div class="flex items-start gap-2">
+          <svg
+            class="mt-0.5 h-5 w-5 text-red-500 dark:text-red-400"
+            viewBox="0 0 24 24"
+          >
+            <path
+              fill="currentColor"
+              d="M12 2a10 10 0 1010 10A10.011 10.011 0 0012 2zm1 14h-2v-2h2zm0-4h-2V7h2z"
+            />
+          </svg>
+          <div class="flex-1">
+            <p class="font-medium">{error}</p>
+            <button
+              on:click={() => (error = "")}
+              class="mt-2 inline-flex items-center text-xs font-semibold text-red-700 dark:text-red-300 underline-offset-2 hover:underline"
+            >
+              Ausblenden
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Action Bar -->
+    <section
+      class="rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/80 dark:bg-charcoal-800/80 p-4 shadow-sm sm:p-6"
+    >
+      <div
+        class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <div>
+          <h2 class="text-lg font-semibold text-slate-800 dark:text-smoke-50">
+            Benutzer-Übersicht
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-smoke-400">
+            Aktuelle Kennzahlen für Rollen- und Zugangsverwaltung.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          {#if loading}
+            <div
+              class="flex items-center gap-2 rounded-xl border border-blue-100 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-900/30 px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-300"
+            >
+              <span
+                class="inline-flex h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
+              ></span>
+              Lädt Daten...
+            </div>
+          {/if}
+          <button
+            on:click={loadUsers}
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-charcoal-600 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-smoke-200 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M4.05 11a8 8 0 117.95 9 8 8 0 01-7.95-9z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M4 4v4h4"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Aktualisieren
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-4 grid gap-3 sm:grid-cols-3">
+        <div
+          class="rounded-xl border border-slate-200 dark:border-charcoal-600 bg-slate-50 dark:bg-charcoal-700 p-4"
+        >
+          <p
+            class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
+          >
+            Gesamt
+          </p>
+          <p class="mt-1 text-2xl font-bold text-slate-800 dark:text-smoke-50">
+            {totalUsers}
+          </p>
+        </div>
+        <div
+          class="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 p-4"
+        >
+          <p
+            class="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400"
+          >
+            Aktiv
+          </p>
+          <p
+            class="mt-1 text-2xl font-bold text-emerald-700 dark:text-emerald-300"
+          >
+            {activeUsers}
+          </p>
+        </div>
+        <div
+          class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-4"
+        >
+          <p
+            class="text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+          >
+            Deaktiviert
+          </p>
+          <p class="mt-1 text-2xl font-bold text-amber-700 dark:text-amber-300">
+            {inactiveUsers}
+          </p>
+        </div>
+      </div>
+    </section>
 
     <!-- Create/Edit Form -->
     {#if showCreateForm}
-      <div
-        class="mb-8 bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100"
+      <section
+        class="space-y-6 rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/90 dark:bg-charcoal-800/90 p-4 shadow-lg sm:p-6"
       >
         <!-- Form Header -->
-        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xl font-semibold text-white flex items-center">
-              <svg
-                class="w-6 h-6 mr-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+        <div
+          class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 dark:border-charcoal-700 pb-4"
+        >
+          <div class="flex items-center gap-3">
+            <svg
+              class="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d={editingUser
+                  ? "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  : "M12 6v6m0 0v6m0-6h6m-6 0H6"}
+              />
+            </svg>
+            <div>
+              <h3
+                class="text-xl font-semibold text-slate-800 dark:text-smoke-50"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d={editingUser
-                    ? "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    : "M12 6v6m0 0v6m0-6h6m-6 0H6"}
-                />
-              </svg>
-              {editingUser ? "Benutzer bearbeiten" : "Neuen Benutzer erstellen"}
-            </h3>
+                {editingUser
+                  ? "Benutzer bearbeiten"
+                  : "Neuen Benutzer erstellen"}
+              </h3>
+              <p class="text-sm text-slate-500 dark:text-smoke-400">
+                {editingUser
+                  ? "Aktualisieren Sie Rollen, Status oder Zugangsdaten."
+                  : "Legen Sie einen neuen Admin-Zugang mit Rollen und Berechtigungen an."}
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
             <button
               type="button"
-              on:click={() => {
-                showCreateForm = false;
-                resetForm();
-              }}
-              aria-label="Schließen"
-              class="text-white hover:text-gray-200 transition-colors"
+              on:click={clearFormFields}
+              class="inline-flex items-center rounded-lg border border-slate-200 dark:border-charcoal-600 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-smoke-300 transition hover:border-slate-300 dark:hover:border-charcoal-500 hover:bg-slate-50 dark:hover:bg-charcoal-700"
             >
-              <svg
-                class="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              Zurücksetzen
+            </button>
+            <button
+              type="button"
+              on:click={resetForm}
+              aria-label="Schließen"
+              class="inline-flex items-center rounded-lg border border-slate-200 dark:border-charcoal-600 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-smoke-300 transition hover:border-slate-300 dark:hover:border-charcoal-500 hover:bg-slate-50 dark:hover:bg-charcoal-700"
+            >
+              Schließen
             </button>
           </div>
         </div>
 
         <!-- Form Content -->
-        <div class="p-6">
+        <div class="space-y-6">
           <form on:submit|preventDefault={handleSubmit} class="space-y-6">
             <!-- Personal Information Section -->
-            <div class="border-b border-gray-200 pb-6">
+            <div class="border-b border-gray-200 dark:border-charcoal-700 pb-6">
               <h4
-                class="text-lg font-medium text-gray-900 mb-4 flex items-center"
+                class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-4 flex items-center"
               >
                 <svg
-                  class="w-5 h-5 mr-2 text-blue-600"
+                  class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -476,7 +517,7 @@
                 <div class="space-y-1">
                   <label
                     for="username"
-                    class="block text-sm font-semibold text-gray-700"
+                    class="block text-sm font-semibold text-gray-700 dark:text-smoke-300"
                   >
                     Benutzername *
                   </label>
@@ -485,7 +526,7 @@
                       class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -504,7 +545,7 @@
                       bind:value={formData.username}
                       required
                       placeholder="z.B. max.mustermann"
-                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-50 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-charcoal-500 placeholder:text-gray-400 dark:placeholder:text-smoke-500"
                     />
                   </div>
                 </div>
@@ -512,7 +553,7 @@
                 <div class="space-y-1">
                   <label
                     for="email"
-                    class="block text-sm font-semibold text-gray-700"
+                    class="block text-sm font-semibold text-gray-700 dark:text-smoke-300"
                   >
                     E-Mail-Adresse *
                   </label>
@@ -521,7 +562,7 @@
                       class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -540,7 +581,7 @@
                       bind:value={formData.email}
                       required
                       placeholder="max@beispiel.de"
-                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-50 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-charcoal-500 placeholder:text-gray-400 dark:placeholder:text-smoke-500"
                     />
                   </div>
                 </div>
@@ -548,12 +589,12 @@
             </div>
 
             <!-- Security Section -->
-            <div class="border-b border-gray-200 pb-6">
+            <div class="border-b border-gray-200 dark:border-charcoal-700 pb-6">
               <h4
-                class="text-lg font-medium text-gray-900 mb-4 flex items-center"
+                class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-4 flex items-center"
               >
                 <svg
-                  class="w-5 h-5 mr-2 text-blue-600"
+                  class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -572,12 +613,12 @@
                 <div class="space-y-1">
                   <label
                     for="password"
-                    class="block text-sm font-semibold text-gray-700"
+                    class="block text-sm font-semibold text-slate-700 dark:text-smoke-300"
                   >
                     {editingUser ? "Neues Passwort" : "Passwort *"}
                   </label>
                   {#if editingUser}
-                    <p class="text-xs text-gray-500 mb-2">
+                    <p class="text-xs text-slate-500 dark:text-smoke-400 mb-2">
                       Leer lassen, um das aktuelle Passwort zu behalten
                     </p>
                   {/if}
@@ -586,7 +627,7 @@
                       class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -605,7 +646,7 @@
                       bind:value={formData.password}
                       required={!editingUser}
                       placeholder="Mindestens 8 Zeichen"
-                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-50 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-charcoal-500 placeholder:text-gray-400 dark:placeholder:text-smoke-500"
                     />
                   </div>
                 </div>
@@ -613,7 +654,7 @@
                 <div class="space-y-1">
                   <label
                     for="role"
-                    class="block text-sm font-semibold text-gray-700"
+                    class="block text-sm font-semibold text-slate-700 dark:text-smoke-300"
                   >
                     Benutzerrolle *
                   </label>
@@ -622,7 +663,7 @@
                       class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -638,7 +679,7 @@
                     <select
                       id="role"
                       bind:value={formData.role}
-                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 appearance-none"
+                      class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-50 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400 dark:hover:border-charcoal-500 appearance-none"
                     >
                       <option value={Role.ADMIN}
                         >Administrator - Vollzugriff auf alle Funktionen</option
@@ -654,7 +695,7 @@
                       class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"
                     >
                       <svg
-                        class="h-5 w-5 text-gray-400"
+                        class="h-5 w-5 text-gray-400 dark:text-smoke-500"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -675,10 +716,10 @@
             <!-- Account Status -->
             <div class="pb-2">
               <h4
-                class="text-lg font-medium text-gray-900 mb-4 flex items-center"
+                class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-4 flex items-center"
               >
                 <svg
-                  class="w-5 h-5 mr-2 text-blue-600"
+                  class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -694,24 +735,24 @@
               </h4>
 
               <div
-                class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200"
+                class="flex items-center justify-between p-4 bg-gray-50 dark:bg-charcoal-700 rounded-xl border border-gray-200 dark:border-charcoal-600"
               >
                 <div class="flex items-center">
                   <input
                     type="checkbox"
                     id="is_active"
                     bind:checked={formData.is_active}
-                    class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all duration-200"
+                    class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-charcoal-600 rounded transition-all duration-200"
                   />
                   <label
                     for="is_active"
-                    class="ml-3 block text-sm font-medium text-gray-900"
+                    class="ml-3 block text-sm font-medium text-gray-900 dark:text-smoke-50"
                   >
                     Benutzer ist aktiv
                   </label>
                 </div>
                 <div class="text-right">
-                  <div class="text-xs text-gray-500">
+                  <div class="text-xs text-slate-500 dark:text-smoke-400">
                     {formData.is_active
                       ? "Benutzer kann sich anmelden"
                       : "Benutzer ist deaktiviert"}
@@ -722,15 +763,12 @@
 
             <!-- Form Actions -->
             <div
-              class="flex justify-end space-x-4 pt-6 border-t border-gray-200"
+              class="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-charcoal-700"
             >
               <button
                 type="button"
-                on:click={() => {
-                  showCreateForm = false;
-                  resetForm();
-                }}
-                class="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                on:click={resetForm}
+                class="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-charcoal-600 shadow-sm text-sm font-medium rounded-xl text-gray-700 dark:text-smoke-300 bg-white dark:bg-charcoal-700 hover:bg-gray-50 dark:hover:bg-charcoal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
               >
                 <svg
                   class="w-4 h-4 mr-2"
@@ -771,169 +809,235 @@
             </div>
           </form>
         </div>
-      </div>
+      </section>
     {/if}
 
-    <!-- Users Table -->
-    <div class="bg-white shadow overflow-hidden sm:rounded-md">
+    <!-- Users List -->
+    <section class="space-y-6">
       {#if loading}
-        <div class="p-6 text-center">
-          <div
-            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"
-          ></div>
-          <p class="mt-2 text-sm text-gray-500">Lade Benutzer...</p>
+        <div
+          class="flex flex-col items-center justify-center rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/80 dark:bg-charcoal-800/80 p-10 text-slate-600 dark:text-smoke-400 shadow-sm"
+        >
+          <span
+            class="inline-flex h-10 w-10 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"
+          ></span>
+          <p class="mt-3 text-sm font-medium">Lade Benutzer...</p>
         </div>
       {:else if users.length === 0}
-        <div class="p-6 text-center">
+        <div
+          class="rounded-2xl border border-dashed border-slate-300 dark:border-charcoal-600 bg-white/70 dark:bg-charcoal-800/70 p-10 text-center shadow-sm"
+        >
           <svg
-            class="mx-auto h-12 w-12 text-gray-400"
-            stroke="currentColor"
-            fill="none"
+            class="mx-auto h-12 w-12 text-slate-300 dark:text-charcoal-600"
             viewBox="0 0 48 48"
+            fill="none"
+            stroke="currentColor"
           >
             <path
-              d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.713-3.714M14 40v-4c0-1.313.253-2.566.713-3.714m0 0A10.003 10.003 0 0124 26c4.21 0 7.813 2.602 9.288 6.286M30 14a6 6 0 11-12 0 6 6 0 0112 0zm12 6a4 4 0 11-8 0 4 4 0 018 0zm-28 0a4 4 0 11-8 0 4 4 0 018 0z"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+              d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.713-3.714M14 40v-4c0-1.313.253-2.566.713-3.714m0 0A10.003 10.003 0 0124 26c4.21 0 7.813 2.602 9.288 6.286M30 14a6 6 0 11-12 0 6 6 0 0112 0zm12 6a4 4 0 11-8 0 4 4 0 018 0zm-28 0a4 4 0 11-8 0 4 4 0 018 0z"
             />
           </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">
-            Keine Benutzer gefunden
-          </h3>
-          <p class="mt-1 text-sm text-gray-500">
-            Beginnen Sie, indem Sie Ihren ersten Admin-Benutzer erstellen.
+          <p
+            class="mt-4 text-base font-semibold text-slate-700 dark:text-smoke-200"
+          >
+            Noch keine Admin-Benutzer angelegt
+          </p>
+          <p class="mt-2 text-sm text-slate-500 dark:text-smoke-400">
+            Legen Sie den ersten Zugang über „Neuen Benutzer erstellen“ an.
           </p>
         </div>
       {:else}
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >Benutzer</th
-              >
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >Rolle</th
-              >
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >Status</th
-              >
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >Letzter Login</th
-              >
-              <th
-                scope="col"
-                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >Erstellt</th
-              >
-              <th scope="col" class="relative px-6 py-3"
-                ><span class="sr-only">Aktionen</span></th
-              >
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            {#each users as user (user.id)}
-              <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0 h-10 w-10">
-                      <div
-                        class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center"
-                      >
-                        <span class="text-sm font-medium text-gray-700">
-                          {user.username.substring(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                    <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">
-                        {user.username}
-                      </div>
-                      <div class="text-sm text-gray-500">{user.email}</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    class="inline-flex px-2 py-1 text-xs font-medium rounded-full {UserHelpers.getRoleBadgeClass(
-                      user.role,
-                    )}"
-                  >
-                    {UserHelpers.getRoleDisplayName(user.role)}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span
-                    class="inline-flex px-2 py-1 text-xs font-medium rounded-full {user.is_active
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'}"
-                  >
-                    {user.is_active ? "Aktiv" : "Inaktiv"}
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(user.last_login)}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(user.created_at)}
-                </td>
-                <td
-                  class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+        <div
+          class="hidden lg:block overflow-hidden rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white dark:bg-charcoal-800 shadow-sm"
+        >
+          <table
+            class="min-w-full divide-y divide-slate-200 dark:divide-charcoal-700 text-sm"
+          >
+            <thead class="bg-slate-50 dark:bg-charcoal-700">
+              <tr>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
                 >
-                  <div class="flex justify-end space-x-2">
-                    <button
-                      on:click={() => startEdit(user)}
-                      class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
-                    >
-                      <svg
-                        class="w-4 h-4 mr-1"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
-                      Bearbeiten
-                    </button>
-                    <button
-                      on:click={() => deleteUser(user)}
-                      class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
-                    >
-                      <svg
-                        class="w-4 h-4 mr-1"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                      Löschen
-                    </button>
-                  </div>
-                </td>
+                  Benutzer
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
+                >
+                  Rolle
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
+                >
+                  Status
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
+                >
+                  Zuletzt aktiv
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-smoke-400"
+                >
+                  Aktionen
+                </th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
+            </thead>
+            <tbody
+              class="divide-y divide-slate-100 dark:divide-charcoal-700 bg-white dark:bg-charcoal-800"
+            >
+              {#each users as user (user.id)}
+                <tr class="hover:bg-slate-50 dark:hover:bg-charcoal-700">
+                  <td class="px-6 py-4">
+                    <div class="space-y-1">
+                      <p
+                        class="text-sm font-semibold text-slate-800 dark:text-smoke-50"
+                      >
+                        {user.username}
+                      </p>
+                      <p class="text-sm text-slate-500 dark:text-smoke-400">
+                        {user.email}
+                      </p>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span
+                      class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${UserHelpers.getRoleBadgeClass(user.role)}`}
+                    >
+                      {UserHelpers.getRoleDisplayName(user.role)}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span
+                      class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        user.is_active
+                          ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                          : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                      }`}
+                    >
+                      {user.is_active ? "Aktiv" : "Deaktiviert"}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <div class="text-sm text-slate-600 dark:text-smoke-300">
+                      {formatDate(user.updated_at)}
+                    </div>
+                    <div class="text-xs text-slate-400 dark:text-smoke-500">
+                      Login: {formatDate(user.last_login)}
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <div class="flex justify-end gap-2">
+                      <button
+                        on:click={() => startEdit(user)}
+                        class="inline-flex items-center gap-2 rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      >
+                        <svg
+                          class="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                        Bearbeiten
+                      </button>
+                      <button
+                        on:click={() => deleteUser(user)}
+                        class="inline-flex items-center gap-2 rounded-lg border border-red-100 dark:border-red-800 px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 transition hover:border-red-200 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
+                      >
+                        <svg
+                          class="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                        Löschen
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid gap-4 lg:hidden">
+          {#each users as user (user.id)}
+            <article
+              class="rounded-2xl border border-slate-200 dark:border-charcoal-700 bg-white/90 dark:bg-charcoal-800/90 p-4 shadow-sm"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3
+                    class="text-base font-semibold text-slate-800 dark:text-smoke-50"
+                  >
+                    {user.username}
+                  </h3>
+                  <p class="text-sm text-slate-500 dark:text-smoke-400">
+                    {user.email}
+                  </p>
+                  <div class="mt-2 flex flex-wrap items-center gap-2">
+                    <span
+                      class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${UserHelpers.getRoleBadgeClass(user.role)}`}
+                    >
+                      {UserHelpers.getRoleDisplayName(user.role)}
+                    </span>
+                    <span
+                      class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        user.is_active
+                          ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                          : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                      }`}
+                    >
+                      {user.is_active ? "Aktiv" : "Deaktiviert"}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button
+                    on:click={() => startEdit(user)}
+                    class="inline-flex items-center justify-center rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                  >
+                    Bearbeiten
+                  </button>
+                  <button
+                    on:click={() => deleteUser(user)}
+                    class="inline-flex items-center justify-center rounded-lg border border-red-100 dark:border-red-800 px-3 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 transition hover:border-red-200 dark:hover:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
+                  >
+                    Löschen
+                  </button>
+                </div>
+              </div>
+              <div
+                class="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-smoke-400"
+              >
+                <span>Aktualisiert: {formatDate(user.updated_at)}</span>
+                <span>Login: {formatDate(user.last_login)}</span>
+              </div>
+            </article>
+          {/each}
+        </div>
       {/if}
-    </div>
+    </section>
   </div>
 </AdminLayout>

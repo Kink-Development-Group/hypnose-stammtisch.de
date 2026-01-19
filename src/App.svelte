@@ -5,28 +5,38 @@
   import About from "./pages/About.svelte";
   import CodeOfConduct from "./pages/CodeOfConduct.svelte";
   import Contact from "./pages/Contact.svelte";
+  import CookiePolicy from "./pages/CookiePolicy.svelte";
   import Events from "./pages/Events.svelte";
   import Home from "./pages/Home.svelte";
   import Imprint from "./pages/Imprint.svelte";
-  import LearningResources from "./pages/LearningResources.svelte";
+  import Map from "./pages/Map.svelte";
   import NotFound from "./pages/NotFound.svelte";
   import Privacy from "./pages/Privacy.svelte";
   import Resources from "./pages/Resources.svelte";
   import Faq from "./pages/ResourcesFaq.svelte";
   import SafetyGuide from "./pages/ResourcesSafetyGuide.svelte";
   import SubmitEvent from "./pages/SubmitEvent.svelte";
+  import Terms from "./pages/Terms.svelte";
   // Import admin pages
   import AdminEventsGuarded from "./pages/admin/AdminEventsGuarded.svelte";
   import AdminLogin from "./pages/admin/AdminLogin.svelte";
   import AdminMessagesGuarded from "./pages/admin/AdminMessagesGuarded.svelte";
   import AdminProfileGuarded from "./pages/admin/AdminProfileGuarded.svelte";
+  import AdminSecurityGuarded from "./pages/admin/AdminSecurityGuarded.svelte";
+  import AdminStammtischLocationsGuarded from "./pages/admin/AdminStammtischLocationsGuarded.svelte";
   import AdminUsersGuarded from "./pages/admin/AdminUsersGuarded.svelte";
   // Import components
   import EventModal from "./components/calendar/EventModal.svelte";
   import Footer from "./components/layout/Footer.svelte";
   import Header from "./components/layout/Header.svelte";
+  // Import compliance components
+  import AgeVerificationModal from "./components/shared/AgeVerificationModal.svelte";
+  import CookieBanner from "./components/shared/CookieBanner.svelte";
+  import CookieSettingsModal from "./components/shared/CookieSettingsModal.svelte";
   // Import stores
+  import LearningResources from "./pages/LearningResources.svelte";
   import { selectedEvent, showEventModal } from "./stores/calendar";
+  import { complianceStore } from "./stores/compliance";
   import { transformApiEvent } from "./utils/eventTransform";
 
   // Define routes
@@ -36,21 +46,27 @@
     "/admin/login": AdminLogin,
     "/admin/events": AdminEventsGuarded,
     "/admin/messages": AdminMessagesGuarded,
+    "/admin/security": AdminSecurityGuarded,
     "/admin/users": AdminUsersGuarded,
+    "/admin/stammtisch-locations": AdminStammtischLocationsGuarded,
     "/admin/profile": AdminProfileGuarded,
     // Regular routes
     "/": Home,
     "/events": Events,
     "/events/:id": Events, // Will show event modal
+    "/map": Map,
     "/about": About,
-    "/resources": Resources,
-    "/resources/safety-guide": SafetyGuide,
-    "/resources/faq": Faq,
     "/learning-resources": LearningResources,
+    "/ressourcen": LearningResources,
+    "/resources": Resources,
+    "/ressourcen/safety-guide": SafetyGuide,
+    "/ressourcen/faq": Faq,
     "/code-of-conduct": CodeOfConduct,
     "/contact": Contact,
     "/privacy": Privacy,
     "/imprint": Imprint,
+    "/cookies": CookiePolicy,
+    "/terms": Terms,
     "/submit-event": SubmitEvent,
     // Catch-all route must be last
     "*": NotFound,
@@ -58,6 +74,18 @@
 
   // Handle deep linking to events
   onMount(() => {
+    // Hydrate compliance store from cookies
+    complianceStore.hydrate();
+
+    // Scroll to top on initial load (unless there's a hash anchor)
+    const initialHash = window.location.hash;
+    const hasAnchor =
+      initialHash.split("#").length > 2 || initialHash.match(/#[^/]/);
+
+    if (!hasAnchor) {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+
     // Automatic redirect from non-hash URLs to hash URLs for consistency
     const currentPath = window.location.pathname;
     if (currentPath !== "/" && !window.location.hash) {
@@ -70,14 +98,36 @@
       return;
     }
 
+    // Scroll to top on route change (unless navigating to a hash anchor)
     const handleRouteChanged = (event: CustomEvent) => {
       const path = event.detail.location;
-      const eventMatch = path.match(/^\/events\/(\d+)$/);
+
+      // Extract the full hash from the URL
+      const fullHash = window.location.hash;
+
+      // Check if we're navigating to an anchor within the current page
+      // Format: #/page#anchor or just #anchor
+      const isHashAnchor =
+        fullHash.includes("#") &&
+        (fullHash.split("#").length > 2 ||
+          (path && path.includes("#") && !path.startsWith("/")));
+
+      // Scroll to top for normal page navigation (but not for in-page anchors)
+      if (!isHashAnchor) {
+        // Use setTimeout to ensure the route has changed before scrolling
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 0);
+      }
+
+      // Handle event modal deep linking
+      // Match numeric IDs, UUIDs, or composite series IDs (series_UUID_DATE)
+      const eventMatch = path.match(/^\/events\/([\w-]+)$/);
 
       if (eventMatch) {
-        const eventId = parseInt(eventMatch[1]);
+        const eventId = eventMatch[1];
         // Load event data and show modal
-        fetch(`/api/events/${eventId}`)
+        fetch(`/api/events/${encodeURIComponent(eventId)}`)
           .then((response) => {
             if (!response.ok) {
               throw new Error(`Event not found: ${response.status}`);
@@ -102,25 +152,34 @@
       }
     };
 
-    // Listen for route changes
-    window.addEventListener("routeEvent", handleRouteChanged as EventListener);
+    // Listen for route changes - svelte-spa-router emits 'conditionsFailed' and 'routeLoaded'
+    window.addEventListener("hashchange", () => {
+      // Create a custom event similar to what the handler expects
+      const customEvent = new CustomEvent("routeChange", {
+        detail: { location: window.location.hash.replace("#", "") },
+      });
+      handleRouteChanged(customEvent);
+    });
 
-    return () => {
-      window.removeEventListener(
-        "routeEvent",
-        handleRouteChanged as EventListener,
-      );
-    };
+    // Handle initial load - check if we should open an event modal
+    if (initialHash) {
+      const initialPath = initialHash.replace("#", "");
+      const initialEvent = new CustomEvent("routeChange", {
+        detail: { location: initialPath },
+      });
+      // Small delay to ensure events are loaded first
+      setTimeout(() => handleRouteChanged(initialEvent), 100);
+    }
   });
 </script>
 
-<main id="main-content" class="min-h-screen bg-charcoal-900 text-smoke-50">
+<div id="app-wrapper" class="min-h-screen bg-charcoal-900 text-smoke-50">
   <Header />
 
-  <!-- Main content area with proper landmarks -->
-  <div role="main" class="flex-1">
+  <!-- Main content area with padding-top to account for fixed header -->
+  <main id="main-content" class="flex-1 pt-20 mt-6" tabindex="-1">
     <svelte:component this={router} {routes} />
-  </div>
+  </main>
 
   <Footer />
 
@@ -128,7 +187,20 @@
   {#if $showEventModal}
     <EventModal />
   {/if}
-</main>
+
+  <!-- Compliance Modals -->
+  {#if $complianceStore.showAgeVerification}
+    <AgeVerificationModal />
+  {/if}
+
+  {#if $complianceStore.showCookieBanner}
+    <CookieBanner />
+  {/if}
+
+  {#if $complianceStore.showCookieSettings}
+    <CookieSettingsModal />
+  {/if}
+</div>
 
 <style>
   /* Global app styles */
@@ -147,7 +219,7 @@
     flex-direction: column;
   }
 
-  main {
+  #app-wrapper {
     display: flex;
     flex-direction: column;
     min-height: 100vh;

@@ -2,9 +2,13 @@
   import { onMount } from "svelte";
   import { push } from "svelte-spa-router";
   import { get } from "svelte/store";
+  import InvisibleCaptcha from "../../components/shared/InvisibleCaptcha.svelte";
   import BrandLogo from "../../components/ui/BrandLogo.svelte";
   import QrCode from "../../components/ui/QrCode.svelte";
   import { adminAuth, adminAuthState } from "../../stores/admin";
+
+  // CAPTCHA component reference
+  let captchaComponent: InvisibleCaptcha;
 
   let email = "";
   let password = "";
@@ -30,11 +34,19 @@
   }
 
   onMount(async () => {
-    // Always clear authentication state when visiting login page
-    adminAuth.reset();
+    // Check if user is already authenticated
+    const status = await adminAuth.checkStatus();
 
-    // Force logout to ensure clean state
-    await adminAuth.logout();
+    if (status.success && status.data && !status.data.twofa_pending) {
+      // Already logged in - redirect to events
+      push("/admin/events");
+      return;
+    }
+
+    // Only reset state if not authenticated (don't logout existing session)
+    if (!status.success) {
+      adminAuth.reset();
+    }
   });
 
   async function handleLogin() {
@@ -46,7 +58,19 @@
     loading = true;
     error = "";
 
-    const result = await adminAuth.login(email, password);
+    // Execute CAPTCHA before login
+    let captchaToken = "";
+    try {
+      captchaToken = await captchaComponent.execute();
+    } catch (captchaError) {
+      console.error("CAPTCHA error:", captchaError);
+      error =
+        "CAPTCHA-Überprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.";
+      loading = false;
+      return;
+    }
+
+    const result = await adminAuth.login(email, password, captchaToken);
 
     if (result.success) {
       const st = get(adminAuthState);
@@ -88,23 +112,28 @@
 </svelte:head>
 
 <div
-  class="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+  class="min-h-screen bg-gray-100 dark:bg-charcoal-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
 >
   <div class="max-w-md w-full space-y-8">
     <div class="text-center">
       <div class="flex justify-center mb-6">
         <BrandLogo size="lg" />
       </div>
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+      <h2
+        class="mt-6 text-center text-3xl font-extrabold text-slate-900 dark:text-smoke-50"
+      >
         Admin Anmeldung
       </h2>
-      <p class="mt-2 text-center text-sm text-gray-600">
+      <p class="mt-2 text-center text-sm text-slate-600 dark:text-smoke-400">
         Hypnose Stammtisch Verwaltung
       </p>
     </div>
 
     {#if state.stage === "login"}
       <form class="mt-8 space-y-6" on:submit|preventDefault={handleLogin}>
+        <!-- Invisible CAPTCHA for bot protection -->
+        <InvisibleCaptcha bind:this={captchaComponent} action="admin_login" />
+
         <div class="space-y-4">
           <div>
             <label for="email" class="sr-only">E-Mail-Adresse</label>
@@ -115,7 +144,7 @@
               required
               bind:value={email}
               on:keydown={handleKeydown}
-              class="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10"
+              class="relative block w-full px-3 py-2 border border-slate-300 dark:border-charcoal-600 placeholder-slate-500 dark:placeholder-smoke-500 text-slate-900 dark:text-smoke-50 bg-white dark:bg-charcoal-800 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10"
               placeholder="E-Mail-Adresse"
               disabled={loading}
             />
@@ -130,7 +159,7 @@
               required
               bind:value={password}
               on:keydown={handleKeydown}
-              class="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10"
+              class="relative block w-full px-3 py-2 border border-slate-300 dark:border-charcoal-600 placeholder-slate-500 dark:placeholder-smoke-500 text-slate-900 dark:text-smoke-50 bg-white dark:bg-charcoal-800 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10"
               placeholder="Passwort"
               disabled={loading}
             />
@@ -138,11 +167,13 @@
         </div>
 
         {#if error}
-          <div class="bg-red-50 border border-red-200 rounded-md p-4">
+          <div
+            class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md p-4"
+          >
             <div class="flex">
               <div class="flex-shrink-0">
                 <svg
-                  class="h-5 w-5 text-red-400"
+                  class="h-5 w-5 text-red-400 dark:text-red-500"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -154,7 +185,7 @@
                 </svg>
               </div>
               <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800">
+                <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
                   {error}
                 </h3>
               </div>
@@ -198,10 +229,10 @@
       </form>
     {:else if state.stage === "setup"}
       <div class="mt-8 space-y-6">
-        <h3 class="text-lg font-semibold text-gray-900">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-smoke-50">
           Zwei-Faktor Einrichtung
         </h3>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600 dark:text-smoke-400">
           Scannen Sie den folgenden Code in Ihrer Authenticator-App (z.B. Aegis,
           Google Authenticator, etc.) oder geben Sie das Secret manuell ein.
         </p>
@@ -213,22 +244,23 @@
         {#if state.twofaSecret}
           <div class="space-y-2">
             <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-gray-700"
+              <span
+                class="text-sm font-medium text-slate-700 dark:text-smoke-300"
                 >Alternativ: Secret manuell eingeben</span
               >
               <button
                 type="button"
                 on:click={copySecret}
-                class="text-xs px-2 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
+                class="text-xs px-2 py-1 rounded bg-slate-200 dark:bg-charcoal-700 hover:bg-slate-300 dark:hover:bg-charcoal-600 text-slate-800 dark:text-smoke-200"
                 >Kopieren</button
               >
             </div>
             <div
-              class="p-2 bg-white border rounded font-mono text-sm select-all break-all"
+              class="p-2 bg-white dark:bg-charcoal-800 border dark:border-charcoal-600 rounded font-mono text-sm text-slate-900 dark:text-smoke-100 select-all break-all"
             >
               {formattedSecret}
             </div>
-            <p class="text-xs text-gray-500 leading-snug">
+            <p class="text-xs text-slate-500 dark:text-smoke-500 leading-snug">
               Falls das Scannen nicht funktioniert, geben Sie dieses Secret
               (Base32) in Ihrer Authenticator-App ein. Leerzeichen ignorieren.
             </p>
@@ -236,7 +268,7 @@
         {/if}
         <div class="space-y-2">
           <label
-            class="block text-sm font-medium text-gray-700"
+            class="block text-sm font-medium text-slate-700 dark:text-smoke-300"
             for="twofa_code_setup">6-stelliger Code</label
           >
           <input
@@ -244,31 +276,31 @@
             type="text"
             bind:value={twofaCode}
             maxlength="6"
-            class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-slate-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-slate-900 dark:text-smoke-50 rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             placeholder="123456"
           />
         </div>
         <button
           on:click={handleVerify2FA}
-          class="w-full py-2 px-4 rounded bg-blue-600 text-white hover:bg-blue-700"
+          class="w-full py-2 px-4 rounded bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600"
           >Verifizieren & Fertigstellen</button
         >
-        <p class="text-xs text-gray-500">
+        <p class="text-xs text-slate-500 dark:text-smoke-500">
           Ohne erfolgreiche Einrichtung ist kein Zugriff möglich.
         </p>
       </div>
     {:else if state.stage === "verify"}
       <div class="mt-8 space-y-6">
-        <h3 class="text-lg font-semibold text-gray-900">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-smoke-50">
           Zwei-Faktor Code eingeben
         </h3>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600 dark:text-smoke-400">
           Bitte geben Sie den aktuellen 6-stelligen Code aus Ihrer
           Authenticator-App ein oder nutzen Sie einen Backup-Code.
         </p>
         <div class="space-y-2">
           <label
-            class="block text-sm font-medium text-gray-700"
+            class="block text-sm font-medium text-slate-700 dark:text-smoke-300"
             for="twofa_code_verify"
             >{state.usingBackup ? "Backup-Code" : "6-stelliger Code"}</label
           >
@@ -277,12 +309,12 @@
             type="text"
             bind:value={twofaCode}
             maxlength={state.usingBackup ? 12 : 6}
-            class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            class="w-full px-3 py-2 border border-slate-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-slate-900 dark:text-smoke-50 rounded focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             placeholder={state.usingBackup ? "BACKUPCODE" : "123456"}
           />
           <button
             type="button"
-            class="text-xs underline"
+            class="text-xs underline text-blue-600 dark:text-blue-400"
             on:click={() => adminAuth.toggleUsingBackup()}
           >
             {state.usingBackup
@@ -292,42 +324,46 @@
         </div>
         <button
           on:click={handleVerify2FA}
-          class="w-full py-2 px-4 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+          class="w-full py-2 px-4 rounded bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
           disabled={state.verifying}
           >{state.verifying ? "Prüfe..." : "Verifizieren"}</button
         >
         <button
           on:click={() => adminAuth.twofaSetup()}
-          class="w-full py-2 px-4 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 text-sm"
+          class="w-full py-2 px-4 rounded bg-slate-200 dark:bg-charcoal-700 text-slate-800 dark:text-smoke-200 hover:bg-slate-300 dark:hover:bg-charcoal-600 text-sm"
           >Neuen Setup-Code anfordern</button
         >
       </div>
     {:else if state.stage === "show-backups"}
       <div class="mt-8 space-y-6">
-        <h3 class="text-lg font-semibold text-gray-900">
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-smoke-50">
           Backup-Codes sicher aufbewahren
         </h3>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-slate-600 dark:text-smoke-400">
           Diese Einmal-Codes können verwendet werden, falls Sie keinen Zugriff
           auf Ihre Authenticator-App haben. Bewahren Sie sie an einem sicheren
           Ort auf. Jeder Code kann nur einmal genutzt werden.
         </p>
         {#if state.backupCodes?.length}
           <div
-            class="grid grid-cols-2 gap-2 font-mono text-sm bg-white p-4 rounded border"
+            class="grid grid-cols-2 gap-2 font-mono text-sm bg-white dark:bg-charcoal-800 p-4 rounded border dark:border-charcoal-600"
           >
-            {#each state.backupCodes as c}
-              <div class="px-2 py-1 bg-gray-100 rounded select-all">{c}</div>
+            {#each state.backupCodes as c (c)}
+              <div
+                class="px-2 py-1 bg-slate-100 dark:bg-charcoal-700 text-slate-900 dark:text-smoke-100 rounded select-all"
+              >
+                {c}
+              </div>
             {/each}
           </div>
           <div class="flex gap-2">
             <button
-              class="flex-1 py-2 px-4 rounded bg-blue-600 text-white hover:bg-blue-700"
+              class="flex-1 py-2 px-4 rounded bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-600"
               on:click={() => push("/admin/events")}
               >Weiter zum Dashboard</button
             >
             <button
-              class="py-2 px-4 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 text-sm"
+              class="py-2 px-4 rounded bg-slate-200 dark:bg-charcoal-700 text-slate-800 dark:text-smoke-200 hover:bg-slate-300 dark:hover:bg-charcoal-600 text-sm"
               disabled={!state.backupCodes?.length}
               on:click={() => {
                 if (state.backupCodes)
@@ -335,14 +371,16 @@
               }}>Kopieren</button
             >
           </div>
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-slate-500 dark:text-smoke-500">
             Sie können später neue Backup-Codes generieren (die alten werden
             dann ungültig).
           </p>
         {:else}
-          <p class="text-sm text-gray-600">Keine Codes gefunden.</p>
+          <p class="text-sm text-slate-600 dark:text-smoke-400">
+            Keine Codes gefunden.
+          </p>
           <button
-            class="w-full py-2 px-4 rounded bg-blue-600 text-white"
+            class="w-full py-2 px-4 rounded bg-blue-600 dark:bg-blue-700 text-white"
             on:click={() => push("/admin/events")}>Weiter</button
           >
         {/if}

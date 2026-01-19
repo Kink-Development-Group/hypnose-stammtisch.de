@@ -10,7 +10,7 @@
   />
 </svelte:head>
 
-<main class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8">
   <!-- Hero Section -->
   <section class="text-center mb-16">
     <h1 class="text-4xl md:text-5xl font-display font-bold text-smoke-50 mb-6">
@@ -23,8 +23,7 @@
       <br />
       Entstanden durch die Hamburger Kinky Hypnose Szene, und in ständigem Austausch
       mit vielen anderen Communitys möchten wir so vielen Menschen wie möglich einen
-      sicheren und einfachen Einstieg in die Szene der Kink- und Freizeithypnose
-      ermöglichen!
+      sicheren und einfachen Einstieg in die Szene der Kink- und Freizeithypnose ermöglichen!
     </p>
   </section>
 
@@ -159,4 +158,4 @@
       </a>
     </div>
   </section>
-</main>
+</div>

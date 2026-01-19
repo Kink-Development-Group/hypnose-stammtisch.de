@@ -3,6 +3,7 @@ name: Build and Deploy to SFTP
 on:
   push:
     branches:
+      - dev
       - main
 
 jobs:
@@ -12,23 +13,45 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: "22"
+          bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Build project
-        run: npm run build:all
+        run: bun run build:all
 
-      - name: Deploy to SFTP
-        uses: appleboy/scp-action@v0.1.7
+      - name: Create .env file from secret (dev)
+        if: github.ref == 'refs/heads/dev'
+        run: echo "${{ secrets.ENV }}" > dist/.env
+
+      - name: Create .env file from secret (prod)
+        if: github.ref == 'refs/heads/main'
+        run: echo "${{ secrets.PROD_ENV }}" > dist/.env
+
+      - name: Deploy via FTP Deploy Action (dev)
+        if: github.ref == 'refs/heads/dev'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
         with:
-          host: ${{ secrets.SFTP_HOST }}
+          server: ${{ secrets.SFTP_HOST }}
           port: ${{ secrets.SFTP_PORT }}
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASS }}
-          source: "./dist/**"
-          target: ${{ secrets.SFTP_REMOTE_DIR }}
+          protocol: "ftps"
+          local-dir: "./dist/"
+          server-dir: ${{ secrets.SFTP_REMOTE_DIR }}
+
+      - name: Deploy via FTP Deploy Action (prod)
+        if: github.ref == 'refs/heads/main'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.PROD_SFTP_HOST }}
+          port: ${{ secrets.PROD_SFTP_PORT }}
+          username: ${{ secrets.PROD_SFTP_USER }}
+          password: ${{ secrets.PROD_SFTP_PASS }}
+          protocol: "ftps"
+          local-dir: "./dist/"
+          server-dir: ${{ secrets.PROD_SFTP_REMOTE_DIR }}

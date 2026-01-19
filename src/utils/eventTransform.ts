@@ -5,7 +5,7 @@ import type { Event } from "../types/calendar";
  */
 export function transformApiEvent(apiEvent: any): Event {
   return {
-    id: apiEvent.id || 0,
+    id: apiEvent.id ?? 0,
     title: apiEvent.title || "",
     description: apiEvent.description || "",
     startDate: new Date(apiEvent.start_datetime || apiEvent.startDate),
@@ -34,8 +34,11 @@ export function transformApiEvent(apiEvent: any): Event {
               (t: string) => typeof t === "string" && t.trim() !== "",
             );
           }
-        } catch (e) {
-          console.error("Error parsing event tags:", e && e.message ? e.message : String(e));
+        } catch (e: unknown) {
+          console.error(
+            "Error parsing event tags:",
+            e instanceof Error ? e.message : String(e),
+          );
         }
         if (apiEvent.tags.trim() === "" || apiEvent.tags.trim() === "[]") {
           result = [];

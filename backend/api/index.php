@@ -35,6 +35,7 @@ use HypnoseStammtisch\Controllers\EventsController;
 use HypnoseStammtisch\Controllers\ContactController;
 use HypnoseStammtisch\Controllers\CalendarController;
 use HypnoseStammtisch\Controllers\FormController;
+use HypnoseStammtisch\Controllers\StammtischLocationController;
 use HypnoseStammtisch\Utils\Response;
 
 // Load configuration
@@ -85,6 +86,14 @@ $path = preg_replace('#^/api#', '', $path);
 // Remove leading/trailing slashes
 $path = trim($path, '/');
 
+// Support direct calendar feed requests via /calendar.ics for calendar subscriptions
+if ($path === 'calendar.ics') {
+  $calendarController = new CalendarController();
+  $token = $_GET['token'] ?? null;
+  $calendarController->feed($token);
+  return;
+}
+
 // Split path into segments
 $segments = $path ? explode('/', $path) : [];
 
@@ -107,6 +116,10 @@ function route(string $method, array $segments): void
         handleEventsRoutes($method, $action, $id);
         break;
 
+      case 'series':
+        handleSeriesRoutes($method, $action, $id);
+        break;
+
       case 'forms':
         handleFormRoutes($method, $action);
         break;
@@ -117,6 +130,14 @@ function route(string $method, array $segments): void
 
       case 'calendar':
         handleCalendarRoutes($method, $action, $id);
+        break;
+
+      case 'stammtisch-locations':
+        handleStammtischLocationRoutes($method, $action, $id);
+        break;
+
+      case 'captcha':
+        handleCaptchaRoutes($method, $action);
         break;
 
       default:
@@ -148,11 +169,16 @@ function handleApiInfo(): void
         'GET /events/featured' => 'Get featured events',
         'GET /events/meta' => 'Get event metadata (categories, etc.)',
         'GET /events/{id}' => 'Get single event by ID or slug',
+        'GET /events/{id}/ics' => 'Get ICS for single event',
+        'GET /series/{id}/ics' => 'Get ICS for entire event series with RRULE',
         'POST /contact' => 'Submit contact form',
         'GET /calendar/feed' => 'Get ICS calendar feed',
         'GET /calendar/feed/{token}' => 'Get private ICS calendar feed',
         'GET /calendar/meta' => 'Get calendar metadata',
-        'GET /calendar/event/{id}/ics' => 'Get ICS for single event'
+        'GET /calendar/event/{id}/ics' => 'Get ICS for single event',
+        'GET /stammtisch-locations' => 'Get all published stammtisch locations',
+        'GET /stammtisch-locations/meta' => 'Get stammtisch location metadata',
+        'GET /stammtisch-locations/{id}' => 'Get single stammtisch location by ID'
       ],
       'documentation' => Config::get('app.url') . '/docs',
       'support' => 'support@hypnose-stammtisch.de'
@@ -178,10 +204,10 @@ function handleEventsRoutes(string $method, ?string $action, ?string $id): void
     } elseif ($action === 'meta') {
       // GET /events/meta
       $controller->meta();
-    } elseif (is_numeric($action) && $id === 'ics') {
-      // GET /events/{id}/ics
+    } elseif ($action && $id === 'ics') {
+      // GET /events/{id}/ics - supports numeric, UUID, and composite IDs
       $controller->downloadICS($action);
-    } elseif (is_numeric($action) || !is_numeric($action)) {
+    } elseif ($action) {
       // GET /events/{id} or GET /events/{slug}
       $controller->show($action);
     } else {
@@ -203,16 +229,33 @@ function handleEventsRoutes(string $method, ?string $action, ?string $id): void
   } elseif ($method === 'PUT') {
     if (is_numeric($action)) {
       // PUT /events/{id} (future admin feature)
-      $controller->update((int)$action);
+      $controller->update($action);
     } else {
       Response::error('Invalid events endpoint', 404);
     }
   } elseif ($method === 'DELETE') {
     if (is_numeric($action)) {
       // DELETE /events/{id} (future admin feature)
-      $controller->destroy((int)$action);
+      $controller->destroy($action);
     } else {
       Response::error('Invalid events endpoint', 404);
+    }
+  } else {
+    Response::error('Method not allowed', 405);
+  }
+}
+
+// Handle series routes (for ICS downloads)
+function handleSeriesRoutes(string $method, ?string $action, ?string $id): void
+{
+  $controller = new EventsController();
+
+  if ($method === 'GET') {
+    if ($action && $id === 'ics') {
+      // GET /series/{id}/ics - supports numeric and UUID IDs
+      $controller->downloadSeriesICS($action);
+    } else {
+      Response::json(['success' => false, 'error' => 'Invalid series endpoint'], 404);
     }
   } else {
     Response::error('Method not allowed', 405);
@@ -285,6 +328,40 @@ function handleCalendarRoutes(string $method, ?string $action, ?string $id): voi
     }
   } else {
     Response::error('Method not allowed', 405);
+  }
+}
+
+// Handle stammtisch location routes
+function handleStammtischLocationRoutes(string $method, ?string $action, ?string $id): void
+{
+  $controller = new StammtischLocationController();
+
+  if ($method === 'GET') {
+    if (!$action) {
+      // GET /stammtisch-locations
+      $controller->getPublished();
+    } elseif ($action === 'meta') {
+      // GET /stammtisch-locations/meta
+      $controller->getMeta();
+    } elseif ($action) {
+      // GET /stammtisch-locations/{id}
+      $controller->getById($action);
+    } else {
+      Response::error('Invalid stammtisch-locations endpoint', 404);
+    }
+  } else {
+    Response::error('Method not allowed', 405);
+  }
+}
+
+// Handle CAPTCHA configuration routes
+function handleCaptchaRoutes(string $method, ?string $action): void
+{
+  if ($method === 'GET' && $action === 'config') {
+    // GET /captcha/config - Return public CAPTCHA configuration for frontend
+    Response::json(\HypnoseStammtisch\Utils\CaptchaValidator::getClientConfig());
+  } else {
+    Response::error('Invalid captcha endpoint', 404);
   }
 }
 

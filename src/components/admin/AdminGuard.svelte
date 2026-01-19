@@ -11,8 +11,6 @@
   let authError = "";
 
   onMount(async () => {
-    console.log("AdminGuard: Starting authentication check...");
-
     // Always start with a clean state
     adminAuth.reset();
 
@@ -20,17 +18,10 @@
       // Check authentication status with no cache
       const status = await adminAuth.checkStatus();
 
-      console.log("AdminGuard: Auth check result:", status);
-
       if (status.success && status.data) {
-        console.log("AdminGuard: Authentication successful", status.data);
         isAuthenticated = true;
         authError = "";
       } else {
-        console.log(
-          "AdminGuard: Authentication failed",
-          status.message || "No data",
-        );
         isAuthenticated = false;
         authError = status.message || "Authentication failed";
 
@@ -57,28 +48,38 @@
 </script>
 
 {#if isLoading}
-  <div class="min-h-screen bg-gray-100 flex items-center justify-center">
-    <div class="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
+  <div
+    class="min-h-screen bg-gray-100 dark:bg-charcoal-900 flex items-center justify-center"
+  >
+    <div
+      class="bg-white dark:bg-charcoal-800 p-8 rounded-lg shadow-md max-w-md w-full"
+    >
       <div class="flex flex-col items-center">
         <div
-          class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"
+          class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mb-4"
         ></div>
-        <h2 class="text-lg font-medium text-gray-900 mb-2">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-2">
           Authentifizierung prüfen
         </h2>
-        <p class="text-gray-600 text-center">Überprüfe Anmeldestatus...</p>
+        <p class="text-slate-600 dark:text-smoke-400 text-center">
+          Überprüfe Anmeldestatus...
+        </p>
       </div>
     </div>
   </div>
 {:else if !isAuthenticated}
-  <div class="min-h-screen bg-gray-100 flex items-center justify-center">
-    <div class="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
+  <div
+    class="min-h-screen bg-gray-100 dark:bg-charcoal-900 flex items-center justify-center"
+  >
+    <div
+      class="bg-white dark:bg-charcoal-800 p-8 rounded-lg shadow-md max-w-md w-full"
+    >
       <div class="flex flex-col items-center">
         <div
-          class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4"
+          class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-4"
         >
           <svg
-            class="w-6 h-6 text-red-600"
+            class="w-6 h-6 text-red-600 dark:text-red-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -91,10 +92,10 @@
             />
           </svg>
         </div>
-        <h2 class="text-lg font-medium text-gray-900 mb-2">
+        <h2 class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-2">
           Zugriff verweigert
         </h2>
-        <p class="text-gray-600 text-center mb-4">
+        <p class="text-slate-600 dark:text-smoke-400 text-center mb-4">
           {authError ||
             "Sie sind nicht authentifiziert. Bitte melden Sie sich an."}
         </p>

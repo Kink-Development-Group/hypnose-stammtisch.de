@@ -9,24 +9,42 @@ use HypnoseStammtisch\Middleware\AdminAuth;
 
 class AuditLogger
 {
-  public static function log(string $action, ?string $resourceType = null, ?string $resourceId = null, array $meta = []): void
-  {
-    try {
-      $user = AdminAuth::getCurrentUser();
-      $userId = $user['id'] ?? null;
-      $ip = $_SERVER['REMOTE_ADDR'] ?? null;
-      $metaJson = $meta ? json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
-      Database::execute('INSERT INTO audit_logs (user_id, ip_address, action, resource_type, resource_id, meta) VALUES (?, ?, ?, ?, ?, ?)', [
-        $userId,
-        $ip,
-        $action,
-        $resourceType,
-        $resourceId,
-        $metaJson
-      ]);
-    } catch (\Throwable $e) {
-      // Fail silently, but log to PHP error log
-      error_log('Audit log insert failed: ' . $e->getMessage());
+    /**
+     * Flag to prevent recursive calls during IP resolution.
+     *
+     * This breaks the circular dependency that occurs when AuditLogger::log()
+     * calls IpBanManager::getClientIP(), and getClientIP() in turn attempts to
+     * log an event via AuditLogger (for example, when it encounters untrusted
+     * or suspicious proxy headers and wants to record that situation).
+     */
+    private static bool $isLogging = false;
+
+    public static function log(string $action, ?string $resourceType = null, ?string $resourceId = null, array $meta = []): void
+    {
+        // Prevent recursive calls that could cause infinite loops and memory exhaustion
+        if (self::$isLogging) {
+            return;
+        }
+
+        self::$isLogging = true;
+        try {
+            $user = AdminAuth::getCurrentUser();
+            $userId = $user['id'] ?? null;
+            $ip = IpBanManager::getClientIP();
+            $metaJson = $meta ? json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
+            Database::execute('INSERT INTO audit_logs (user_id, ip_address, action, resource_type, resource_id, meta) VALUES (?, ?, ?, ?, ?, ?)', [
+                $userId,
+                $ip,
+                $action,
+                $resourceType,
+                $resourceId,
+                $metaJson
+            ]);
+        } catch (\Throwable $e) {
+            // Fail silently, but log to PHP error log
+            error_log('Audit log insert failed: ' . $e->getMessage());
+        } finally {
+            self::$isLogging = false;
+        }
     }
-  }
 }

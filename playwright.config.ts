@@ -3,6 +3,9 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
+const DEV_SERVER_URL =
+  process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:5173";
+
 export default defineConfig({
   testDir: "./tests",
   /* Run tests in files in parallel */
@@ -18,7 +21,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://127.0.0.1:5173",
+    baseURL: DEV_SERVER_URL,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
@@ -70,10 +73,11 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "npm run dev:frontend",
-    url: "http://localhost:5173",
+    command:
+      "npm run dev:frontend -- --host 127.0.0.1 --port 5173 --strictPort",
+    url: DEV_SERVER_URL,
     reuseExistingServer: !process.env.CI,
-    stdout: "ignore",
+    stdout: "pipe",
     stderr: "pipe",
     timeout: 120_000,
   },

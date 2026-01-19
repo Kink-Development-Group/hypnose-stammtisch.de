@@ -41,14 +41,14 @@
 </script>
 
 <svelte:head>
-  <title>Hypnose-Stammtisch.de Deep Dive. Safe Play.</title>
+  <title>Hypnose-Stammtisch.de Dive Deep. Play Safe.</title>
   <meta
     name="description"
     content="Community-focused hypnosis events and workshops. Sichere und respektvolle Hypnose-Veranstaltungen in einer einladenden Gemeinschaft."
   />
   <meta
     property="og:title"
-    content="Hypnose-Stammtisch.de - Deep Dive. Safe Play."
+    content="Hypnose-Stammtisch.de - Dive Deep. Play Safe."
   />
   <meta
     property="og:description"
@@ -58,7 +58,7 @@
   <meta property="og:url" content="https://hypnose-stammtisch.de/" />
 </svelte:head>
 
-<main class="min-h-screen">
+<div class="min-h-screen">
   <!-- Hero Section -->
   <Hero />
 
@@ -77,9 +77,14 @@
       <UpcomingEvents />
 
       <div class="text-center mt-12">
-        <a href="/events" use:link class="btn btn-primary text-lg px-8 py-3">
-          Alle Events anzeigen
-        </a>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="/events" use:link class="btn btn-primary text-lg px-8 py-3">
+            📅 Alle Events anzeigen
+          </a>
+          <a href="/map" use:link class="btn btn-outline text-lg px-8 py-3">
+            🗺️ Stammtisch-Karte
+          </a>
+        </div>
       </div>
     </div>
   </section>
@@ -278,4 +283,4 @@
       </div>
     </div>
   </section>
-</main>
+</div>

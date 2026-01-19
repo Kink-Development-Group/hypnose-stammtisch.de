@@ -1,37 +1,64 @@
 # Security hardening for backend core when placed inside public root
 # Deny direct access to sensitive directories if this folder is ever exposed
-<IfModule mod_authz_core.c>
-  <Directory "migrations">
-    Require all denied
-  </Directory>
-  <Directory "vendor">
-    Require all denied
-  </Directory>
-  <Directory "logs">
-    Require all denied
-  </Directory>
-  <Directory "config">
-    Require all denied
-  </Directory>
-  <Directory "cache">
-    Require all denied
-  </Directory>
-  <Directory "temp">
-    Require all denied
-  </Directory>
-  <Directory "uploads/private">
-    Require all denied
-  </Directory>
-</IfModule>
 
-# Hide dotfiles
+# IMPORTANT: <Directory> directives don't work in .htaccess - use RewriteRules instead
+RewriteEngine On
+
+# Block access to sensitive directories
+RewriteRule ^migrations(/.*)?$ - [F,L]
+RewriteRule ^vendor(/.*)?$ - [F,L]
+RewriteRule ^logs(/.*)?$ - [F,L]
+RewriteRule ^config(/.*)?$ - [F,L]
+RewriteRule ^cache(/.*)?$ - [F,L]
+RewriteRule ^temp(/.*)?$ - [F,L]
+RewriteRule ^src(/.*)?$ - [F,L]
+RewriteRule ^cli(/.*)?$ - [F,L]
+RewriteRule ^tests(/.*)?$ - [F,L]
+RewriteRule ^scripts(/.*)?$ - [F,L]
+RewriteRule ^uploads/private(/.*)?$ - [F,L]
+
+# Hide ALL dotfiles (including .env, .htaccess in subdirectories, .git, etc.)
 <FilesMatch "^\.">
-  Require all denied
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Explicitly block .env files with any extension (.env, .env.local, .env.production, etc.)
+<FilesMatch "^\.env(\..+)?$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
 </FilesMatch>
 
 # Protect environment & build artifacts
-<FilesMatch "(composer\.(json|lock)|package\.json|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|\.env.*|phpunit\.xml.*)$">
-  Require all denied
+<FilesMatch "(composer\.(json|lock)|package\.json|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|phpunit\.xml.*|phpcs\.xml|README\.md)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Block PHP files outside of api/ directory
+<FilesMatch "\.php$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
 </FilesMatch>
 
 # Fallback: prevent execution in these data directories

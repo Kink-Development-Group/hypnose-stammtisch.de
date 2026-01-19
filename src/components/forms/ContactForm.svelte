@@ -1,5 +1,9 @@
 <script lang="ts">
   import { z } from "zod";
+  import InvisibleCaptcha from "../shared/InvisibleCaptcha.svelte";
+
+  // CAPTCHA component reference
+  let captchaComponent: InvisibleCaptcha;
 
   // Form validation schema
   const contactSchema = z.object({
@@ -91,11 +95,24 @@
         return;
       }
 
+      // Execute CAPTCHA and get token
+      let captchaToken = "";
+      try {
+        captchaToken = await captchaComponent.execute();
+      } catch (captchaError) {
+        console.error("CAPTCHA error:", captchaError);
+        submitError =
+          "CAPTCHA-Überprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.";
+        isSubmitting = false;
+        return;
+      }
+
       // Prepare submission data
       const submissionData = {
         ...validation.data,
         honeypot, // Should be empty
         timestamp, // Form load time
+        captcha_token: captchaToken, // CAPTCHA token
       };
 
       // Submit to backend
@@ -204,6 +221,9 @@
 {/if}
 
 <form on:submit={handleSubmit} class="space-y-8" novalidate>
+  <!-- Invisible CAPTCHA for spam protection -->
+  <InvisibleCaptcha bind:this={captchaComponent} action="contact" />
+
   <!-- Honeypot field for spam protection -->
   <input
     type="text"
@@ -305,7 +325,7 @@
         aria-describedby={errors.subject ? "subject-error" : undefined}
         aria-invalid={errors.subject ? "true" : "false"}
       >
-        {#each subjectOptions as option}
+        {#each subjectOptions as option (option.value)}
           <option value={option.value}>{option.label}</option>
         {/each}
       </select>
@@ -378,8 +398,8 @@
             target="_blank"
             rel="noopener">Datenschutzerklärung</a
           >
-          gelesen und stimme der Verarbeitung meiner Daten zum Zweck der
-          Bearbeitung meiner Anfrage zu.
+          gelesen und stimme der Verarbeitung meiner Daten zum Zweck der Bearbeitung
+          meiner Anfrage zu.
           <span class="text-boundaries" aria-label="Pflichtfeld">*</span>
         </span>
       </label>

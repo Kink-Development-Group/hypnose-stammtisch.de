@@ -128,17 +128,19 @@
 <AdminLayout>
   <div class="max-w-5xl mx-auto space-y-8">
     <header class="flex flex-col gap-2">
-      <h2 class="text-3xl font-semibold tracking-tight text-gray-700">
+      <h2
+        class="text-3xl font-semibold tracking-tight text-gray-700 dark:text-smoke-100"
+      >
         Mein Profil
       </h2>
-      <p class="text-sm text-gray-700">
+      <p class="text-sm text-gray-700 dark:text-smoke-300">
         Verwalte deine persönlichen Zugangsdaten und Sicherheitsoptionen.
       </p>
     </header>
 
     {#if message}
       <div
-        class="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 shadow-sm"
+        class="flex items-start gap-2 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/30 px-4 py-3 text-sm text-green-800 dark:text-green-200 shadow-sm"
       >
         <svg
           class="h-5 w-5"
@@ -157,7 +159,7 @@
     {/if}
     {#if error}
       <div
-        class="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm"
+        class="flex items-start gap-2 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-800 dark:text-red-200 shadow-sm"
       >
         <svg
           class="h-5 w-5"
@@ -181,14 +183,14 @@
     >
       <!-- Account Data -->
       <fieldset
-        class="lg:col-span-2 rounded-xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow transition overflow-hidden"
+        class="lg:col-span-2 rounded-xl border border-gray-200 dark:border-charcoal-700 bg-white/80 dark:bg-charcoal-800/80 backdrop-blur-sm shadow-sm hover:shadow transition overflow-hidden"
       >
         <legend class="sr-only">Zugangsdaten</legend>
         <div
-          class="px-6 pt-5 pb-2 flex items-center gap-3 border-b bg-gradient-to-r from-blue-50 to-indigo-50"
+          class="px-6 pt-5 pb-2 flex items-center gap-3 border-b dark:border-charcoal-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-charcoal-700 dark:to-charcoal-800"
         >
           <div
-            class="h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600"
+            class="h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400"
           >
             <svg
               class="h-6 w-6"
@@ -204,10 +206,12 @@
             >
           </div>
           <div>
-            <h3 class="text-lg font-medium leading-tight text-gray-700">
+            <h3
+              class="text-lg font-medium leading-tight text-slate-700 dark:text-smoke-200"
+            >
               Zugangsdaten
             </h3>
-            <p class="text-xs text-gray-600">
+            <p class="text-xs text-slate-600 dark:text-smoke-400">
               Benutzername & E‑Mail-Adresse für die Anmeldung
             </p>
           </div>
@@ -216,12 +220,12 @@
           <!-- Username -->
           <div class="space-y-1">
             <label
-              class="block text-sm font-medium text-gray-800"
+              class="block text-sm font-medium text-slate-800 dark:text-smoke-100"
               for="username">Benutzername</label
             >
             <div class="relative">
               <span
-                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"
+                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-smoke-500"
               >
                 <svg
                   class="h-5 w-5"
@@ -238,7 +242,7 @@
               </span>
               <input
                 id="username"
-                class="w-full rounded-lg border border-gray-300 bg-white px-10 py-2 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
+                class="w-full rounded-lg border border-slate-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 px-10 py-2 text-sm text-slate-900 dark:text-smoke-50 placeholder-slate-500 dark:placeholder-smoke-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
                 bind:value={username}
                 autocomplete="username"
               />
@@ -246,12 +250,13 @@
           </div>
           <!-- Email -->
           <div class="space-y-1">
-            <label class="block text-sm font-medium text-gray-800" for="email"
-              >E‑Mail</label
+            <label
+              class="block text-sm font-medium text-slate-800 dark:text-smoke-100"
+              for="email">E‑Mail</label
             >
             <div class="relative">
               <span
-                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500"
+                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-smoke-500"
               >
                 <svg
                   class="h-5 w-5"
@@ -269,27 +274,28 @@
               <input
                 id="email"
                 type="email"
-                class="w-full rounded-lg border border-gray-300 bg-white px-10 py-2 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
+                class="w-full rounded-lg border border-slate-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 px-10 py-2 text-sm text-slate-900 dark:text-smoke-50 placeholder-slate-500 dark:placeholder-smoke-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
                 bind:value={email}
                 autocomplete="email"
               />
             </div>
-            <p class="text-xs text-gray-700">
+            <p class="text-xs text-slate-700 dark:text-smoke-300">
               Änderungen erfordern Bestätigung über eine E‑Mail.
             </p>
           </div>
           <!-- Password -->
           <div class="space-y-1 md:col-span-2">
             <label
-              class="block text-sm font-medium text-gray-800"
+              class="block text-sm font-medium text-slate-800 dark:text-smoke-100"
               for="password"
-              >Neues Passwort <span class="text-gray-400 text-xs font-normal"
+              >Neues Passwort <span
+                class="text-slate-400 dark:text-smoke-500 text-xs font-normal"
                 >(optional)</span
               ></label
             >
             <div class="relative group">
               <span
-                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 group-focus-within:text-blue-600"
+                class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-smoke-500 group-focus-within:text-blue-600 dark:group-focus-within:text-blue-400"
               >
                 <svg
                   class="h-5 w-5"
@@ -307,7 +313,7 @@
               <input
                 id="password"
                 type="password"
-                class="w-full rounded-lg border border-gray-300 bg-white px-10 py-2 text-sm text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
+                class="w-full rounded-lg border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 px-10 py-2 text-sm text-gray-900 dark:text-smoke-50 placeholder-gray-500 dark:placeholder-smoke-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40 transition"
                 bind:value={password}
                 placeholder="Leer lassen für unverändert"
                 autocomplete="new-password"
@@ -316,13 +322,13 @@
             <!-- Password strength meter -->
             <div class="space-y-1">
               <div
-                class="flex justify-between text-[11px] tracking-wide text-gray-700 font-medium"
+                class="flex justify-between text-[11px] tracking-wide text-gray-700 dark:text-smoke-300 font-medium"
               >
                 <span>Passwort-Stärke</span>
                 <span>{passwordStrength}/6</span>
               </div>
               <div class="grid grid-cols-6 gap-1">
-                {#each Array(6) as _, i}
+                {#each Array(6) as _, i (i)}
                   <div
                     class="h-1.5 rounded-full transition-colors duration-300 {i <
                     passwordStrength
@@ -331,87 +337,87 @@
                         : passwordStrength <= 4
                           ? 'bg-amber-400'
                           : 'bg-green-500'
-                      : 'bg-gray-200'}"
+                      : 'bg-gray-200 dark:bg-charcoal-600'}"
                   ></div>
                 {/each}
               </div>
               <ul
-                class="mt-2 grid gap-1 text-[11px] text-gray-800 md:grid-cols-3"
+                class="mt-2 grid gap-1 text-[11px] text-gray-800 dark:text-smoke-200 md:grid-cols-3"
               >
                 <li
                   class="flex items-center gap-1 {password.length >= 8
-                    ? 'text-green-600'
+                    ? 'text-green-600 dark:text-green-400'
                     : ''}"
                 >
                   <span
                     class="inline-block h-1.5 w-1.5 rounded-full {password.length >=
                     8
-                      ? 'bg-green-600'
-                      : 'bg-gray-300'}"
+                      ? 'bg-green-600 dark:bg-green-400'
+                      : 'bg-gray-300 dark:bg-charcoal-500'}"
                   ></span> ≥ 8 Zeichen
                 </li>
                 <li
                   class="flex items-center gap-1 {/[A-Z]/.test(password)
-                    ? 'text-green-600'
+                    ? 'text-green-600 dark:text-green-400'
                     : ''}"
                 >
                   <span
                     class="inline-block h-1.5 w-1.5 rounded-full {/[A-Z]/.test(
                       password,
                     )
-                      ? 'bg-green-600'
-                      : 'bg-gray-300'}"
+                      ? 'bg-green-600 dark:bg-green-400'
+                      : 'bg-gray-300 dark:bg-charcoal-500'}"
                   ></span> Großbuchst.
                 </li>
                 <li
                   class="flex items-center gap-1 {/[a-z]/.test(password)
-                    ? 'text-green-600'
+                    ? 'text-green-600 dark:text-green-400'
                     : ''}"
                 >
                   <span
                     class="inline-block h-1.5 w-1.5 rounded-full {/[a-z]/.test(
                       password,
                     )
-                      ? 'bg-green-600'
-                      : 'bg-gray-300'}"
+                      ? 'bg-green-600 dark:bg-green-400'
+                      : 'bg-gray-300 dark:bg-charcoal-500'}"
                   ></span> Kleinbuchst.
                 </li>
                 <li
                   class="flex items-center gap-1 {/\d/.test(password)
-                    ? 'text-green-600'
+                    ? 'text-green-600 dark:text-green-400'
                     : ''}"
                 >
                   <span
                     class="inline-block h-1.5 w-1.5 rounded-full {/\d/.test(
                       password,
                     )
-                      ? 'bg-green-600'
-                      : 'bg-gray-300'}"
+                      ? 'bg-green-600 dark:bg-green-400'
+                      : 'bg-gray-300 dark:bg-charcoal-500'}"
                   ></span> Zahl
                 </li>
                 <li
                   class="flex items-center gap-1 {/[^A-Za-z0-9]/.test(password)
-                    ? 'text-green-600'
+                    ? 'text-green-600 dark:text-green-400'
                     : ''}"
                 >
                   <span
                     class="inline-block h-1.5 w-1.5 rounded-full {/[^A-Za-z0-9]/.test(
                       password,
                     )
-                      ? 'bg-green-600'
-                      : 'bg-gray-300'}"
+                      ? 'bg-green-600 dark:bg-green-400'
+                      : 'bg-gray-300 dark:bg-charcoal-500'}"
                   ></span> Symbol
                 </li>
                 <li
                   class="flex items-center gap-1 {password.length >= 12
-                    ? 'text-green-600'
+                    ? 'text-green-600 dark:text-green-400'
                     : ''}"
                 >
                   <span
                     class="inline-block h-1.5 w-1.5 rounded-full {password.length >=
                     12
-                      ? 'bg-green-600'
-                      : 'bg-gray-300'}"
+                      ? 'bg-green-600 dark:bg-green-400'
+                      : 'bg-gray-300 dark:bg-charcoal-500'}"
                   ></span> ≥ 12 Zeichen
                 </li>
               </ul>
@@ -422,14 +428,14 @@
 
       <!-- Security / 2FA -->
       <fieldset
-        class="rounded-xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-sm hover:shadow transition overflow-hidden"
+        class="rounded-xl border border-gray-200 dark:border-charcoal-700 bg-white/80 dark:bg-charcoal-800/80 backdrop-blur-sm shadow-sm hover:shadow transition overflow-hidden"
       >
         <legend class="sr-only">Sicherheit</legend>
         <div
-          class="px-6 pt-5 pb-2 flex items-center gap-3 border-b bg-gradient-to-r from-rose-50 to-orange-50"
+          class="px-6 pt-5 pb-2 flex items-center gap-3 border-b dark:border-charcoal-700 bg-gradient-to-r from-rose-50 to-orange-50 dark:from-charcoal-700 dark:to-charcoal-800"
         >
           <div
-            class="h-10 w-10 flex items-center justify-center rounded-full bg-rose-100 text-rose-600"
+            class="h-10 w-10 flex items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400"
           >
             <svg
               class="h-6 w-6"
@@ -445,10 +451,14 @@
             >
           </div>
           <div>
-            <h3 class="text-lg font-medium leading-tight text-gray-700">
+            <h3
+              class="text-lg font-medium leading-tight text-gray-700 dark:text-smoke-200"
+            >
               Sicherheit
             </h3>
-            <p class="text-xs text-gray-700">2FA-Verwaltung & Backup-Codes</p>
+            <p class="text-xs text-gray-700 dark:text-smoke-400">
+              2FA-Verwaltung & Backup-Codes
+            </p>
           </div>
         </div>
         <div class="p-6 space-y-6">
@@ -459,23 +469,23 @@
                 id="reset2fa"
                 type="checkbox"
                 bind:checked={resetTwofa}
-                class="mt-1 h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+                class="mt-1 h-4 w-4 rounded border-gray-300 dark:border-charcoal-600 text-rose-600 focus:ring-rose-500 dark:bg-charcoal-700"
                 on:change={() => {
                   if (resetTwofa) showConfirmReset = true;
                 }}
               />
-              <span class="text-sm text-gray-800">
+              <span class="text-sm text-gray-800 dark:text-smoke-200">
                 <span class="font-medium">2FA zurücksetzen</span>
-                <span class="block text-xs text-gray-700"
+                <span class="block text-xs text-gray-700 dark:text-smoke-400"
                   >Erzwingt Neueinrichtung beim nächsten Login</span
                 >
               </span>
             </label>
             {#if showConfirmReset && resetTwofa}
               <div
-                class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs space-y-3"
+                class="rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-xs space-y-3"
               >
-                <p>
+                <p class="text-red-800 dark:text-red-200">
                   <strong>Achtung:</strong> Nach dem Zurücksetzen muss 2FA sofort
                   neu eingerichtet werden. Fortfahren?
                 </p>
@@ -489,7 +499,7 @@
                   >
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1 rounded bg-gray-200 px-3 py-1.5 text-gray-700 text-xs font-medium hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400/40"
+                    class="inline-flex items-center gap-1 rounded bg-gray-200 dark:bg-charcoal-600 px-3 py-1.5 text-gray-700 dark:text-smoke-200 text-xs font-medium hover:bg-gray-300 dark:hover:bg-charcoal-500 focus:outline-none focus:ring-2 focus:ring-gray-400/40"
                     on:click={() => {
                       resetTwofa = false;
                       showConfirmReset = false;
@@ -501,19 +511,21 @@
           </div>
 
           <!-- Backup Codes -->
-          <div class="space-y-3 border-t pt-4">
+          <div class="space-y-3 border-t dark:border-charcoal-700 pt-4">
             <div
-              class="flex items-center justify-between text-sm text-gray-800"
+              class="flex items-center justify-between text-sm text-gray-800 dark:text-smoke-200"
             >
-              <span class="text-gray-800">Verbleibende Backup-Codes</span>
-              <span class="font-mono text-gray-900"
+              <span class="text-gray-800 dark:text-smoke-200"
+                >Verbleibende Backup-Codes</span
+              >
+              <span class="font-mono text-gray-900 dark:text-smoke-50"
                 >{backupRemaining ?? "–"}</span
               >
             </div>
             <button
               type="button"
               on:click={regenerateBackupCodes}
-              class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50"
+              class="inline-flex items-center gap-1 rounded-lg bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 disabled:opacity-50"
               disabled={regenLoading}
             >
               {#if regenLoading}
@@ -546,7 +558,9 @@
                 <span>Backup-Codes neu generieren</span>
               {/if}
             </button>
-            <p class="text-[11px] text-gray-700 leading-relaxed">
+            <p
+              class="text-[11px] text-gray-700 dark:text-smoke-300 leading-relaxed"
+            >
               Neue Codes ersetzen die alten sofort. Sichere sie an einem
               sicheren Ort (Offline-Dokument / Passwort-Manager).
             </p>
@@ -558,14 +572,14 @@
       <div
         class="lg:col-span-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pt-2"
       >
-        <div class="text-xs text-gray-700 flex-1">
+        <div class="text-xs text-gray-700 dark:text-smoke-300 flex-1">
           Änderungen werden sofort wirksam. E‑Mail-Änderungen erfordern
           Bestätigung. 2FA-Reset führt zum Logout.
         </div>
         <div class="flex gap-3">
           <button
             type="reset"
-            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400/40"
+            class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-smoke-200 hover:bg-gray-50 dark:hover:bg-charcoal-600 focus:outline-none focus:ring-2 focus:ring-gray-400/40"
             on:click={() => {
               password = "";
               resetTwofa = false;
@@ -576,7 +590,7 @@
           >
           <button
             type="submit"
-            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
+            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 dark:bg-blue-500 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 disabled:opacity-50"
             disabled={loading}
           >
             {#if loading}

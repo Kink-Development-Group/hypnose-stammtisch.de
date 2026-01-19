@@ -12,6 +12,7 @@ dist/
 .env.local
 .env.production
 .env.development
+.env.test
 
 # Logs
 logs
@@ -92,7 +93,6 @@ tmp/
 temp/
 
 # Editor directories and files
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -123,10 +123,14 @@ debug_*.php
 test_*.php
 temp_*.php
 
+# PHPUnit
+.phpunit.cache/
+tests/reports/
+
 # Package managers
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
+bun.lockb
 
 # Build artifacts
 *.tgz
@@ -138,3 +142,6 @@ pnpm-lock.yaml
 
 playwright-report/
 test-results/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+backend/tests/reports/*

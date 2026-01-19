@@ -52,6 +52,15 @@
     return days;
   })();
 
+  // Group month days into weeks for proper ARIA grid structure
+  $: monthWeeks = (() => {
+    const weeks = [];
+    for (let i = 0; i < monthDays.length; i += 7) {
+      weeks.push(monthDays.slice(i, i + 7));
+    }
+    return weeks;
+  })();
+
   // Generate week days for week view
   $: weekDays = (() => {
     if (view !== "week") return [];
@@ -268,67 +277,71 @@
     >
       <!-- Day headers -->
       <div class="contents" role="row">
-        {#each ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] as dayName, index (dayName)}
+        {#each [{ full: "Montag", short: "Mo" }, { full: "Dienstag", short: "Di" }, { full: "Mittwoch", short: "Mi" }, { full: "Donnerstag", short: "Do" }, { full: "Freitag", short: "Fr" }, { full: "Samstag", short: "Sa" }, { full: "Sonntag", short: "So" }] as day, index (day.full)}
           <div
-            class="calendar-day-header p-3 text-center text-sm font-medium text-smoke-400 border-b border-charcoal-700"
+            class="calendar-day-header p-1 md:p-3 text-center text-xs md:text-sm font-medium text-smoke-400 border-b border-charcoal-700 truncate"
             role="columnheader"
-            aria-label={dayName}
+            aria-label={day.full}
             id="day-header-{index}"
           >
-            >
-            {dayName}
+            <span class="hidden sm:inline">{day.full}</span>
+            <span class="sm:hidden">{day.short}</span>
           </div>
         {/each}
       </div>
 
-      <!-- Calendar days -->
-      {#each monthDays as day (day.date)}
-        <div
-          class="calendar-day min-h-[120px] p-2 border border-charcoal-700 {day.isCurrentMonth
-            ? 'bg-charcoal-800'
-            : 'bg-charcoal-900 opacity-50'} {day.isToday
-            ? 'ring-2 ring-accent-400'
-            : ''} hover:bg-charcoal-700 transition-colors"
-          role="gridcell"
-          tabindex="0"
-          aria-label="{dayjs(day.date).format('DD. MMMM YYYY')}{day.events
-            .length > 0
-            ? `, ${day.events.length} Event${day.events.length !== 1 ? 's' : ''}`
-            : ''}"
-        >
-          <!-- Day number -->
-          <div class="text-right mb-2">
-            <span
-              class="text-sm {day.isToday
-                ? 'bg-accent-400 text-charcoal-900 w-6 h-6 rounded-full inline-flex items-center justify-center font-medium'
-                : day.isCurrentMonth
-                  ? 'text-smoke-200'
-                  : 'text-smoke-500'}"
+      <!-- Calendar weeks and days -->
+      {#each monthWeeks as week, weekIndex (weekIndex)}
+        <div class="contents" role="row">
+          {#each week as day (day.date)}
+            <div
+              class="calendar-day min-h-[60px] md:min-h-[120px] p-1 md:p-2 border border-charcoal-700 {day.isCurrentMonth
+                ? 'bg-charcoal-800'
+                : 'bg-charcoal-900 opacity-50'} {day.isToday
+                ? 'ring-2 ring-accent-400'
+                : ''} hover:bg-charcoal-700 transition-colors"
+              role="gridcell"
+              tabindex="0"
+              aria-label="{dayjs(day.date).format('DD. MMMM YYYY')}{day.events
+                .length > 0
+                ? `, ${day.events.length} Event${day.events.length !== 1 ? 's' : ''}`
+                : ''}"
             >
-              {day.dayNumber}
-            </span>
-          </div>
-
-          <!-- Events -->
-          <div class="space-y-1">
-            {#each day.events.slice(0, 3) as event (event.id)}
-              <button
-                class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded truncate hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-400"
-                on:click={() => handleEventClick(event)}
-                title="{event.title} - {dayjs(event.startDate).format(
-                  'HH:mm',
-                )} Uhr"
-              >
-                {event.title}
-              </button>
-            {/each}
-
-            {#if day.events.length > 3}
-              <div class="text-xs text-smoke-400 px-2">
-                +{day.events.length - 3} weitere
+              <!-- Day number -->
+              <div class="text-right mb-2">
+                <span
+                  class="text-sm {day.isToday
+                    ? 'bg-accent-400 text-gray-900 w-6 h-6 rounded-full inline-flex items-center justify-center font-medium'
+                    : day.isCurrentMonth
+                      ? 'text-smoke-200'
+                      : 'text-smoke-500'}"
+                >
+                  {day.dayNumber}
+                </span>
               </div>
-            {/if}
-          </div>
+
+              <!-- Events -->
+              <div class="space-y-1">
+                {#each day.events.slice(0, 3) as event (event.id)}
+                  <button
+                    class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded truncate hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-400"
+                    on:click={() => handleEventClick(event)}
+                    title="{event.title} - {dayjs(event.startDate).format(
+                      'HH:mm',
+                    )} Uhr"
+                  >
+                    {event.title}
+                  </button>
+                {/each}
+
+                {#if day.events.length > 3}
+                  <div class="text-xs text-smoke-400 px-2">
+                    +{day.events.length - 3} weitere
+                  </div>
+                {/if}
+              </div>
+            </div>
+          {/each}
         </div>
       {/each}
     </div>
@@ -345,7 +358,7 @@
               </div>
               <div
                 class="text-lg {day.isToday
-                  ? 'bg-accent-400 text-charcoal-900 w-8 h-8 rounded-full inline-flex items-center justify-center font-medium'
+                  ? 'bg-accent-400 text-gray-900 w-8 h-8 rounded-full inline-flex items-center justify-center font-medium'
                   : 'text-smoke-200'}"
               >
                 {day.dayNumber}
@@ -373,33 +386,31 @@
       </div>
     </div>
   {/if}
-
-  <!-- Events summary -->
-  <footer
-    class="mt-6 text-center text-sm text-smoke-400"
-    aria-live="polite"
-    aria-atomic="true"
-  >
-    <span id="events-summary">
-      {events.length} Veranstaltung{events.length !== 1 ? "en" : ""}
-      {view === "month" ? "in diesem Monat" : "in dieser Woche"}
-    </span>
-  </footer>
 </div>
 
 <style>
   .calendar-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0;
+    width: 100%;
+  }
+
+  .contents {
+    display: contents;
+  }
+
+  .calendar-day-header {
+    font-weight: 500;
   }
 
   .calendar-day:focus {
-    outline: 2px solid theme("colors.accent.400");
+    outline: 2px solid #41f2c0; /* accent-400 */
     outline-offset: -2px;
   }
 
   .calendar-day:focus-within {
-    outline: 2px solid theme("colors.accent.400");
+    outline: 2px solid #41f2c0; /* accent-400 */
     outline-offset: -2px;
   }
 
@@ -420,6 +431,10 @@
     min-height: 500px;
   }
 
+  .week-day {
+    min-height: 200px;
+  }
+
   /* High contrast mode support */
   @media (prefers-contrast: high) {
     .calendar-day {
@@ -432,18 +447,52 @@
     }
   }
 
+  /* Mobile styles */
   @media (max-width: 768px) {
     .calendar-grid {
-      font-size: 0.875rem;
-    }
-
-    .calendar-day {
-      min-height: 80px;
+      font-size: 0.75rem;
     }
 
     .week-view .grid {
       grid-template-columns: 1fr;
       gap: 1rem;
+    }
+
+    /* Turn event bars into dots on mobile to save space */
+    .calendar-event {
+      width: 6px;
+      height: 6px;
+      padding: 0;
+      border-radius: 50%;
+      color: transparent;
+      overflow: hidden;
+      margin: 0 auto 2px auto;
+      display: inline-block;
+    }
+
+    /* Center the dots container */
+    .calendar-day .space-y-1 {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2px;
+    }
+
+    /* Override tailwind space-y-1 */
+    .calendar-day .space-y-1 > :not([hidden]) ~ :not([hidden]) {
+      margin-top: 0;
+    }
+
+    /* Remove the "+X more" text on mobile */
+    .calendar-day .text-xs.text-smoke-400 {
+      display: none;
+    }
+  }
+
+  /* Very small screens */
+  @media (max-width: 480px) {
+    .calendar-day {
+      min-height: 50px;
     }
   }
 </style>
