@@ -17,7 +17,7 @@ class Config
     /**
      * Load configuration from environment file
      */
-    public static function load(string $path = null): void
+    public static function load(?string $path = null): void
     {
         if (self::$loaded) {
             return;
