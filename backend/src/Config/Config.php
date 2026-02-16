@@ -204,6 +204,16 @@ class Config
     }
 
     /**
+     * Reset configuration to allow reloading from current environment.
+     * Intended for testing purposes only.
+     */
+    public static function reset(): void
+    {
+        self::$config = [];
+        self::$loaded = false;
+    }
+
+    /**
      * Convenience accessor for the application name with optional sanitization.
      */
     public static function getAppName(bool $sanitize = false): string

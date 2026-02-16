@@ -23,7 +23,6 @@ class ICSGeneratorMarkdownTest extends TestCase
     // Access private method via reflection
     $reflection = new ReflectionClass(ICSGenerator::class);
     $this->markdownToPlainText = $reflection->getMethod('markdownToPlainText');
-    $this->markdownToPlainText->setAccessible(true);
   }
 
   /**
