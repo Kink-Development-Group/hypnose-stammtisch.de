@@ -742,6 +742,7 @@
           <form
             on:submit|preventDefault={enhancedHandleSave}
             class="flex-1 overflow-y-auto px-6 py-6 space-y-10"
+            novalidate
           >
             <!-- BASIS -->
             <fieldset
@@ -906,10 +907,9 @@
                     bind:value={newEvent.end_time}
                   />
                   <div class="md:col-span-2">
-                    <label
-                      for="rrule-builder"
+                    <span
                       class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Wiederholung *</label
+                      >Wiederholung *</span
                     >
                     <RecurrenceBuilder
                       value={newEvent.rrule}
