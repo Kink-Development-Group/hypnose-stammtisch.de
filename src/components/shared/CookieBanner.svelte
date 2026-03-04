@@ -10,7 +10,7 @@
 {#if showBanner}
   <!-- Backdrop overlay - must be before dialog in DOM for correct stacking -->
   <div
-    class="fixed inset-0 bg-charcoal-950/60 z-40"
+    class="fixed inset-0 bg-charcoal-950/60 dark:bg-charcoal-950/80 z-40"
     transition:fade={{ duration: 200 }}
     aria-hidden="true"
   ></div>
