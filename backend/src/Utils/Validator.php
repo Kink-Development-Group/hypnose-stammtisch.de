@@ -112,7 +112,7 @@ class Validator
     /**
      * Validate length of field
      */
-    public function length(string $field, int $min, int $max = null): self
+    public function length(string $field, int $min, ?int $max = null): self
     {
         if (isset($this->data[$field]) && !self::isValidLength($this->data[$field], $min, $max)) {
             $maxText = $max ? " and max {$max}" : '';
@@ -167,7 +167,7 @@ class Validator
     /**
      * Validate string length
      */
-    public static function isValidLength(string $value, int $min, int $max = null): bool
+    public static function isValidLength(string $value, int $min, ?int $max = null): bool
     {
         $length = mb_strlen($value, 'UTF-8');
 
@@ -201,7 +201,7 @@ class Validator
     /**
      * Validate integer
      */
-    public static function isValidInteger(mixed $value, int $min = null, int $max = null): bool
+    public static function isValidInteger(mixed $value, ?int $min = null, ?int $max = null): bool
     {
         if (!is_numeric($value)) {
             return false;
