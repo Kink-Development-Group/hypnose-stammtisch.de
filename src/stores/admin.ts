@@ -1011,6 +1011,7 @@ export class AdminAPI {
       password?: string;
       role?: string;
       is_active?: boolean;
+      reset_twofa?: boolean;
     },
   ) {
     adminNotifications.info("Benutzer wird aktualisiert...");

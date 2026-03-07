@@ -92,6 +92,9 @@ class UserController
         }
         $params[] = $current['id'];
         Database::execute('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?', $params);
+        if (!empty($input['reset_twofa'])) {
+            Database::execute('DELETE FROM user_twofa_backup_codes WHERE user_id = ?', [$current['id']]);
+        }
         AuditLogger::log('user.profile_update', 'user', (string)$current['id'], ['fields' => $fields]);
         $updated = AdminAuth::getCurrentUser();
         Response::success(['updated' => true, 'user' => $updated], 'Profile updated');
@@ -127,6 +130,10 @@ class UserController
         }
         if ($actor['id'] == $id && isset($input['role']) && $input['role'] !== 'head') {
             Response::error('Cannot downgrade own role', 400);
+            return;
+        }
+        if ($actor['id'] == $id && !empty($input['reset_twofa'])) {
+            Response::error('Use your profile settings to reset your own 2FA', 400);
             return;
         }
         if (!$validator->isValid() || $errors) {
@@ -179,6 +186,9 @@ class UserController
         }
         $params[] = $id;
         Database::execute('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?', $params);
+        if (!empty($input['reset_twofa'])) {
+            Database::execute('DELETE FROM user_twofa_backup_codes WHERE user_id = ?', [$id]);
+        }
         AuditLogger::log('admin.user_update', 'user', (string)$id, ['fields' => $fields]);
         $user = Database::fetchOne('SELECT id, username, email, role, is_active, last_login, created_at, updated_at FROM users WHERE id = ?', [$id]);
         Response::success(['updated' => true, 'user' => $user], 'User updated');

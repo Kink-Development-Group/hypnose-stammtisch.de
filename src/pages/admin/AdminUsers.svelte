@@ -13,6 +13,7 @@
     password?: string;
     role: Role;
     is_active: boolean;
+    reset_twofa?: boolean;
   }
 
   let currentUser: User | null = null;
@@ -29,6 +30,7 @@
     password: "",
     role: Role.ADMIN,
     is_active: true,
+    reset_twofa: false,
   };
 
   $: totalUsers = users.length;
@@ -131,6 +133,9 @@
       ) {
         delete updateData.password;
       }
+      if (!updateData.reset_twofa) {
+        delete updateData.reset_twofa;
+      }
 
       const result = await AdminAPI.updateUser(
         editingUser.id,
@@ -140,11 +145,14 @@
           password?: string;
           role?: string;
           is_active?: boolean;
+          reset_twofa?: boolean;
         },
       );
 
       if (result.success) {
-        success = `Benutzer "${formData.username}" wurde erfolgreich aktualisiert.`;
+        success = formData.reset_twofa
+          ? `Benutzer "${formData.username}" wurde aktualisiert und muss 2FA neu einrichten.`
+          : `Benutzer "${formData.username}" wurde erfolgreich aktualisiert.`;
         editingUser = null;
         resetForm();
         await loadUsers();
@@ -201,6 +209,7 @@
         password: "", // Don't prefill password
         role: user.role,
         is_active: user.is_active,
+        reset_twofa: false,
       };
     } else {
       formData = {
@@ -209,6 +218,7 @@
         password: "",
         role: Role.ADMIN,
         is_active: true,
+        reset_twofa: false,
       };
     }
   }
@@ -760,6 +770,57 @@
                 </div>
               </div>
             </div>
+
+            {#if editingUser && currentUser && editingUser.id !== currentUser.id}
+              <div class="pb-2 border-t border-gray-200 dark:border-charcoal-700 pt-6">
+                <h4
+                  class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-4 flex items-center"
+                >
+                  <svg
+                    class="w-5 h-5 mr-2 text-rose-600 dark:text-rose-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"
+                    />
+                  </svg>
+                  2FA-Verwaltung
+                </h4>
+
+                <label
+                  for="reset_twofa"
+                  class="flex items-start justify-between gap-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/80 dark:bg-rose-900/20 p-4"
+                >
+                  <div class="space-y-1">
+                    <span class="block text-sm font-semibold text-rose-800 dark:text-rose-200">
+                      2FA für diesen Benutzer zurücksetzen
+                    </span>
+                    <span class="block text-xs text-rose-700 dark:text-rose-300 leading-relaxed">
+                      Löscht das hinterlegte 2FA-Secret und alle Backup-Codes. Beim nächsten Login muss 2FA neu eingerichtet werden.
+                    </span>
+                  </div>
+                  <input
+                    id="reset_twofa"
+                    type="checkbox"
+                    bind:checked={formData.reset_twofa}
+                    class="mt-1 h-5 w-5 rounded border-rose-300 dark:border-rose-700 text-rose-600 focus:ring-rose-500 dark:bg-charcoal-700"
+                  />
+                </label>
+
+                {#if formData.reset_twofa}
+                  <div
+                    class="mt-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-800 dark:text-amber-200"
+                  >
+                    Der Reset wird erst beim Speichern ausgeführt. Bestehende Backup-Codes werden sofort ungültig.
+                  </div>
+                {/if}
+              </div>
+            {/if}
 
             <!-- Form Actions -->
             <div
