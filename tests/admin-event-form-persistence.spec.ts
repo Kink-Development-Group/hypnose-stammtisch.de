@@ -33,10 +33,13 @@ async function bypassComplianceModals(page: Page): Promise<void> {
 
   const consentValue = encodeURIComponent(JSON.stringify(consentRecord));
 
-  await page.addInitScript(({ encodedConsent }) => {
-    document.cookie = "age_verified=true; path=/; SameSite=Lax";
-    document.cookie = `cookie_consent=${encodedConsent}; path=/; SameSite=Lax`;
-  }, { encodedConsent: consentValue });
+  await page.addInitScript(
+    ({ encodedConsent }) => {
+      document.cookie = "age_verified=true; path=/; SameSite=Lax";
+      document.cookie = `cookie_consent=${encodedConsent}; path=/; SameSite=Lax`;
+    },
+    { encodedConsent: consentValue },
+  );
 
   await page.context().addCookies([
     {
