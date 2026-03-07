@@ -12,8 +12,8 @@
   let statistics = false;
   let marketing = false;
 
-  // Update local state when store changes or modal opens
-  $: if (currentConsent) {
+  // Update local state when modal opens and consent data is available
+  $: if (showSettings && currentConsent) {
     preferences = currentConsent.preferences;
     statistics = currentConsent.statistics;
     marketing = currentConsent.marketing;
