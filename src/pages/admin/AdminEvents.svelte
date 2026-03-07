@@ -263,6 +263,9 @@
       start_time: "",
       end_time: "",
     };
+    activeSection = "basis";
+    formErrors = [];
+    tagInput = "";
     editingItem = null;
   }
 
