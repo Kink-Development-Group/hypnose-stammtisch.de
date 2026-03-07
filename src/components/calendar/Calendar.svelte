@@ -392,8 +392,13 @@
   .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-auto-rows: minmax(60px, auto);
     gap: 0;
     width: 100%;
+  }
+
+  .calendar-day {
+    aspect-ratio: auto;
   }
 
   .contents {
