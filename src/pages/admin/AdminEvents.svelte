@@ -640,7 +640,7 @@
         class="fixed inset-0 bg-gray-700/50 dark:bg-charcoal-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-[9999]"
       >
         <div
-          class="relative mx-auto mt-8 md:mt-12 border dark:border-charcoal-600 w-11/12 max-w-5xl shadow-2xl rounded-lg bg-white dark:bg-charcoal-800 flex flex-col max-h-[92vh]"
+          class="relative mx-auto my-8 md:my-12 border dark:border-charcoal-600 w-11/12 max-w-5xl shadow-2xl rounded-lg bg-white dark:bg-charcoal-800 flex flex-col overflow-visible min-h-[78vh]"
         >
           <!-- Header -->
           <div
@@ -744,7 +744,7 @@
           <!-- Body -->
           <form
             on:submit|preventDefault={enhancedHandleSave}
-            class="flex-1 overflow-y-auto px-6 py-6 space-y-10"
+            class="flex-1 overflow-visible px-6 py-6 space-y-10"
           >
             <!-- BASIS -->
             <fieldset

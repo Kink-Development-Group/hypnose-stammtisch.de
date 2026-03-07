@@ -102,6 +102,19 @@ async function dismissComplianceUiIfNeeded(page: Page): Promise<void> {
   }
 }
 
+async function openCreateEventModal(page: Page): Promise<void> {
+  await page.goto("/admin/events");
+  await dismissComplianceUiIfNeeded(page);
+  await expect(
+    page.getByRole("heading", { name: "Veranstaltungen", level: 1 }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Neue Veranstaltung" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Neue Veranstaltung erstellen" }),
+  ).toBeVisible();
+}
+
 test.describe("Admin event creation form", () => {
   test("preserves time values when switching away from the Zeit tab before saving", async ({
     page,
@@ -127,16 +140,7 @@ test.describe("Admin event creation form", () => {
       });
     });
 
-    await page.goto("/admin/events");
-    await dismissComplianceUiIfNeeded(page);
-    await expect(
-      page.getByRole("heading", { name: "Veranstaltungen", level: 1 }),
-    ).toBeVisible();
-
-    await page.getByRole("button", { name: "Neue Veranstaltung" }).click();
-    await expect(
-      page.getByRole("heading", { name: "Neue Veranstaltung erstellen" }),
-    ).toBeVisible();
+    await openCreateEventModal(page);
 
     await page.locator("#event-title").fill("Regressionstest Event");
 
@@ -166,5 +170,54 @@ test.describe("Admin event creation form", () => {
       start_datetime: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T09:00$/),
       end_datetime: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T12:00$/),
     });
+  });
+
+  test("renders date picker popovers without clipping ancestors inside the modal", async ({
+    page,
+  }) => {
+    await bypassComplianceModals(page);
+    await mockAdminSession(page);
+
+    await openCreateEventModal(page);
+    await page.getByRole("button", { name: "Zeit" }).click();
+    await page.locator("#start-datetime").click();
+
+    await expect(
+      page.getByRole("dialog", { name: "Datum und Zeit auswählen" }),
+    ).toBeVisible();
+
+    const hasClippingAncestor = await page.evaluate(() => {
+      const dialog = document.querySelector(
+        '[role="dialog"][aria-label="Datum und Zeit auswählen"]',
+      );
+
+      if (!dialog) {
+        return true;
+      }
+
+      let current = dialog.parentElement;
+      while (current) {
+        if (current.classList.contains("fixed")) {
+          break;
+        }
+
+        const style = window.getComputedStyle(current);
+        const overflowValues = [
+          style.overflow,
+          style.overflowX,
+          style.overflowY,
+        ].join(" ");
+
+        if (/(auto|hidden|scroll)/.test(overflowValues)) {
+          return true;
+        }
+
+        current = current.parentElement;
+      }
+
+      return false;
+    });
+
+    expect(hasClippingAncestor).toBe(false);
   });
 });
