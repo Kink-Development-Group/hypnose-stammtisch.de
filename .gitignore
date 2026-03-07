@@ -112,6 +112,7 @@ Thumbs.db
 
 # Composer
 composer.lock
+!backend/composer.lock
 vendor/
 
 # PHP
