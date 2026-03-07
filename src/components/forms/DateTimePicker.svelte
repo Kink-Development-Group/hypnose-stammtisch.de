@@ -3,6 +3,7 @@
   import "dayjs/locale/de";
   import { onDestroy, onMount, tick } from "svelte";
   import Portal from "../ui/Portal.svelte";
+  import { getFloatingPickerStyle } from "./floatingPicker";
 
   dayjs.locale("de");
 
@@ -130,26 +131,10 @@
       return;
     }
 
-    const rect = inputRef.getBoundingClientRect();
-    const estimatedHeight = 620;
-    const availableHeight = Math.min(estimatedHeight, window.innerHeight - 16);
-    const minWidth = Math.max(rect.width, 320);
-    const left = Math.max(
-      8,
-      Math.min(rect.left, window.innerWidth - minWidth - 8),
-    );
-    const spaceBelow = window.innerHeight - rect.bottom - 8;
-    const spaceAbove = rect.top - 8;
-    const shouldPlaceAbove =
-      spaceBelow < availableHeight && spaceAbove > spaceBelow;
-    const top = shouldPlaceAbove
-      ? Math.max(8, rect.top - availableHeight)
-      : Math.max(
-          8,
-          Math.min(rect.bottom + 8, window.innerHeight - availableHeight - 8),
-        );
-
-    pickerStyle = `top:${top}px;left:${left}px;min-width:${minWidth}px;max-width:calc(100vw - 1rem);max-height:calc(100vh - 1rem);overflow-y:auto;`;
+    pickerStyle = getFloatingPickerStyle(inputRef, {
+      estimatedHeight: 620,
+      minWidth: 320,
+    });
   }
 
   function selectDay(day: number | null) {
@@ -279,11 +264,7 @@
   function handleClickOutside(event: MouseEvent) {
     if (isMobile) return; // Don't close on mobile, use explicit close button
     const target = event.target as Node;
-    if (containerRef?.contains(target) || dialogRef?.contains(target)) {
-      return;
-    }
-
-    if (containerRef && !containerRef.contains(target)) {
+    if (!containerRef?.contains(target) && !dialogRef?.contains(target)) {
       close();
     }
   }

@@ -36,6 +36,7 @@ class UserController
             Response::error('Method not allowed', 405);
             return;
         }
+        AdminAuth::requireCSRF();
         $current = AdminAuth::getCurrentUser();
         if (!$current) {
             Response::unauthorized();
@@ -129,6 +130,7 @@ class UserController
             Response::error('Method not allowed', 405);
             return;
         }
+        AdminAuth::requireCSRF();
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $validator = new Validator($input);
         if (isset($input['email'])) {
