@@ -291,17 +291,6 @@ class AdminAuth
             }
         }
 
-        // Debug logging for CSRF issues (can be removed after debugging)
-        if ($providedToken === null) {
-            error_log('CSRF Debug - No token found. Session token exists: ' . (isset($_SESSION['csrf_token']) ? 'yes' : 'no'));
-            error_log('CSRF Debug - HTTP_X_CSRF_TOKEN: ' . ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? 'not set'));
-            if (function_exists('getallheaders')) {
-                $allHeaders = getallheaders();
-                $csrfHeaders = array_filter($allHeaders, fn($k) => stripos($k, 'csrf') !== false, ARRAY_FILTER_USE_KEY);
-                error_log('CSRF Debug - Headers with csrf: ' . json_encode($csrfHeaders));
-            }
-        }
-
         return $providedToken && hash_equals($_SESSION['csrf_token'], $providedToken);
     }
 

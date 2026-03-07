@@ -7,6 +7,7 @@
   let username = "";
   let email = "";
   let password = "";
+  let currentPassword = "";
   let loading = false;
   let message = "";
   let error = "";
@@ -88,6 +89,12 @@
   }
 
   async function saveProfile() {
+    if (resetTwofa && !currentPassword.trim()) {
+      error = "Bitte gib dein aktuelles Passwort ein, um 2FA zurückzusetzen.";
+      message = "";
+      return;
+    }
+
     loading = true;
     error = "";
     message = "";
@@ -95,7 +102,10 @@
     if (username) body.username = username;
     if (email) body.email = email;
     if (password) body.password = password;
-    if (resetTwofa) body.reset_twofa = true;
+    if (resetTwofa) {
+      body.reset_twofa = true;
+      body.current_password = currentPassword;
+    }
 
     const res = await fetch("/api/admin/users/me", {
       method: "PUT",
@@ -109,6 +119,7 @@
         ? "Profil aktualisiert. 2FA wurde zurückgesetzt – bitte neu einrichten beim nächsten Login."
         : "Profil gespeichert.";
       password = "";
+      currentPassword = "";
       resetTwofa = false;
       // Wenn 2FA reset: ausloggen damit Setup erzwungen wird
       if (body.reset_twofa) {
@@ -506,6 +517,21 @@
                     }}>Abbrechen</button
                   >
                 </div>
+                <div class="space-y-1">
+                  <label
+                    for="current-password-reset-2fa"
+                    class="block text-xs font-medium text-red-900 dark:text-red-100"
+                    >Aktuelles Passwort zur Bestätigung</label
+                  >
+                  <input
+                    id="current-password-reset-2fa"
+                    type="password"
+                    bind:value={currentPassword}
+                    class="w-full rounded-lg border border-red-200 dark:border-red-700 bg-white dark:bg-charcoal-700 px-3 py-2 text-sm text-gray-900 dark:text-smoke-50 placeholder-gray-500 dark:placeholder-smoke-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 transition"
+                    placeholder="Aktuelles Passwort"
+                    autocomplete="current-password"
+                  />
+                </div>
               </div>
             {/if}
           </div>
@@ -582,6 +608,7 @@
             class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-smoke-200 hover:bg-gray-50 dark:hover:bg-charcoal-600 focus:outline-none focus:ring-2 focus:ring-gray-400/40"
             on:click={() => {
               password = "";
+              currentPassword = "";
               resetTwofa = false;
               showConfirmReset = false;
               error = "";

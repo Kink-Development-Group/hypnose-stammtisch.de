@@ -43,7 +43,7 @@ class Database
                 $config['charset']
             );
 
-            self::$connection = @new PDO(
+            self::$connection = new PDO(
                 $dsn,
                 $config['user'],
                 $config['pass'],

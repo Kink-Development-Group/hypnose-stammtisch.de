@@ -1,32 +1,5 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
-
-async function fulfillJson(route: Route, body: unknown): Promise<void> {
-  await route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify(body),
-  });
-}
-
-async function bypassComplianceModals(page: Page): Promise<void> {
-  const consentRecord = {
-    timestamp: new Date().toISOString(),
-    version: "1.0.0",
-    consent: {
-      essential: true,
-      preferences: true,
-      statistics: false,
-      marketing: false,
-    },
-  };
-
-  const consentValue = encodeURIComponent(JSON.stringify(consentRecord));
-
-  await page.addInitScript(({ encodedConsent }) => {
-    document.cookie = "age_verified=true; path=/; SameSite=Lax";
-    document.cookie = `cookie_consent=${encodedConsent}; path=/; SameSite=Lax`;
-  }, { encodedConsent: consentValue });
-}
+import { expect, test, type Page } from "@playwright/test";
+import { bypassComplianceModals, fulfillJson } from "./helpers/ui";
 
 async function mockMapApi(page: Page): Promise<void> {
   await page.route("**/api/stammtisch-locations/meta", async (route) => {
@@ -100,9 +73,9 @@ test.describe("Map popup theme", () => {
     expect(popupStyles.backgroundImage).toContain("31, 41, 55");
     expect(popupStyles.borderColor).not.toBe("rgb(255, 255, 255)");
 
-    const titleColor = await page.locator(".stammtisch-popup .popup-title").evaluate((element) =>
-      window.getComputedStyle(element).color,
-    );
+    const titleColor = await page
+      .locator(".stammtisch-popup .popup-title")
+      .evaluate((element) => window.getComputedStyle(element).color);
     expect(titleColor).toBe("rgb(243, 244, 246)");
   });
 });

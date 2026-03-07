@@ -640,7 +640,7 @@
         class="fixed inset-0 bg-gray-700/50 dark:bg-charcoal-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-[9999]"
       >
         <div
-          class="relative mx-auto my-8 md:my-12 border dark:border-charcoal-600 w-11/12 max-w-5xl shadow-2xl rounded-lg bg-white dark:bg-charcoal-800 flex flex-col overflow-visible min-h-[78vh]"
+          class="relative mx-auto my-8 md:my-12 border dark:border-charcoal-600 w-11/12 max-w-5xl max-h-[calc(100vh-4rem)] shadow-2xl rounded-lg bg-white dark:bg-charcoal-800 flex flex-col overflow-hidden min-h-[78vh]"
         >
           <!-- Header -->
           <div
@@ -744,12 +744,14 @@
           <!-- Body -->
           <form
             on:submit|preventDefault={enhancedHandleSave}
-            class="flex-1 overflow-visible px-6 py-6 space-y-10"
+            class="flex-1 min-h-0 overflow-y-auto overflow-x-visible px-6 py-6 space-y-10"
           >
             <!-- BASIS -->
             <fieldset
               class="space-y-6"
               aria-labelledby="basis-heading"
+              aria-hidden={activeSection !== "basis"}
+              disabled={activeSection !== "basis"}
               class:hidden={activeSection !== "basis"}
             >
               <legend id="basis-heading" class="sr-only"
@@ -861,6 +863,8 @@
             <fieldset
               class="space-y-6"
               aria-labelledby="zeit-heading"
+              aria-hidden={activeSection !== "zeit"}
+              disabled={activeSection !== "zeit"}
               class:hidden={activeSection !== "zeit"}
             >
               <legend id="zeit-heading" class="sr-only"
@@ -935,6 +939,8 @@
             <fieldset
               class="space-y-6"
               aria-labelledby="ort-heading"
+              aria-hidden={activeSection !== "ort"}
+              disabled={activeSection !== "ort"}
               class:hidden={activeSection !== "ort"}
             >
               <legend id="ort-heading" class="sr-only">Ort & Teilnahme</legend>
@@ -1056,6 +1062,8 @@
             <fieldset
               class="space-y-6"
               aria-labelledby="adv-heading"
+              aria-hidden={activeSection !== "erweitert"}
+              disabled={activeSection !== "erweitert"}
               class:hidden={activeSection !== "erweitert"}
             >
               <legend id="adv-heading" class="sr-only"

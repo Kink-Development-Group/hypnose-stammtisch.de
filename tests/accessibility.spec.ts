@@ -1,39 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
-
-/**
- * Helper function to bypass compliance modals (Age Verification & Cookie Consent)
- * Sets the required cookies before navigating to the page
- */
-async function bypassComplianceModals(page: Page): Promise<void> {
-  // Create a proper ConsentRecord matching the format expected by the store
-  const consentRecord = {
-    timestamp: new Date().toISOString(),
-    version: "1.0.0", // Must match CONSENT_VERSION in compliance.ts
-    consent: {
-      essential: true,
-      preferences: true,
-      statistics: false,
-      marketing: false,
-    },
-  };
-
-  // Set cookies to bypass modals
-  await page.context().addCookies([
-    {
-      name: "age_verified",
-      value: "true",
-      domain: "127.0.0.1",
-      path: "/",
-    },
-    {
-      name: "cookie_consent",
-      value: encodeURIComponent(JSON.stringify(consentRecord)),
-      domain: "127.0.0.1",
-      path: "/",
-    },
-  ]);
-}
+import { expect, test } from "@playwright/test";
+import { bypassComplianceModals } from "./helpers/ui";
 
 test.describe("Accessibility Tests", () => {
   test.beforeEach(async ({ page }) => {

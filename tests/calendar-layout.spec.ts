@@ -1,32 +1,5 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
-
-async function fulfillJson(route: Route, body: unknown): Promise<void> {
-  await route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify(body),
-  });
-}
-
-async function bypassComplianceModals(page: Page): Promise<void> {
-  const consentRecord = {
-    timestamp: new Date().toISOString(),
-    version: "1.0.0",
-    consent: {
-      essential: true,
-      preferences: true,
-      statistics: false,
-      marketing: false,
-    },
-  };
-
-  const consentValue = encodeURIComponent(JSON.stringify(consentRecord));
-
-  await page.addInitScript(({ encodedConsent }) => {
-    document.cookie = "age_verified=true; path=/; SameSite=Lax";
-    document.cookie = `cookie_consent=${encodedConsent}; path=/; SameSite=Lax`;
-  }, { encodedConsent: consentValue });
-}
+import { expect, test, type Page } from "@playwright/test";
+import { bypassComplianceModals, fulfillJson } from "./helpers/ui";
 
 async function mockCalendarEvents(page: Page): Promise<void> {
   const baseDate = "2026-03-18";

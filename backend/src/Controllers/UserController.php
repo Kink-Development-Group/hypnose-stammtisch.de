@@ -61,6 +61,23 @@ class UserController
             Response::error('Validation failed', 400, array_merge($validator->getErrors(), $errors));
             return;
         }
+        if (!empty($input['reset_twofa'])) {
+            $currentPassword = (string)($input['current_password'] ?? '');
+            if ($currentPassword === '') {
+                Response::error('Current password required to reset 2FA', 400, [
+                    'current_password' => ['Current password is required to reset 2FA']
+                ]);
+                return;
+            }
+
+            $account = Database::fetchOne('SELECT password_hash FROM users WHERE id = ?', [$current['id']]);
+            if (!$account || empty($account['password_hash']) || !password_verify($currentPassword, $account['password_hash'])) {
+                Response::error('Current password is incorrect', 403, [
+                    'current_password' => ['Current password is incorrect']
+                ]);
+                return;
+            }
+        }
         $fields = [];
         $params = [];
         if (isset($input['username']) && $input['username'] !== $current['username']) {
@@ -69,7 +86,7 @@ class UserController
         }
         if (isset($input['email']) && $input['email'] !== $current['email']) {
             // create pending email change with token
-            $token = bin2hex(random_bytes(16));
+            $token = self::generateSecureToken();
             $fields[] = 'pending_email = ?';
             $params[] = $input['email'];
             $fields[] = 'email_change_token = ?';
@@ -150,7 +167,7 @@ class UserController
         foreach (['username', 'email'] as $f) {
             if (isset($input[$f])) {
                 if ($f === 'email') {
-                    $token = bin2hex(random_bytes(16));
+                    $token = self::generateSecureToken();
                     $fields[] = 'pending_email = ?';
                     $params[] = $input[$f];
                     $fields[] = 'email_change_token = ?';
@@ -197,5 +214,12 @@ class UserController
     private static function sendEmailChangeConfirmation(?string $oldEmail, string $newEmail, string $token): void
     {
         EmailService::sendEmailChangeConfirmation($oldEmail, $newEmail, $token);
+    }
+
+    private static function generateSecureToken(): string
+    {
+        /** @var string $bytes */
+        $bytes = \call_user_func('random_bytes', 16);
+        return bin2hex($bytes);
     }
 }

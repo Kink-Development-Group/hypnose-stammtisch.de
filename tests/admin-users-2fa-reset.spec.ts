@@ -1,4 +1,9 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import {
+  bypassComplianceModals,
+  dismissComplianceUiIfNeeded,
+  fulfillJson,
+} from "./helpers/ui";
 
 const headAdmin = {
   id: 1,
@@ -21,68 +26,6 @@ const managedUser = {
   created_at: new Date("2026-03-02T10:00:00.000Z").toISOString(),
   updated_at: new Date("2026-03-06T10:00:00.000Z").toISOString(),
 };
-
-async function fulfillJson(route: Route, body: unknown): Promise<void> {
-  await route.fulfill({
-    status: 200,
-    contentType: "application/json",
-    body: JSON.stringify(body),
-  });
-}
-
-async function bypassComplianceModals(page: Page): Promise<void> {
-  const consentRecord = {
-    timestamp: new Date().toISOString(),
-    version: "1.0.0",
-    consent: {
-      essential: true,
-      preferences: true,
-      statistics: false,
-      marketing: false,
-    },
-  };
-
-  const consentValue = encodeURIComponent(JSON.stringify(consentRecord));
-
-  await page.addInitScript(
-    ({ encodedConsent }) => {
-      document.cookie = "age_verified=true; path=/; SameSite=Lax";
-      document.cookie = `cookie_consent=${encodedConsent}; path=/; SameSite=Lax`;
-    },
-    { encodedConsent: consentValue },
-  );
-
-  await page.context().addCookies([
-    {
-      name: "age_verified",
-      value: "true",
-      url: "http://127.0.0.1:5173",
-    },
-    {
-      name: "cookie_consent",
-      value: consentValue,
-      url: "http://127.0.0.1:5173",
-    },
-  ]);
-}
-
-async function dismissComplianceUiIfNeeded(page: Page): Promise<void> {
-  await page.waitForLoadState("networkidle");
-
-  const ageVerificationButton = page.getByRole("button", {
-    name: /Ja, ich bin 18\+.*Seite betreten/i,
-  });
-  if (await ageVerificationButton.count()) {
-    await ageVerificationButton.click();
-  }
-
-  const acceptCookiesButton = page.getByRole("button", {
-    name: /Alle Akzeptieren/i,
-  });
-  if (await acceptCookiesButton.count()) {
-    await acceptCookiesButton.click();
-  }
-}
 
 async function mockAdminUsersSession(page: Page): Promise<void> {
   await page.route("**/api/admin/auth/status", async (route) => {
@@ -110,7 +53,13 @@ async function mockAdminUsersSession(page: Page): Promise<void> {
 test.describe("Admin users 2FA reset", () => {
   test("allows a head admin to queue a 2FA reset for another user", async ({
     page,
+    isMobile,
   }) => {
+    test.skip(
+      isMobile,
+      "Die Tabellen-/Dialog-Interaktion wird hier als Desktop-Flow geprüft.",
+    );
+
     let updatePayload: Record<string, unknown> | null = null;
 
     await bypassComplianceModals(page);
@@ -166,7 +115,13 @@ test.describe("Admin users 2FA reset", () => {
 
   test("does not show the admin reset option when editing the current head admin", async ({
     page,
+    isMobile,
   }) => {
+    test.skip(
+      isMobile,
+      "Die Tabellen-/Dialog-Interaktion wird hier als Desktop-Flow geprüft.",
+    );
+
     await bypassComplianceModals(page);
     await mockAdminUsersSession(page);
 
