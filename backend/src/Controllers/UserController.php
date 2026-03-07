@@ -147,11 +147,11 @@ class UserController
             Response::error('Invalid role', 400);
             return;
         }
-        if ($actor['id'] == $id && isset($input['role']) && $input['role'] !== 'head') {
+        if ((string)$actor['id'] === $id && isset($input['role']) && $input['role'] !== 'head') {
             Response::error('Cannot downgrade own role', 400);
             return;
         }
-        if ($actor['id'] == $id && !empty($input['reset_twofa'])) {
+        if ((string)$actor['id'] === $id && !empty($input['reset_twofa'])) {
             Response::error('Use your profile settings to reset your own 2FA', 400);
             return;
         }
@@ -220,8 +220,6 @@ class UserController
 
     private static function generateSecureToken(): string
     {
-        /** @var string $bytes */
-        $bytes = \call_user_func('random_bytes', 16);
-        return bin2hex($bytes);
+        return bin2hex(random_bytes(16));
     }
 }
