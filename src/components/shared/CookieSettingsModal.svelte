@@ -7,13 +7,13 @@
   $: showSettings = $complianceStore.showCookieSettings;
   $: currentConsent = $complianceStore.cookieConsent;
 
-  // Local state for form
-  let preferences = currentConsent.preferences;
-  let statistics = currentConsent.statistics;
-  let marketing = currentConsent.marketing;
+  // Local state for form - initialized with defaults, updated reactively below
+  let preferences = false;
+  let statistics = false;
+  let marketing = false;
 
-  // Update local state when store changes
-  $: if (showSettings) {
+  // Update local state when modal opens and consent data is available
+  $: if (showSettings && currentConsent) {
     preferences = currentConsent.preferences;
     statistics = currentConsent.statistics;
     marketing = currentConsent.marketing;

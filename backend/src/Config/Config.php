@@ -17,7 +17,7 @@ class Config
     /**
      * Load configuration from environment file
      */
-    public static function load(string $path = null): void
+    public static function load(?string $path = null): void
     {
         if (self::$loaded) {
             return;
@@ -201,6 +201,16 @@ class Config
         }
 
         return self::$config;
+    }
+
+    /**
+     * Reset configuration to allow reloading from current environment.
+     * Intended for testing purposes only.
+     */
+    public static function reset(): void
+    {
+        self::$config = [];
+        self::$loaded = false;
     }
 
     /**

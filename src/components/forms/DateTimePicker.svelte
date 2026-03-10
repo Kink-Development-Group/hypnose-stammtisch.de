@@ -1,7 +1,9 @@
 <script lang="ts">
   import dayjs from "dayjs";
   import "dayjs/locale/de";
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
+  import Portal from "../ui/Portal.svelte";
+  import { getFloatingPickerStyle } from "./floatingPicker";
 
   dayjs.locale("de");
 
@@ -23,6 +25,8 @@
   let isOpen = false;
   let containerRef: HTMLDivElement;
   let inputRef: HTMLButtonElement;
+  let dialogRef: HTMLDivElement;
+  let pickerStyle = "";
 
   // Parse current value
   $: parsedValue = value ? dayjs(value) : null;
@@ -104,7 +108,7 @@
     "Dezember",
   ];
 
-  function toggle() {
+  async function toggle() {
     if (disabled) return;
     isOpen = !isOpen;
     if (isOpen) {
@@ -112,11 +116,25 @@
       viewDate = parsedValue || dayjs();
       hours = parsedValue?.hour() ?? 12;
       minutes = parsedValue?.minute() ?? 0;
+      await tick();
+      updatePickerPosition();
     }
   }
 
   function close() {
     isOpen = false;
+  }
+
+  function updatePickerPosition() {
+    if (!isOpen || isMobile || !inputRef) {
+      pickerStyle = "";
+      return;
+    }
+
+    pickerStyle = getFloatingPickerStyle(inputRef, {
+      estimatedHeight: 620,
+      minWidth: 320,
+    });
   }
 
   function selectDay(day: number | null) {
@@ -245,7 +263,8 @@
   // Click outside handler
   function handleClickOutside(event: MouseEvent) {
     if (isMobile) return; // Don't close on mobile, use explicit close button
-    if (containerRef && !containerRef.contains(event.target as Node)) {
+    const target = event.target as Node;
+    if (!containerRef?.contains(target) && !dialogRef?.contains(target)) {
       close();
     }
   }
@@ -270,12 +289,16 @@
   onMount(() => {
     checkMobile();
     window.addEventListener("resize", checkMobile);
+    window.addEventListener("resize", updatePickerPosition);
+    document.addEventListener("scroll", updatePickerPosition, true);
     document.addEventListener("click", handleClickOutside);
     document.addEventListener("keydown", handleKeydown);
   });
 
   onDestroy(() => {
     window.removeEventListener("resize", checkMobile);
+    window.removeEventListener("resize", updatePickerPosition);
+    document.removeEventListener("scroll", updatePickerPosition, true);
     document.removeEventListener("click", handleClickOutside);
     document.removeEventListener("keydown", handleKeydown);
     if (typeof document !== "undefined") {
@@ -390,387 +413,390 @@
     </p>
   {/if}
 
-  <!-- Mobile Backdrop -->
-  {#if isOpen && isMobile}
-    <div
-      class="fixed inset-0 bg-black/50 z-40 animate-fade-in"
-      on:click={close}
-      on:keydown={(e) => e.key === "Escape" && close()}
-      role="button"
-      tabindex="-1"
-      aria-label="Schließen"
-    ></div>
-  {/if}
-
-  <!-- Dropdown/Modal Picker -->
   {#if isOpen}
-    <div
-      role="dialog"
-      aria-label="Datum und Zeit auswählen"
-      aria-modal={isMobile ? "true" : undefined}
-      class="{isMobile
-        ? 'fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-2xl'
-        : 'absolute z-50 mt-2 rounded-xl'} bg-charcoal-800 dark:bg-charcoal-800 shadow-xl border border-gray-200 dark:border-charcoal-600 overflow-hidden animate-fade-in sm:min-w-[320px]"
-    >
-      <!-- Mobile Header with Close Button -->
+    <Portal>
       {#if isMobile}
         <div
-          class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-charcoal-600"
-        >
-          <h3 class="text-base font-semibold text-gray-900 dark:text-smoke-100">
-            {mode === "time"
-              ? "Uhrzeit"
-              : mode === "date"
-                ? "Datum"
-                : "Datum & Uhrzeit"} auswählen
-          </h3>
-          <button
-            type="button"
-            on:click={close}
-            class="p-2 -m-2 text-gray-400 hover:text-gray-600 dark:text-smoke-500 dark:hover:text-smoke-300"
-            aria-label="Schließen"
-          >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+          class="fixed inset-0 bg-black/50 z-40 animate-fade-in"
+          on:click={close}
+          on:keydown={(e) => e.key === "Escape" && close()}
+          role="button"
+          tabindex="-1"
+          aria-label="Schließen"
+        ></div>
       {/if}
-
-      <!-- Calendar Section -->
-      {#if mode !== "time"}
-        <div class="p-4">
-          <!-- Month/Year Navigation -->
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-1">
-              <button
-                type="button"
-                on:click={prevYear}
-                class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-                aria-label="Vorheriges Jahr"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
-                on:click={prevMonth}
-                class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-                aria-label="Vorheriger Monat"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <span
-              class="text-sm font-semibold text-gray-900 dark:text-smoke-100"
-            >
-              {months[viewMonth]}
-              {viewYear}
-            </span>
-
-            <div class="flex items-center gap-1">
-              <button
-                type="button"
-                on:click={nextMonth}
-                class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-                aria-label="Nächster Monat"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
-                on:click={nextYear}
-                class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-                aria-label="Nächstes Jahr"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Weekday Headers -->
-          <div class="grid grid-cols-7 gap-1 mb-2">
-            {#each weekdays as day (day)}
-              <div
-                class="text-center text-xs font-medium text-gray-500 dark:text-smoke-500 py-1"
-              >
-                {day}
-              </div>
-            {/each}
-          </div>
-
-          <!-- Calendar Grid -->
-          <div
-            class="grid grid-cols-7 gap-0.5 sm:gap-1"
-            role="grid"
-            aria-label="Kalender"
-          >
-            {#each calendarDays as day, index (index)}
-              {#if day === null}
-                <div class="w-10 h-10 sm:w-9 sm:h-9"></div>
-              {:else}
-                <button
-                  type="button"
-                  on:click={() => selectDay(day)}
-                  disabled={isDisabledDate(day)}
-                  class="w-10 h-10 sm:w-9 sm:h-9 rounded-lg text-sm font-medium transition-all duration-150 touch-manipulation
-                         {isSelected(day)
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : isToday(day)
-                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                      : 'text-gray-700 dark:text-smoke-200 hover:bg-gray-100 dark:hover:bg-charcoal-700 active:bg-gray-200 dark:active:bg-charcoal-600'}
-                         {isDisabledDate(day)
-                    ? 'opacity-40 cursor-not-allowed'
-                    : 'cursor-pointer'}"
-                  aria-label="{day}. {months[
-                    viewMonth
-                  ]} {viewYear}, {isSelected(day) ? 'ausgewählt' : ''}"
-                  aria-pressed={isSelected(day)}
-                >
-                  {day}
-                </button>
-              {/if}
-            {/each}
-          </div>
-        </div>
-      {/if}
-
-      <!-- Time Section -->
-      {#if mode !== "date"}
-        <div
-          class="p-4 border-t border-gray-200 dark:border-charcoal-600 bg-charcoal-800 dark:bg-charcoal-850"
-        >
-          <div
-            class="text-xs font-medium text-gray-500 dark:text-smoke-400 mb-3 uppercase tracking-wide"
-          >
-            Uhrzeit
-          </div>
-
-          <!-- Time Spinners -->
-          <div class="flex items-center justify-center gap-2 mb-4">
-            <!-- Hours -->
-            <div class="flex flex-col items-center">
-              <button
-                type="button"
-                on:click={incrementHours}
-                class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-200 dark:hover:bg-charcoal-700 transition-colors"
-                aria-label="Stunde erhöhen"
-              >
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 15l7-7 7 7"
-                  />
-                </svg>
-              </button>
-              <input
-                type="text"
-                inputmode="numeric"
-                value={String(hours).padStart(2, "0")}
-                on:change={(e) =>
-                  updateHours(parseInt(e.currentTarget.value) || 0)}
-                class="w-14 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                aria-label="Stunden"
-              />
-              <button
-                type="button"
-                on:click={decrementHours}
-                class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-200 dark:hover:bg-charcoal-700 transition-colors"
-                aria-label="Stunde verringern"
-              >
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <span
-              class="text-3xl font-bold text-gray-400 dark:text-smoke-500 pb-1"
-              >:</span
-            >
-
-            <!-- Minutes -->
-            <div class="flex flex-col items-center">
-              <button
-                type="button"
-                on:click={incrementMinutes}
-                class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-200 dark:hover:bg-charcoal-700 transition-colors"
-                aria-label="Minuten erhöhen"
-              >
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 15l7-7 7 7"
-                  />
-                </svg>
-              </button>
-              <input
-                type="text"
-                inputmode="numeric"
-                value={String(minutes).padStart(2, "0")}
-                on:change={(e) =>
-                  updateMinutes(parseInt(e.currentTarget.value) || 0)}
-                class="w-14 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                aria-label="Minuten"
-              />
-              <button
-                type="button"
-                on:click={decrementMinutes}
-                class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-200 dark:hover:bg-charcoal-700 transition-colors"
-                aria-label="Minuten verringern"
-              >
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <span
-              class="text-lg font-medium text-gray-500 dark:text-smoke-400 ml-2"
-              >Uhr</span
-            >
-          </div>
-
-          <!-- Time Presets -->
-          <div class="flex flex-wrap gap-2 justify-center">
-            {#each timePresets as preset (preset.label)}
-              <button
-                type="button"
-                on:click={() => selectTimePreset(preset)}
-                class="px-3 py-1.5 text-xs font-medium rounded-full transition-colors
-                       {hours === preset.hours && minutes === preset.minutes
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-200 dark:bg-charcoal-700 text-gray-700 dark:text-smoke-300 hover:bg-gray-300 dark:hover:bg-charcoal-600'}"
-              >
-                {preset.label}
-              </button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-
-      <!-- Footer Actions -->
       <div
-        class="flex items-center justify-between gap-2 p-3 border-t border-gray-200 dark:border-charcoal-600 bg-charcoal-800 dark:bg-charcoal-850"
+        bind:this={dialogRef}
+        role="dialog"
+        aria-label="Datum und Zeit auswählen"
+        aria-modal={isMobile ? "true" : undefined}
+        class="{isMobile
+          ? 'fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-y-auto rounded-t-2xl'
+          : 'fixed z-[10050] rounded-xl'} bg-charcoal-800 dark:bg-charcoal-800 shadow-xl border border-gray-200 dark:border-charcoal-600 overflow-hidden animate-fade-in sm:min-w-[320px]"
+        style={isMobile ? undefined : pickerStyle}
       >
-        <div class="flex gap-2">
-          {#if mode !== "time"}
+        <!-- Mobile Header with Close Button -->
+        {#if isMobile}
+          <div
+            class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-charcoal-600"
+          >
+            <h3
+              class="text-base font-semibold text-gray-900 dark:text-smoke-100"
+            >
+              {mode === "time"
+                ? "Uhrzeit"
+                : mode === "date"
+                  ? "Datum"
+                  : "Datum & Uhrzeit"} auswählen
+            </h3>
             <button
               type="button"
-              on:click={setToNow}
-              class="px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+              on:click={close}
+              class="p-2 -m-2 text-gray-400 hover:text-gray-600 dark:text-smoke-500 dark:hover:text-smoke-300"
+              aria-label="Schließen"
             >
-              Jetzt
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
             </button>
-          {/if}
+          </div>
+        {/if}
+
+        <!-- Calendar Section -->
+        {#if mode !== "time"}
+          <div class="p-4">
+            <!-- Month/Year Navigation -->
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  on:click={prevYear}
+                  class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                  aria-label="Vorheriges Jahr"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  on:click={prevMonth}
+                  class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                  aria-label="Vorheriger Monat"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <span
+                class="text-sm font-semibold text-gray-900 dark:text-smoke-100"
+              >
+                {months[viewMonth]}
+                {viewYear}
+              </span>
+
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  on:click={nextMonth}
+                  class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                  aria-label="Nächster Monat"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  on:click={nextYear}
+                  class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                  aria-label="Nächstes Jahr"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Weekday Headers -->
+            <div class="grid grid-cols-7 gap-1 mb-2">
+              {#each weekdays as day (day)}
+                <div
+                  class="text-center text-xs font-medium text-gray-500 dark:text-smoke-500 py-1"
+                >
+                  {day}
+                </div>
+              {/each}
+            </div>
+
+            <!-- Calendar Grid -->
+            <div
+              class="grid grid-cols-7 gap-0.5 sm:gap-1"
+              role="grid"
+              aria-label="Kalender"
+            >
+              {#each calendarDays as day, index (index)}
+                {#if day === null}
+                  <div class="w-10 h-10 sm:w-9 sm:h-9"></div>
+                {:else}
+                  <button
+                    type="button"
+                    on:click={() => selectDay(day)}
+                    disabled={isDisabledDate(day)}
+                    class="w-10 h-10 sm:w-9 sm:h-9 rounded-lg text-sm font-medium transition-all duration-150 touch-manipulation
+                         {isSelected(day)
+                      ? 'bg-primary-600 text-white shadow-sm'
+                      : isToday(day)
+                        ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                        : 'text-gray-700 dark:text-smoke-200 hover:bg-gray-100 dark:hover:bg-charcoal-700 active:bg-gray-200 dark:active:bg-charcoal-600'}
+                         {isDisabledDate(day)
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'cursor-pointer'}"
+                    aria-label="{day}. {months[
+                      viewMonth
+                    ]} {viewYear}, {isSelected(day) ? 'ausgewählt' : ''}"
+                    aria-pressed={isSelected(day)}
+                  >
+                    {day}
+                  </button>
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Time Section -->
+        {#if mode !== "date"}
+          <div
+            class="p-4 border-t border-gray-200 dark:border-charcoal-600 bg-charcoal-800 dark:bg-charcoal-850"
+          >
+            <div
+              class="text-xs font-medium text-gray-500 dark:text-smoke-400 mb-3 uppercase tracking-wide"
+            >
+              Uhrzeit
+            </div>
+
+            <!-- Time Spinners -->
+            <div class="flex items-center justify-center gap-2 mb-4">
+              <!-- Hours -->
+              <div class="flex flex-col items-center">
+                <button
+                  type="button"
+                  on:click={incrementHours}
+                  class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-200 dark:hover:bg-charcoal-700 transition-colors"
+                  aria-label="Stunde erhöhen"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 15l7-7 7 7"
+                    />
+                  </svg>
+                </button>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  value={String(hours).padStart(2, "0")}
+                  on:change={(e) =>
+                    updateHours(parseInt(e.currentTarget.value) || 0)}
+                  class="w-14 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  aria-label="Stunden"
+                />
+                <button
+                  type="button"
+                  on:click={decrementHours}
+                  class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-200 dark:hover:bg-charcoal-700 transition-colors"
+                  aria-label="Stunde verringern"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <span
+                class="text-3xl font-bold text-gray-400 dark:text-smoke-500 pb-1"
+                >:</span
+              >
+
+              <!-- Minutes -->
+              <div class="flex flex-col items-center">
+                <button
+                  type="button"
+                  on:click={incrementMinutes}
+                  class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-200 dark:hover:bg-charcoal-700 transition-colors"
+                  aria-label="Minuten erhöhen"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 15l7-7 7 7"
+                    />
+                  </svg>
+                </button>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  value={String(minutes).padStart(2, "0")}
+                  on:change={(e) =>
+                    updateMinutes(parseInt(e.currentTarget.value) || 0)}
+                  class="w-14 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  aria-label="Minuten"
+                />
+                <button
+                  type="button"
+                  on:click={decrementMinutes}
+                  class="p-1.5 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-200 dark:hover:bg-charcoal-700 transition-colors"
+                  aria-label="Minuten verringern"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <span
+                class="text-lg font-medium text-gray-500 dark:text-smoke-400 ml-2"
+                >Uhr</span
+              >
+            </div>
+
+            <!-- Time Presets -->
+            <div class="flex flex-wrap gap-2 justify-center">
+              {#each timePresets as preset (preset.label)}
+                <button
+                  type="button"
+                  on:click={() => selectTimePreset(preset)}
+                  class="px-3 py-1.5 text-xs font-medium rounded-full transition-colors
+                       {hours === preset.hours && minutes === preset.minutes
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-gray-200 dark:bg-charcoal-700 text-gray-700 dark:text-smoke-300 hover:bg-gray-300 dark:hover:bg-charcoal-600'}"
+                >
+                  {preset.label}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Footer Actions -->
+        <div
+          class="flex items-center justify-between gap-2 p-3 border-t border-gray-200 dark:border-charcoal-600 bg-charcoal-800 dark:bg-charcoal-850"
+        >
+          <div class="flex gap-2">
+            {#if mode !== "time"}
+              <button
+                type="button"
+                on:click={setToNow}
+                class="px-3 py-1.5 text-xs font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+              >
+                Jetzt
+              </button>
+            {/if}
+            <button
+              type="button"
+              on:click={clear}
+              class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 rounded-lg transition-colors"
+            >
+              Löschen
+            </button>
+          </div>
           <button
             type="button"
-            on:click={clear}
-            class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 rounded-lg transition-colors"
+            on:click={confirm}
+            class="px-4 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
           >
-            Löschen
+            Übernehmen
           </button>
         </div>
-        <button
-          type="button"
-          on:click={confirm}
-          class="px-4 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
-        >
-          Übernehmen
-        </button>
       </div>
-    </div>
+    </Portal>
   {/if}
 </div>

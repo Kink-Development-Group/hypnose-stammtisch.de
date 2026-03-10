@@ -263,6 +263,9 @@
       start_time: "",
       end_time: "",
     };
+    activeSection = "basis";
+    formErrors = [];
+    tagInput = "";
     editingItem = null;
   }
 
@@ -637,7 +640,7 @@
         class="fixed inset-0 bg-gray-700/50 dark:bg-charcoal-900/80 backdrop-blur-sm overflow-y-auto h-full w-full z-[9999]"
       >
         <div
-          class="relative mx-auto mt-8 md:mt-12 border dark:border-charcoal-600 w-11/12 max-w-5xl shadow-2xl rounded-lg bg-white dark:bg-charcoal-800 flex flex-col max-h-[92vh]"
+          class="relative mx-auto my-8 md:my-12 border dark:border-charcoal-600 w-11/12 max-w-5xl max-h-[calc(100vh-4rem)] shadow-2xl rounded-lg bg-white dark:bg-charcoal-800 flex flex-col overflow-hidden min-h-[78vh]"
         >
           <!-- Header -->
           <div
@@ -741,353 +744,368 @@
           <!-- Body -->
           <form
             on:submit|preventDefault={enhancedHandleSave}
-            class="flex-1 overflow-y-auto px-6 py-6 space-y-10"
+            class="flex-1 min-h-0 overflow-y-auto overflow-x-visible px-6 py-6 space-y-10"
           >
             <!-- BASIS -->
-            {#if activeSection === "basis"}
-              <fieldset class="space-y-6" aria-labelledby="basis-heading">
-                <legend id="basis-heading" class="sr-only"
-                  >Basisinformationen</legend
-                >
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div class="md:col-span-2">
-                    <label
-                      for="event-title"
-                      class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Titel *</label
-                    >
-                    <input
-                      id="event-title"
-                      type="text"
-                      bind:value={newEvent.title}
-                      required
-                      class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      placeholder="z.B. Offener Hypnose-Stammtisch"
-                    />
-                  </div>
-                  <div class="md:col-span-2">
-                    <MarkdownEditor
-                      id="event-description"
-                      label="Kurzbeschreibung"
-                      bind:value={newEvent.description}
-                      rows={4}
-                      placeholder="Worum geht es? Ziel, Ablauf, Besonderheiten..."
-                      theme={$adminTheme.resolvedTheme}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      for="event-category"
-                      class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Kategorie</label
-                    >
-                    <select
-                      id="event-category"
-                      bind:value={newEvent.category}
-                      class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                    >
-                      <option value="stammtisch">Stammtisch</option>
-                      <option value="workshop">Workshop</option>
-                      <option value="practice">Praxis</option>
-                      <option value="lecture">Vortrag</option>
-                      <option value="special">Special</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      for="event-difficulty"
-                      class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Level</label
-                    >
-                    <select
-                      id="event-difficulty"
-                      bind:value={newEvent.difficulty_level}
-                      class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                    >
-                      <option value="all">Alle</option>
-                      <option value="beginner">Anfänger</option>
-                      <option value="intermediate">Fortgeschritten</option>
-                      <option value="advanced">Experte</option>
-                    </select>
-                  </div>
-                  <div class="md:col-span-2">
-                    <label
-                      for="tag-input"
-                      class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Tags</label
-                    >
-                    <div class="mt-1 flex flex-wrap gap-2">
-                      {#each newEvent.tags as t (t)}
-                        <span
-                          class="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-1"
-                          >{t}<button
-                            type="button"
-                            class="hover:text-red-600 dark:hover:text-red-400"
-                            aria-label="Tag entfernen"
-                            on:click={() => removeTag(t)}>×</button
-                          ></span
-                        >
-                      {/each}
-                      <input
-                        id="tag-input"
-                        type="text"
-                        bind:value={tagInput}
-                        class="flex-1 min-w-[120px] border rounded px-2 py-1 text-xs focus:ring-blue-500 focus:border-blue-500 border-gray-300 dark:border-charcoal-500 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                        placeholder="Tag & Enter"
-                        on:keydown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addTag();
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        class="text-xs border px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-charcoal-600 border-gray-300 dark:border-charcoal-500 text-gray-700 dark:text-smoke-300"
-                        on:click={addTag}>Hinzufügen</button
+            <fieldset
+              class="space-y-6"
+              aria-labelledby="basis-heading"
+              aria-hidden={activeSection !== "basis"}
+              disabled={activeSection !== "basis"}
+              class:hidden={activeSection !== "basis"}
+            >
+              <legend id="basis-heading" class="sr-only"
+                >Basisinformationen</legend
+              >
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                  <label
+                    for="event-title"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Titel *</label
+                  >
+                  <input
+                    id="event-title"
+                    type="text"
+                    bind:value={newEvent.title}
+                    required
+                    class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                    placeholder="z.B. Offener Hypnose-Stammtisch"
+                  />
+                </div>
+                <div class="md:col-span-2">
+                  <MarkdownEditor
+                    id="event-description"
+                    label="Kurzbeschreibung"
+                    bind:value={newEvent.description}
+                    rows={4}
+                    placeholder="Worum geht es? Ziel, Ablauf, Besonderheiten..."
+                    theme={$adminTheme.resolvedTheme}
+                  />
+                </div>
+                <div>
+                  <label
+                    for="event-category"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Kategorie</label
+                  >
+                  <select
+                    id="event-category"
+                    bind:value={newEvent.category}
+                    class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                  >
+                    <option value="stammtisch">Stammtisch</option>
+                    <option value="workshop">Workshop</option>
+                    <option value="practice">Praxis</option>
+                    <option value="lecture">Vortrag</option>
+                    <option value="special">Special</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="event-difficulty"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Level</label
+                  >
+                  <select
+                    id="event-difficulty"
+                    bind:value={newEvent.difficulty_level}
+                    class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                  >
+                    <option value="all">Alle</option>
+                    <option value="beginner">Anfänger</option>
+                    <option value="intermediate">Fortgeschritten</option>
+                    <option value="advanced">Experte</option>
+                  </select>
+                </div>
+                <div class="md:col-span-2">
+                  <label
+                    for="tag-input"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Tags</label
+                  >
+                  <div class="mt-1 flex flex-wrap gap-2">
+                    {#each newEvent.tags as t (t)}
+                      <span
+                        class="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-1"
+                        >{t}<button
+                          type="button"
+                          class="hover:text-red-600 dark:hover:text-red-400"
+                          aria-label="Tag entfernen"
+                          on:click={() => removeTag(t)}>×</button
+                        ></span
                       >
-                    </div>
+                    {/each}
+                    <input
+                      id="tag-input"
+                      type="text"
+                      bind:value={tagInput}
+                      class="flex-1 min-w-[120px] border rounded px-2 py-1 text-xs focus:ring-blue-500 focus:border-blue-500 border-gray-300 dark:border-charcoal-500 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                      placeholder="Tag & Enter"
+                      on:keydown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      class="text-xs border px-2 py-1 rounded hover:bg-gray-50 dark:hover:bg-charcoal-600 border-gray-300 dark:border-charcoal-500 text-gray-700 dark:text-smoke-300"
+                      on:click={addTag}>Hinzufügen</button
+                    >
                   </div>
                 </div>
-              </fieldset>
-            {/if}
+              </div>
+            </fieldset>
 
             <!-- ZEIT -->
-            {#if activeSection === "zeit"}
-              <fieldset class="space-y-6" aria-labelledby="zeit-heading">
-                <legend id="zeit-heading" class="sr-only"
-                  >Zeit & Wiederholung</legend
-                >
-                {#if newEvent.event_type === "single"}
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <DateTimePicker
-                      id="start-datetime"
-                      label="Start"
-                      bind:value={newEvent.start_datetime}
-                      required
-                      mode="datetime"
+            <fieldset
+              class="space-y-6"
+              aria-labelledby="zeit-heading"
+              aria-hidden={activeSection !== "zeit"}
+              disabled={activeSection !== "zeit"}
+              class:hidden={activeSection !== "zeit"}
+            >
+              <legend id="zeit-heading" class="sr-only"
+                >Zeit & Wiederholung</legend
+              >
+              {#if newEvent.event_type === "single"}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <DateTimePicker
+                    id="start-datetime"
+                    label="Start"
+                    bind:value={newEvent.start_datetime}
+                    required
+                    mode="datetime"
+                  />
+                  <DateTimePicker
+                    id="end-datetime"
+                    label="Ende"
+                    bind:value={newEvent.end_datetime}
+                    required
+                    mode="datetime"
+                    minDate={newEvent.start_datetime?.split("T")[0]}
+                  />
+                </div>
+              {:else}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <DatePicker
+                    id="start-date"
+                    label="Startdatum"
+                    bind:value={newEvent.start_date}
+                    required
+                  />
+                  <DatePicker
+                    id="end-date"
+                    label="Enddatum (optional)"
+                    bind:value={newEvent.end_date}
+                    minDate={newEvent.start_date}
+                  />
+                  <TimePicker
+                    id="series-start-time"
+                    label="Serien-Start (HH:MM)"
+                    bind:value={newEvent.start_time}
+                  />
+                  <TimePicker
+                    id="series-end-time"
+                    label="Serien-Ende (HH:MM)"
+                    bind:value={newEvent.end_time}
+                  />
+                  <div class="md:col-span-2">
+                    <label
+                      for="rrule-builder"
+                      class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                      >Wiederholung *</label
+                    >
+                    <RecurrenceBuilder
+                      value={newEvent.rrule}
+                      startDate={newEvent.start_date}
+                      on:change={(e) => (newEvent.rrule = e.detail.value)}
                     />
-                    <DateTimePicker
-                      id="end-datetime"
-                      label="Ende"
-                      bind:value={newEvent.end_datetime}
-                      required
-                      mode="datetime"
-                      minDate={newEvent.start_datetime?.split("T")[0]}
-                    />
-                  </div>
-                {:else}
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <DatePicker
-                      id="start-date"
-                      label="Startdatum"
-                      bind:value={newEvent.start_date}
-                      required
-                    />
-                    <DatePicker
-                      id="end-date"
-                      label="Enddatum (optional)"
-                      bind:value={newEvent.end_date}
-                      minDate={newEvent.start_date}
-                    />
-                    <TimePicker
-                      id="series-start-time"
-                      label="Serien-Start (HH:MM)"
-                      bind:value={newEvent.start_time}
-                    />
-                    <TimePicker
-                      id="series-end-time"
-                      label="Serien-Ende (HH:MM)"
-                      bind:value={newEvent.end_time}
-                    />
-                    <div class="md:col-span-2">
-                      <label
-                        for="rrule-builder"
-                        class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                        >Wiederholung *</label
+                    {#if !newEvent.rrule}
+                      <p
+                        class="text-[11px] text-red-600 dark:text-red-400 mt-1"
                       >
-                      <RecurrenceBuilder
-                        value={newEvent.rrule}
-                        startDate={newEvent.start_date}
-                        on:change={(e) => (newEvent.rrule = e.detail.value)}
-                      />
-                      {#if !newEvent.rrule}
-                        <p
-                          class="text-[11px] text-red-600 dark:text-red-400 mt-1"
-                        >
-                          RRULE erforderlich.
-                        </p>
-                      {/if}
-                    </div>
+                        RRULE erforderlich.
+                      </p>
+                    {/if}
                   </div>
-                {/if}
-              </fieldset>
-            {/if}
+                </div>
+              {/if}
+            </fieldset>
 
             <!-- ORT -->
-            {#if activeSection === "ort"}
-              <fieldset class="space-y-6" aria-labelledby="ort-heading">
-                <legend id="ort-heading" class="sr-only">Ort & Teilnahme</legend
-                >
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label
-                      for="location-type"
-                      class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Ort-Typ</label
-                    >
-                    <select
-                      id="location-type"
-                      bind:value={newEvent.location_type}
-                      class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                    >
-                      <option value="physical">Vor Ort</option>
-                      <option value="online">Online</option>
-                      <option value="hybrid">Hybrid</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label
-                      for="max-participants"
-                      class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Max. Teilnehmende</label
-                    >
-                    <input
-                      id="max-participants"
-                      type="number"
-                      min="1"
-                      bind:value={newEvent.max_participants}
-                      class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      for="event-status"
-                      class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Status</label
-                    >
-                    <select
-                      id="event-status"
-                      bind:value={newEvent.status}
-                      class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                    >
-                      <option value="draft">Entwurf</option>
-                      <option value="published">Veröffentlicht</option>
-                      <option value="cancelled">Abgesagt</option>
-                    </select>
-                  </div>
-                </div>
-                {#if newEvent.location_type === "physical" || newEvent.location_type === "hybrid"}
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label
-                        for="location-name"
-                        class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                        >Ort Name</label
-                      >
-                      <input
-                        id="location-name"
-                        type="text"
-                        bind:value={newEvent.location_name}
-                        class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        for="location-address"
-                        class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                        >Adresse</label
-                      >
-                      <input
-                        id="location-address"
-                        type="text"
-                        bind:value={newEvent.location_address}
-                        class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      />
-                    </div>
-                  </div>
-                {/if}
-                {#if newEvent.location_type === "online" || newEvent.location_type === "hybrid"}
-                  <div>
-                    <label
-                      for="location-url"
-                      class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Online-URL</label
-                    >
-                    <input
-                      id="location-url"
-                      type="url"
-                      bind:value={newEvent.location_url}
-                      class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
-                      placeholder="https://…"
-                    />
-                  </div>
-                {/if}
-                <div class="flex flex-wrap gap-6 items-center">
+            <fieldset
+              class="space-y-6"
+              aria-labelledby="ort-heading"
+              aria-hidden={activeSection !== "ort"}
+              disabled={activeSection !== "ort"}
+              class:hidden={activeSection !== "ort"}
+            >
+              <legend id="ort-heading" class="sr-only">Ort & Teilnahme</legend>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
                   <label
-                    class="flex items-center gap-2 text-sm text-gray-700 dark:text-smoke-300"
-                    ><input
-                      type="checkbox"
-                      bind:checked={newEvent.is_featured}
-                      class="rounded border-gray-300 dark:border-charcoal-500 text-blue-600 focus:ring-blue-500 bg-white dark:bg-charcoal-700"
-                    /> Featured</label
+                    for="location-type"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Ort-Typ</label
                   >
-                  <label
-                    class="flex items-center gap-2 text-sm text-gray-700 dark:text-smoke-300"
-                    ><input
-                      type="checkbox"
-                      bind:checked={newEvent.requires_registration}
-                      class="rounded border-gray-300 dark:border-charcoal-500 text-blue-600 focus:ring-blue-500 bg-white dark:bg-charcoal-700"
-                    /> Anmeldung erforderlich</label
+                  <select
+                    id="location-type"
+                    bind:value={newEvent.location_type}
+                    class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
                   >
+                    <option value="physical">Vor Ort</option>
+                    <option value="online">Online</option>
+                    <option value="hybrid">Hybrid</option>
+                  </select>
                 </div>
-              </fieldset>
-            {/if}
-
-            <!-- ERWEITERT -->
-            {#if activeSection === "erweitert"}
-              <fieldset class="space-y-6" aria-labelledby="adv-heading">
-                <legend id="adv-heading" class="sr-only"
-                  >Erweiterte Angaben</legend
-                >
+                <div>
+                  <label
+                    for="max-participants"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Max. Teilnehmende</label
+                  >
+                  <input
+                    id="max-participants"
+                    type="number"
+                    min="1"
+                    bind:value={newEvent.max_participants}
+                    class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                  />
+                </div>
+                <div>
+                  <label
+                    for="event-status"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Status</label
+                  >
+                  <select
+                    id="event-status"
+                    bind:value={newEvent.status}
+                    class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                  >
+                    <option value="draft">Entwurf</option>
+                    <option value="published">Veröffentlicht</option>
+                    <option value="cancelled">Abgesagt</option>
+                  </select>
+                </div>
+              </div>
+              {#if newEvent.location_type === "physical" || newEvent.location_type === "hybrid"}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label
-                      for="organizer-name"
+                      for="location-name"
                       class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Organisator Name</label
+                      >Ort Name</label
                     >
                     <input
-                      id="organizer-name"
+                      id="location-name"
                       type="text"
-                      bind:value={newEvent.organizer_name}
+                      bind:value={newEvent.location_name}
                       class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
                     />
                   </div>
                   <div>
                     <label
-                      for="organizer-email"
+                      for="location-address"
                       class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
-                      >Organisator E-Mail</label
+                      >Adresse</label
                     >
                     <input
-                      id="organizer-email"
-                      type="email"
-                      bind:value={newEvent.organizer_email}
+                      id="location-address"
+                      type="text"
+                      bind:value={newEvent.location_address}
                       class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
                     />
                   </div>
                 </div>
-                <div
-                  class="rounded-md border border-slate-200 dark:border-charcoal-600 bg-slate-50 dark:bg-charcoal-700 p-4 text-xs text-slate-500 dark:text-smoke-400 leading-relaxed"
-                >
-                  <p>
-                    <strong>Hinweis:</strong> Weitere Felder (Inhalte, Sicherheits-/Anforderungstexte)
-                    können in einem späteren Editor ergänzt werden.
-                  </p>
+              {/if}
+              {#if newEvent.location_type === "online" || newEvent.location_type === "hybrid"}
+                <div>
+                  <label
+                    for="location-url"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Online-URL</label
+                  >
+                  <input
+                    id="location-url"
+                    type="url"
+                    bind:value={newEvent.location_url}
+                    class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                    placeholder="https://…"
+                  />
                 </div>
-              </fieldset>
-            {/if}
+              {/if}
+              <div class="flex flex-wrap gap-6 items-center">
+                <label
+                  class="flex items-center gap-2 text-sm text-gray-700 dark:text-smoke-300"
+                  ><input
+                    type="checkbox"
+                    bind:checked={newEvent.is_featured}
+                    class="rounded border-gray-300 dark:border-charcoal-500 text-blue-600 focus:ring-blue-500 bg-white dark:bg-charcoal-700"
+                  /> Featured</label
+                >
+                <label
+                  class="flex items-center gap-2 text-sm text-gray-700 dark:text-smoke-300"
+                  ><input
+                    type="checkbox"
+                    bind:checked={newEvent.requires_registration}
+                    class="rounded border-gray-300 dark:border-charcoal-500 text-blue-600 focus:ring-blue-500 bg-white dark:bg-charcoal-700"
+                  /> Anmeldung erforderlich</label
+                >
+              </div>
+            </fieldset>
+
+            <!-- ERWEITERT -->
+            <fieldset
+              class="space-y-6"
+              aria-labelledby="adv-heading"
+              aria-hidden={activeSection !== "erweitert"}
+              disabled={activeSection !== "erweitert"}
+              class:hidden={activeSection !== "erweitert"}
+            >
+              <legend id="adv-heading" class="sr-only"
+                >Erweiterte Angaben</legend
+              >
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label
+                    for="organizer-name"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Organisator Name</label
+                  >
+                  <input
+                    id="organizer-name"
+                    type="text"
+                    bind:value={newEvent.organizer_name}
+                    class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                  />
+                </div>
+                <div>
+                  <label
+                    for="organizer-email"
+                    class="block text-sm font-medium text-gray-700 dark:text-smoke-300"
+                    >Organisator E-Mail</label
+                  >
+                  <input
+                    id="organizer-email"
+                    type="email"
+                    bind:value={newEvent.organizer_email}
+                    class="mt-1 w-full rounded-md border-gray-300 dark:border-charcoal-500 focus:ring-blue-500 focus:border-blue-500 px-4 py-2.5 text-sm bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100"
+                  />
+                </div>
+              </div>
+              <div
+                class="rounded-md border border-slate-200 dark:border-charcoal-600 bg-slate-50 dark:bg-charcoal-700 p-4 text-xs text-slate-500 dark:text-smoke-400 leading-relaxed"
+              >
+                <p>
+                  <strong>Hinweis:</strong> Weitere Felder (Inhalte, Sicherheits-/Anforderungstexte)
+                  können in einem späteren Editor ergänzt werden.
+                </p>
+              </div>
+            </fieldset>
           </form>
 
           <!-- Footer -->

@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, tick } from "svelte";
+  import Portal from "../ui/Portal.svelte";
+  import { getFloatingPickerStyle } from "./floatingPicker";
 
   // Props
   export let value: string = ""; // Format: "HH:mm"
@@ -17,6 +19,8 @@
   let isOpen = false;
   let containerRef: HTMLDivElement;
   let inputRef: HTMLButtonElement;
+  let dialogRef: HTMLDivElement;
+  let pickerStyle = "";
 
   // Parse current value
   $: parsedHours = value ? parseInt(value.split(":")[0]) || 0 : 12;
@@ -36,17 +40,31 @@
   // Format display value
   $: displayValue = value ? `${value} Uhr` : "";
 
-  function toggle() {
+  async function toggle() {
     if (disabled) return;
     isOpen = !isOpen;
     if (isOpen) {
       hours = parsedHours;
       minutes = parsedMinutes;
+      await tick();
+      updatePickerPosition();
     }
   }
 
   function close() {
     isOpen = false;
+  }
+
+  function updatePickerPosition() {
+    if (!isOpen || isMobile || !inputRef) {
+      pickerStyle = "";
+      return;
+    }
+
+    pickerStyle = getFloatingPickerStyle(inputRef, {
+      estimatedHeight: 420,
+      minWidth: 280,
+    });
   }
 
   function updateHours(newHours: number) {
@@ -104,7 +122,8 @@
   // Click outside handler
   function handleClickOutside(event: MouseEvent) {
     if (isMobile) return;
-    if (containerRef && !containerRef.contains(event.target as Node)) {
+    const target = event.target as Node;
+    if (!containerRef?.contains(target) && !dialogRef?.contains(target)) {
       close();
     }
   }
@@ -129,12 +148,16 @@
   onMount(() => {
     checkMobile();
     window.addEventListener("resize", checkMobile);
+    window.addEventListener("resize", updatePickerPosition);
+    document.addEventListener("scroll", updatePickerPosition, true);
     document.addEventListener("click", handleClickOutside);
     document.addEventListener("keydown", handleKeydown);
   });
 
   onDestroy(() => {
     window.removeEventListener("resize", checkMobile);
+    window.removeEventListener("resize", updatePickerPosition);
+    document.removeEventListener("scroll", updatePickerPosition, true);
     document.removeEventListener("click", handleClickOutside);
     document.removeEventListener("keydown", handleKeydown);
     if (typeof document !== "undefined") {
@@ -236,222 +259,225 @@
     </p>
   {/if}
 
-  <!-- Mobile Backdrop -->
-  {#if isOpen && isMobile}
-    <div
-      class="fixed inset-0 bg-black/50 z-40 animate-fade-in"
-      on:click={close}
-      on:keydown={(e) => e.key === "Escape" && close()}
-      role="button"
-      tabindex="-1"
-      aria-label="Schließen"
-    ></div>
-  {/if}
-
-  <!-- Dropdown Picker -->
   {#if isOpen}
-    <div
-      role="dialog"
-      aria-label="Uhrzeit auswählen"
-      aria-modal={isMobile ? "true" : undefined}
-      class="{isMobile
-        ? 'fixed inset-x-0 bottom-0 z-50 rounded-t-2xl'
-        : 'absolute z-50 mt-2 rounded-xl'} bg-charcoal-800 dark:bg-charcoal-800 shadow-xl border border-gray-200 dark:border-charcoal-600 overflow-hidden animate-fade-in sm:min-w-[280px]"
-    >
-      <!-- Mobile Header -->
+    <Portal>
       {#if isMobile}
         <div
-          class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-charcoal-600"
+          class="fixed inset-0 bg-black/50 z-40 animate-fade-in"
+          on:click={close}
+          on:keydown={(e) => e.key === "Escape" && close()}
+          role="button"
+          tabindex="-1"
+          aria-label="Schließen"
+        ></div>
+      {/if}
+      <div
+        bind:this={dialogRef}
+        role="dialog"
+        aria-label="Uhrzeit auswählen"
+        aria-modal={isMobile ? "true" : undefined}
+        class="{isMobile
+          ? 'fixed inset-x-0 bottom-0 z-50 rounded-t-2xl'
+          : 'fixed z-[10050] rounded-xl'} bg-charcoal-800 dark:bg-charcoal-800 shadow-xl border border-gray-200 dark:border-charcoal-600 overflow-hidden animate-fade-in sm:min-w-[280px]"
+        style={isMobile ? undefined : pickerStyle}
+      >
+        <!-- Mobile Header -->
+        {#if isMobile}
+          <div
+            class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-charcoal-600"
+          >
+            <h3
+              class="text-base font-semibold text-gray-900 dark:text-smoke-100"
+            >
+              Uhrzeit auswählen
+            </h3>
+            <button
+              type="button"
+              on:click={close}
+              class="p-2 -m-2 text-gray-400 hover:text-gray-600 dark:text-smoke-500 dark:hover:text-smoke-300"
+              aria-label="Schließen"
+            >
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        {/if}
+
+        <!-- Time Spinners -->
+        <div class="p-4 sm:p-4">
+          <div class="flex items-center justify-center gap-3 sm:gap-3">
+            <!-- Hours -->
+            <div class="flex flex-col items-center">
+              <button
+                type="button"
+                on:click={incrementHours}
+                class="p-2 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                aria-label="Stunde erhöhen"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 15l7-7 7 7"
+                  />
+                </svg>
+              </button>
+              <input
+                type="text"
+                inputmode="numeric"
+                value={String(hours).padStart(2, "0")}
+                on:change={(e) =>
+                  updateHours(parseInt(e.currentTarget.value) || 0)}
+                class="w-16 h-14 text-center text-3xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                aria-label="Stunden"
+              />
+              <button
+                type="button"
+                on:click={decrementHours}
+                class="p-2 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                aria-label="Stunde verringern"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <span
+              class="text-4xl font-bold text-gray-300 dark:text-smoke-600 pb-1"
+              >:</span
+            >
+
+            <!-- Minutes -->
+            <div class="flex flex-col items-center">
+              <button
+                type="button"
+                on:click={incrementMinutes}
+                class="p-2 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                aria-label="Minuten erhöhen"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 15l7-7 7 7"
+                  />
+                </svg>
+              </button>
+              <input
+                type="text"
+                inputmode="numeric"
+                value={String(minutes).padStart(2, "0")}
+                on:change={(e) =>
+                  updateMinutes(parseInt(e.currentTarget.value) || 0)}
+                class="w-16 h-14 text-center text-3xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                aria-label="Minuten"
+              />
+              <button
+                type="button"
+                on:click={decrementMinutes}
+                class="p-2 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
+                aria-label="Minuten verringern"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <span
+              class="text-lg font-medium text-gray-400 dark:text-smoke-500 ml-1"
+              >Uhr</span
+            >
+          </div>
+        </div>
+
+        <!-- Time Presets -->
+        <div class="px-4 pb-4">
+          <div
+            class="text-xs font-medium text-gray-500 dark:text-smoke-400 mb-2 uppercase tracking-wide"
+          >
+            Schnellauswahl
+          </div>
+          <div class="grid grid-cols-5 gap-1.5">
+            {#each timePresets as preset (preset.label)}
+              <button
+                type="button"
+                on:click={() => selectTimePreset(preset)}
+                class="px-2 py-1.5 text-xs font-medium rounded-lg transition-colors
+                     {hours === preset.hours && minutes === preset.minutes
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-100 dark:bg-charcoal-700 text-gray-700 dark:text-smoke-300 hover:bg-gray-200 dark:hover:bg-charcoal-600'}"
+              >
+                {preset.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div
+          class="flex items-center justify-between gap-2 p-3 border-t border-gray-200 dark:border-charcoal-600 bg-charcoal-800 dark:bg-charcoal-900"
         >
-          <h3 class="text-base font-semibold text-gray-900 dark:text-smoke-100">
-            Uhrzeit auswählen
-          </h3>
           <button
             type="button"
-            on:click={close}
-            class="p-2 -m-2 text-gray-400 hover:text-gray-600 dark:text-smoke-500 dark:hover:text-smoke-300"
-            aria-label="Schließen"
+            on:click={clear}
+            class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 rounded-lg transition-colors"
           >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            Löschen
+          </button>
+          <button
+            type="button"
+            on:click={confirm}
+            class="px-4 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
+          >
+            Übernehmen
           </button>
         </div>
-      {/if}
-
-      <!-- Time Spinners -->
-      <div class="p-4 sm:p-4">
-        <div class="flex items-center justify-center gap-3 sm:gap-3">
-          <!-- Hours -->
-          <div class="flex flex-col items-center">
-            <button
-              type="button"
-              on:click={incrementHours}
-              class="p-2 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-              aria-label="Stunde erhöhen"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 15l7-7 7 7"
-                />
-              </svg>
-            </button>
-            <input
-              type="text"
-              inputmode="numeric"
-              value={String(hours).padStart(2, "0")}
-              on:change={(e) =>
-                updateHours(parseInt(e.currentTarget.value) || 0)}
-              class="w-16 h-14 text-center text-3xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              aria-label="Stunden"
-            />
-            <button
-              type="button"
-              on:click={decrementHours}
-              class="p-2 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-              aria-label="Stunde verringern"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-          </div>
-
-          <span
-            class="text-4xl font-bold text-gray-300 dark:text-smoke-600 pb-1"
-            >:</span
-          >
-
-          <!-- Minutes -->
-          <div class="flex flex-col items-center">
-            <button
-              type="button"
-              on:click={incrementMinutes}
-              class="p-2 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-              aria-label="Minuten erhöhen"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 15l7-7 7 7"
-                />
-              </svg>
-            </button>
-            <input
-              type="text"
-              inputmode="numeric"
-              value={String(minutes).padStart(2, "0")}
-              on:change={(e) =>
-                updateMinutes(parseInt(e.currentTarget.value) || 0)}
-              class="w-16 h-14 text-center text-3xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              aria-label="Minuten"
-            />
-            <button
-              type="button"
-              on:click={decrementMinutes}
-              class="p-2 rounded-lg text-gray-500 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 transition-colors"
-              aria-label="Minuten verringern"
-            >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-          </div>
-
-          <span
-            class="text-lg font-medium text-gray-400 dark:text-smoke-500 ml-1"
-            >Uhr</span
-          >
-        </div>
       </div>
-
-      <!-- Time Presets -->
-      <div class="px-4 pb-4">
-        <div
-          class="text-xs font-medium text-gray-500 dark:text-smoke-400 mb-2 uppercase tracking-wide"
-        >
-          Schnellauswahl
-        </div>
-        <div class="grid grid-cols-5 gap-1.5">
-          {#each timePresets as preset (preset.label)}
-            <button
-              type="button"
-              on:click={() => selectTimePreset(preset)}
-              class="px-2 py-1.5 text-xs font-medium rounded-lg transition-colors
-                     {hours === preset.hours && minutes === preset.minutes
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 dark:bg-charcoal-700 text-gray-700 dark:text-smoke-300 hover:bg-gray-200 dark:hover:bg-charcoal-600'}"
-            >
-              {preset.label}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Footer Actions -->
-      <div
-        class="flex items-center justify-between gap-2 p-3 border-t border-gray-200 dark:border-charcoal-600 bg-charcoal-800 dark:bg-charcoal-900"
-      >
-        <button
-          type="button"
-          on:click={clear}
-          class="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-smoke-400 hover:bg-gray-100 dark:hover:bg-charcoal-700 rounded-lg transition-colors"
-        >
-          Löschen
-        </button>
-        <button
-          type="button"
-          on:click={confirm}
-          class="px-4 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
-        >
-          Übernehmen
-        </button>
-      </div>
-    </div>
+    </Portal>
   {/if}
 </div>

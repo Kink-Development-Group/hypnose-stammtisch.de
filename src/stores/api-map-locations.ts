@@ -23,7 +23,7 @@ export const locationsError = writable<string>("");
 // Map viewport store
 export const mapViewport = writable<MapViewport>({
   center: { lat: 49.5, lng: 10.5 }, // Optimiert für DACH-Region
-  zoom: 6,
+  zoom: 4, // Weiter Startausschnitt für DACH und angrenzende Regionen
 });
 
 // Filter store

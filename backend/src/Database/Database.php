@@ -47,14 +47,17 @@ class Database
                 $dsn,
                 $config['user'],
                 $config['pass'],
-                $config['options'] + [\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true]
+                $config['options'] + [(class_exists(\Pdo\Mysql::class) ? \Pdo\Mysql::ATTR_USE_BUFFERED_QUERY : \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY) => true]
             );
 
             // Set timezone
             $timezone = Config::get('app.timezone', 'Europe/Berlin');
             self::$connection->exec("SET time_zone = '{$timezone}'");
         } catch (PDOException $e) {
-            error_log("Database connection failed: " . $e->getMessage());
+            $appEnv = ($_ENV['APP_ENV'] ?? Config::get('app.env', 'production'));
+            if ($appEnv !== 'testing') {
+                error_log("Database connection failed: " . $e->getMessage());
+            }
 
             if (Config::get('app.debug')) {
                 throw new \RuntimeException("Database connection failed: " . $e->getMessage());

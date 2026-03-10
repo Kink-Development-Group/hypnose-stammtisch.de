@@ -36,6 +36,7 @@ class UserController
             Response::error('Method not allowed', 405);
             return;
         }
+        AdminAuth::requireCSRF();
         $current = AdminAuth::getCurrentUser();
         if (!$current) {
             Response::unauthorized();
@@ -61,6 +62,23 @@ class UserController
             Response::error('Validation failed', 400, array_merge($validator->getErrors(), $errors));
             return;
         }
+        if (!empty($input['reset_twofa'])) {
+            $currentPassword = (string)($input['current_password'] ?? '');
+            if ($currentPassword === '') {
+                Response::error('Current password required to reset 2FA', 400, [
+                    'current_password' => ['Current password is required to reset 2FA']
+                ]);
+                return;
+            }
+
+            $account = Database::fetchOne('SELECT password_hash FROM users WHERE id = ?', [$current['id']]);
+            if (!$account || empty($account['password_hash']) || !password_verify($currentPassword, $account['password_hash'])) {
+                Response::error('Current password is incorrect', 403, [
+                    'current_password' => ['Current password is incorrect']
+                ]);
+                return;
+            }
+        }
         $fields = [];
         $params = [];
         if (isset($input['username']) && $input['username'] !== $current['username']) {
@@ -69,7 +87,7 @@ class UserController
         }
         if (isset($input['email']) && $input['email'] !== $current['email']) {
             // create pending email change with token
-            $token = bin2hex(random_bytes(16));
+            $token = self::generateSecureToken();
             $fields[] = 'pending_email = ?';
             $params[] = $input['email'];
             $fields[] = 'email_change_token = ?';
@@ -92,6 +110,9 @@ class UserController
         }
         $params[] = $current['id'];
         Database::execute('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?', $params);
+        if (!empty($input['reset_twofa'])) {
+            Database::execute('DELETE FROM user_twofa_backup_codes WHERE user_id = ?', [$current['id']]);
+        }
         AuditLogger::log('user.profile_update', 'user', (string)$current['id'], ['fields' => $fields]);
         $updated = AdminAuth::getCurrentUser();
         Response::success(['updated' => true, 'user' => $updated], 'Profile updated');
@@ -109,6 +130,7 @@ class UserController
             Response::error('Method not allowed', 405);
             return;
         }
+        AdminAuth::requireCSRF();
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $validator = new Validator($input);
         if (isset($input['email'])) {
@@ -125,8 +147,12 @@ class UserController
             Response::error('Invalid role', 400);
             return;
         }
-        if ($actor['id'] == $id && isset($input['role']) && $input['role'] !== 'head') {
+        if ((string)$actor['id'] === $id && isset($input['role']) && $input['role'] !== 'head') {
             Response::error('Cannot downgrade own role', 400);
+            return;
+        }
+        if ((string)$actor['id'] === $id && !empty($input['reset_twofa'])) {
+            Response::error('Use your profile settings to reset your own 2FA', 400);
             return;
         }
         if (!$validator->isValid() || $errors) {
@@ -143,7 +169,7 @@ class UserController
         foreach (['username', 'email'] as $f) {
             if (isset($input[$f])) {
                 if ($f === 'email') {
-                    $token = bin2hex(random_bytes(16));
+                    $token = self::generateSecureToken();
                     $fields[] = 'pending_email = ?';
                     $params[] = $input[$f];
                     $fields[] = 'email_change_token = ?';
@@ -179,6 +205,9 @@ class UserController
         }
         $params[] = $id;
         Database::execute('UPDATE users SET ' . implode(', ', $fields) . ' WHERE id = ?', $params);
+        if (!empty($input['reset_twofa'])) {
+            Database::execute('DELETE FROM user_twofa_backup_codes WHERE user_id = ?', [$id]);
+        }
         AuditLogger::log('admin.user_update', 'user', (string)$id, ['fields' => $fields]);
         $user = Database::fetchOne('SELECT id, username, email, role, is_active, last_login, created_at, updated_at FROM users WHERE id = ?', [$id]);
         Response::success(['updated' => true, 'user' => $user], 'User updated');
@@ -187,5 +216,10 @@ class UserController
     private static function sendEmailChangeConfirmation(?string $oldEmail, string $newEmail, string $token): void
     {
         EmailService::sendEmailChangeConfirmation($oldEmail, $newEmail, $token);
+    }
+
+    private static function generateSecureToken(): string
+    {
+        return bin2hex(random_bytes(16));
     }
 }

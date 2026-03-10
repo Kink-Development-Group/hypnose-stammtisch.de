@@ -347,7 +347,11 @@ class IpBanManager
                     }
 
                     // If we're processing forwarded headers, validate the source
-                    if ($header !== 'REMOTE_ADDR' && !empty($trustedProxies)) {
+                    if ($header !== 'REMOTE_ADDR') {
+                        if (empty($trustedProxies)) {
+                            // No trusted proxies configured, don't trust any forwarded headers
+                            continue;
+                        }
                         $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
                         if (!self::isIPInRanges($remoteAddr, $trustedProxies)) {
                             // Don't trust forwarded headers from untrusted sources
@@ -428,7 +432,12 @@ class IpBanManager
         // This groups attempts by the actual source IP
         $rateLimitKey = "audit:untrusted_proxy:{$remoteAddr}:{$header}";
 
-        $rateLimit = RateLimiter::attempt($rateLimitKey, $maxLogs, $periodSeconds);
+        try {
+            $rateLimit = RateLimiter::attempt($rateLimitKey, $maxLogs, $periodSeconds);
+        } catch (\Throwable $e) {
+            // Rate limiter requires database; fail silently when unavailable
+            return;
+        }
 
         if ($rateLimit['allowed']) {
             // Log individual event if within rate limit
@@ -446,7 +455,11 @@ class IpBanManager
         } else {
             // Rate limit exceeded - log an aggregated warning once per period
             $aggregateKey = "audit:untrusted_proxy_aggregate:{$remoteAddr}";
-            $aggregateLimit = RateLimiter::attempt($aggregateKey, 1, $periodSeconds);
+            try {
+                $aggregateLimit = RateLimiter::attempt($aggregateKey, 1, $periodSeconds);
+            } catch (\Throwable $e) {
+                return;
+            }
 
             if ($aggregateLimit['allowed']) {
                 AuditLogger::log(

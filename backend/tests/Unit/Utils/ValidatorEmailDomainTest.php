@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HypnoseStammtisch\Tests\Unit\Utils;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use HypnoseStammtisch\Utils\Validator;
 use ReflectionClass;
@@ -58,9 +59,8 @@ class ValidatorEmailDomainTest extends TestCase
 
   /**
    * Test that common disposable email domains are rejected
-   *
-   * @dataProvider disposableEmailProvider
    */
+  #[DataProvider('disposableEmailProvider')]
   public function testDisposableEmailDomainsRejected(string $email): void
   {
     $result = Validator::isValidEmailDomain($email);
@@ -123,9 +123,8 @@ class ValidatorEmailDomainTest extends TestCase
    * Test that clearly invalid email formats are rejected
    * Note: isValidEmailDomain focuses on domain validation, not full email format
    * Full email format validation is handled by isValidEmail()
-   *
-   * @dataProvider invalidEmailFormatProvider
    */
+  #[DataProvider('invalidEmailFormatProvider')]
   public function testInvalidEmailFormatsRejected(string $email): void
   {
     $result = Validator::isValidEmailDomain($email);
@@ -150,9 +149,8 @@ class ValidatorEmailDomainTest extends TestCase
 
   /**
    * Test that well-known legitimate email domains are accepted
-   *
-   * @dataProvider legitimateEmailProvider
    */
+  #[DataProvider('legitimateEmailProvider')]
   public function testLegitimateEmailDomainsAccepted(string $email): void
   {
     $result = Validator::isValidEmailDomain($email);
