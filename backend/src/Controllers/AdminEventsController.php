@@ -16,6 +16,8 @@ use Exception;
  */
 class AdminEventsController
 {
+    private const DEFAULT_EVENT_TIMEZONE = 'Europe/Berlin';
+
     /**
      * Get all events (including series)
      */
@@ -670,6 +672,7 @@ class AdminEventsController
 
     /**
      * Convert stored UTC timestamps back to the event timezone for admin editing/display.
+     * The admin frontend expects local wall-clock datetimes without an offset suffix.
      *
      * @param array<string, mixed> $event
      * @return array<string, mixed>
@@ -678,7 +681,14 @@ class AdminEventsController
     {
         $timezone = isset($event['timezone']) && is_string($event['timezone']) && trim($event['timezone']) !== ''
             ? $event['timezone']
-            : 'Europe/Berlin';
+            : self::DEFAULT_EVENT_TIMEZONE;
+
+        try {
+            $timezoneObject = new \DateTimeZone($timezone);
+        } catch (\Throwable) {
+            $timezone = self::DEFAULT_EVENT_TIMEZONE;
+            $timezoneObject = new \DateTimeZone($timezone);
+        }
 
         foreach (['start_datetime', 'end_datetime'] as $field) {
             if (empty($event[$field]) || !is_string($event[$field])) {
@@ -687,9 +697,10 @@ class AdminEventsController
 
             try {
                 $dt = new \DateTime($event[$field], new \DateTimeZone('UTC'));
-                $dt->setTimezone(new \DateTimeZone($timezone));
+                $dt->setTimezone($timezoneObject);
                 $event[$field] = $dt->format('Y-m-d\TH:i:s');
-            } catch (\Exception $e) {
+                $event['timezone'] = $timezone;
+            } catch (\Throwable) {
                 continue;
             }
         }

@@ -10,7 +10,7 @@ use ReflectionMethod;
 
 class AdminEventsControllerTimezoneTest extends TestCase
 {
-    public function testFormatEventForAdminResponseConvertsUtcToEventTimezone(): void
+    public function testConvertsUtcToEventTimezone(): void
     {
         $method = new ReflectionMethod(AdminEventsController::class, 'formatEventForAdminResponse');
         $method->setAccessible(true);
@@ -23,6 +23,7 @@ class AdminEventsControllerTimezoneTest extends TestCase
 
         $this->assertSame('2026-04-22T19:00:00', $formatted['start_datetime']);
         $this->assertSame('2026-04-22T23:00:00', $formatted['end_datetime']);
+        $this->assertSame('Europe/Berlin', $formatted['timezone']);
     }
 
     public function testFormatEventForAdminResponseFallsBackToBerlinTimezone(): void
@@ -37,5 +38,22 @@ class AdminEventsControllerTimezoneTest extends TestCase
 
         $this->assertSame('2026-01-22T19:00:00', $formatted['start_datetime']);
         $this->assertSame('2026-01-22T21:00:00', $formatted['end_datetime']);
+        $this->assertSame('Europe/Berlin', $formatted['timezone']);
+    }
+
+    public function testFormatEventForAdminResponseFallsBackFromInvalidTimezone(): void
+    {
+        $method = new ReflectionMethod(AdminEventsController::class, 'formatEventForAdminResponse');
+        $method->setAccessible(true);
+
+        $formatted = $method->invoke(null, [
+            'start_datetime' => '2026-01-22 18:00:00',
+            'end_datetime' => '2026-01-22 20:00:00',
+            'timezone' => 'Invalid/Timezone',
+        ]);
+
+        $this->assertSame('2026-01-22T19:00:00', $formatted['start_datetime']);
+        $this->assertSame('2026-01-22T21:00:00', $formatted['end_datetime']);
+        $this->assertSame('Europe/Berlin', $formatted['timezone']);
     }
 }
