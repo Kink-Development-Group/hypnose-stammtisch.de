@@ -34,7 +34,10 @@ class AdminEventsController
                          FROM events e
                          WHERE e.series_id IS NULL
                          ORDER BY e.start_datetime DESC";
-            $events = Database::fetchAll($eventsSql);
+            $events = array_map(
+                fn(array $event): array => self::formatEventForAdminResponse($event),
+                Database::fetchAll($eventsSql)
+            );
 
             // Get event series with aliased fields for frontend compatibility
             $seriesSql = "SELECT s.*, 'series' as event_type,
@@ -666,6 +669,35 @@ class AdminEventsController
     }
 
     /**
+     * Convert stored UTC timestamps back to the event timezone for admin editing/display.
+     *
+     * @param array<string, mixed> $event
+     * @return array<string, mixed>
+     */
+    private static function formatEventForAdminResponse(array $event): array
+    {
+        $timezone = isset($event['timezone']) && is_string($event['timezone']) && trim($event['timezone']) !== ''
+            ? $event['timezone']
+            : 'Europe/Berlin';
+
+        foreach (['start_datetime', 'end_datetime'] as $field) {
+            if (empty($event[$field]) || !is_string($event[$field])) {
+                continue;
+            }
+
+            try {
+                $dt = new \DateTime($event[$field], new \DateTimeZone('UTC'));
+                $dt->setTimezone(new \DateTimeZone($timezone));
+                $event[$field] = $dt->format('Y-m-d\TH:i:s');
+            } catch (\Exception $e) {
+                continue;
+            }
+        }
+
+        return $event;
+    }
+
+    /**
      * Create an override (individual instance) for an event series occurrence
      * POST /admin/events/series/{seriesId}/overrides
      * Body: { instance_date: 'YYYY-MM-DD', title?, start_time?, end_time?, description?, ... }
@@ -776,7 +808,10 @@ class AdminEventsController
             return;
         }
         try {
-            $rows = Database::fetchAll('SELECT * FROM events WHERE series_id = ? ORDER BY instance_date ASC', [$seriesId]);
+            $rows = array_map(
+                fn(array $event): array => self::formatEventForAdminResponse($event),
+                Database::fetchAll('SELECT * FROM events WHERE series_id = ? ORDER BY instance_date ASC', [$seriesId])
+            );
             Response::success(['overrides' => $rows]);
         } catch (\Exception $e) {
             Response::error('Failed to list overrides: ' . $e->getMessage(), 500);
