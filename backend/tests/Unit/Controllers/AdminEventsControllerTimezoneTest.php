@@ -57,6 +57,22 @@ class AdminEventsControllerTimezoneTest extends TestCase
         $this->assertSame('Europe/Berlin', $formatted['timezone']);
     }
 
+    public function testFormatEventForAdminResponseTrimsValidTimezone(): void
+    {
+        $method = new ReflectionMethod(AdminEventsController::class, 'formatEventForAdminResponse');
+        $method->setAccessible(true);
+
+        $formatted = $method->invoke(null, [
+            'start_datetime' => '2026-04-22 17:00:00',
+            'end_datetime' => '2026-04-22 21:00:00',
+            'timezone' => ' Europe/Berlin ',
+        ]);
+
+        $this->assertSame('2026-04-22T19:00:00', $formatted['start_datetime']);
+        $this->assertSame('2026-04-22T23:00:00', $formatted['end_datetime']);
+        $this->assertSame('Europe/Berlin', $formatted['timezone']);
+    }
+
     public function testFormatEventForAdminResponseNormalizesTimezoneWithoutDatetimes(): void
     {
         $method = new ReflectionMethod(AdminEventsController::class, 'formatEventForAdminResponse');

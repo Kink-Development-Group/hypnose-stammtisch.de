@@ -679,8 +679,12 @@ class AdminEventsController
      */
     private static function formatEventForAdminResponse(array $event): array
     {
-        $timezone = isset($event['timezone']) && is_string($event['timezone']) && trim($event['timezone']) !== ''
-            ? $event['timezone']
+        $normalizedTimezone = isset($event['timezone']) && is_string($event['timezone'])
+            ? trim($event['timezone'])
+            : '';
+
+        $timezone = $normalizedTimezone !== ''
+            ? $normalizedTimezone
             : self::DEFAULT_EVENT_TIMEZONE;
 
         try {
