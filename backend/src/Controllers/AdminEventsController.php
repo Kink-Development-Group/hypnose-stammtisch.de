@@ -241,8 +241,8 @@ class AdminEventsController
             }
 
             // Convert times to UTC
-            $startUTC = self::convertToUTC($input['start_datetime'], $input['timezone'] ?? 'Europe/Berlin');
-            $endUTC = self::convertToUTC($input['end_datetime'], $input['timezone'] ?? 'Europe/Berlin');
+            $startUTC = self::convertToUTC($input['start_datetime'], $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE);
+            $endUTC = self::convertToUTC($input['end_datetime'], $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE);
 
             // Validate chronological order
             if (strtotime($endUTC) <= strtotime($startUTC)) {
@@ -264,7 +264,7 @@ class AdminEventsController
                 $input['content'] ?? null,
                 $startUTC,
                 $endUTC,
-                $input['timezone'] ?? 'Europe/Berlin',
+                $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE,
                 $input['location_type'] ?? 'physical',
                 $input['location_name'] ?? null,
                 $input['location_address'] ?? null,
@@ -296,7 +296,7 @@ class AdminEventsController
                 'slug' => $slug ?? null,
                 'startUTC' => $startUTC ?? null,
                 'endUTC' => $endUTC ?? null,
-                'timezone' => $input['timezone'] ?? 'Europe/Berlin',
+                'timezone' => $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE,
                 'category' => $input['category'] ?? null,
                 'max_participants' => $input['max_participants'] ?? null,
             ]));
@@ -473,8 +473,8 @@ class AdminEventsController
 
         try {
             // Convert times to UTC
-            $startUTC = self::convertToUTC($input['start_datetime'], $input['timezone'] ?? 'Europe/Berlin');
-            $endUTC = self::convertToUTC($input['end_datetime'], $input['timezone'] ?? 'Europe/Berlin');
+            $startUTC = self::convertToUTC($input['start_datetime'], $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE);
+            $endUTC = self::convertToUTC($input['end_datetime'], $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE);
 
             $sql = "UPDATE events SET
                 title = ?, description = ?, content = ?, start_datetime = ?, end_datetime = ?,
@@ -490,7 +490,7 @@ class AdminEventsController
                 $input['content'] ?? null,
                 $startUTC,
                 $endUTC,
-                $input['timezone'] ?? 'Europe/Berlin',
+                $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE,
                 $input['location_type'] ?? 'physical',
                 $input['location_name'] ?? null,
                 $input['location_address'] ?? null,
@@ -690,6 +690,8 @@ class AdminEventsController
             $timezoneObject = new \DateTimeZone($timezone);
         }
 
+        $event['timezone'] = $timezone;
+
         foreach (['start_datetime', 'end_datetime'] as $field) {
             if (empty($event[$field]) || !is_string($event[$field])) {
                 continue;
@@ -699,7 +701,6 @@ class AdminEventsController
                 $dt = new \DateTime($event[$field], new \DateTimeZone('UTC'));
                 $dt->setTimezone($timezoneObject);
                 $event[$field] = $dt->format('Y-m-d\TH:i:s');
-                $event['timezone'] = $timezone;
             } catch (\Throwable) {
                 continue;
             }
@@ -760,7 +761,7 @@ class AdminEventsController
                 return;
             }
 
-            $timezone = $input['timezone'] ?? 'Europe/Berlin';
+            $timezone = $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE;
             $startDtLocal = $instanceDate . ' ' . $startTime;
             $endDtLocal = $instanceDate . ' ' . $endTime;
             $startUTC = self::convertToUTC($startDtLocal, $timezone);
@@ -981,7 +982,7 @@ class AdminEventsController
             $exdates = JsonHelper::decodeArray($series['exdates']);
 
             // Calculate upcoming instances using RRuleProcessor
-            $tz = 'Europe/Berlin';
+            $tz = self::DEFAULT_EVENT_TIMEZONE;
             $startDate = \Carbon\Carbon::now($tz)->startOfDay();
             // Look ahead up to 2 years to find enough instances
             $endDate = $startDate->copy()->addYears(2);
@@ -1044,7 +1045,7 @@ class AdminEventsController
             return false;
         }
 
-        $tz = 'Europe/Berlin';
+        $tz = self::DEFAULT_EVENT_TIMEZONE;
         $targetDate = \Carbon\Carbon::parse($instanceDate, $tz);
 
         // Check +/- 1 day to account for timezone edge cases
@@ -1128,7 +1129,7 @@ class AdminEventsController
                 Response::error('Serie benötigt start_time & end_time für Cancel-Instanz (Migration 003+)', 400);
                 return;
             }
-            $tz = 'Europe/Berlin';
+            $tz = self::DEFAULT_EVENT_TIMEZONE;
             $startUTC = self::convertToUTC($instanceDate . ' ' . $series['start_time'], $tz);
             $endUTC = self::convertToUTC($instanceDate . ' ' . $series['end_time'], $tz);
             $insertSql = 'INSERT INTO events (title, slug, start_datetime, end_datetime, timezone, category, status, tags, series_id, instance_date, parent_event_id, override_type, cancellation_reason) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)';
