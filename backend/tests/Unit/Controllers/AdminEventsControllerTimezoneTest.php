@@ -10,12 +10,43 @@ use ReflectionMethod;
 
 class AdminEventsControllerTimezoneTest extends TestCase
 {
+    private ReflectionMethod $formatEventForAdminResponseMethod;
+    private ReflectionMethod $normalizeEventTimezoneMethod;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->formatEventForAdminResponseMethod = new ReflectionMethod(
+            AdminEventsController::class,
+            'formatEventForAdminResponse'
+        );
+        $this->formatEventForAdminResponseMethod->setAccessible(true);
+
+        $this->normalizeEventTimezoneMethod = new ReflectionMethod(
+            AdminEventsController::class,
+            'normalizeEventTimezone'
+        );
+        $this->normalizeEventTimezoneMethod->setAccessible(true);
+    }
+
+    /**
+     * @param array<string, mixed> $event
+     * @return array<string, mixed>
+     */
+    private function formatEventForAdminResponse(array $event): array
+    {
+        return $this->formatEventForAdminResponseMethod->invoke(null, $event);
+    }
+
+    private function normalizeEventTimezone(mixed $timezone): string
+    {
+        return $this->normalizeEventTimezoneMethod->invoke(null, $timezone);
+    }
+
     public function testConvertsUtcToEventTimezone(): void
     {
-        $method = new ReflectionMethod(AdminEventsController::class, 'formatEventForAdminResponse');
-        $method->setAccessible(true);
-
-        $formatted = $method->invoke(null, [
+        $formatted = $this->formatEventForAdminResponse([
             'start_datetime' => '2026-04-22 17:00:00',
             'end_datetime' => '2026-04-22 21:00:00',
             'timezone' => 'Europe/Berlin',
@@ -28,10 +59,7 @@ class AdminEventsControllerTimezoneTest extends TestCase
 
     public function testFormatEventForAdminResponseFallsBackToBerlinTimezone(): void
     {
-        $method = new ReflectionMethod(AdminEventsController::class, 'formatEventForAdminResponse');
-        $method->setAccessible(true);
-
-        $formatted = $method->invoke(null, [
+        $formatted = $this->formatEventForAdminResponse([
             'start_datetime' => '2026-01-22 18:00:00',
             'end_datetime' => '2026-01-22 20:00:00',
         ]);
@@ -43,10 +71,7 @@ class AdminEventsControllerTimezoneTest extends TestCase
 
     public function testFormatEventForAdminResponseFallsBackFromInvalidTimezone(): void
     {
-        $method = new ReflectionMethod(AdminEventsController::class, 'formatEventForAdminResponse');
-        $method->setAccessible(true);
-
-        $formatted = $method->invoke(null, [
+        $formatted = $this->formatEventForAdminResponse([
             'start_datetime' => '2026-01-22 18:00:00',
             'end_datetime' => '2026-01-22 20:00:00',
             'timezone' => 'Invalid/Timezone',
@@ -59,10 +84,7 @@ class AdminEventsControllerTimezoneTest extends TestCase
 
     public function testFormatEventForAdminResponseTrimsValidTimezone(): void
     {
-        $method = new ReflectionMethod(AdminEventsController::class, 'formatEventForAdminResponse');
-        $method->setAccessible(true);
-
-        $formatted = $method->invoke(null, [
+        $formatted = $this->formatEventForAdminResponse([
             'start_datetime' => '2026-04-22 17:00:00',
             'end_datetime' => '2026-04-22 21:00:00',
             'timezone' => ' Europe/Berlin ',
@@ -75,10 +97,7 @@ class AdminEventsControllerTimezoneTest extends TestCase
 
     public function testFormatEventForAdminResponseNormalizesTimezoneWithoutDatetimes(): void
     {
-        $method = new ReflectionMethod(AdminEventsController::class, 'formatEventForAdminResponse');
-        $method->setAccessible(true);
-
-        $formatted = $method->invoke(null, [
+        $formatted = $this->formatEventForAdminResponse([
             'title' => 'Nur Zeitzone',
             'timezone' => 'Invalid/Timezone',
         ]);
@@ -87,5 +106,15 @@ class AdminEventsControllerTimezoneTest extends TestCase
         $this->assertSame('Europe/Berlin', $formatted['timezone']);
         $this->assertArrayNotHasKey('start_datetime', $formatted);
         $this->assertArrayNotHasKey('end_datetime', $formatted);
+    }
+
+    public function testNormalizeEventTimezoneFallsBackFromInvalidTimezone(): void
+    {
+        $this->assertSame('Europe/Berlin', $this->normalizeEventTimezone('Invalid/Timezone'));
+    }
+
+    public function testNormalizeEventTimezoneTrimsValidTimezone(): void
+    {
+        $this->assertSame('Europe/Berlin', $this->normalizeEventTimezone(' Europe/Berlin '));
     }
 }

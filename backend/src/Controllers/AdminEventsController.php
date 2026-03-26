@@ -240,9 +240,11 @@ class AdminEventsController
                 return;
             }
 
+            $timezone = self::normalizeEventTimezone($input['timezone'] ?? null);
+
             // Convert times to UTC
-            $startUTC = self::convertToUTC($input['start_datetime'], $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE);
-            $endUTC = self::convertToUTC($input['end_datetime'], $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE);
+            $startUTC = self::convertToUTC($input['start_datetime'], $timezone);
+            $endUTC = self::convertToUTC($input['end_datetime'], $timezone);
 
             // Validate chronological order
             if (strtotime($endUTC) <= strtotime($startUTC)) {
@@ -264,7 +266,7 @@ class AdminEventsController
                 $input['content'] ?? null,
                 $startUTC,
                 $endUTC,
-                $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE,
+                $timezone,
                 $input['location_type'] ?? 'physical',
                 $input['location_name'] ?? null,
                 $input['location_address'] ?? null,
@@ -296,7 +298,7 @@ class AdminEventsController
                 'slug' => $slug ?? null,
                 'startUTC' => $startUTC ?? null,
                 'endUTC' => $endUTC ?? null,
-                'timezone' => $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE,
+                'timezone' => $timezone,
                 'category' => $input['category'] ?? null,
                 'max_participants' => $input['max_participants'] ?? null,
             ]));
@@ -472,9 +474,11 @@ class AdminEventsController
         }
 
         try {
+            $timezone = self::normalizeEventTimezone($input['timezone'] ?? null);
+
             // Convert times to UTC
-            $startUTC = self::convertToUTC($input['start_datetime'], $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE);
-            $endUTC = self::convertToUTC($input['end_datetime'], $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE);
+            $startUTC = self::convertToUTC($input['start_datetime'], $timezone);
+            $endUTC = self::convertToUTC($input['end_datetime'], $timezone);
 
             $sql = "UPDATE events SET
                 title = ?, description = ?, content = ?, start_datetime = ?, end_datetime = ?,
@@ -490,7 +494,7 @@ class AdminEventsController
                 $input['content'] ?? null,
                 $startUTC,
                 $endUTC,
-                $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE,
+                $timezone,
                 $input['location_type'] ?? 'physical',
                 $input['location_name'] ?? null,
                 $input['location_address'] ?? null,
@@ -671,6 +675,27 @@ class AdminEventsController
     }
 
     /**
+     * Normalize event timezones used by admin write paths.
+     */
+    private static function normalizeEventTimezone(mixed $timezone): string
+    {
+        $normalizedTimezone = is_string($timezone)
+            ? trim($timezone)
+            : '';
+
+        if ($normalizedTimezone === '') {
+            return self::DEFAULT_EVENT_TIMEZONE;
+        }
+
+        try {
+            new \DateTimeZone($normalizedTimezone);
+            return $normalizedTimezone;
+        } catch (\Throwable) {
+            return self::DEFAULT_EVENT_TIMEZONE;
+        }
+    }
+
+    /**
      * Convert stored UTC timestamps back to the event timezone for admin editing/display.
      * The admin frontend expects local wall-clock datetimes without an offset suffix.
      *
@@ -679,20 +704,8 @@ class AdminEventsController
      */
     private static function formatEventForAdminResponse(array $event): array
     {
-        $normalizedTimezone = isset($event['timezone']) && is_string($event['timezone'])
-            ? trim($event['timezone'])
-            : '';
-
-        $timezone = $normalizedTimezone !== ''
-            ? $normalizedTimezone
-            : self::DEFAULT_EVENT_TIMEZONE;
-
-        try {
-            $timezoneObject = new \DateTimeZone($timezone);
-        } catch (\Throwable) {
-            $timezone = self::DEFAULT_EVENT_TIMEZONE;
-            $timezoneObject = new \DateTimeZone($timezone);
-        }
+        $timezone = self::normalizeEventTimezone($event['timezone'] ?? null);
+        $timezoneObject = new \DateTimeZone($timezone);
 
         $event['timezone'] = $timezone;
 
@@ -765,7 +778,7 @@ class AdminEventsController
                 return;
             }
 
-            $timezone = $input['timezone'] ?? self::DEFAULT_EVENT_TIMEZONE;
+            $timezone = self::normalizeEventTimezone($input['timezone'] ?? null);
             $startDtLocal = $instanceDate . ' ' . $startTime;
             $endDtLocal = $instanceDate . ' ' . $endTime;
             $startUTC = self::convertToUTC($startDtLocal, $timezone);
