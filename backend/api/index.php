@@ -35,6 +35,7 @@ use HypnoseStammtisch\Controllers\EventsController;
 use HypnoseStammtisch\Controllers\ContactController;
 use HypnoseStammtisch\Controllers\CalendarController;
 use HypnoseStammtisch\Controllers\FormController;
+use HypnoseStammtisch\Controllers\SitemapController;
 use HypnoseStammtisch\Controllers\StammtischLocationController;
 use HypnoseStammtisch\Utils\Response;
 
@@ -91,6 +92,13 @@ if ($path === 'calendar.ics') {
   $calendarController = new CalendarController();
   $token = $_GET['token'] ?? null;
   $calendarController->feed($token);
+  return;
+}
+
+// Serve XML sitemap for search engines
+if ($path === 'sitemap.xml' || $path === 'sitemap') {
+  $sitemapController = new SitemapController();
+  $sitemapController->index();
   return;
 }
 
@@ -178,7 +186,8 @@ function handleApiInfo(): void
         'GET /calendar/event/{id}/ics' => 'Get ICS for single event',
         'GET /stammtisch-locations' => 'Get all published stammtisch locations',
         'GET /stammtisch-locations/meta' => 'Get stammtisch location metadata',
-        'GET /stammtisch-locations/{id}' => 'Get single stammtisch location by ID'
+        'GET /stammtisch-locations/{id}' => 'Get single stammtisch location by ID',
+        'GET /sitemap.xml' => 'XML sitemap for search engines'
       ],
       'documentation' => Config::get('app.url') . '/docs',
       'support' => 'support@hypnose-stammtisch.de'
