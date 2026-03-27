@@ -48,6 +48,10 @@ class SitemapController
     {
         $baseUrl = rtrim((string) Config::get('app.frontend_url', 'https://hypnose-stammtisch.de'), '/');
 
+        if ($baseUrl === '' || filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
+            $baseUrl = 'https://hypnose-stammtisch.de';
+        }
+
         $urls = [];
 
         // Static pages
@@ -90,7 +94,10 @@ class SitemapController
                 ];
 
                 if (!empty($row['updated_at'])) {
-                    $entry['lastmod'] = date('Y-m-d', strtotime($row['updated_at']));
+                    $ts = strtotime($row['updated_at']);
+                    if ($ts !== false) {
+                        $entry['lastmod'] = date('Y-m-d', $ts);
+                    }
                 }
 
                 $urls[] = $entry;
@@ -124,7 +131,10 @@ class SitemapController
                 ];
 
                 if (!empty($row['updated_at'])) {
-                    $entry['lastmod'] = date('Y-m-d', strtotime($row['updated_at']));
+                    $ts = strtotime($row['updated_at']);
+                    if ($ts !== false) {
+                        $entry['lastmod'] = date('Y-m-d', $ts);
+                    }
                 }
 
                 $urls[] = $entry;
