@@ -20,6 +20,7 @@ use HypnoseStammtisch\Utils\RRuleProcessor;
 class SitemapController
 {
     private const SERIES_EXPANSION_YEARS = 3;
+    private const SERIES_EXPANSION_CHUNK_MONTHS = 1;
     private const DEFAULT_EVENT_DURATION_MINUTES = 120;
     private const DEFAULT_SERIES_START_TIME = '19:00:00';
     private const STANDALONE_EVENT_LOOKBACK_YEARS = 2;
@@ -90,7 +91,9 @@ class SitemapController
 
         $baseUrl = str_replace(["\r", "\n"], '', $this->getFrontendBaseUrl());
 
-        echo "User-agent: *\nDisallow: /api\nDisallow: /admin\n\n";
+        // Use exact-path "$" rules plus directory rules so crawlers block
+        // /api and /admin without accidentally matching /apiary or /administrator.
+        echo "User-agent: *\nDisallow: /api$\nDisallow: /api/\nDisallow: /admin$\nDisallow: /admin/\n\n";
         echo 'Sitemap: ' . $baseUrl . "/sitemap.xml\n";
     }
 
@@ -282,19 +285,16 @@ class SitemapController
             'timezone' => $timezone,
             'rrule' => (string) $series['rrule'],
         ];
-
-        $instances = RRuleProcessor::expandRecurringEvent(
+        $instanceDate = $this->findFirstRecurringInstanceDate(
             $pseudoEvent,
             $searchStart,
             $expansionEnd,
             JsonHelper::decodeArray($series['exdates'] ?? '[]')
         );
 
-        if (empty($instances) || empty($instances[0]['instance_date'])) {
-            return null;
-        }
-
-        return 'series_' . $series['id'] . '_' . $instances[0]['instance_date'];
+        return $instanceDate !== null
+            ? 'series_' . $series['id'] . '_' . $instanceDate
+            : null;
     }
 
     private function buildPublicUrl(string $baseUrl, string $path): string
@@ -319,18 +319,67 @@ class SitemapController
     }
 
     /**
+     * Search recurrence instances in bounded chunks until the next visible date is found.
+     *
+     * @param array<string, mixed> $pseudoEvent
+     * @param array<int, mixed> $exdates
+     */
+    private function findFirstRecurringInstanceDate(
+        array $pseudoEvent,
+        Carbon $searchStart,
+        Carbon $expansionEnd,
+        array $exdates
+    ): ?string {
+        $chunkStart = $searchStart->copy();
+
+        while ($chunkStart->lte($expansionEnd)) {
+            $chunkEnd = $chunkStart->copy()
+                ->addMonths(self::SERIES_EXPANSION_CHUNK_MONTHS);
+
+            if ($chunkEnd->gt($expansionEnd)) {
+                $chunkEnd = $expansionEnd->copy();
+            }
+
+            $instances = RRuleProcessor::expandRecurringEvent(
+                $pseudoEvent,
+                $chunkStart,
+                $chunkEnd,
+                $exdates
+            );
+
+            if (!empty($instances) && !empty($instances[0]['instance_date'])) {
+                return (string) $instances[0]['instance_date'];
+            }
+
+            $chunkStart = $chunkEnd->copy()->addSecond();
+        }
+
+        return null;
+    }
+
+    /**
      * Resolve and validate the frontend base URL used for sitemap/robots output.
      */
     private function getFrontendBaseUrl(): string
     {
         $configuredBaseUrl = (string) Config::get('app.frontend_url', 'https://hypnose-stammtisch.de');
         $trimmedBaseUrl = trim($configuredBaseUrl);
+        $parsedUrl = parse_url($trimmedBaseUrl);
         $baseUrl = rtrim($trimmedBaseUrl, '/');
 
         if (
             $baseUrl === ''
             || preg_match('/\s/', $trimmedBaseUrl) === 1
-            || filter_var($baseUrl, FILTER_VALIDATE_URL) === false
+            || $parsedUrl === false
+            || !in_array(strtolower((string) ($parsedUrl['scheme'] ?? '')), ['http', 'https'], true)
+            || empty($parsedUrl['host'])
+            // Treat a lone "/" as equivalent to no path so origins like
+            // "https://example.org/" remain valid after normalization.
+            || (!empty($parsedUrl['path']) && $parsedUrl['path'] !== '/')
+            || isset($parsedUrl['query'])
+            || isset($parsedUrl['fragment'])
+            || isset($parsedUrl['user'])
+            || isset($parsedUrl['pass'])
         ) {
             return 'https://hypnose-stammtisch.de';
         }
@@ -339,7 +388,7 @@ class SitemapController
     }
 
     /**
-     * Render the URL list as an XML sitemap and terminate.
+     * Render the URL list as an XML sitemap.
      *
      * @param array<int, array<string, string>> $urls
      */
@@ -372,7 +421,6 @@ class SitemapController
         $xml .= '</urlset>';
 
         echo $xml;
-        exit;
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace HypnoseStammtisch\Tests\Unit\Controllers;
 
 use Carbon\Carbon;
+use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Controllers\SitemapController;
 use PHPUnit\Framework\TestCase;
 
@@ -16,8 +17,24 @@ use PHPUnit\Framework\TestCase;
  */
 class SitemapControllerTest extends TestCase
 {
+    private ?string $originalFrontendUrl = null;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->originalFrontendUrl = $_ENV['FRONTEND_URL'] ?? null;
+        Config::reset();
+    }
+
     protected function tearDown(): void
     {
+        if ($this->originalFrontendUrl === null) {
+            unset($_ENV['FRONTEND_URL']);
+        } else {
+            $_ENV['FRONTEND_URL'] = $this->originalFrontendUrl;
+        }
+
+        Config::reset();
         Carbon::setTestNow();
         parent::tearDown();
     }
@@ -259,6 +276,67 @@ class SitemapControllerTest extends TestCase
         $url = $this->invokeBuildPublicUrl('https://hypnose-stammtisch.de', '/events/abc');
 
         $this->assertSame('https://hypnose-stammtisch.de/events/abc', $url);
+    }
+
+    public function testRobotsFallsBackToDefaultSitemapOriginForInvalidFrontendUrl(): void
+    {
+        $_ENV['FRONTEND_URL'] = 'ftp://example.org/somewhere';
+        Config::reset();
+
+        $controller = new SitemapController();
+
+        ob_start();
+        $controller->robots();
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString(
+            "Sitemap: https://hypnose-stammtisch.de/sitemap.xml\n",
+            $output
+        );
+    }
+
+    public function testRobotsAcceptsConfiguredOriginWithPortAndTrailingSlash(): void
+    {
+        $_ENV['FRONTEND_URL'] = 'https://localhost:5173/';
+        Config::reset();
+
+        $controller = new SitemapController();
+
+        ob_start();
+        $controller->robots();
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString(
+            "Sitemap: https://localhost:5173/sitemap.xml\n",
+            $output
+        );
+    }
+
+    public function testRobotsUsesExactAndDirectoryDisallowRules(): void
+    {
+        $_ENV['FRONTEND_URL'] = 'https://localhost:5173';
+        Config::reset();
+
+        $controller = new SitemapController();
+
+        ob_start();
+        $controller->robots();
+        $output = ob_get_clean();
+
+        $expected = <<<ROBOTS
+User-agent: *
+Disallow: /api$
+Disallow: /api/
+Disallow: /admin$
+Disallow: /admin/
+
+Sitemap: https://localhost:5173/sitemap.xml
+ROBOTS;
+
+        $this->assertSame(
+            $expected,
+            $output
+        );
     }
 
     /**
