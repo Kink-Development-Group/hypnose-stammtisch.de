@@ -111,25 +111,31 @@ class SitemapController
             $series = $this->fetchPublishedSeriesRows();
 
             foreach ($series as $row) {
-                $identifier = $this->buildNextSeriesInstanceIdentifier($row);
-                if ($identifier === null) {
+                try {
+                    $identifier = $this->buildNextSeriesInstanceIdentifier($row);
+                    if ($identifier === null) {
+                        continue;
+                    }
+
+                    $entry = [
+                        'loc'        => $this->buildPublicUrl($baseUrl, '/events/' . rawurlencode($identifier)),
+                        'changefreq' => 'weekly',
+                        'priority'   => '0.8',
+                    ];
+
+                    if (!empty($row['updated_at'])) {
+                        $lastmod = $this->formatLastmodDate((string) $row['updated_at']);
+                        if ($lastmod !== null) {
+                            $entry['lastmod'] = $lastmod;
+                        }
+                    }
+
+                    $urls[] = $entry;
+                } catch (\Throwable $e) {
+                    $seriesId = isset($row['id']) ? (string) $row['id'] : 'unknown';
+                    error_log('Sitemap: Skipping invalid event series ' . $seriesId . ' – ' . $e->getMessage());
                     continue;
                 }
-
-                $entry = [
-                    'loc'        => $this->buildPublicUrl($baseUrl, '/events/' . rawurlencode($identifier)),
-                    'changefreq' => 'weekly',
-                    'priority'   => '0.8',
-                ];
-
-                if (!empty($row['updated_at'])) {
-                    $lastmod = $this->formatLastmodDate((string) $row['updated_at']);
-                    if ($lastmod !== null) {
-                        $entry['lastmod'] = $lastmod;
-                    }
-                }
-
-                $urls[] = $entry;
             }
         } catch (\Exception $e) {
             error_log('Sitemap: Failed to fetch event series – ' . $e->getMessage());

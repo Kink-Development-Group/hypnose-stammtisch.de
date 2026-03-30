@@ -528,6 +528,27 @@ class RRuleProcessorTest extends TestCase
         $this->assertSame('2026-04-08', substr($instances[1]['start_datetime'], 0, 10));
     }
 
+    public function testExpandWeeklyEventWhenSearchTimezoneDiffersFromEventTimezone(): void
+    {
+        $event = [
+            'id' => 'test-11c',
+            'title' => 'Timezone Sensitive Weekly Meeting',
+            'start_datetime' => '2020-01-06 19:00:00',
+            'end_datetime' => '2020-01-06 21:00:00',
+            'timezone' => 'America/Los_Angeles',
+            'rrule' => 'FREQ=WEEKLY;BYDAY=MO'
+        ];
+
+        $start = Carbon::parse('2026-03-30 00:30:00', 'UTC');
+        $end = Carbon::parse('2026-04-08 23:59:59', 'UTC');
+
+        $instances = RRuleProcessor::expandRecurringEvent($event, $start, $end);
+
+        $this->assertCount(2, $instances);
+        $this->assertSame('2026-03-30', substr($instances[0]['start_datetime'], 0, 10));
+        $this->assertSame('2026-04-06', substr($instances[1]['start_datetime'], 0, 10));
+    }
+
     public function testExpandSecondSaturday(): void
     {
         $event = [

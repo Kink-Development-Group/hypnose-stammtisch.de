@@ -285,7 +285,9 @@ class RRuleProcessor
         ?int $bySetPos,
         ?array $byMonthDay
     ): Carbon {
-        if ($count !== null || $eventStart->gte($startDate)) {
+        $normalizedStartDate = $startDate->copy()->setTimezone($eventStart->getTimezone());
+
+        if ($count !== null || $eventStart->gte($normalizedStartDate)) {
             $current = $eventStart->copy();
         } else {
             $interval = max(1, $interval);
@@ -293,7 +295,7 @@ class RRuleProcessor
             switch ($freq) {
                 case 'DAILY':
                     $steps = intdiv(
-                        $eventStart->copy()->startOfDay()->diffInDays($startDate->copy()->startOfDay()),
+                        $eventStart->copy()->startOfDay()->diffInDays($normalizedStartDate->copy()->startOfDay()),
                         $interval
                     );
                     $current = $eventStart->copy()->addDays($steps * $interval);
@@ -302,12 +304,12 @@ class RRuleProcessor
                 case 'WEEKLY':
                     if ($byDay) {
                         $eventAnchor = $eventStart->copy()->startOfWeek(Carbon::MONDAY);
-                        $startAnchor = $startDate->copy()->startOfWeek(Carbon::MONDAY);
+                        $startAnchor = $normalizedStartDate->copy()->startOfWeek(Carbon::MONDAY);
                         $steps = intdiv($eventAnchor->diffInWeeks($startAnchor), $interval);
                         $current = $eventAnchor->copy()->addWeeks($steps * $interval);
                     } else {
                         $steps = intdiv(
-                            $eventStart->copy()->startOfDay()->diffInWeeks($startDate->copy()->startOfDay()),
+                            $eventStart->copy()->startOfDay()->diffInWeeks($normalizedStartDate->copy()->startOfDay()),
                             $interval
                         );
                         $current = $eventStart->copy()->addWeeks($steps * $interval);
@@ -317,12 +319,12 @@ class RRuleProcessor
                 case 'MONTHLY':
                     if ($bySetPos !== null || !empty($byDayPositions) || $byMonthDay !== null) {
                         $eventAnchor = $eventStart->copy()->startOfMonth();
-                        $startAnchor = $startDate->copy()->startOfMonth();
+                        $startAnchor = $normalizedStartDate->copy()->startOfMonth();
                         $steps = intdiv($eventAnchor->diffInMonths($startAnchor), $interval);
                         $current = $eventAnchor->copy()->addMonths($steps * $interval);
                     } else {
                         $steps = intdiv(
-                            $eventStart->copy()->startOfDay()->diffInMonths($startDate->copy()->startOfDay()),
+                            $eventStart->copy()->startOfDay()->diffInMonths($normalizedStartDate->copy()->startOfDay()),
                             $interval
                         );
                         $current = $eventStart->copy()->addMonths($steps * $interval);
@@ -331,7 +333,7 @@ class RRuleProcessor
 
                 case 'YEARLY':
                     $steps = intdiv(
-                        $eventStart->copy()->startOfDay()->diffInYears($startDate->copy()->startOfDay()),
+                        $eventStart->copy()->startOfDay()->diffInYears($normalizedStartDate->copy()->startOfDay()),
                         $interval
                     );
                     $current = $eventStart->copy()->addYears($steps * $interval);
