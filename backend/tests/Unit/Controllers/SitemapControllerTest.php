@@ -248,6 +248,23 @@ class SitemapControllerTest extends TestCase
         $this->assertSame('series_series-790_2026-04-06', $identifier);
     }
 
+    public function testBuildNextSeriesInstanceIdentifierReturnsNullForEndedSeries(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-03-30 09:00:00', 'Europe/Berlin'));
+
+        $identifier = $this->invokeBuildNextSeriesInstanceIdentifier([
+            'id' => 'series-ended',
+            'start_date' => '2020-01-01',
+            'end_date' => '2026-03-29',
+            'start_time' => '19:00:00',
+            'end_time' => '21:00:00',
+            'rrule' => 'FREQ=WEEKLY;BYDAY=WE',
+            'exdates' => '[]',
+        ]);
+
+        $this->assertNull($identifier);
+    }
+
     public function testBuildPublicUrlUsesServerVisiblePaths(): void
     {
         $url = $this->invokeBuildPublicUrl('https://hypnose-stammtisch.de', '/#/events/series_123_2026-04-01');

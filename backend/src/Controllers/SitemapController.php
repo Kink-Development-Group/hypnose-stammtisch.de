@@ -19,6 +19,7 @@ use HypnoseStammtisch\Utils\RRuleProcessor;
  */
 class SitemapController
 {
+    private const DEFAULT_APP_TIMEZONE = 'Europe/Berlin';
     private const SERIES_EXPANSION_YEARS = 3;
     private const SERIES_EXPANSION_CHUNK_MONTHS = 1;
     private const DEFAULT_EVENT_DURATION_MINUTES = 120;
@@ -145,12 +146,17 @@ class SitemapController
      */
     private function fetchPublishedSeriesRows(): array
     {
+        $activeSeriesCutoff = Carbon::now(Config::get('app.timezone', self::DEFAULT_APP_TIMEZONE))
+            ->toDateString();
+
         try {
             return Database::fetchAll(
                 "SELECT id, start_date, end_date, start_time, end_time, default_duration_minutes, rrule, exdates, updated_at
-                 FROM event_series
-                 WHERE status = 'published'
-                 ORDER BY updated_at DESC"
+                  FROM event_series
+                  WHERE status = 'published'
+                    AND (end_date IS NULL OR end_date >= ?)
+                  ORDER BY updated_at DESC",
+                [$activeSeriesCutoff]
             );
         } catch (\Exception $e) {
             $message = strtolower($e->getMessage());
@@ -162,9 +168,11 @@ class SitemapController
 
                 return Database::fetchAll(
                     "SELECT id, start_date, end_date, default_duration_minutes, rrule, exdates, updated_at
-                     FROM event_series
-                     WHERE status = 'published'
-                     ORDER BY updated_at DESC"
+                      FROM event_series
+                      WHERE status = 'published'
+                        AND (end_date IS NULL OR end_date >= ?)
+                      ORDER BY updated_at DESC",
+                    [$activeSeriesCutoff]
                 );
             }
 
@@ -182,7 +190,7 @@ class SitemapController
         $urls = [];
 
         try {
-            $updatedSince = Carbon::now(Config::get('app.timezone', 'Europe/Berlin'))
+            $updatedSince = Carbon::now(Config::get('app.timezone', self::DEFAULT_APP_TIMEZONE))
                 ->subYears(self::STANDALONE_EVENT_LOOKBACK_YEARS)
                 ->toDateTimeString();
             $events = Database::fetchAll(
@@ -224,7 +232,7 @@ class SitemapController
         try {
             return Carbon::parse(
                 $updatedAt,
-                Config::get('app.timezone', 'Europe/Berlin')
+                Config::get('app.timezone', self::DEFAULT_APP_TIMEZONE)
             )->toDateString();
         } catch (\Throwable) {
             return null;
@@ -242,7 +250,7 @@ class SitemapController
             return null;
         }
 
-        $timezone = Config::get('app.timezone', 'Europe/Berlin');
+        $timezone = Config::get('app.timezone', self::DEFAULT_APP_TIMEZONE);
         $now = Carbon::now($timezone);
         $maxExpansionEnd = $now->copy()->addYears(self::SERIES_EXPANSION_YEARS)->endOfDay();
         $seriesEnd = !empty($series['end_date'])
