@@ -141,16 +141,20 @@ class RRuleProcessor
         // Parse BYMONTHDAY
         $byMonthDay = isset($rrule['BYMONTHDAY']) ? array_map('intval', explode(',', $rrule['BYMONTHDAY'])) : null;
 
-        // For monthly/yearly with BYSETPOS, we need to start iteration from the beginning of the month
-        // to correctly find the n-th weekday
-        $current = $eventStart->copy();
-        if ($freq === 'MONTHLY' && ($bySetPos !== null || !empty($byDayPositions))) {
-            $current->startOfMonth();
-        }
-
         $instanceCount = 0;
         $maxInstances = $count ?? 1000; // Safety limit
         $generatedCount = 0; // Count of actually generated instances
+        $current = self::initializeIterationCursor(
+            $eventStart,
+            $startDate,
+            $freq,
+            $interval,
+            $count,
+            $byDay,
+            $byDayPositions,
+            $bySetPos,
+            $byMonthDay
+        );
 
         while ($current->lte($endDate) && $generatedCount < $maxInstances) {
             $occurrenceDates = [];
@@ -264,6 +268,86 @@ class RRuleProcessor
         }
 
         return $instances;
+    }
+
+    /**
+     * Move the iteration cursor closer to the requested range for long-running
+     * recurring series without COUNT limits.
+     */
+    private static function initializeIterationCursor(
+        Carbon $eventStart,
+        Carbon $startDate,
+        string $freq,
+        int $interval,
+        ?int $count,
+        ?array $byDay,
+        array $byDayPositions,
+        ?int $bySetPos,
+        ?array $byMonthDay
+    ): Carbon {
+        if ($count !== null || $eventStart->gte($startDate)) {
+            $current = $eventStart->copy();
+        } else {
+            $interval = max(1, $interval);
+
+            switch ($freq) {
+                case 'DAILY':
+                    $steps = intdiv(
+                        $eventStart->copy()->startOfDay()->diffInDays($startDate->copy()->startOfDay()),
+                        $interval
+                    );
+                    $current = $eventStart->copy()->addDays($steps * $interval);
+                    break;
+
+                case 'WEEKLY':
+                    if ($byDay) {
+                        $eventAnchor = $eventStart->copy()->startOfWeek(Carbon::MONDAY);
+                        $startAnchor = $startDate->copy()->startOfWeek(Carbon::MONDAY);
+                        $steps = intdiv($eventAnchor->diffInWeeks($startAnchor), $interval);
+                        $current = $eventAnchor->copy()->addWeeks($steps * $interval);
+                    } else {
+                        $steps = intdiv(
+                            $eventStart->copy()->startOfDay()->diffInWeeks($startDate->copy()->startOfDay()),
+                            $interval
+                        );
+                        $current = $eventStart->copy()->addWeeks($steps * $interval);
+                    }
+                    break;
+
+                case 'MONTHLY':
+                    if ($bySetPos !== null || !empty($byDayPositions) || $byMonthDay !== null) {
+                        $eventAnchor = $eventStart->copy()->startOfMonth();
+                        $startAnchor = $startDate->copy()->startOfMonth();
+                        $steps = intdiv($eventAnchor->diffInMonths($startAnchor), $interval);
+                        $current = $eventAnchor->copy()->addMonths($steps * $interval);
+                    } else {
+                        $steps = intdiv(
+                            $eventStart->copy()->startOfDay()->diffInMonths($startDate->copy()->startOfDay()),
+                            $interval
+                        );
+                        $current = $eventStart->copy()->addMonths($steps * $interval);
+                    }
+                    break;
+
+                case 'YEARLY':
+                    $steps = intdiv(
+                        $eventStart->copy()->startOfDay()->diffInYears($startDate->copy()->startOfDay()),
+                        $interval
+                    );
+                    $current = $eventStart->copy()->addYears($steps * $interval);
+                    break;
+
+                default:
+                    $current = $eventStart->copy();
+                    break;
+            }
+        }
+
+        if ($freq === 'MONTHLY' && ($bySetPos !== null || !empty($byDayPositions))) {
+            $current->startOfMonth();
+        }
+
+        return $current;
     }
 
     /**

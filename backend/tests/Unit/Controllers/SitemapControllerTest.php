@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace HypnoseStammtisch\Tests\Unit\Controllers;
 
+use Carbon\Carbon;
 use HypnoseStammtisch\Controllers\SitemapController;
 use PHPUnit\Framework\TestCase;
 
@@ -15,6 +16,12 @@ use PHPUnit\Framework\TestCase;
  */
 class SitemapControllerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
+
     public function testStaticPagesAreNotEmpty(): void
     {
         $pages = SitemapController::getStaticPages();
@@ -162,5 +169,63 @@ class SitemapControllerTest extends TestCase
             $paths,
             'Static pages must not contain duplicate paths'
         );
+    }
+
+    public function testBuildNextSeriesInstanceIdentifierReturnsNextUpcomingInstance(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-03-30 09:00:00', 'Europe/Berlin'));
+
+        $identifier = $this->invokeBuildNextSeriesInstanceIdentifier([
+            'id' => 'series-123',
+            'start_date' => '2020-01-01',
+            'start_time' => '19:00:00',
+            'end_time' => '21:00:00',
+            'rrule' => 'FREQ=WEEKLY;BYDAY=WE',
+            'exdates' => '[]',
+        ]);
+
+        $this->assertSame('series_series-123_2026-04-01', $identifier);
+    }
+
+    public function testBuildNextSeriesInstanceIdentifierSkipsExcludedNextOccurrence(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-03-30 09:00:00', 'Europe/Berlin'));
+
+        $identifier = $this->invokeBuildNextSeriesInstanceIdentifier([
+            'id' => 'series-456',
+            'start_date' => '2020-01-01',
+            'start_time' => '19:00:00',
+            'end_time' => '21:00:00',
+            'rrule' => 'FREQ=WEEKLY;BYDAY=WE',
+            'exdates' => json_encode(['2026-04-01']),
+        ]);
+
+        $this->assertSame('series_series-456_2026-04-08', $identifier);
+    }
+
+    public function testBuildNextSeriesInstanceIdentifierWorksWithoutTimeColumns(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-03-30 09:00:00', 'Europe/Berlin'));
+
+        $identifier = $this->invokeBuildNextSeriesInstanceIdentifier([
+            'id' => 'series-789',
+            'start_date' => '2026-03-02',
+            'rrule' => 'FREQ=WEEKLY;BYDAY=MO',
+            'exdates' => '[]',
+        ]);
+
+        $this->assertSame('series_series-789_2026-03-30', $identifier);
+    }
+
+    /**
+     * @param array<string, mixed> $series
+     */
+    private function invokeBuildNextSeriesInstanceIdentifier(array $series): ?string
+    {
+        $controller = new SitemapController();
+        $method = new \ReflectionMethod($controller, 'buildNextSeriesInstanceIdentifier');
+        $method->setAccessible(true);
+
+        return $method->invoke($controller, $series);
     }
 }

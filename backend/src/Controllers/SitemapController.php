@@ -90,12 +90,7 @@ class SitemapController
         $urls = [];
 
         try {
-            $series = Database::fetchAll(
-                "SELECT id, start_date, end_date, start_time, end_time, rrule, exdates, updated_at
-                 FROM event_series
-                 WHERE status = 'published'
-                 ORDER BY updated_at DESC"
-            );
+            $series = $this->fetchPublishedSeriesRows();
 
             foreach ($series as $row) {
                 $identifier = $this->buildNextSeriesInstanceIdentifier($row);
@@ -123,6 +118,41 @@ class SitemapController
         }
 
         return $urls;
+    }
+
+    /**
+     * Fetch published series rows, with compatibility fallback for deployments
+     * where migration 003 has not added start_time/end_time yet.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchPublishedSeriesRows(): array
+    {
+        try {
+            return Database::fetchAll(
+                "SELECT id, start_date, end_date, start_time, end_time, rrule, exdates, updated_at
+                 FROM event_series
+                 WHERE status = 'published'
+                 ORDER BY updated_at DESC"
+            );
+        } catch (\Exception $e) {
+            $message = strtolower($e->getMessage());
+            if (
+                str_contains($message, 'unknown column')
+                && (str_contains($message, 'start_time') || str_contains($message, 'end_time'))
+            ) {
+                error_log('Sitemap: Falling back to event_series query without time columns; start_time/end_time columns unavailable.');
+
+                return Database::fetchAll(
+                    "SELECT id, start_date, end_date, rrule, exdates, updated_at
+                     FROM event_series
+                     WHERE status = 'published'
+                     ORDER BY updated_at DESC"
+                );
+            }
+
+            throw $e;
+        }
     }
 
     /**
