@@ -106,9 +106,9 @@ class SitemapController
                 ];
 
                 if (!empty($row['updated_at'])) {
-                    $ts = strtotime($row['updated_at']);
-                    if ($ts !== false) {
-                        $entry['lastmod'] = date('Y-m-d', $ts);
+                    $lastmod = $this->formatLastmodDate((string) $row['updated_at']);
+                    if ($lastmod !== null) {
+                        $entry['lastmod'] = $lastmod;
                     }
                 }
 
@@ -188,9 +188,9 @@ class SitemapController
                 ];
 
                 if (!empty($row['updated_at'])) {
-                    $ts = strtotime($row['updated_at']);
-                    if ($ts !== false) {
-                        $entry['lastmod'] = date('Y-m-d', $ts);
+                    $lastmod = $this->formatLastmodDate((string) $row['updated_at']);
+                    if ($lastmod !== null) {
+                        $entry['lastmod'] = $lastmod;
                     }
                 }
 
@@ -201,6 +201,18 @@ class SitemapController
         }
 
         return $urls;
+    }
+
+    private function formatLastmodDate(string $updatedAt): ?string
+    {
+        try {
+            return Carbon::parse(
+                $updatedAt,
+                Config::get('app.timezone', 'Europe/Berlin')
+            )->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
