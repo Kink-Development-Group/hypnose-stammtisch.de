@@ -96,8 +96,18 @@ if ($path === 'calendar.ics') {
 }
 
 // Serve XML sitemap for search engines
-if ($path === 'sitemap.xml' || $path === 'sitemap') {
+if (
+  $path === 'sitemap.xml'
+  || $path === 'sitemap'
+  || $path === 'robots.txt'
+) {
   $sitemapController = new SitemapController();
+
+  if ($path === 'robots.txt') {
+    $sitemapController->robots();
+    return;
+  }
+
   $sitemapController->index();
   return;
 }
@@ -187,7 +197,8 @@ function handleApiInfo(): void
         'GET /stammtisch-locations' => 'Get all published stammtisch locations',
         'GET /stammtisch-locations/meta' => 'Get stammtisch location metadata',
         'GET /stammtisch-locations/{id}' => 'Get single stammtisch location by ID',
-        'GET /sitemap.xml' => 'XML sitemap for search engines'
+        'GET /sitemap.xml' => 'XML sitemap for search engines',
+        'GET /robots.txt' => 'Robots policy with sitemap discovery'
       ],
       'documentation' => Config::get('app.url') . '/docs',
       'support' => 'support@hypnose-stammtisch.de'

@@ -55,11 +55,7 @@ class SitemapController
      */
     public function index(): void
     {
-        $baseUrl = rtrim((string) Config::get('app.frontend_url', 'https://hypnose-stammtisch.de'), '/');
-
-        if ($baseUrl === '' || filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
-            $baseUrl = 'https://hypnose-stammtisch.de';
-        }
+        $baseUrl = $this->getFrontendBaseUrl();
 
         $urls = [];
 
@@ -79,6 +75,23 @@ class SitemapController
         $urls = array_merge($urls, $this->fetchStandaloneEventUrls($baseUrl));
 
         $this->outputXml($urls);
+    }
+
+    /**
+     * Serve robots.txt with an absolute sitemap URL for the active frontend.
+     *
+     * Uses the configured frontend base URL so crawlers always receive a
+     * fully-qualified Sitemap directive for the current deployment.
+     */
+    public function robots(): void
+    {
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Cache-Control: public, max-age=3600');
+
+        $baseUrl = str_replace(["\r", "\n"], '', $this->getFrontendBaseUrl());
+
+        echo "User-agent: *\nDisallow: /api\nDisallow: /admin\n\n";
+        echo 'Sitemap: ' . $baseUrl . "/sitemap.xml\n";
     }
 
     /**
@@ -303,6 +316,26 @@ class SitemapController
         }
 
         return $baseUrl . $normalizedPath;
+    }
+
+    /**
+     * Resolve and validate the frontend base URL used for sitemap/robots output.
+     */
+    private function getFrontendBaseUrl(): string
+    {
+        $configuredBaseUrl = (string) Config::get('app.frontend_url', 'https://hypnose-stammtisch.de');
+        $trimmedBaseUrl = trim($configuredBaseUrl);
+        $baseUrl = rtrim($trimmedBaseUrl, '/');
+
+        if (
+            $baseUrl === ''
+            || preg_match('/\s/', $trimmedBaseUrl) === 1
+            || filter_var($baseUrl, FILTER_VALIDATE_URL) === false
+        ) {
+            return 'https://hypnose-stammtisch.de';
+        }
+
+        return $baseUrl;
     }
 
     /**

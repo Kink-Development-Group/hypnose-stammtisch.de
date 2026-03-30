@@ -31,6 +31,10 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
       },
+      "/robots.txt": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
     },
     // Security headers für Entwicklungsserver
     headers: {

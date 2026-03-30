@@ -27,6 +27,9 @@
   # Route sitemap to backend API
   RewriteRule ^sitemap\.xml$ api/sitemap [QSA,L]
 
+  # Route robots.txt to backend API
+  RewriteRule ^robots\.txt$ api/robots.txt [QSA,L]
+
   # Allow API and well-known resources to pass through
   RewriteCond %{REQUEST_URI} ^/api/ [OR]
   RewriteCond %{REQUEST_URI} ^/\.well-known/
