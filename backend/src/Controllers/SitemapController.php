@@ -13,16 +13,17 @@ use HypnoseStammtisch\Utils\RRuleProcessor;
 /**
  * Generates an XML sitemap for search engines.
  *
- * The frontend is a hash-based SPA (svelte-spa-router), so every public URL
- * uses the /#/… fragment notation. While Google historically ignores hash
- * fragments, modern Googlebot renders JavaScript and can discover
- * hash-routed pages. Including them in the sitemap is the most accurate
- * representation of the site.
+ * The frontend uses hash-based routing, but the sitemap emits server-visible
+ * paths so crawlers can request canonical URLs directly and rely on the
+ * existing SPA fallback/redirect behavior.
  */
 class SitemapController
 {
     private const SERIES_EXPANSION_YEARS = 3;
-    private const DEFAULT_EVENT_DURATION_HOURS = 2;
+    private const DEFAULT_EVENT_DURATION_MINUTES = 120;
+    private const DEFAULT_SERIES_START_TIME = '19:00:00';
+    private const STANDALONE_EVENT_LOOKBACK_YEARS = 2;
+    private const MAX_STANDALONE_EVENT_URLS = 20000;
 
     /**
      * Static public pages with SEO metadata.
@@ -65,7 +66,7 @@ class SitemapController
         // Static pages
         foreach (self::STATIC_PAGES as $page) {
             $urls[] = [
-                'loc'        => $baseUrl . '/#' . $page['path'],
+                'loc'        => $this->buildPublicUrl($baseUrl, $page['path']),
                 'changefreq' => $page['changefreq'],
                 'priority'   => $page['priority'],
             ];
@@ -99,7 +100,7 @@ class SitemapController
                 }
 
                 $entry = [
-                    'loc'        => $baseUrl . '/#/events/' . rawurlencode($identifier),
+                    'loc'        => $this->buildPublicUrl($baseUrl, '/events/' . rawurlencode($identifier)),
                     'changefreq' => 'weekly',
                     'priority'   => '0.8',
                 ];
@@ -122,7 +123,7 @@ class SitemapController
 
     /**
      * Fetch published series rows, with compatibility fallback for deployments
-     * where migration 003 has not added start_time/end_time yet.
+     * where start_time/end_time columns are not available yet.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -130,7 +131,7 @@ class SitemapController
     {
         try {
             return Database::fetchAll(
-                "SELECT id, start_date, end_date, start_time, end_time, rrule, exdates, updated_at
+                "SELECT id, start_date, end_date, start_time, end_time, default_duration_minutes, rrule, exdates, updated_at
                  FROM event_series
                  WHERE status = 'published'
                  ORDER BY updated_at DESC"
@@ -144,7 +145,7 @@ class SitemapController
                 error_log('Sitemap: Falling back to event_series query without time columns; start_time/end_time columns unavailable.');
 
                 return Database::fetchAll(
-                    "SELECT id, start_date, end_date, rrule, exdates, updated_at
+                    "SELECT id, start_date, end_date, default_duration_minutes, rrule, exdates, updated_at
                      FROM event_series
                      WHERE status = 'published'
                      ORDER BY updated_at DESC"
@@ -165,13 +166,23 @@ class SitemapController
         $urls = [];
 
         try {
+            $updatedSince = Carbon::now('UTC')
+                ->subYears(self::STANDALONE_EVENT_LOOKBACK_YEARS)
+                ->toDateTimeString();
             $events = Database::fetchAll(
-                "SELECT id, updated_at FROM events WHERE status = 'published' AND series_id IS NULL ORDER BY updated_at DESC"
+                "SELECT id, updated_at
+                 FROM events
+                 WHERE status = 'published'
+                   AND series_id IS NULL
+                   AND updated_at >= ?
+                 ORDER BY updated_at DESC
+                 LIMIT " . self::MAX_STANDALONE_EVENT_URLS,
+                [$updatedSince]
             );
 
             foreach ($events as $row) {
                 $entry = [
-                    'loc'        => $baseUrl . '/#/events/' . rawurlencode((string) $row['id']),
+                    'loc'        => $this->buildPublicUrl($baseUrl, '/events/' . rawurlencode((string) $row['id'])),
                     'changefreq' => 'weekly',
                     'priority'   => '0.8',
                 ];
@@ -204,31 +215,40 @@ class SitemapController
         }
 
         $timezone = Config::get('app.timezone', 'Europe/Berlin');
-        $today = Carbon::today($timezone);
-        $maxExpansionEnd = $today->copy()->addYears(self::SERIES_EXPANSION_YEARS)->endOfDay();
+        $now = Carbon::now($timezone);
+        $maxExpansionEnd = $now->copy()->addYears(self::SERIES_EXPANSION_YEARS)->endOfDay();
         $seriesEnd = !empty($series['end_date'])
             ? Carbon::parse((string) $series['end_date'], $timezone)->endOfDay()
             : $maxExpansionEnd->copy();
+        $startTime = !empty($series['start_time']) ? (string) $series['start_time'] : self::DEFAULT_SERIES_START_TIME;
+        $defaultDurationMinutes = !empty($series['default_duration_minutes'])
+            ? (int) $series['default_duration_minutes']
+            : self::DEFAULT_EVENT_DURATION_MINUTES;
 
-        if ($seriesEnd->lt($today)) {
+        $eventStart = Carbon::parse((string) $series['start_date'] . ' ' . $startTime, $timezone);
+        $eventEnd = $eventStart->copy()->addMinutes($defaultDurationMinutes);
+
+        if (!empty($series['end_time'])) {
+            $eventEnd = Carbon::parse((string) $series['start_date'] . ' ' . (string) $series['end_time'], $timezone);
+            if ($eventEnd->lte($eventStart)) {
+                $eventEnd->addDay();
+            }
+        }
+
+        // Guard against zero-length or malformed time ranges so the sitemap
+        // still advances its search window by at least one minute.
+        $durationMinutes = max(1, $eventEnd->diffInMinutes($eventStart));
+        // Search from "now minus duration" so same-day events remain listed
+        // while they are still in progress instead of disappearing at start.
+        $searchStart = $now->copy()->subMinutes($durationMinutes);
+
+        if ($seriesEnd->lt($searchStart->copy()->startOfDay())) {
             return null;
         }
 
         $expansionEnd = $seriesEnd->lt($maxExpansionEnd)
             ? $seriesEnd
             : $maxExpansionEnd;
-
-        $startTime = !empty($series['start_time']) ? (string) $series['start_time'] : '00:00:00';
-        $endTime = !empty($series['end_time']) ? (string) $series['end_time'] : null;
-
-        if ($endTime === null) {
-            $endTime = Carbon::parse((string) $series['start_date'] . ' ' . $startTime, $timezone)
-                ->addHours(self::DEFAULT_EVENT_DURATION_HOURS)
-                ->format('H:i:s');
-        }
-
-        $eventStart = Carbon::parse((string) $series['start_date'] . ' ' . $startTime, $timezone);
-        $eventEnd = Carbon::parse((string) $series['start_date'] . ' ' . $endTime, $timezone);
 
         $pseudoEvent = [
             'id' => 'series_' . $series['id'],
@@ -240,7 +260,7 @@ class SitemapController
 
         $instances = RRuleProcessor::expandRecurringEvent(
             $pseudoEvent,
-            $today->copy()->startOfDay(),
+            $searchStart,
             $expansionEnd,
             JsonHelper::decodeArray($series['exdates'] ?? '[]')
         );
@@ -250,6 +270,27 @@ class SitemapController
         }
 
         return 'series_' . $series['id'] . '_' . $instances[0]['instance_date'];
+    }
+
+    private function buildPublicUrl(string $baseUrl, string $path): string
+    {
+        $normalizedPath = $path;
+
+        if (str_starts_with($normalizedPath, '/#/')) {
+            $normalizedPath = substr($normalizedPath, 2);
+        } elseif (str_starts_with($normalizedPath, '#/')) {
+            $normalizedPath = substr($normalizedPath, 1);
+        } elseif ($normalizedPath === '/#' || $normalizedPath === '#') {
+            $normalizedPath = '/';
+        }
+
+        if ($normalizedPath === '') {
+            $normalizedPath = '/';
+        } elseif (!str_starts_with($normalizedPath, '/')) {
+            $normalizedPath = '/' . $normalizedPath;
+        }
+
+        return $baseUrl . $normalizedPath;
     }
 
     /**

@@ -205,7 +205,7 @@ class SitemapControllerTest extends TestCase
 
     public function testBuildNextSeriesInstanceIdentifierWorksWithoutTimeColumns(): void
     {
-        Carbon::setTestNow(Carbon::parse('2026-03-30 09:00:00', 'Europe/Berlin'));
+        Carbon::setTestNow(Carbon::parse('2026-03-30 20:00:00', 'Europe/Berlin'));
 
         $identifier = $this->invokeBuildNextSeriesInstanceIdentifier([
             'id' => 'series-789',
@@ -215,6 +215,50 @@ class SitemapControllerTest extends TestCase
         ]);
 
         $this->assertSame('series_series-789_2026-03-30', $identifier);
+    }
+
+    public function testBuildNextSeriesInstanceIdentifierSkipsPastSameDayOccurrenceAfterDefaultDuration(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-03-30 22:30:00', 'Europe/Berlin'));
+
+        $identifier = $this->invokeBuildNextSeriesInstanceIdentifier([
+            'id' => 'series-790',
+            'start_date' => '2026-03-02',
+            'rrule' => 'FREQ=WEEKLY;BYDAY=MO',
+            'exdates' => '[]',
+        ]);
+
+        $this->assertSame('series_series-790_2026-04-06', $identifier);
+    }
+
+    public function testBuildPublicUrlUsesServerVisiblePaths(): void
+    {
+        $url = $this->invokeBuildPublicUrl('https://hypnose-stammtisch.de', '/#/events/series_123_2026-04-01');
+
+        $this->assertSame('https://hypnose-stammtisch.de/events/series_123_2026-04-01', $url);
+    }
+
+    public function testBuildPublicUrlHandlesRootLikeEdgeCases(): void
+    {
+        $this->assertSame(
+            'https://hypnose-stammtisch.de/',
+            $this->invokeBuildPublicUrl('https://hypnose-stammtisch.de', '')
+        );
+        $this->assertSame(
+            'https://hypnose-stammtisch.de/',
+            $this->invokeBuildPublicUrl('https://hypnose-stammtisch.de', '#')
+        );
+        $this->assertSame(
+            'https://hypnose-stammtisch.de/',
+            $this->invokeBuildPublicUrl('https://hypnose-stammtisch.de', '/')
+        );
+    }
+
+    public function testBuildPublicUrlPreservesAlreadyNormalizedPath(): void
+    {
+        $url = $this->invokeBuildPublicUrl('https://hypnose-stammtisch.de', '/events/abc');
+
+        $this->assertSame('https://hypnose-stammtisch.de/events/abc', $url);
     }
 
     /**
@@ -227,5 +271,14 @@ class SitemapControllerTest extends TestCase
         $method->setAccessible(true);
 
         return $method->invoke($controller, $series);
+    }
+
+    private function invokeBuildPublicUrl(string $baseUrl, string $path): string
+    {
+        $controller = new SitemapController();
+        $method = new \ReflectionMethod($controller, 'buildPublicUrl');
+        $method->setAccessible(true);
+
+        return $method->invoke($controller, $baseUrl, $path);
     }
 }

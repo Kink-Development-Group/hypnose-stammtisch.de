@@ -1,4 +1,5 @@
 User-agent: *
-Allow: /
+Disallow: /api/
+Disallow: /admin/
 
 Sitemap: https://hypnose-stammtisch.de/sitemap.xml
