@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace HypnoseStammtisch\Controllers;
 
+use Carbon\Carbon;
 use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Database\Database;
+use HypnoseStammtisch\Utils\JsonHelper;
+use HypnoseStammtisch\Utils\RRuleProcessor;
 
 /**
  * Generates an XML sitemap for search engines.
@@ -20,7 +23,7 @@ class SitemapController
 {
     /**
      * Static public pages with SEO metadata.
-     * Mirrors the routes defined in src/App.svelte.
+     * Selected public routes from src/App.svelte that should be included in the sitemap.
      *
      * @var array<int, array{path: string, priority: string, changefreq: string}>
      */
@@ -31,11 +34,13 @@ class SitemapController
         ['path' => '/about',                  'priority' => '0.6', 'changefreq' => 'monthly'],
         ['path' => '/learning-resources',     'priority' => '0.6', 'changefreq' => 'monthly'],
         ['path' => '/ressourcen',             'priority' => '0.6', 'changefreq' => 'monthly'],
+        ['path' => '/resources',              'priority' => '0.6', 'changefreq' => 'monthly'],
         ['path' => '/ressourcen/safety-guide', 'priority' => '0.5', 'changefreq' => 'monthly'],
         ['path' => '/ressourcen/faq',         'priority' => '0.5', 'changefreq' => 'monthly'],
         ['path' => '/code-of-conduct',        'priority' => '0.5', 'changefreq' => 'monthly'],
         ['path' => '/contact',                'priority' => '0.5', 'changefreq' => 'monthly'],
         ['path' => '/submit-event',           'priority' => '0.5', 'changefreq' => 'monthly'],
+        ['path' => '/cookies',                'priority' => '0.3', 'changefreq' => 'yearly'],
         ['path' => '/privacy',                'priority' => '0.3', 'changefreq' => 'yearly'],
         ['path' => '/imprint',                'priority' => '0.3', 'changefreq' => 'yearly'],
         ['path' => '/terms',                  'priority' => '0.3', 'changefreq' => 'yearly'],
@@ -83,12 +88,20 @@ class SitemapController
 
         try {
             $series = Database::fetchAll(
-                "SELECT slug, updated_at FROM event_series WHERE status = 'published' ORDER BY updated_at DESC"
+                "SELECT id, start_date, end_date, start_time, end_time, rrule, exdates, updated_at
+                 FROM event_series
+                 WHERE status = 'published'
+                 ORDER BY updated_at DESC"
             );
 
             foreach ($series as $row) {
+                $identifier = $this->buildNextSeriesInstanceIdentifier($row);
+                if ($identifier === null) {
+                    continue;
+                }
+
                 $entry = [
-                    'loc'        => $baseUrl . '/#/events/' . rawurlencode($row['slug']),
+                    'loc'        => $baseUrl . '/#/events/' . rawurlencode($identifier),
                     'changefreq' => 'weekly',
                     'priority'   => '0.8',
                 ];
@@ -120,12 +133,12 @@ class SitemapController
 
         try {
             $events = Database::fetchAll(
-                "SELECT slug, updated_at FROM events WHERE status = 'published' AND series_id IS NULL ORDER BY updated_at DESC"
+                "SELECT id, updated_at FROM events WHERE status = 'published' AND series_id IS NULL ORDER BY updated_at DESC"
             );
 
             foreach ($events as $row) {
                 $entry = [
-                    'loc'        => $baseUrl . '/#/events/' . rawurlencode($row['slug']),
+                    'loc'        => $baseUrl . '/#/events/' . rawurlencode((string) $row['id']),
                     'changefreq' => 'weekly',
                     'priority'   => '0.8',
                 ];
@@ -144,6 +157,65 @@ class SitemapController
         }
 
         return $urls;
+    }
+
+    /**
+     * Build a frontend identifier for the next upcoming series instance.
+     *
+     * @param array<string, mixed> $series
+     */
+    private function buildNextSeriesInstanceIdentifier(array $series): ?string
+    {
+        if (empty($series['id']) || empty($series['start_date']) || empty($series['rrule'])) {
+            return null;
+        }
+
+        $timezone = Config::get('app.timezone', 'Europe/Berlin');
+        $today = Carbon::today($timezone);
+        $seriesEnd = !empty($series['end_date'])
+            ? Carbon::parse((string) $series['end_date'], $timezone)->endOfDay()
+            : $today->copy()->addYears(3)->endOfDay();
+
+        if ($seriesEnd->lt($today)) {
+            return null;
+        }
+
+        $expansionEnd = $seriesEnd->lt($today->copy()->addYears(3)->endOfDay())
+            ? $seriesEnd
+            : $today->copy()->addYears(3)->endOfDay();
+
+        $startTime = !empty($series['start_time']) ? (string) $series['start_time'] : '00:00:00';
+        $endTime = !empty($series['end_time']) ? (string) $series['end_time'] : null;
+
+        if ($endTime === null) {
+            $endTime = Carbon::parse((string) $series['start_date'] . ' ' . $startTime, $timezone)
+                ->addHours(2)
+                ->format('H:i:s');
+        }
+
+        $eventStart = Carbon::parse((string) $series['start_date'] . ' ' . $startTime, $timezone);
+        $eventEnd = Carbon::parse((string) $series['start_date'] . ' ' . $endTime, $timezone);
+
+        $pseudoEvent = [
+            'id' => 'series_' . $series['id'],
+            'start_datetime' => $eventStart->toDateTimeString(),
+            'end_datetime' => $eventEnd->toDateTimeString(),
+            'timezone' => $timezone,
+            'rrule' => (string) $series['rrule'],
+        ];
+
+        $instances = RRuleProcessor::expandRecurringEvent(
+            $pseudoEvent,
+            $today->copy()->startOfDay(),
+            $expansionEnd,
+            JsonHelper::decodeArray($series['exdates'] ?? '[]')
+        );
+
+        if (empty($instances) || empty($instances[0]['instance_date'])) {
+            return null;
+        }
+
+        return 'series_' . $series['id'] . '_' . $instances[0]['instance_date'];
     }
 
     /**

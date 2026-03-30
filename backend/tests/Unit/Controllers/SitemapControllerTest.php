@@ -43,9 +43,20 @@ class SitemapControllerTest extends TestCase
         $pages = SitemapController::getStaticPages();
         $paths = array_column($pages, 'path');
 
+        $this->assertContains('/cookies', $paths, 'Cookie policy page must be included');
         $this->assertContains('/privacy', $paths, 'Privacy page must be included');
         $this->assertContains('/imprint', $paths, 'Imprint page must be included');
         $this->assertContains('/terms', $paths, 'Terms page must be included');
+    }
+
+    public function testStaticPagesContainResourcesPages(): void
+    {
+        $pages = SitemapController::getStaticPages();
+        $paths = array_column($pages, 'path');
+
+        $this->assertContains('/learning-resources', $paths, 'Learning resources page must be included');
+        $this->assertContains('/ressourcen', $paths, 'German learning resources page must be included');
+        $this->assertContains('/resources', $paths, 'Resources page must be included');
     }
 
     public function testStaticPagesDoNotContainAdminRoutes(): void
