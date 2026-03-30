@@ -166,7 +166,7 @@ class SitemapController
         $urls = [];
 
         try {
-            $updatedSince = Carbon::now('UTC')
+            $updatedSince = Carbon::now(Config::get('app.timezone', 'Europe/Berlin'))
                 ->subYears(self::STANDALONE_EVENT_LOOKBACK_YEARS)
                 ->toDateTimeString();
             $events = Database::fetchAll(
