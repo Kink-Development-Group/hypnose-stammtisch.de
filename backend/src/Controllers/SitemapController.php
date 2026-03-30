@@ -26,6 +26,12 @@ class SitemapController
     private const DEFAULT_SERIES_START_TIME = '19:00:00';
     private const STANDALONE_EVENT_LOOKBACK_YEARS = 2;
     private const MAX_STANDALONE_EVENT_URLS = 20000;
+    private const EXPECTED_SERIES_TIME_COLUMN_COUNT = 2;
+    private const SERIES_SELECT_COLUMNS_PREFIX = 'id, start_date, end_date';
+    private const SERIES_SELECT_COLUMNS_SUFFIX = ', default_duration_minutes, rrule, exdates, updated_at';
+    private const SERIES_TIME_SELECT_COLUMNS = ', start_time, end_time';
+
+    private ?bool $seriesTimeColumnsAvailable = null;
 
     /**
      * Static public pages with SEO metadata.
@@ -145,8 +151,8 @@ class SitemapController
     }
 
     /**
-     * Fetch published series rows, with compatibility fallback for deployments
-     * where start_time/end_time columns are not available yet.
+     * Fetch published series rows, choosing the compatible column set for the
+     * current schema so missing series time columns do not trigger query errors.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -155,35 +161,43 @@ class SitemapController
         $activeSeriesCutoff = Carbon::now(Config::get('app.timezone', self::DEFAULT_APP_TIMEZONE))
             ->toDateString();
 
-        try {
-            return Database::fetchAll(
-                "SELECT id, start_date, end_date, start_time, end_time, default_duration_minutes, rrule, exdates, updated_at
-                  FROM event_series
-                  WHERE status = 'published'
-                    AND (end_date IS NULL OR end_date >= ?)
-                  ORDER BY updated_at DESC",
-                [$activeSeriesCutoff]
-            );
-        } catch (\Exception $e) {
-            $message = strtolower($e->getMessage());
-            if (
-                str_contains($message, 'unknown column')
-                && (str_contains($message, 'start_time') || str_contains($message, 'end_time'))
-            ) {
-                error_log('Sitemap: Falling back to event_series query without time columns; start_time/end_time columns unavailable.');
+        $selectColumns = self::SERIES_SELECT_COLUMNS_PREFIX
+            . ($this->hasSeriesTimeColumns() ? self::SERIES_TIME_SELECT_COLUMNS : '')
+            . self::SERIES_SELECT_COLUMNS_SUFFIX;
 
-                return Database::fetchAll(
-                    "SELECT id, start_date, end_date, default_duration_minutes, rrule, exdates, updated_at
-                      FROM event_series
-                      WHERE status = 'published'
-                        AND (end_date IS NULL OR end_date >= ?)
-                      ORDER BY updated_at DESC",
-                    [$activeSeriesCutoff]
-                );
-            }
+        return Database::fetchAll(
+            "SELECT {$selectColumns}
+              FROM event_series
+              WHERE status = 'published'
+                AND (end_date IS NULL OR end_date >= ?)
+              ORDER BY updated_at DESC",
+            [$activeSeriesCutoff]
+        );
+    }
 
-            throw $e;
+    private function hasSeriesTimeColumns(): bool
+    {
+        if ($this->seriesTimeColumnsAvailable !== null) {
+            return $this->seriesTimeColumnsAvailable;
         }
+
+        try {
+            $row = Database::fetchOne(
+                "SELECT COUNT(*) AS column_count
+                   FROM information_schema.columns
+                  WHERE table_schema = DATABASE()
+                    AND table_name = 'event_series'
+                    AND column_name IN ('start_time', 'end_time')"
+            );
+
+            $this->seriesTimeColumnsAvailable = isset($row['column_count'])
+                && (int) $row['column_count'] === self::EXPECTED_SERIES_TIME_COLUMN_COUNT;
+        } catch (\Throwable $e) {
+            error_log('Sitemap: Failed to inspect event_series time columns – ' . $e->getMessage());
+            $this->seriesTimeColumnsAvailable = false;
+        }
+
+        return $this->seriesTimeColumnsAvailable;
     }
 
     /**

@@ -351,7 +351,7 @@ Sitemap: https://localhost:5173/sitemap.xml
 ROBOTS;
 
         $this->assertSame(
-            $expected,
+            $expected . "\n",
             $output
         );
     }
