@@ -21,6 +21,9 @@ use HypnoseStammtisch\Utils\RRuleProcessor;
  */
 class SitemapController
 {
+    private const SERIES_EXPANSION_YEARS = 3;
+    private const DEFAULT_EVENT_DURATION_HOURS = 2;
+
     /**
      * Static public pages with SEO metadata.
      * Selected public routes from src/App.svelte that should be included in the sitemap.
@@ -172,24 +175,25 @@ class SitemapController
 
         $timezone = Config::get('app.timezone', 'Europe/Berlin');
         $today = Carbon::today($timezone);
+        $maxExpansionEnd = $today->copy()->addYears(self::SERIES_EXPANSION_YEARS)->endOfDay();
         $seriesEnd = !empty($series['end_date'])
             ? Carbon::parse((string) $series['end_date'], $timezone)->endOfDay()
-            : $today->copy()->addYears(3)->endOfDay();
+            : $maxExpansionEnd->copy();
 
         if ($seriesEnd->lt($today)) {
             return null;
         }
 
-        $expansionEnd = $seriesEnd->lt($today->copy()->addYears(3)->endOfDay())
+        $expansionEnd = $seriesEnd->lt($maxExpansionEnd)
             ? $seriesEnd
-            : $today->copy()->addYears(3)->endOfDay();
+            : $maxExpansionEnd;
 
         $startTime = !empty($series['start_time']) ? (string) $series['start_time'] : '00:00:00';
         $endTime = !empty($series['end_time']) ? (string) $series['end_time'] : null;
 
         if ($endTime === null) {
             $endTime = Carbon::parse((string) $series['start_date'] . ' ' . $startTime, $timezone)
-                ->addHours(2)
+                ->addHours(self::DEFAULT_EVENT_DURATION_HOURS)
                 ->format('H:i:s');
         }
 
