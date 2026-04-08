@@ -142,18 +142,14 @@ class EventsControllerPublicSeriesOverrideTest extends TestCase
             1,
             count(array_filter($seriesInstanceDates, static fn (string $date): bool => $date === '2026-05-03'))
         );
-        $this->assertSame(
-            'Series Title',
-            $this->findExpandedSeriesInstance($seriesInstances, '2026-05-01')['title']
-        );
-        $this->assertSame(
-            'Series Title',
-            $this->findExpandedSeriesInstance($seriesInstances, '2026-05-02')['title']
-        );
-        $this->assertSame(
-            'Published override row',
-            $this->findExpandedSeriesInstance($seriesInstances, '2026-05-03')['title']
-        );
+        $seriesInstancesByDate = [];
+        foreach ($seriesInstances as $event) {
+            $seriesInstancesByDate[$event['instance_date']] = $event;
+        }
+
+        $this->assertSame('Series Title', $seriesInstancesByDate['2026-05-01']['title']);
+        $this->assertSame('Series Title', $seriesInstancesByDate['2026-05-02']['title']);
+        $this->assertSame('Published override row', $seriesInstancesByDate['2026-05-03']['title']);
     }
 
     public function testSeriesInstanceLookupOnlyReturnsExplicitPublicOverrides(): void
@@ -244,21 +240,6 @@ class EventsControllerPublicSeriesOverrideTest extends TestCase
     private function getSeriesOverride(string $seriesId, string $instanceDate): ?array
     {
         return $this->getSeriesOverrideMethod->invoke($this->controller, $seriesId, $instanceDate);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $seriesInstances
-     * @return array<string, mixed>
-     */
-    private function findExpandedSeriesInstance(array $seriesInstances, string $instanceDate): array
-    {
-        foreach ($seriesInstances as $event) {
-            if (($event['instance_date'] ?? null) === $instanceDate) {
-                return $event;
-            }
-        }
-
-        $this->fail("Missing expanded series instance for {$instanceDate}");
     }
 
     private function createSchema(): void
