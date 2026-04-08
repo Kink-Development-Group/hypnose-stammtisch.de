@@ -19,6 +19,9 @@ use Carbon\Carbon;
  */
 class EventsController
 {
+    private const PUBLIC_OVERRIDE_TYPES = ['changed', 'cancelled'];
+    private const PUBLIC_OVERRIDE_STATUSES = ['published', 'cancelled'];
+
     /**
      * Helper function to convert event to array (handles mock objects)
      */
@@ -488,12 +491,13 @@ class EventsController
                 $instanceDates = array_map(fn($i) => substr($i['start_datetime'], 0, 10), $instances);
                 if (!empty($instanceDates)) {
                     $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
-                    $overrideSql = "SELECT * FROM events WHERE series_id = ? AND instance_date IN ($placeholders)";
+                    $overrideSql = "SELECT * FROM events
+                        WHERE series_id = ?
+                          AND instance_date IN ($placeholders)
+                          AND override_type IN ('changed', 'cancelled')
+                          AND status IN ('published', 'cancelled')";
                     $params = array_merge([$series['id']], $instanceDates);
-                    $overrides = array_filter(
-                        \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params),
-                        fn(array $override): bool => $this->isExplicitSeriesOverride($override)
-                    );
+                    $overrides = \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params);
                     $overrideMap = [];
                     foreach ($overrides as $ov) {
                         $overrideMap[$ov['instance_date']] = $ov;
@@ -536,27 +540,33 @@ class EventsController
     /**
      * Only explicit override rows should replace generated series instances.
      *
-     * @param array<string, mixed> $event Event row that may include an override_type column.
+     * @param array<string, mixed> $event Event row that may include override_type and status columns.
      */
     private function isExplicitSeriesOverride(array $event): bool
     {
         $overrideType = $event['override_type'] ?? null;
-        if (!is_string($overrideType)) {
+        $status = $event['status'] ?? null;
+        if (!is_string($overrideType) || !is_string($status)) {
             return false;
         }
 
-        return in_array($overrideType, ['changed', 'cancelled'], true);
+        return in_array($overrideType, self::PUBLIC_OVERRIDE_TYPES, true)
+            && in_array($status, self::PUBLIC_OVERRIDE_STATUSES, true);
     }
 
     /**
-     * Load a series instance override only when the stored row is an explicit override.
+     * Load a series instance override only when the stored row is an explicit public override.
      *
      * @return array<string, mixed>|null
      */
     private function getSeriesOverride(string $seriesId, string $instanceDate): ?array
     {
         $override = Database::fetchOne(
-            "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
+            "SELECT * FROM events
+             WHERE series_id = ?
+               AND instance_date = ?
+               AND override_type IN ('changed', 'cancelled')
+               AND status IN ('published', 'cancelled')",
             [$seriesId, $instanceDate]
         );
 

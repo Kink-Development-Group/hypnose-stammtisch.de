@@ -47,7 +47,8 @@ class EventsControllerSeriesOverrideTest extends TestCase
         $this->assertTrue($this->isExplicitSeriesOverride([
             'series_id' => 'series-1',
             'instance_date' => '2026-05-01',
-            'override_type' => 'changed'
+            'override_type' => 'changed',
+            'status' => 'published'
         ]));
     }
 
@@ -56,7 +57,18 @@ class EventsControllerSeriesOverrideTest extends TestCase
         $this->assertTrue($this->isExplicitSeriesOverride([
             'series_id' => 'series-1',
             'instance_date' => '2026-05-01',
-            'override_type' => 'cancelled'
+            'override_type' => 'cancelled',
+            'status' => 'cancelled'
+        ]));
+    }
+
+    public function testIgnoresDraftChangedSeriesOverride(): void
+    {
+        $this->assertFalse($this->isExplicitSeriesOverride([
+            'series_id' => 'series-1',
+            'instance_date' => '2026-05-01',
+            'override_type' => 'changed',
+            'status' => 'draft'
         ]));
     }
 }
