@@ -30,8 +30,6 @@ class SitemapController
     private const SERIES_SELECT_COLUMNS_SUFFIX = ', default_duration_minutes, rrule, exdates, updated_at';
     private const SERIES_TIME_SELECT_COLUMNS = ', start_time, end_time';
 
-    private ?bool $seriesTimeColumnsAvailable = null;
-
     /**
      * Static public pages with SEO metadata.
      * Selected public routes from src/App.svelte that should be included in the sitemap.
@@ -160,30 +158,18 @@ class SitemapController
         $activeSeriesCutoff = Carbon::now(Config::get('app.timezone', self::DEFAULT_APP_TIMEZONE))
             ->toDateString();
 
-        if ($this->seriesTimeColumnsAvailable === false) {
-            return $this->fetchPublishedSeriesRowsForColumns(
-                self::SERIES_SELECT_COLUMNS_PREFIX . self::SERIES_SELECT_COLUMNS_SUFFIX,
-                $activeSeriesCutoff
-            );
-        }
-
         try {
-            $rows = $this->fetchPublishedSeriesRowsForColumns(
+            return $this->fetchPublishedSeriesRowsForColumns(
                 self::SERIES_SELECT_COLUMNS_PREFIX
                     . self::SERIES_TIME_SELECT_COLUMNS
                     . self::SERIES_SELECT_COLUMNS_SUFFIX,
                 $activeSeriesCutoff
             );
-            $this->seriesTimeColumnsAvailable = true;
-
-            return $rows;
         } catch (\Throwable $e) {
             if (!$this->isMissingSeriesTimeColumnsQueryError($e)) {
                 throw $e;
             }
         }
-
-        $this->seriesTimeColumnsAvailable = false;
 
         return $this->fetchPublishedSeriesRowsForColumns(
             self::SERIES_SELECT_COLUMNS_PREFIX . self::SERIES_SELECT_COLUMNS_SUFFIX,
@@ -429,9 +415,13 @@ class SitemapController
             : $fallbackTimezone;
 
         try {
-            return Carbon::parse((string) $instance['start_datetime'], $instanceTimezone)
-                ->setTimezone($instanceTimezone)
-                ->toDateString();
+            $instanceStart = Carbon::parse((string) $instance['start_datetime'], $instanceTimezone);
+
+            if ($instanceStart->getTimezone()->getName() !== $instanceTimezone) {
+                $instanceStart = $instanceStart->setTimezone($instanceTimezone);
+            }
+
+            return $instanceStart->toDateString();
         } catch (\Throwable) {
             return null;
         }
