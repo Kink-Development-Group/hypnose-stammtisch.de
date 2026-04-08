@@ -535,6 +535,8 @@ class EventsController
 
     /**
      * Only explicit override rows should replace generated series instances.
+     *
+     * @param array<string, mixed> $event Event row that may include an override_type column.
      */
     private function isExplicitSeriesOverride(array $event): bool
     {
@@ -546,6 +548,11 @@ class EventsController
         return in_array($overrideType, ['changed', 'cancelled'], true);
     }
 
+    /**
+     * Load a series instance override only when the stored row is an explicit override.
+     *
+     * @return array<string, mixed>|null
+     */
     private function getSeriesOverride(string $seriesId, string $instanceDate): ?array
     {
         $override = Database::fetchOne(
