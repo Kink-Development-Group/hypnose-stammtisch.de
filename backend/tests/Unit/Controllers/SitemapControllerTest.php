@@ -236,6 +236,36 @@ class SitemapControllerTest extends TestCase
         $this->assertSame('series_series-457_2026-03-30', $identifier);
     }
 
+    public function testResolveInstanceDateFallsBackToSeriesTimezoneForOffsetDateTime(): void
+    {
+        $this->assertSame(
+            '2026-03-30',
+            $this->invokeResolveInstanceDate(
+                ['start_datetime' => '2026-03-31T00:30:00+00:00'],
+                'America/Los_Angeles'
+            )
+        );
+    }
+
+    public function testIsMissingSeriesTimeColumnsQueryErrorRecognizesUnknownColumnMessages(): void
+    {
+        $this->assertTrue(
+            $this->invokeIsMissingSeriesTimeColumnsQueryError(
+                new \RuntimeException("SQLSTATE[42S22]: Column not found: 1054 Unknown column 'start_time' in 'field list'")
+            )
+        );
+        $this->assertTrue(
+            $this->invokeIsMissingSeriesTimeColumnsQueryError(
+                new \RuntimeException("SQLSTATE[42S22]: Column not found: 1054 Unknown column 'end_time' in 'field list'")
+            )
+        );
+        $this->assertFalse(
+            $this->invokeIsMissingSeriesTimeColumnsQueryError(
+                new \RuntimeException('Database connection failed')
+            )
+        );
+    }
+
     public function testBuildNextSeriesInstanceIdentifierWorksWithoutTimeColumns(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-30 20:00:00', 'Europe/Berlin'));
@@ -391,5 +421,26 @@ ROBOTS;
         $method->setAccessible(true);
 
         return $method->invoke($controller, $baseUrl, $path);
+    }
+
+    /**
+     * @param array<string, mixed> $instance
+     */
+    private function invokeResolveInstanceDate(array $instance, string $fallbackTimezone): ?string
+    {
+        $controller = new SitemapController();
+        $method = new \ReflectionMethod($controller, 'resolveInstanceDate');
+        $method->setAccessible(true);
+
+        return $method->invoke($controller, $instance, $fallbackTimezone);
+    }
+
+    private function invokeIsMissingSeriesTimeColumnsQueryError(\Throwable $exception): bool
+    {
+        $controller = new SitemapController();
+        $method = new \ReflectionMethod($controller, 'isMissingSeriesTimeColumnsQueryError');
+        $method->setAccessible(true);
+
+        return $method->invoke($controller, $exception);
     }
 }

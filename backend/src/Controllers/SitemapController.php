@@ -26,7 +26,6 @@ class SitemapController
     private const DEFAULT_SERIES_START_TIME = '19:00:00';
     private const STANDALONE_EVENT_LOOKBACK_YEARS = 2;
     private const MAX_STANDALONE_EVENT_URLS = 20000;
-    private const EXPECTED_SERIES_TIME_COLUMN_COUNT = 2;
     private const SERIES_SELECT_COLUMNS_PREFIX = 'id, start_date, end_date';
     private const SERIES_SELECT_COLUMNS_SUFFIX = ', default_duration_minutes, rrule, exdates, updated_at';
     private const SERIES_TIME_SELECT_COLUMNS = ', start_time, end_time';
@@ -161,10 +160,42 @@ class SitemapController
         $activeSeriesCutoff = Carbon::now(Config::get('app.timezone', self::DEFAULT_APP_TIMEZONE))
             ->toDateString();
 
-        $selectColumns = self::SERIES_SELECT_COLUMNS_PREFIX
-            . ($this->hasSeriesTimeColumns() ? self::SERIES_TIME_SELECT_COLUMNS : '')
-            . self::SERIES_SELECT_COLUMNS_SUFFIX;
+        if ($this->seriesTimeColumnsAvailable === false) {
+            return $this->fetchPublishedSeriesRowsForColumns(
+                self::SERIES_SELECT_COLUMNS_PREFIX . self::SERIES_SELECT_COLUMNS_SUFFIX,
+                $activeSeriesCutoff
+            );
+        }
 
+        try {
+            $rows = $this->fetchPublishedSeriesRowsForColumns(
+                self::SERIES_SELECT_COLUMNS_PREFIX
+                    . self::SERIES_TIME_SELECT_COLUMNS
+                    . self::SERIES_SELECT_COLUMNS_SUFFIX,
+                $activeSeriesCutoff
+            );
+            $this->seriesTimeColumnsAvailable = true;
+
+            return $rows;
+        } catch (\Throwable $e) {
+            if (!$this->isMissingSeriesTimeColumnsQueryError($e)) {
+                throw $e;
+            }
+        }
+
+        $this->seriesTimeColumnsAvailable = false;
+
+        return $this->fetchPublishedSeriesRowsForColumns(
+            self::SERIES_SELECT_COLUMNS_PREFIX . self::SERIES_SELECT_COLUMNS_SUFFIX,
+            $activeSeriesCutoff
+        );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function fetchPublishedSeriesRowsForColumns(string $selectColumns, string $activeSeriesCutoff): array
+    {
         return Database::fetchAll(
             "SELECT {$selectColumns}
               FROM event_series
@@ -175,29 +206,9 @@ class SitemapController
         );
     }
 
-    private function hasSeriesTimeColumns(): bool
+    private function isMissingSeriesTimeColumnsQueryError(\Throwable $exception): bool
     {
-        if ($this->seriesTimeColumnsAvailable !== null) {
-            return $this->seriesTimeColumnsAvailable;
-        }
-
-        try {
-            $row = Database::fetchOne(
-                "SELECT COUNT(*) AS column_count
-                   FROM information_schema.columns
-                  WHERE table_schema = DATABASE()
-                    AND table_name = 'event_series'
-                    AND column_name IN ('start_time', 'end_time')"
-            );
-
-            $this->seriesTimeColumnsAvailable = isset($row['column_count'])
-                && (int) $row['column_count'] === self::EXPECTED_SERIES_TIME_COLUMN_COUNT;
-        } catch (\Throwable $e) {
-            error_log('Sitemap: Failed to inspect event_series time columns – ' . $e->getMessage());
-            $this->seriesTimeColumnsAvailable = false;
-        }
-
-        return $this->seriesTimeColumnsAvailable;
+        return preg_match("/Unknown column '?(start_time|end_time)'?/i", $exception->getMessage()) === 1;
     }
 
     /**
@@ -377,19 +388,12 @@ class SitemapController
 
             if (!empty($instances)) {
                 $firstInstanceDate = null;
+                $fallbackTimezone = !empty($pseudoEvent['timezone'])
+                    ? (string) $pseudoEvent['timezone']
+                    : Config::get('app.timezone', self::DEFAULT_APP_TIMEZONE);
 
                 foreach ($instances as $instance) {
-                    $instanceDate = null;
-
-                    if (!empty($instance['instance_date'])) {
-                        $instanceDate = (string) $instance['instance_date'];
-                    } elseif (!empty($instance['start_datetime'])) {
-                        try {
-                            $instanceDate = Carbon::parse((string) $instance['start_datetime'])->toDateString();
-                        } catch (\Throwable) {
-                            $instanceDate = null;
-                        }
-                    }
+                    $instanceDate = $this->resolveInstanceDate($instance, $fallbackTimezone);
 
                     if ($instanceDate !== null && ($firstInstanceDate === null || $instanceDate < $firstInstanceDate)) {
                         $firstInstanceDate = $instanceDate;
@@ -405,6 +409,32 @@ class SitemapController
         }
 
         return null;
+    }
+
+    /**
+     * @param array<string, mixed> $instance
+     */
+    private function resolveInstanceDate(array $instance, string $fallbackTimezone): ?string
+    {
+        if (!empty($instance['instance_date'])) {
+            return (string) $instance['instance_date'];
+        }
+
+        if (empty($instance['start_datetime'])) {
+            return null;
+        }
+
+        $instanceTimezone = !empty($instance['timezone'])
+            ? (string) $instance['timezone']
+            : $fallbackTimezone;
+
+        try {
+            return Carbon::parse((string) $instance['start_datetime'], $instanceTimezone)
+                ->setTimezone($instanceTimezone)
+                ->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
