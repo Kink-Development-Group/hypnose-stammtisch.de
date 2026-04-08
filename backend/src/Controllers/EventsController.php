@@ -490,13 +490,17 @@ class EventsController
                 // Fetch overrides for those instance dates (inkl. cancellations)
                 $instanceDates = array_map(fn($i) => substr($i['start_datetime'], 0, 10), $instances);
                 if (!empty($instanceDates)) {
+                    $publicOverrideConstraint = $this->getPublicSeriesOverrideConstraint();
                     $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
                     $overrideSql = "SELECT * FROM events
                         WHERE series_id = ?
                           AND instance_date IN ($placeholders)
-                          AND override_type IN ('changed', 'cancelled')
-                          AND status IN ('published', 'cancelled')";
-                    $params = array_merge([$series['id']], $instanceDates);
+                          AND {$publicOverrideConstraint['sql']}";
+                    $params = array_merge(
+                        [$series['id']],
+                        $instanceDates,
+                        $publicOverrideConstraint['params']
+                    );
                     $overrides = \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params);
                     $overrideMap = [];
                     foreach ($overrides as $ov) {
@@ -555,26 +559,36 @@ class EventsController
     }
 
     /**
+     * @return array{sql: string, params: list<string>}
+     */
+    private function getPublicSeriesOverrideConstraint(): array
+    {
+        $overrideTypePlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_TYPES), '?'));
+        $overrideStatusPlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_STATUSES), '?'));
+
+        return [
+            'sql' => "override_type IN ($overrideTypePlaceholders) AND status IN ($overrideStatusPlaceholders)",
+            'params' => [...self::PUBLIC_OVERRIDE_TYPES, ...self::PUBLIC_OVERRIDE_STATUSES],
+        ];
+    }
+
+    /**
      * Load a series instance override only when the stored row is an explicit public override.
      *
      * @return array<string, mixed>|null
      */
     private function getSeriesOverride(string $seriesId, string $instanceDate): ?array
     {
+        $publicOverrideConstraint = $this->getPublicSeriesOverrideConstraint();
         $override = Database::fetchOne(
             "SELECT * FROM events
              WHERE series_id = ?
                AND instance_date = ?
-               AND override_type IN ('changed', 'cancelled')
-               AND status IN ('published', 'cancelled')",
-            [$seriesId, $instanceDate]
+               AND {$publicOverrideConstraint['sql']}",
+            array_merge([$seriesId, $instanceDate], $publicOverrideConstraint['params'])
         );
 
-        if (!$override || !$this->isExplicitSeriesOverride($override)) {
-            return null;
-        }
-
-        return $override;
+        return $override ?: null;
     }
 
     /**
