@@ -19,6 +19,9 @@ use Carbon\Carbon;
  */
 class EventsController
 {
+    private const PUBLIC_OVERRIDE_TYPES = ['changed', 'cancelled'];
+    private const PUBLIC_OVERRIDE_STATUSES = ['published', 'cancelled'];
+
     /**
      * Helper function to convert event to array (handles mock objects)
      */
@@ -235,10 +238,7 @@ class EventsController
                 $instanceDate = $matches[2];
 
                 // First check if there's an override in the events table
-                $override = Database::fetchOne(
-                    "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
-                    [$seriesId, $instanceDate]
-                );
+                $override = $this->getSeriesOverride($seriesId, $instanceDate);
 
                 if ($override) {
                     Response::json([
@@ -399,6 +399,11 @@ class EventsController
 
         foreach ($baseEvents as $event) {
             $eventArray = $this->eventToArray($event);
+            if ($this->shouldSkipExpandedBaseEvent($eventArray)) {
+                // Series instances are rebuilt from event_series below so stale persisted rows cannot leak into expanded output.
+                continue;
+            }
+
             if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
                 try {
                     $exdatesDecoded = JsonHelper::decodeArray($eventArray['exdates'] ?? '[]');
@@ -490,9 +495,17 @@ class EventsController
                 // Fetch overrides for those instance dates (inkl. cancellations)
                 $instanceDates = array_map(fn($i) => substr($i['start_datetime'], 0, 10), $instances);
                 if (!empty($instanceDates)) {
+                    $publicOverrideConstraint = $this->getPublicSeriesOverrideConstraint();
                     $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
-                    $overrideSql = "SELECT * FROM events WHERE series_id = ? AND instance_date IN ($placeholders)";
-                    $params = array_merge([$series['id']], $instanceDates);
+                    $overrideSql = "SELECT * FROM events
+                        WHERE series_id = ?
+                          AND instance_date IN ($placeholders)
+                          AND {$publicOverrideConstraint['sql']}";
+                    $params = array_merge(
+                        [$series['id']],
+                        $instanceDates,
+                        $publicOverrideConstraint['params']
+                    );
                     $overrides = \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params);
                     $overrideMap = [];
                     foreach ($overrides as $ov) {
@@ -534,6 +547,47 @@ class EventsController
     }
 
     /**
+     * @param array<string, mixed> $event
+     */
+    private function shouldSkipExpandedBaseEvent(array $event): bool
+    {
+        return !empty($event['series_id']) && !empty($event['instance_date']);
+    }
+
+    /**
+     * @return array{sql: string, params: list<string>}
+     */
+    private function getPublicSeriesOverrideConstraint(): array
+    {
+        $overrideTypePlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_TYPES), '?'));
+        $overrideStatusPlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_STATUSES), '?'));
+
+        return [
+            'sql' => "override_type IN ($overrideTypePlaceholders) AND status IN ($overrideStatusPlaceholders)",
+            'params' => [...self::PUBLIC_OVERRIDE_TYPES, ...self::PUBLIC_OVERRIDE_STATUSES],
+        ];
+    }
+
+    /**
+     * Load a series instance override only when the stored row is an explicit public override.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function getSeriesOverride(string $seriesId, string $instanceDate): ?array
+    {
+        $publicOverrideConstraint = $this->getPublicSeriesOverrideConstraint();
+        $override = Database::fetchOne(
+            "SELECT * FROM events
+             WHERE series_id = ?
+               AND instance_date = ?
+               AND {$publicOverrideConstraint['sql']}",
+            array_merge([$seriesId, $instanceDate], $publicOverrideConstraint['params'])
+        );
+
+        return $override ?: null;
+    }
+
+    /**
      * Download single event as ICS
      * GET /api/events/{id}/ics
      * Supports regular events and dynamically generated series instances (e.g., series_UUID_2026-01-19)
@@ -548,10 +602,7 @@ class EventsController
                 $instanceDate = $matches[2];
 
                 // First check if there's an override in the events table
-                $override = Database::fetchOne(
-                    "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
-                    [$seriesId, $instanceDate]
-                );
+                $override = $this->getSeriesOverride($seriesId, $instanceDate);
 
                 if ($override) {
                     // Use the override
