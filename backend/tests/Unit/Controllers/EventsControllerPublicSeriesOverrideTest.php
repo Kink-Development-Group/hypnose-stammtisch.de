@@ -110,6 +110,11 @@ class EventsControllerPublicSeriesOverrideTest extends TestCase
             'to_date' => '2026-05-04',
         ]);
 
+        $expandedIds = array_values(array_filter(
+            array_column($expanded, 'id'),
+            static fn ($id): bool => is_string($id) && $id !== ''
+        ));
+
         $seriesInstances = [];
         foreach ($expanded as $event) {
             if (($event['series_id'] ?? null) === 'series-1') {
@@ -117,6 +122,12 @@ class EventsControllerPublicSeriesOverrideTest extends TestCase
             }
         }
 
+        $this->assertNotContains('stale-instance', $expandedIds);
+        $this->assertNotContains('draft-override', $expandedIds);
+        $this->assertSame(
+            1,
+            count(array_filter($expandedIds, static fn (string $id): bool => $id === 'published-override'))
+        );
         $this->assertCount(3, $seriesInstances);
         $this->assertSame('Series Title', $seriesInstances['2026-05-01']['title']);
         $this->assertSame('Series Title', $seriesInstances['2026-05-02']['title']);

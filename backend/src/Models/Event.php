@@ -53,7 +53,9 @@ class Event
         public string $metaDescription = '',
         public string $imageUrl = '',
         public ?string $createdAt = null,
-        public ?string $updatedAt = null
+        public ?string $updatedAt = null,
+        public ?string $seriesId = null,
+        public ?string $instanceDate = null
     ) {}
 
     /**
@@ -373,7 +375,9 @@ class Event
             metaDescription: $data['meta_description'] ?? '',
             imageUrl: $data['image_url'] ?? '',
             createdAt: $data['created_at'] ?? null,
-            updatedAt: $data['updated_at'] ?? null
+            updatedAt: $data['updated_at'] ?? null,
+            seriesId: $data['series_id'] ?? null,
+            instanceDate: $data['instance_date'] ?? null
         );
     }
 
@@ -421,7 +425,9 @@ class Event
             'meta_description' => $this->metaDescription,
             'image_url' => $this->imageUrl,
             'created_at' => $this->createdAt,
-            'updated_at' => $this->updatedAt
+            'updated_at' => $this->updatedAt,
+            'series_id' => $this->seriesId,
+            'instance_date' => $this->instanceDate
         ];
     }
 
