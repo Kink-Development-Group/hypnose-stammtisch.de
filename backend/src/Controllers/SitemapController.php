@@ -375,8 +375,30 @@ class SitemapController
                 $exdates
             );
 
-            if (!empty($instances) && !empty($instances[0]['instance_date'])) {
-                return (string) $instances[0]['instance_date'];
+            if (!empty($instances)) {
+                $firstInstanceDate = null;
+
+                foreach ($instances as $instance) {
+                    $instanceDate = null;
+
+                    if (!empty($instance['instance_date'])) {
+                        $instanceDate = (string) $instance['instance_date'];
+                    } elseif (!empty($instance['start_datetime'])) {
+                        try {
+                            $instanceDate = Carbon::parse((string) $instance['start_datetime'])->toDateString();
+                        } catch (\Throwable) {
+                            $instanceDate = null;
+                        }
+                    }
+
+                    if ($instanceDate !== null && ($firstInstanceDate === null || $instanceDate < $firstInstanceDate)) {
+                        $firstInstanceDate = $instanceDate;
+                    }
+                }
+
+                if ($firstInstanceDate !== null) {
+                    return $firstInstanceDate;
+                }
             }
 
             $chunkStart = $chunkEnd->copy()->addSecond();
