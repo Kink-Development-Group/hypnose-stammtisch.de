@@ -235,10 +235,7 @@ class EventsController
                 $instanceDate = $matches[2];
 
                 // First check if there's an override in the events table
-                $override = Database::fetchOne(
-                    "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
-                    [$seriesId, $instanceDate]
-                );
+                $override = $this->getSeriesOverride($seriesId, $instanceDate);
 
                 if ($override) {
                     Response::json([
@@ -493,7 +490,10 @@ class EventsController
                     $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
                     $overrideSql = "SELECT * FROM events WHERE series_id = ? AND instance_date IN ($placeholders)";
                     $params = array_merge([$series['id']], $instanceDates);
-                    $overrides = \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params);
+                    $overrides = array_filter(
+                        \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params),
+                        fn(array $override): bool => $this->isExplicitSeriesOverride($override)
+                    );
                     $overrideMap = [];
                     foreach ($overrides as $ov) {
                         $overrideMap[$ov['instance_date']] = $ov;
@@ -534,6 +534,33 @@ class EventsController
     }
 
     /**
+     * Only explicit override rows should replace generated series instances.
+     */
+    private function isExplicitSeriesOverride(array $event): bool
+    {
+        $overrideType = $event['override_type'] ?? null;
+        if (!is_string($overrideType)) {
+            return false;
+        }
+
+        return in_array($overrideType, ['changed', 'cancelled'], true);
+    }
+
+    private function getSeriesOverride(string $seriesId, string $instanceDate): ?array
+    {
+        $override = Database::fetchOne(
+            "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
+            [$seriesId, $instanceDate]
+        );
+
+        if (!$override || !$this->isExplicitSeriesOverride($override)) {
+            return null;
+        }
+
+        return $override;
+    }
+
+    /**
      * Download single event as ICS
      * GET /api/events/{id}/ics
      * Supports regular events and dynamically generated series instances (e.g., series_UUID_2026-01-19)
@@ -548,10 +575,7 @@ class EventsController
                 $instanceDate = $matches[2];
 
                 // First check if there's an override in the events table
-                $override = Database::fetchOne(
-                    "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
-                    [$seriesId, $instanceDate]
-                );
+                $override = $this->getSeriesOverride($seriesId, $instanceDate);
 
                 if ($override) {
                     // Use the override
