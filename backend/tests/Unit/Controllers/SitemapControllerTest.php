@@ -375,7 +375,7 @@ class SitemapControllerTest extends TestCase
         );
     }
 
-    public function testRobotsUsesExactAndDirectoryDisallowRules(): void
+    public function testRobotsUsesStandardPrefixDisallowRules(): void
     {
         $_ENV['FRONTEND_URL'] = 'https://localhost:5173';
         Config::reset();
@@ -388,10 +388,8 @@ class SitemapControllerTest extends TestCase
 
         $expected = <<<ROBOTS
 User-agent: *
-Disallow: /api$
-Disallow: /api/
-Disallow: /admin$
-Disallow: /admin/
+Disallow: /api
+Disallow: /admin
 
 Sitemap: https://localhost:5173/sitemap.xml
 ROBOTS;

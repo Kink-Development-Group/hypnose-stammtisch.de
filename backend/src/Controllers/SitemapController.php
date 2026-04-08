@@ -95,9 +95,8 @@ class SitemapController
 
         $baseUrl = str_replace(["\r", "\n"], '', $this->getFrontendBaseUrl());
 
-        // Use exact-path "$" rules plus directory rules so crawlers block
-        // /api and /admin without accidentally matching /apiary or /administrator.
-        echo "User-agent: *\nDisallow: /api$\nDisallow: /api/\nDisallow: /admin$\nDisallow: /admin/\n\n";
+        // Use standard prefix-based rules for broad crawler compatibility.
+        echo "User-agent: *\nDisallow: /api\nDisallow: /admin\n\n";
         echo 'Sitemap: ' . $baseUrl . "/sitemap.xml\n";
     }
 
