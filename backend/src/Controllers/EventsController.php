@@ -399,6 +399,10 @@ class EventsController
 
         foreach ($baseEvents as $event) {
             $eventArray = $this->eventToArray($event);
+            if (!empty($eventArray['series_id']) && !empty($eventArray['instance_date'])) {
+                continue;
+            }
+
             if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
                 try {
                     $exdatesDecoded = JsonHelper::decodeArray($eventArray['exdates'] ?? '[]');
@@ -539,23 +543,6 @@ class EventsController
         // Sort combined list
         usort($expanded, fn($a, $b) => strtotime($a['start_datetime']) <=> strtotime($b['start_datetime']));
         return $expanded;
-    }
-
-    /**
-     * Only explicit override rows should replace generated series instances.
-     *
-     * @param array<string, mixed> $event Event row that may include override_type and status columns.
-     */
-    private function isExplicitSeriesOverride(array $event): bool
-    {
-        $overrideType = $event['override_type'] ?? null;
-        $status = $event['status'] ?? null;
-        if (!is_string($overrideType) || !is_string($status)) {
-            return false;
-        }
-
-        return in_array($overrideType, self::PUBLIC_OVERRIDE_TYPES, true)
-            && in_array($status, self::PUBLIC_OVERRIDE_STATUSES, true);
     }
 
     /**
