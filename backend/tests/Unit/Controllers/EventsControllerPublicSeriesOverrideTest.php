@@ -115,12 +115,12 @@ class EventsControllerPublicSeriesOverrideTest extends TestCase
             static fn ($id): bool => is_string($id) && $id !== ''
         ));
 
-        $seriesInstances = [];
-        foreach ($expanded as $event) {
-            if (($event['series_id'] ?? null) === 'series-1') {
-                $seriesInstances[$event['instance_date']] = $event;
-            }
-        }
+        $seriesInstances = array_values(array_filter(
+            $expanded,
+            static fn (array $event): bool => ($event['series_id'] ?? null) === 'series-1'
+        ));
+        $seriesInstanceDates = array_column($seriesInstances, 'instance_date');
+        sort($seriesInstanceDates);
 
         $this->assertNotContains('stale-instance', $expandedIds);
         $this->assertNotContains('draft-override', $expandedIds);
@@ -129,9 +129,31 @@ class EventsControllerPublicSeriesOverrideTest extends TestCase
             count(array_filter($expandedIds, static fn (string $id): bool => $id === 'published-override'))
         );
         $this->assertCount(3, $seriesInstances);
-        $this->assertSame('Series Title', $seriesInstances['2026-05-01']['title']);
-        $this->assertSame('Series Title', $seriesInstances['2026-05-02']['title']);
-        $this->assertSame('Published override row', $seriesInstances['2026-05-03']['title']);
+        $this->assertSame(['2026-05-01', '2026-05-02', '2026-05-03'], $seriesInstanceDates);
+        $this->assertSame(
+            1,
+            count(array_filter($seriesInstanceDates, static fn (string $date): bool => $date === '2026-05-01'))
+        );
+        $this->assertSame(
+            1,
+            count(array_filter($seriesInstanceDates, static fn (string $date): bool => $date === '2026-05-02'))
+        );
+        $this->assertSame(
+            1,
+            count(array_filter($seriesInstanceDates, static fn (string $date): bool => $date === '2026-05-03'))
+        );
+        $this->assertSame(
+            'Series Title',
+            $this->findExpandedSeriesInstance($seriesInstances, '2026-05-01')['title']
+        );
+        $this->assertSame(
+            'Series Title',
+            $this->findExpandedSeriesInstance($seriesInstances, '2026-05-02')['title']
+        );
+        $this->assertSame(
+            'Published override row',
+            $this->findExpandedSeriesInstance($seriesInstances, '2026-05-03')['title']
+        );
     }
 
     public function testSeriesInstanceLookupOnlyReturnsExplicitPublicOverrides(): void
@@ -222,6 +244,21 @@ class EventsControllerPublicSeriesOverrideTest extends TestCase
     private function getSeriesOverride(string $seriesId, string $instanceDate): ?array
     {
         return $this->getSeriesOverrideMethod->invoke($this->controller, $seriesId, $instanceDate);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $seriesInstances
+     * @return array<string, mixed>
+     */
+    private function findExpandedSeriesInstance(array $seriesInstances, string $instanceDate): array
+    {
+        foreach ($seriesInstances as $event) {
+            if (($event['instance_date'] ?? null) === $instanceDate) {
+                return $event;
+            }
+        }
+
+        $this->fail("Missing expanded series instance for {$instanceDate}");
     }
 
     private function createSchema(): void

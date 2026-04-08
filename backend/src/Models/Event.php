@@ -54,8 +54,8 @@ class Event
         public string $imageUrl = '',
         public ?string $createdAt = null,
         public ?string $updatedAt = null,
-        public ?string $seriesId = null,
-        public ?string $instanceDate = null
+        public readonly ?string $seriesId = null,
+        public readonly ?string $instanceDate = null
     ) {}
 
     /**
