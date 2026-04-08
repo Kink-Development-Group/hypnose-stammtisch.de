@@ -220,6 +220,22 @@ class SitemapControllerTest extends TestCase
         $this->assertSame('series_series-456_2026-04-08', $identifier);
     }
 
+    public function testBuildNextSeriesInstanceIdentifierSelectsEarliestChunkOccurrence(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-03-30 09:00:00', 'Europe/Berlin'));
+
+        $identifier = $this->invokeBuildNextSeriesInstanceIdentifier([
+            'id' => 'series-457',
+            'start_date' => '2020-01-01',
+            'start_time' => '19:00:00',
+            'end_time' => '21:00:00',
+            'rrule' => 'FREQ=WEEKLY;BYDAY=FR,MO',
+            'exdates' => '[]',
+        ]);
+
+        $this->assertSame('series_series-457_2026-03-30', $identifier);
+    }
+
     public function testBuildNextSeriesInstanceIdentifierWorksWithoutTimeColumns(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-30 20:00:00', 'Europe/Berlin'));
