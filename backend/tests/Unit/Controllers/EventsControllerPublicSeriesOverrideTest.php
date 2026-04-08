@@ -121,6 +121,7 @@ class EventsControllerPublicSeriesOverrideTest extends TestCase
         ));
         $seriesInstanceDates = array_column($seriesInstances, 'instance_date');
         sort($seriesInstanceDates);
+        $seriesInstanceDateCounts = array_count_values($seriesInstanceDates);
 
         $this->assertNotContains('stale-instance', $expandedIds);
         $this->assertNotContains('draft-override', $expandedIds);
@@ -130,18 +131,9 @@ class EventsControllerPublicSeriesOverrideTest extends TestCase
         );
         $this->assertCount(3, $seriesInstances);
         $this->assertSame(['2026-05-01', '2026-05-02', '2026-05-03'], $seriesInstanceDates);
-        $this->assertSame(
-            1,
-            count(array_filter($seriesInstanceDates, static fn (string $date): bool => $date === '2026-05-01'))
-        );
-        $this->assertSame(
-            1,
-            count(array_filter($seriesInstanceDates, static fn (string $date): bool => $date === '2026-05-02'))
-        );
-        $this->assertSame(
-            1,
-            count(array_filter($seriesInstanceDates, static fn (string $date): bool => $date === '2026-05-03'))
-        );
+        $this->assertSame(1, $seriesInstanceDateCounts['2026-05-01'] ?? 0);
+        $this->assertSame(1, $seriesInstanceDateCounts['2026-05-02'] ?? 0);
+        $this->assertSame(1, $seriesInstanceDateCounts['2026-05-03'] ?? 0);
         $seriesInstancesByDate = [];
         foreach ($seriesInstances as $event) {
             $seriesInstancesByDate[$event['instance_date']] = $event;
