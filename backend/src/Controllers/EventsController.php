@@ -400,6 +400,7 @@ class EventsController
         foreach ($baseEvents as $event) {
             $eventArray = $this->eventToArray($event);
             if (!empty($eventArray['series_id']) && !empty($eventArray['instance_date'])) {
+                // Series instances are rebuilt from event_series below so stale persisted rows cannot leak into expanded output.
                 continue;
             }
 
