@@ -399,7 +399,7 @@ class EventsController
 
         foreach ($baseEvents as $event) {
             $eventArray = $this->eventToArray($event);
-            if (!empty($eventArray['series_id']) && !empty($eventArray['instance_date'])) {
+            if ($this->shouldSkipExpandedBaseEvent($eventArray)) {
                 // Series instances are rebuilt from event_series below so stale persisted rows cannot leak into expanded output.
                 continue;
             }
@@ -544,6 +544,14 @@ class EventsController
         // Sort combined list
         usort($expanded, fn($a, $b) => strtotime($a['start_datetime']) <=> strtotime($b['start_datetime']));
         return $expanded;
+    }
+
+    /**
+     * @param array<string, mixed> $event
+     */
+    private function shouldSkipExpandedBaseEvent(array $event): bool
+    {
+        return !empty($event['series_id']) && !empty($event['instance_date']);
     }
 
     /**
