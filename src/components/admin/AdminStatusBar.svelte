@@ -7,7 +7,7 @@
 
   let isAutoUpdateEnabled = false;
   let lastUpdateTime = "";
-  let updateInterval: NodeJS.Timeout | null = null;
+  let updateInterval: ReturnType<typeof setInterval> | null = null;
 
   onMount(() => {
     // Initial state

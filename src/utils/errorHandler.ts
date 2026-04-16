@@ -1,6 +1,11 @@
 // Global error handler für Browser-Erweiterungsfehler
 // Diese Datei in main.ts importieren
 
+const isDevelopment =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const isProduction = !isDevelopment;
+
 /**
  * Filtert bekannte Browser-Erweiterungsfehler heraus
  */
@@ -32,10 +37,7 @@ window.addEventListener("error", (event) => {
   }
 
   // Nur echte Anwendungsfehler loggen
-  if (
-    typeof process !== "undefined" &&
-    process.env.NODE_ENV === "development"
-  ) {
+  if (isDevelopment) {
     console.error("Application Error:", event.error);
   }
 });
@@ -51,10 +53,7 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 
   // Nur echte Anwendungsfehler loggen
-  if (
-    typeof process !== "undefined" &&
-    process.env.NODE_ENV === "development"
-  ) {
+  if (isDevelopment) {
     console.error("Unhandled Promise Rejection:", event.reason);
   }
 });
@@ -62,7 +61,7 @@ window.addEventListener("unhandledrejection", (event) => {
 /**
  * Console-Filter für Browser-Erweiterungsnachrichten
  */
-if (typeof process !== "undefined" && process.env.NODE_ENV !== "development") {
+if (isProduction) {
   const originalLog = console.log;
   const originalError = console.error;
   const originalWarn = console.warn;

@@ -3,6 +3,10 @@ import User from "../classes/User";
 import { clearCsrfToken, getCsrfToken } from "../utils/adminApi";
 import { adminEventHelpers, adminNotifications } from "./adminData";
 
+const isDevelopment =
+  typeof window !== "undefined" &&
+  ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
 export interface AdminAuthState {
   isAuthenticated: boolean;
   user: User | null;
@@ -38,10 +42,7 @@ class AdminAuthStore {
    */
   reset() {
     // Only log in development mode
-    if (
-      typeof process !== "undefined" &&
-      process.env.NODE_ENV === "development"
-    ) {
+    if (isDevelopment) {
       console.log("AdminAuth: Resetting all authentication state");
     }
     adminAuthState.set({
@@ -288,10 +289,7 @@ class AdminAuthStore {
       const result = await response.json();
 
       if (result.success && result.data && !result.data.twofa_pending) {
-        if (
-          typeof process !== "undefined" &&
-          process.env.NODE_ENV === "development"
-        ) {
+        if (isDevelopment) {
           console.log("AdminAuth: Status check successful", result.data);
         }
         const user = User.fromApiData(result.data);
@@ -313,10 +311,7 @@ class AdminAuthStore {
           twofaConfigured: true,
         }));
       } else {
-        if (
-          typeof process !== "undefined" &&
-          process.env.NODE_ENV === "development"
-        ) {
+        if (isDevelopment) {
           console.log(
             "AdminAuth: Status check failed",
             result.message || "No user data",
@@ -336,10 +331,7 @@ class AdminAuthStore {
 
       return result;
     } catch (_error) {
-      if (
-        typeof process !== "undefined" &&
-        process.env.NODE_ENV === "development"
-      ) {
+      if (isDevelopment) {
         console.error("AdminAuth: Status check error");
       }
       adminAuthState.update((state) => ({
@@ -497,15 +489,21 @@ export class AdminAPI {
   }
 
   static async createEvent(eventData: any) {
+    const isSeries = eventData?.event_type === "series";
+
     // Optimistische Aktualisierung: Event sofort zur Liste hinzufügen
     const tempEvent = {
       ...eventData,
-      id: Date.now(), // Temporäre ID
+      id: `temp-${Date.now()}`, // Temporäre ID
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    adminEventHelpers.addEvent(tempEvent);
+    if (isSeries) {
+      adminEventHelpers.addSeries(tempEvent);
+    } else {
+      adminEventHelpers.addEvent(tempEvent);
+    }
     adminNotifications.info("Event wird erstellt...");
 
     try {
@@ -515,13 +513,21 @@ export class AdminAPI {
       });
 
       if (result.success) {
-        // Ersetze das temporäre Event mit den echten Daten
-        adminEventHelpers.removeEvent(tempEvent.id);
-        adminEventHelpers.addEvent(result.data);
+        if (isSeries) {
+          adminEventHelpers.removeSeries(tempEvent.id);
+        } else {
+          adminEventHelpers.removeEvent(tempEvent.id);
+        }
+
+        await this.getEvents();
         adminNotifications.success("Event erfolgreich erstellt!");
       } else {
         // Entferne das temporäre Event bei Fehler
-        adminEventHelpers.removeEvent(tempEvent.id);
+        if (isSeries) {
+          adminEventHelpers.removeSeries(tempEvent.id);
+        } else {
+          adminEventHelpers.removeEvent(tempEvent.id);
+        }
         const errorDetails = result.details || result.errors;
         const errorMsg = errorDetails
           ? `${result.error || result.message}: ${JSON.stringify(errorDetails)}`
@@ -534,20 +540,30 @@ export class AdminAPI {
 
       return result;
     } catch (_error) {
-      adminEventHelpers.removeEvent(tempEvent.id);
+      if (isSeries) {
+        adminEventHelpers.removeSeries(tempEvent.id);
+      } else {
+        adminEventHelpers.removeEvent(tempEvent.id);
+      }
       adminNotifications.error("Netzwerkfehler beim Erstellen des Events");
       return { success: false, message: "Network error" };
     }
   }
 
-  static async updateEvent(id: number, eventData: any) {
+  static async updateEvent(id: number | string, eventData: any) {
+    const isSeries = eventData?.event_type === "series";
+
     // Optimistische Aktualisierung
     const updates = {
       ...eventData,
       updated_at: new Date().toISOString(),
     };
 
-    adminEventHelpers.updateEvent(id, updates);
+    if (isSeries) {
+      adminEventHelpers.updateSeries(id, updates);
+    } else {
+      adminEventHelpers.updateEvent(id, updates);
+    }
     adminNotifications.info("Event wird aktualisiert...");
 
     try {
@@ -557,28 +573,36 @@ export class AdminAPI {
       });
 
       if (result.success) {
-        // Update mit echten Server-Daten
-        adminEventHelpers.updateEvent(id, result.data);
+        await this.getEvents();
         adminNotifications.success("Event erfolgreich aktualisiert!");
       } else {
         // Lade Events neu bei Fehler (könnte optimiert werden)
-        this.getEvents();
+        await this.getEvents();
         adminNotifications.error(
-          result.message || "Fehler beim Aktualisieren des Events",
+          result.error ||
+            result.message ||
+            "Fehler beim Aktualisieren des Events",
         );
       }
 
       return result;
     } catch (_error) {
-      this.getEvents();
+      await this.getEvents();
       adminNotifications.error("Netzwerkfehler beim Aktualisieren des Events");
       return { success: false, message: "Network error" };
     }
   }
 
-  static async deleteEvent(id: number) {
+  static async deleteEvent(
+    id: number | string,
+    eventType: "event" | "series" = "event",
+  ) {
     // Optimistische Aktualisierung: Event sofort entfernen
-    adminEventHelpers.removeEvent(id);
+    if (eventType === "series") {
+      adminEventHelpers.removeSeries(id);
+    } else {
+      adminEventHelpers.removeEvent(id);
+    }
     adminNotifications.info("Event wird gelöscht...");
 
     try {
@@ -587,18 +611,19 @@ export class AdminAPI {
       });
 
       if (result.success) {
+        await this.getEvents();
         adminNotifications.success("Event erfolgreich gelöscht!");
       } else {
         // Lade Events neu bei Fehler
-        this.getEvents();
+        await this.getEvents();
         adminNotifications.error(
-          result.message || "Fehler beim Löschen des Events",
+          result.error || result.message || "Fehler beim Löschen des Events",
         );
       }
 
       return result;
     } catch (_error) {
-      this.getEvents();
+      await this.getEvents();
       adminNotifications.error("Netzwerkfehler beim Löschen des Events");
       return { success: false, message: "Network error" };
     }

@@ -295,7 +295,9 @@ class RRuleProcessor
             switch ($freq) {
                 case 'DAILY':
                     $steps = intdiv(
-                        $eventStart->copy()->startOfDay()->diffInDays($normalizedStartDate->copy()->startOfDay()),
+                        self::normalizeWholeUnitDiff(
+                            $eventStart->copy()->startOfDay()->diffInDays($normalizedStartDate->copy()->startOfDay())
+                        ),
                         $interval
                     );
                     $current = $eventStart->copy()->addDays($steps * $interval);
@@ -305,11 +307,13 @@ class RRuleProcessor
                     if ($byDay) {
                         $eventAnchor = $eventStart->copy()->startOfWeek(Carbon::MONDAY);
                         $startAnchor = $normalizedStartDate->copy()->startOfWeek(Carbon::MONDAY);
-                        $steps = intdiv($eventAnchor->diffInWeeks($startAnchor), $interval);
+                        $steps = intdiv(self::normalizeWholeUnitDiff($eventAnchor->diffInWeeks($startAnchor)), $interval);
                         $current = $eventAnchor->copy()->addWeeks($steps * $interval);
                     } else {
                         $steps = intdiv(
-                            $eventStart->copy()->startOfDay()->diffInWeeks($normalizedStartDate->copy()->startOfDay()),
+                            self::normalizeWholeUnitDiff(
+                                $eventStart->copy()->startOfDay()->diffInWeeks($normalizedStartDate->copy()->startOfDay())
+                            ),
                             $interval
                         );
                         $current = $eventStart->copy()->addWeeks($steps * $interval);
@@ -320,11 +324,13 @@ class RRuleProcessor
                     if ($bySetPos !== null || !empty($byDayPositions) || $byMonthDay !== null) {
                         $eventAnchor = $eventStart->copy()->startOfMonth();
                         $startAnchor = $normalizedStartDate->copy()->startOfMonth();
-                        $steps = intdiv($eventAnchor->diffInMonths($startAnchor), $interval);
+                        $steps = intdiv(self::normalizeWholeUnitDiff($eventAnchor->diffInMonths($startAnchor)), $interval);
                         $current = $eventAnchor->copy()->addMonths($steps * $interval);
                     } else {
                         $steps = intdiv(
-                            $eventStart->copy()->startOfDay()->diffInMonths($normalizedStartDate->copy()->startOfDay()),
+                            self::normalizeWholeUnitDiff(
+                                $eventStart->copy()->startOfDay()->diffInMonths($normalizedStartDate->copy()->startOfDay())
+                            ),
                             $interval
                         );
                         $current = $eventStart->copy()->addMonths($steps * $interval);
@@ -333,7 +339,9 @@ class RRuleProcessor
 
                 case 'YEARLY':
                     $steps = intdiv(
-                        $eventStart->copy()->startOfDay()->diffInYears($normalizedStartDate->copy()->startOfDay()),
+                        self::normalizeWholeUnitDiff(
+                            $eventStart->copy()->startOfDay()->diffInYears($normalizedStartDate->copy()->startOfDay())
+                        ),
                         $interval
                     );
                     $current = $eventStart->copy()->addYears($steps * $interval);
@@ -350,6 +358,16 @@ class RRuleProcessor
         }
 
         return $current;
+    }
+
+    /**
+     * Carbon diffIn* methods can return floating point values even when the
+     * inputs are aligned to day/week/month/year boundaries. Normalize those
+     * results to a non-negative integer before using them in intdiv().
+     */
+    private static function normalizeWholeUnitDiff(int|float $diff): int
+    {
+        return max(0, (int) floor((float) $diff));
     }
 
     /**

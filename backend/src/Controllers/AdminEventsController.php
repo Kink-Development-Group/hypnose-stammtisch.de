@@ -282,7 +282,8 @@ class AdminEventsController
                 isset($input['tags']) ? json_encode($input['tags']) : null
             ]);
 
-            Response::success(['id' => $eventId], 'Event created successfully');
+            $createdEvent = self::fetchSingleEventForAdminResponse((string) $eventId);
+            Response::success($createdEvent ?? ['id' => $eventId], 'Event created successfully');
         } catch (Exception $e) {
             $msg = $e->getMessage();
             $inputPreview = $input;
@@ -433,10 +434,11 @@ class AdminEventsController
                             $tagsJson
                         ]);
                         // Informiere Client, dass Migration fehlt
-                        Response::success([
-                            'id' => $seriesId,
-                            'warning' => 'Serie erstellt, aber Migration 003 (start_time/end_time) scheint nicht angewendet. Bitte Migration ausführen.'
-                        ], 'Event series created (ohne Zeit-Spalten)');
+                        $createdSeries = self::fetchSeriesForAdminResponse((string) $seriesId);
+                        Response::success(
+                            $createdSeries ?? ['id' => $seriesId],
+                            'Event series created (ohne Zeit-Spalten – bitte Migration 003 ausführen)'
+                        );
                         return;
                     } catch (\Exception $fallbackEx) {
                         throw $fallbackEx; // gehe in äußeres catch
@@ -445,7 +447,8 @@ class AdminEventsController
                 throw $inner; // rethrow, wird unten gefangen
             }
 
-            Response::success(['id' => $seriesId], 'Event series created successfully');
+            $createdSeries = self::fetchSeriesForAdminResponse((string) $seriesId);
+            Response::success($createdSeries ?? ['id' => $seriesId], 'Event series created successfully');
         } catch (Exception $e) {
             $msg = $e->getMessage();
             error_log('[createSeries] Exception: ' . $msg . ' | Input: ' . json_encode($input));
@@ -511,7 +514,8 @@ class AdminEventsController
                 $id
             ]);
 
-            Response::success(null, 'Event updated successfully');
+            $updatedEvent = self::fetchSingleEventForAdminResponse($id);
+            Response::success($updatedEvent, 'Event updated successfully');
         } catch (Exception $e) {
             Response::error('Failed to update event: ' . $e->getMessage(), 500);
         }
@@ -622,13 +626,15 @@ class AdminEventsController
                         $tagsJson,
                         $id
                     ]);
-                    Response::success(null, 'Event series updated (ohne Zeit-Spalten – bitte Migration 003 ausführen)');
+                    $updatedSeries = self::fetchSeriesForAdminResponse($id);
+                    Response::success($updatedSeries, 'Event series updated (ohne Zeit-Spalten – bitte Migration 003 ausführen)');
                     return;
                 }
                 throw $inner;
             }
 
-            Response::success(null, 'Event series updated successfully');
+            $updatedSeries = self::fetchSeriesForAdminResponse($id);
+            Response::success($updatedSeries, 'Event series updated successfully');
         } catch (Exception $e) {
             Response::error('Failed to update event series: ' . $e->getMessage(), 500);
         }
@@ -645,9 +651,9 @@ class AdminEventsController
         $base = trim($base, '-');
         // More entropy: datetime + random hex; robust fallback wenn random_bytes nicht verfügbar
         try {
-            $rand = substr(bin2hex(random_bytes(4)), 0, 8);
+            $rand = substr(bin2hex(\random_bytes(4)), 0, 8);
         } catch (\Throwable $e) {
-            $rand = substr(sha1(uniqid((string)mt_rand(), true)), 0, 8);
+            $rand = substr(sha1(uniqid((string) \mt_rand(), true)), 0, 8);
         }
         $suffix = date('YmdHis') . '-' . $rand;
         return $base . '-' . $suffix;
@@ -724,6 +730,46 @@ class AdminEventsController
         }
 
         return $event;
+    }
+
+    /**
+     * Load a single event in the same shape the admin frontend expects after list refreshes.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function fetchSingleEventForAdminResponse(string $id): ?array
+    {
+        $event = Database::fetchOne('SELECT * FROM events WHERE id = ?', [$id]);
+        if (!$event) {
+            return null;
+        }
+
+        return self::formatEventForAdminResponse($event);
+    }
+
+    /**
+     * Load a series row with the same aliased fields used by the admin index endpoint.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function fetchSeriesForAdminResponse(string $id): ?array
+    {
+        $seriesSql = "SELECT s.*, 'series' as event_type,
+                         s.default_location_type as location_type,
+                         s.default_location_name as location_name,
+                         s.default_location_address as location_address,
+                         s.default_category as category,
+                         s.default_max_participants as max_participants,
+                         s.default_requires_registration as requires_registration,
+                         COUNT(e.id) as generated_events_count
+                         FROM event_series s
+                         LEFT JOIN events e ON e.series_id = s.id
+                         WHERE s.id = ?
+                         GROUP BY s.id";
+
+        $series = Database::fetchOne($seriesSql, [$id]);
+
+        return $series ?: null;
     }
 
     /**

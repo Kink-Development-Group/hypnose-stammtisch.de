@@ -414,7 +414,7 @@ class EventsController
                         $exdatesDecoded
                     );
                     $expanded = array_merge($expanded, $instances);
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
                     error_log("Recurring expansion failed for event {$eventArray['id']}: " . $e->getMessage());
                     $expanded[] = $eventArray;
                 }
@@ -432,112 +432,118 @@ class EventsController
             $seriesList = \HypnoseStammtisch\Database\Database::fetchAll($seriesSql);
 
             foreach ($seriesList as $series) {
-                $seriesStart = Carbon::parse($series['start_date'])->startOfDay();
-                $seriesEnd = $series['end_date'] ? Carbon::parse($series['end_date'])->endOfDay() : $endDate->copy();
-                // Falls RRULE ein UNTIL enthält und keine end_date gesetzt ist, erweitere seriesEnd entsprechend (aber clamp später)
-                if (empty($series['end_date']) && !empty($series['rrule']) && str_contains($series['rrule'], 'UNTIL=')) {
-                    if (preg_match('/UNTIL=([0-9TZ]+)/', $series['rrule'], $m)) {
-                        try {
-                            $untilCandidate = Carbon::parse($m[1]);
-                            if ($untilCandidate->gt($seriesEnd)) {
-                                $seriesEnd = $untilCandidate->endOfDay();
+                try {
+                    $seriesStart = Carbon::parse($series['start_date'])->startOfDay();
+                    $seriesEnd = $series['end_date'] ? Carbon::parse($series['end_date'])->endOfDay() : $endDate->copy();
+                    // Falls RRULE ein UNTIL enthält und keine end_date gesetzt ist, erweitere seriesEnd entsprechend (aber clamp später)
+                    if (empty($series['end_date']) && !empty($series['rrule']) && str_contains($series['rrule'], 'UNTIL=')) {
+                        if (preg_match('/UNTIL=([0-9TZ]+)/', $series['rrule'], $m)) {
+                            try {
+                                $untilCandidate = Carbon::parse($m[1]);
+                                if ($untilCandidate->gt($seriesEnd)) {
+                                    $seriesEnd = $untilCandidate->endOfDay();
+                                }
+                            } catch (\Exception $e) {
+                                // ignore parse error
                             }
-                        } catch (\Exception $e) {
-                            // ignore parse error
                         }
                     }
-                }
-                $seriesEnd = $seriesEnd->gt($endDate) ? $endDate->copy() : $seriesEnd; // clamp
+                    $seriesEnd = $seriesEnd->gt($endDate) ? $endDate->copy() : $seriesEnd; // clamp
 
-                // Build pseudo event for RRULE expansion using start_time/end_time
-                $startTime = $series['start_time'] ?? '00:00:00';
-                $endTime = $series['end_time'] ?? null;
+                    // Build pseudo event for RRULE expansion using start_time/end_time
+                    $startTime = $series['start_time'] ?? '00:00:00';
+                    $endTime = $series['end_time'] ?? null;
 
-                if (!$endTime) {
-                    // Ohne Endzeit: setze Default-Dauer von 2 Stunden
-                    $endTime = date('H:i:s', strtotime($startTime) + 7200); // +2 Stunden
-                }
-                $eventStartTemplate = Carbon::parse($series['start_date'] . ' ' . $startTime, 'Europe/Berlin');
-                $eventEndTemplate = Carbon::parse($series['start_date'] . ' ' . $endTime, 'Europe/Berlin');
-
-                $pseudo = [
-                    'id' => 'series_' . $series['id'],
-                    'series_id' => $series['id'], // Include series_id for frontend reference
-                    'title' => $series['title'],
-                    'description' => $series['description'] ?? '',
-                    'start_datetime' => $eventStartTemplate->toDateTimeString(),
-                    'end_datetime' => $eventEndTemplate->toDateTimeString(),
-                    'timezone' => 'Europe/Berlin',
-                    'rrule' => $series['rrule'],
-                    'is_recurring' => true,
-                    'location_type' => $series['default_location_type'] ?? 'physical',
-                    'location_address' => $series['default_location_address'] ?? '',
-                    'location_name' => $series['default_location_name'] ?? '',
-                    'tags' => $series['tags'] ?? '[]',
-                    'category' => $series['default_category'] ?? 'stammtisch',
-                    'status' => $series['status'] ?? 'published'
-                ];
-
-                $exdates = JsonHelper::decodeArray($series['exdates'] ?? '[]');
-
-                $instances = RRuleProcessor::expandRecurringEvent($pseudo, $startDate, $endDate, $exdates);
-
-                // Clip instances to series end only (if defined)
-                // Note: We only clip by end date, not start date. The RRULE determines when instances occur,
-                // and instances may legitimately occur before the series start_date if the RRULE pattern dictates.
-                // The start_date is when the series was created, not necessarily when the first instance occurs.
-                $instances = array_filter($instances, function ($i) use ($seriesEnd) {
-                    $dt = Carbon::parse($i['start_datetime']);
-                    return $dt->lte($seriesEnd);
-                });
-                $instances = array_values($instances); // re-index
-
-                // Fetch overrides for those instance dates (inkl. cancellations)
-                $instanceDates = array_map(fn($i) => substr($i['start_datetime'], 0, 10), $instances);
-                if (!empty($instanceDates)) {
-                    $publicOverrideConstraint = $this->getPublicSeriesOverrideConstraint();
-                    $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
-                    $overrideSql = "SELECT * FROM events
-                        WHERE series_id = ?
-                          AND instance_date IN ($placeholders)
-                          AND {$publicOverrideConstraint['sql']}";
-                    $params = array_merge(
-                        [$series['id']],
-                        $instanceDates,
-                        $publicOverrideConstraint['params']
-                    );
-                    $overrides = \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params);
-                    $overrideMap = [];
-                    foreach ($overrides as $ov) {
-                        $overrideMap[$ov['instance_date']] = $ov;
+                    if (!$endTime) {
+                        // Ohne Endzeit: setze Default-Dauer von 2 Stunden
+                        $endTime = date('H:i:s', strtotime($startTime) + 7200); // +2 Stunden
                     }
+                    $eventStartTemplate = Carbon::parse($series['start_date'] . ' ' . $startTime, 'Europe/Berlin');
+                    $eventEndTemplate = Carbon::parse($series['start_date'] . ' ' . $endTime, 'Europe/Berlin');
 
-                    foreach ($instances as $inst) {
-                        $dateKey = substr($inst['start_datetime'], 0, 10);
-                        if (isset($overrideMap[$dateKey])) {
-                            // Cancellations werden nur aufgenommen falls Frontend sie darstellen soll; Option: komplett ausblenden
-                            if (($overrideMap[$dateKey]['override_type'] ?? null) === 'cancelled') {
-                                // Wir geben trotzdem das Cancel-Objekt aus (kann Frontend kennzeichnen)
-                                $expanded[] = $overrideMap[$dateKey];
+                    $pseudo = [
+                        'id' => 'series_' . $series['id'],
+                        'series_id' => $series['id'], // Include series_id for frontend reference
+                        'title' => $series['title'],
+                        'description' => $series['description'] ?? '',
+                        'start_datetime' => $eventStartTemplate->toDateTimeString(),
+                        'end_datetime' => $eventEndTemplate->toDateTimeString(),
+                        'timezone' => 'Europe/Berlin',
+                        'rrule' => $series['rrule'],
+                        'is_recurring' => true,
+                        'location_type' => $series['default_location_type'] ?? 'physical',
+                        'location_address' => $series['default_location_address'] ?? '',
+                        'location_name' => $series['default_location_name'] ?? '',
+                        'tags' => $series['tags'] ?? '[]',
+                        'category' => $series['default_category'] ?? 'stammtisch',
+                        'status' => $series['status'] ?? 'published'
+                    ];
+
+                    $exdates = JsonHelper::decodeArray($series['exdates'] ?? '[]');
+
+                    $instances = RRuleProcessor::expandRecurringEvent($pseudo, $startDate, $endDate, $exdates);
+
+                    // Clip instances to series end only (if defined)
+                    // Note: We only clip by end date, not start date. The RRULE determines when instances occur,
+                    // and instances may legitimately occur before the series start_date if the RRULE pattern dictates.
+                    // The start_date is when the series was created, not necessarily when the first instance occurs.
+                    $instances = array_filter($instances, function ($i) use ($seriesEnd) {
+                        $dt = Carbon::parse($i['start_datetime']);
+                        return $dt->lte($seriesEnd);
+                    });
+                    $instances = array_values($instances); // re-index
+
+                    // Fetch overrides for those instance dates (inkl. cancellations)
+                    $instanceDates = array_map(fn($i) => substr($i['start_datetime'], 0, 10), $instances);
+                    if (!empty($instanceDates)) {
+                        $publicOverrideConstraint = $this->getPublicSeriesOverrideConstraint();
+                        $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
+                        $overrideSql = "SELECT * FROM events
+                            WHERE series_id = ?
+                              AND instance_date IN ($placeholders)
+                              AND {$publicOverrideConstraint['sql']}";
+                        $params = array_merge(
+                            [$series['id']],
+                            $instanceDates,
+                            $publicOverrideConstraint['params']
+                        );
+                        $overrides = \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params);
+                        $overrideMap = [];
+                        foreach ($overrides as $ov) {
+                            $overrideMap[$ov['instance_date']] = $ov;
+                        }
+
+                        foreach ($instances as $inst) {
+                            $dateKey = substr($inst['start_datetime'], 0, 10);
+                            if (isset($overrideMap[$dateKey])) {
+                                // Cancellations werden nur aufgenommen falls Frontend sie darstellen soll; Option: komplett ausblenden
+                                if (($overrideMap[$dateKey]['override_type'] ?? null) === 'cancelled') {
+                                    // Wir geben trotzdem das Cancel-Objekt aus (kann Frontend kennzeichnen)
+                                    $expanded[] = $overrideMap[$dateKey];
+                                } else {
+                                    $expanded[] = $overrideMap[$dateKey];
+                                }
                             } else {
-                                $expanded[] = $overrideMap[$dateKey];
+                                $inst['series_id'] = $series['id'];
+                                $inst['instance_date'] = $dateKey;
+                                $expanded[] = $inst;
                             }
-                        } else {
+                        }
+                    } else {
+                        foreach ($instances as $inst) {
+                            $dateKey = substr($inst['start_datetime'], 0, 10);
                             $inst['series_id'] = $series['id'];
                             $inst['instance_date'] = $dateKey;
                             $expanded[] = $inst;
                         }
                     }
-                } else {
-                    foreach ($instances as $inst) {
-                        $dateKey = substr($inst['start_datetime'], 0, 10);
-                        $inst['series_id'] = $series['id'];
-                        $inst['instance_date'] = $dateKey;
-                        $expanded[] = $inst;
-                    }
+                } catch (\Throwable $e) {
+                    $seriesId = isset($series['id']) ? (string) $series['id'] : 'unknown';
+                    error_log("Series expansion failed for series {$seriesId}: " . $e->getMessage());
+                    continue;
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log('Series expansion failed: ' . $e->getMessage());
         }
 

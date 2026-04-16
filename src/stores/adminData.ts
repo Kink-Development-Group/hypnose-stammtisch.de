@@ -1,8 +1,10 @@
 import { writable } from "svelte/store";
 
 // Admin Data Stores für automatische Updates
+export type AdminEntityId = number | string;
+
 export interface AdminEvent {
-  id: number;
+  id: AdminEntityId;
   title: string;
   description: string;
   content: string;
@@ -60,7 +62,7 @@ export interface AdminUpdateEvent {
   type: "event" | "message";
   action: "create" | "update" | "delete";
   data?: any;
-  id?: number;
+  id?: AdminEntityId;
 }
 
 export const adminEventBus = writable<AdminUpdateEvent | null>(null);
@@ -73,7 +75,7 @@ export const adminEventHelpers = {
     adminEventBus.set({ type: "event", action: "create", data: event });
   },
 
-  updateEvent: (id: number, updates: Partial<AdminEvent>) => {
+  updateEvent: (id: AdminEntityId, updates: Partial<AdminEvent>) => {
     adminEvents.update((events) =>
       events.map((event) =>
         event.id === id ? { ...event, ...updates } : event,
@@ -82,8 +84,29 @@ export const adminEventHelpers = {
     adminEventBus.set({ type: "event", action: "update", id, data: updates });
   },
 
-  removeEvent: (id: number) => {
+  removeEvent: (id: AdminEntityId) => {
     adminEvents.update((events) => events.filter((event) => event.id !== id));
+    adminEventBus.set({ type: "event", action: "delete", id });
+  },
+
+  addSeries: (series: any) => {
+    adminSeries.update((seriesItems) => [series, ...seriesItems]);
+    adminEventBus.set({ type: "event", action: "create", data: series });
+  },
+
+  updateSeries: (id: AdminEntityId, updates: Record<string, unknown>) => {
+    adminSeries.update((seriesItems) =>
+      seriesItems.map((seriesItem) =>
+        seriesItem.id === id ? { ...seriesItem, ...updates } : seriesItem,
+      ),
+    );
+    adminEventBus.set({ type: "event", action: "update", id, data: updates });
+  },
+
+  removeSeries: (id: AdminEntityId) => {
+    adminSeries.update((seriesItems) =>
+      seriesItems.filter((seriesItem) => seriesItem.id !== id),
+    );
     adminEventBus.set({ type: "event", action: "delete", id });
   },
 
@@ -149,7 +172,7 @@ function updateStatsAfterStatusChange(newStatus: string) {
 // Auto-Update Mechanismus
 export const adminAutoUpdate = {
   enableAutoRefresh: false,
-  intervalId: null as NodeJS.Timeout | null,
+  intervalId: null as ReturnType<typeof setInterval> | null,
 
   start: (intervalMs: number = 30000) => {
     if (adminAutoUpdate.intervalId) {

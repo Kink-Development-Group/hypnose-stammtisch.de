@@ -2,7 +2,17 @@ import { expect, test, type Page } from "@playwright/test";
 import { bypassComplianceModals, fulfillJson } from "./helpers/ui";
 
 async function mockCalendarEvents(page: Page): Promise<void> {
-  const baseDate = "2026-03-18";
+  const today = new Date();
+  const visibleDate = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    Math.min(today.getDate(), 28),
+  );
+  const baseDate = [
+    visibleDate.getFullYear(),
+    String(visibleDate.getMonth() + 1).padStart(2, "0"),
+    String(visibleDate.getDate()).padStart(2, "0"),
+  ].join("-");
   const apiEvents = Array.from({ length: 6 }, (_, index) => ({
     id: index + 1,
     title: `Overflow Test ${index + 1}`,
@@ -18,7 +28,13 @@ async function mockCalendarEvents(page: Page): Promise<void> {
     updated_at: "2026-03-01T08:00:00Z",
   }));
 
-  await page.route("**/api/events?view=expanded**", async (route) => {
+  await page.route("**/api/events**", async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.searchParams.get("view") !== "expanded") {
+      await route.fallback();
+      return;
+    }
+
     await fulfillJson(route, {
       success: true,
       data: apiEvents,

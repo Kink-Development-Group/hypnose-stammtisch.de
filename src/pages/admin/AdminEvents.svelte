@@ -294,7 +294,10 @@
 
   async function handleDelete(item: any) {
     try {
-      const result = await AdminAPI.deleteEvent(item.id);
+      const result = await AdminAPI.deleteEvent(
+        item.id,
+        item?.event_type === "series" ? "series" : "event",
+      );
 
       if (result.success) {
         deleteConfirm = null;
