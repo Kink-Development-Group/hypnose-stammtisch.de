@@ -2,7 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { bypassComplianceModals, fulfillJson } from "./helpers/ui";
 
 async function mockCalendarEvents(page: Page): Promise<void> {
-  const baseDate = "2026-03-18";
+  const now = new Date();
+  const baseDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-18`;
   const apiEvents = Array.from({ length: 6 }, (_, index) => ({
     id: index + 1,
     title: `Overflow Test ${index + 1}`,
@@ -56,5 +57,37 @@ test.describe("Calendar month layout", () => {
       cellMetrics.clientHeight + 2,
     );
     expect(cellMetrics.clientHeight).toBeGreaterThan(cellMetrics.clientWidth);
+  });
+});
+
+test.describe("Calendar month layout on mobile", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("keeps event buttons readable and easy to tap on mobile", async ({
+    page,
+  }) => {
+    await bypassComplianceModals(page);
+    await mockCalendarEvents(page);
+
+    await page.goto("/events");
+    await page.waitForLoadState("networkidle");
+
+    const eventButton = page.getByRole("button", {
+      name: /Overflow Test 1/,
+    });
+    await expect(eventButton).toBeVisible();
+
+    const buttonMetrics = await eventButton.evaluate((element) => {
+      const styles = window.getComputedStyle(element);
+      return {
+        height: element.getBoundingClientRect().height,
+        display: styles.display,
+      };
+    });
+
+    expect(buttonMetrics.height).toBeGreaterThanOrEqual(28);
+    expect(buttonMetrics.display).toBe("flex");
+
+    await expect(eventButton).toContainText("10:00");
   });
 });

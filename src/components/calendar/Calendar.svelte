@@ -324,13 +324,19 @@
               <div class="space-y-1">
                 {#each day.events.slice(0, 3) as event (event.id)}
                   <button
-                    class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded truncate hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-400"
+                    class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 md:truncate md:focus-visible:ring-1"
                     on:click={() => handleEventClick(event)}
+                    aria-label="{event.title}, {dayjs(event.startDate).format(
+                      'HH:mm',
+                    )} Uhr"
                     title="{event.title} - {dayjs(event.startDate).format(
                       'HH:mm',
                     )} Uhr"
                   >
-                    {event.title}
+                    <span class="calendar-event-time md:hidden">
+                      {dayjs(event.startDate).format("HH:mm")}
+                    </span>
+                    <span class="calendar-event-title">{event.title}</span>
                   </button>
                 {/each}
 
@@ -463,34 +469,38 @@
       gap: 1rem;
     }
 
-    /* Turn event bars into dots on mobile to save space */
     .calendar-event {
-      width: 6px;
-      height: 6px;
-      padding: 0;
-      border-radius: 50%;
-      color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-height: 1.75rem;
+      padding: 0.25rem 0.375rem;
+      margin: 0;
       overflow: hidden;
-      margin: 0 auto 2px auto;
-      display: inline-block;
     }
 
-    /* Center the dots container */
     .calendar-day .space-y-1 {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 2px;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .calendar-event-time {
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+
+    .calendar-event-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     /* Override tailwind space-y-1 */
     .calendar-day .space-y-1 > :not([hidden]) ~ :not([hidden]) {
       margin-top: 0;
-    }
-
-    /* Remove the "+X more" text on mobile */
-    .calendar-day .text-xs.text-smoke-400 {
-      display: none;
     }
   }
 
