@@ -326,9 +326,6 @@
                   <button
                     class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 md:truncate md:focus-visible:ring-1"
                     on:click={() => handleEventClick(event)}
-                    aria-label="{event.title}, {dayjs(event.startDate).format(
-                      'HH:mm',
-                    )} Uhr"
                     title="{event.title} - {dayjs(event.startDate).format(
                       'HH:mm',
                     )} Uhr"

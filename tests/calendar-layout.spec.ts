@@ -1,9 +1,11 @@
+import dayjs from "dayjs";
 import { expect, test, type Page } from "@playwright/test";
 import { bypassComplianceModals, fulfillJson } from "./helpers/ui";
 
+const MIN_TOUCH_TARGET_HEIGHT = 28;
+
 async function mockCalendarEvents(page: Page): Promise<void> {
-  const now = new Date();
-  const baseDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-18`;
+  const baseDate = dayjs().date(18).format("YYYY-MM-DD");
   const apiEvents = Array.from({ length: 6 }, (_, index) => ({
     id: index + 1,
     title: `Overflow Test ${index + 1}`,
@@ -85,7 +87,9 @@ test.describe("Calendar month layout on mobile", () => {
       };
     });
 
-    expect(buttonMetrics.height).toBeGreaterThanOrEqual(28);
+    expect(buttonMetrics.height).toBeGreaterThanOrEqual(
+      MIN_TOUCH_TARGET_HEIGHT,
+    );
     expect(buttonMetrics.display).toBe("flex");
 
     await expect(eventButton).toContainText("10:00");
