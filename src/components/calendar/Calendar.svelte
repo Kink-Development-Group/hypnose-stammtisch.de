@@ -105,6 +105,9 @@
     openEventModal(event);
   };
 
+  const formatEventTime = (event: Event) =>
+    dayjs(event.startDate).format("HH:mm");
+
   // Keyboard navigation with better accessibility
   const handleKeydown = (e: KeyboardEvent) => {
     const target = e.target as HTMLElement;
@@ -324,14 +327,12 @@
               <div class="space-y-1">
                 {#each day.events.slice(0, 3) as event (event.id)}
                   <button
-                    class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 md:truncate md:focus-visible:ring-1"
+                    class="calendar-event w-full text-left text-xs bg-primary-800 text-primary-100 px-2 py-1 rounded hover:bg-primary-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-400 md:truncate"
                     on:click={() => handleEventClick(event)}
-                    title="{event.title} - {dayjs(event.startDate).format(
-                      'HH:mm',
-                    )} Uhr"
+                    title="{event.title} - {formatEventTime(event)} Uhr"
                   >
                     <span class="calendar-event-time md:hidden">
-                      {dayjs(event.startDate).format("HH:mm")}
+                      {formatEventTime(event)}
                     </span>
                     <span class="calendar-event-title">{event.title}</span>
                   </button>
@@ -457,6 +458,12 @@
 
   /* Mobile styles */
   @media (max-width: 768px) {
+    .calendar-container {
+      --calendar-mobile-event-gap: 0.35rem;
+      --calendar-mobile-event-min-height: 1.75rem;
+      --calendar-mobile-event-padding-inline: 0.375rem;
+    }
+
     .calendar-grid {
       font-size: 0.75rem;
     }
@@ -469,9 +476,9 @@
     .calendar-event {
       display: flex;
       align-items: center;
-      gap: 0.35rem;
-      min-height: 1.75rem;
-      padding: 0.25rem 0.375rem;
+      gap: var(--calendar-mobile-event-gap);
+      min-height: var(--calendar-mobile-event-min-height);
+      padding: 0.25rem var(--calendar-mobile-event-padding-inline);
       margin: 0;
       overflow: hidden;
     }

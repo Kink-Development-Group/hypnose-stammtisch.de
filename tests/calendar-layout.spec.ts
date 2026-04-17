@@ -5,7 +5,7 @@ import { bypassComplianceModals, fulfillJson } from "./helpers/ui";
 const MIN_TOUCH_TARGET_HEIGHT = 28;
 
 async function mockCalendarEvents(page: Page): Promise<void> {
-  const baseDate = dayjs().date(18).format("YYYY-MM-DD");
+  const baseDate = dayjs().startOf("month").add(17, "day").format("YYYY-MM-DD");
   const apiEvents = Array.from({ length: 6 }, (_, index) => ({
     id: index + 1,
     title: `Overflow Test ${index + 1}`,
