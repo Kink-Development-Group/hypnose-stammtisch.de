@@ -283,7 +283,7 @@
         showCreateModal = false;
         showEditModal = false;
         resetForm();
-        // Die Store-Updates werden automatisch durch optimistische Updates gehandhabt
+        await loadEvents();
       } else {
         error = result.message || "Fehler beim Speichern";
       }
@@ -298,7 +298,7 @@
 
       if (result.success) {
         deleteConfirm = null;
-        // Die Store-Updates werden automatisch durch optimistische Updates gehandhabt
+        await loadEvents();
       } else {
         error = result.message || "Fehler beim Löschen";
       }

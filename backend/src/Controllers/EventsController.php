@@ -19,6 +19,10 @@ use Carbon\Carbon;
  */
 class EventsController
 {
+    private const DEFAULT_TIMEZONE = 'Europe/Berlin';
+    private const PUBLIC_OVERRIDE_TYPES = ['changed', 'cancelled'];
+    private const PUBLIC_OVERRIDE_STATUSES = ['published', 'cancelled'];
+
     /**
      * Helper function to convert event to array (handles mock objects)
      */
@@ -31,15 +35,37 @@ class EventsController
         // Objekt mit toArray Methode
         if (is_object($event) && method_exists($event, 'toArray')) {
             $arr = $event->toArray();
-            return is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
+            return $this->normalizeObjectEventArray($event, $arr);
         }
         // Objekt hat evtl. Property oder Closure toArray
         if (is_object($event) && isset($event->toArray) && is_callable($event->toArray)) {
             $arr = call_user_func($event->toArray);
-            return is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
+            return $this->normalizeObjectEventArray($event, $arr);
         }
         // Generischer Fallback
         return $this->normalizeEventArray((array)$event);
+    }
+
+    /**
+     * Normalize event data returned from object-style sources.
+     *
+     * Event model instances contain persisted UTC timestamps, so they also need
+     * conversion into the event timezone for public API consumers. Other object
+     * sources are normalized without altering their existing wall-clock values.
+     *
+     * @param object $event
+     * @param array<string, mixed>|mixed $arrayData
+     * @return array<string, mixed>
+     */
+    private function normalizeObjectEventArray(object $event, mixed $arrayData): array
+    {
+        $normalized = is_array($arrayData)
+            ? $this->normalizeEventArray($arrayData)
+            : (array)$arrayData;
+
+        return $event instanceof Event
+            ? $this->formatStoredEventForPublicResponse($normalized)
+            : $normalized;
     }
 
     /**
@@ -80,7 +106,7 @@ class EventsController
             'slug' => '',
             'start_datetime' => $e['start_datetime'] ?? ($e['start_date'] ?? null),
             'end_datetime' => $e['end_datetime'] ?? ($e['start_datetime'] ?? null),
-            'timezone' => $e['timezone'] ?? 'Europe/Berlin'
+            'timezone' => $e['timezone'] ?? self::DEFAULT_TIMEZONE
         ];
         foreach ($defaults as $k => $v) {
             if (!array_key_exists($k, $e)) {
@@ -88,6 +114,87 @@ class EventsController
             }
         }
         return $e;
+    }
+
+    /**
+     * Convert persisted UTC timestamps to the event timezone for public API output.
+     *
+     * Public recurring instances generated in-memory already use local wall-clock
+     * datetimes, so only stored database rows should pass through this helper.
+     *
+     * @param array<string, mixed> $event
+     * @return array<string, mixed>
+     */
+    private function formatStoredEventForPublicResponse(array $event): array
+    {
+        $timezone = $event['timezone'] ?? self::DEFAULT_TIMEZONE;
+
+        if (!is_string($timezone) || trim($timezone) === '') {
+            $timezone = self::DEFAULT_TIMEZONE;
+        }
+
+        try {
+            $timezoneObject = new \DateTimeZone($timezone);
+        } catch (\Throwable) {
+            $sanitizedTimezone = str_replace(["\r", "\n"], ['\\r', '\\n'], $timezone);
+            error_log('EventsController: Falling back to default timezone for invalid value "' . $sanitizedTimezone . '"');
+            $timezone = self::DEFAULT_TIMEZONE;
+            $timezoneObject = new \DateTimeZone($timezone);
+        }
+
+        $event['timezone'] = $timezone;
+
+        foreach (['start_datetime', 'end_datetime'] as $field) {
+            if (empty($event[$field]) || !is_string($event[$field])) {
+                continue;
+            }
+
+            try {
+                $dt = Carbon::parse($event[$field], 'UTC');
+                $event[$field] = $dt
+                    ->setTimezone($timezoneObject)
+                    ->format('Y-m-d\TH:i:s');
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return $event;
+    }
+
+    /**
+     * Normalize a generated (in-memory) event instance's datetime strings to the
+     * ISO-like `Y-m-d\TH:i:s` format used for stored events, without altering
+     * wall-clock semantics.
+     *
+     * Generated recurring instances produced by RRuleProcessor or synthesized in
+     * show() use the space-separated `Y-m-d H:i:s` format from Carbon's
+     * toDateTimeString(). That format is not reliably parseable by `new Date()`
+     * across browsers, so mixing it into public API responses (where overrides
+     * already use the ISO-like format) would yield inconsistent client parsing.
+     *
+     * @param array<string, mixed> $event
+     * @return array<string, mixed>
+     */
+    private function formatGeneratedInstanceForPublicResponse(array $event): array
+    {
+        foreach (['start_datetime', 'end_datetime'] as $field) {
+            if (empty($event[$field]) || !is_string($event[$field])) {
+                continue;
+            }
+
+            $value = $event[$field];
+
+            // Already ISO-like (contains `T` between date and time)
+            if (strpos($value, 'T') !== false) {
+                continue;
+            }
+
+            // Convert "YYYY-MM-DD HH:MM:SS" → "YYYY-MM-DDTHH:MM:SS"
+            $event[$field] = preg_replace('/^(\d{4}-\d{2}-\d{2}) /', '$1T', $value, 1);
+        }
+
+        return $event;
     }
 
     /**
@@ -235,15 +342,12 @@ class EventsController
                 $instanceDate = $matches[2];
 
                 // First check if there's an override in the events table
-                $override = Database::fetchOne(
-                    "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
-                    [$seriesId, $instanceDate]
-                );
+                $override = $this->getSeriesOverride($seriesId, $instanceDate);
 
                 if ($override) {
                     Response::json([
                         'success' => true,
-                        'data' => $override
+                        'data' => $this->formatStoredEventForPublicResponse($this->normalizeEventArray($override))
                     ]);
                     return;
                 }
@@ -293,7 +397,7 @@ class EventsController
 
                 Response::json([
                     'success' => true,
-                    'data' => $eventData
+                    'data' => $this->formatGeneratedInstanceForPublicResponse($this->normalizeEventArray($eventData))
                 ]);
                 return;
             }
@@ -399,6 +503,11 @@ class EventsController
 
         foreach ($baseEvents as $event) {
             $eventArray = $this->eventToArray($event);
+            if ($this->shouldSkipExpandedBaseEvent($eventArray)) {
+                // Series instances are rebuilt from event_series below so stale persisted rows cannot leak into expanded output.
+                continue;
+            }
+
             if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
                 try {
                     $exdatesDecoded = JsonHelper::decodeArray($eventArray['exdates'] ?? '[]');
@@ -490,13 +599,22 @@ class EventsController
                 // Fetch overrides for those instance dates (inkl. cancellations)
                 $instanceDates = array_map(fn($i) => substr($i['start_datetime'], 0, 10), $instances);
                 if (!empty($instanceDates)) {
+                    $publicOverrideConstraint = $this->getPublicSeriesOverrideConstraint();
                     $placeholders = implode(',', array_fill(0, count($instanceDates), '?'));
-                    $overrideSql = "SELECT * FROM events WHERE series_id = ? AND instance_date IN ($placeholders)";
-                    $params = array_merge([$series['id']], $instanceDates);
+                    $overrideSql = "SELECT * FROM events
+                        WHERE series_id = ?
+                          AND instance_date IN ($placeholders)
+                          AND {$publicOverrideConstraint['sql']}";
+                    $params = array_merge(
+                        [$series['id']],
+                        $instanceDates,
+                        $publicOverrideConstraint['params']
+                    );
                     $overrides = \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params);
                     $overrideMap = [];
                     foreach ($overrides as $ov) {
-                        $overrideMap[$ov['instance_date']] = $ov;
+                        $normalizedOverride = $this->formatStoredEventForPublicResponse($this->normalizeEventArray($ov));
+                        $overrideMap[$normalizedOverride['instance_date']] = $normalizedOverride;
                     }
 
                     foreach ($instances as $inst) {
@@ -512,7 +630,7 @@ class EventsController
                         } else {
                             $inst['series_id'] = $series['id'];
                             $inst['instance_date'] = $dateKey;
-                            $expanded[] = $inst;
+                            $expanded[] = $this->formatGeneratedInstanceForPublicResponse($inst);
                         }
                     }
                 } else {
@@ -520,7 +638,7 @@ class EventsController
                         $dateKey = substr($inst['start_datetime'], 0, 10);
                         $inst['series_id'] = $series['id'];
                         $inst['instance_date'] = $dateKey;
-                        $expanded[] = $inst;
+                        $expanded[] = $this->formatGeneratedInstanceForPublicResponse($inst);
                     }
                 }
             }
@@ -531,6 +649,47 @@ class EventsController
         // Sort combined list
         usort($expanded, fn($a, $b) => strtotime($a['start_datetime']) <=> strtotime($b['start_datetime']));
         return $expanded;
+    }
+
+    /**
+     * @param array<string, mixed> $event
+     */
+    private function shouldSkipExpandedBaseEvent(array $event): bool
+    {
+        return !empty($event['series_id']) && !empty($event['instance_date']);
+    }
+
+    /**
+     * @return array{sql: string, params: list<string>}
+     */
+    private function getPublicSeriesOverrideConstraint(): array
+    {
+        $overrideTypePlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_TYPES), '?'));
+        $overrideStatusPlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_STATUSES), '?'));
+
+        return [
+            'sql' => "override_type IN ($overrideTypePlaceholders) AND status IN ($overrideStatusPlaceholders)",
+            'params' => [...self::PUBLIC_OVERRIDE_TYPES, ...self::PUBLIC_OVERRIDE_STATUSES],
+        ];
+    }
+
+    /**
+     * Load a series instance override only when the stored row is an explicit public override.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function getSeriesOverride(string $seriesId, string $instanceDate): ?array
+    {
+        $publicOverrideConstraint = $this->getPublicSeriesOverrideConstraint();
+        $override = Database::fetchOne(
+            "SELECT * FROM events
+             WHERE series_id = ?
+               AND instance_date = ?
+               AND {$publicOverrideConstraint['sql']}",
+            array_merge([$seriesId, $instanceDate], $publicOverrideConstraint['params'])
+        );
+
+        return $override ?: null;
     }
 
     /**
@@ -548,10 +707,7 @@ class EventsController
                 $instanceDate = $matches[2];
 
                 // First check if there's an override in the events table
-                $override = Database::fetchOne(
-                    "SELECT * FROM events WHERE series_id = ? AND instance_date = ?",
-                    [$seriesId, $instanceDate]
-                );
+                $override = $this->getSeriesOverride($seriesId, $instanceDate);
 
                 if ($override) {
                     // Use the override
