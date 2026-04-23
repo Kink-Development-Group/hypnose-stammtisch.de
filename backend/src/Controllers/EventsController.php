@@ -47,6 +47,12 @@ class EventsController
     }
 
     /**
+     * Normalize event data returned from object-style sources.
+     *
+     * Event model instances contain persisted UTC timestamps, so they also need
+     * conversion into the event timezone for public API consumers. Other object
+     * sources are normalized without altering their existing wall-clock values.
+     *
      * @param object $event
      * @param array<string, mixed>|mixed $arrayData
      * @return array<string, mixed>
@@ -130,6 +136,7 @@ class EventsController
         try {
             $timezoneObject = new \DateTimeZone($timezone);
         } catch (\Throwable) {
+            error_log('EventsController: Falling back to default timezone for invalid value "' . $timezone . '"');
             $timezone = self::DEFAULT_TIMEZONE;
             $timezoneObject = new \DateTimeZone($timezone);
         }
