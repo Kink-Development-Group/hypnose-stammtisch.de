@@ -163,6 +163,41 @@ class EventsController
     }
 
     /**
+     * Normalize a generated (in-memory) event instance's datetime strings to the
+     * ISO-like `Y-m-d\TH:i:s` format used for stored events, without altering
+     * wall-clock semantics.
+     *
+     * Generated recurring instances produced by RRuleProcessor or synthesized in
+     * show() use the space-separated `Y-m-d H:i:s` format from Carbon's
+     * toDateTimeString(). That format is not reliably parseable by `new Date()`
+     * across browsers, so mixing it into public API responses (where overrides
+     * already use the ISO-like format) would yield inconsistent client parsing.
+     *
+     * @param array<string, mixed> $event
+     * @return array<string, mixed>
+     */
+    private function formatGeneratedInstanceForPublicResponse(array $event): array
+    {
+        foreach (['start_datetime', 'end_datetime'] as $field) {
+            if (empty($event[$field]) || !is_string($event[$field])) {
+                continue;
+            }
+
+            $value = $event[$field];
+
+            // Already ISO-like (contains `T` between date and time)
+            if (strpos($value, 'T') !== false) {
+                continue;
+            }
+
+            // Convert "YYYY-MM-DD HH:MM:SS" → "YYYY-MM-DDTHH:MM:SS"
+            $event[$field] = preg_replace('/^(\d{4}-\d{2}-\d{2}) /', '$1T', $value, 1);
+        }
+
+        return $event;
+    }
+
+    /**
      * Get all events with optional filters
      * GET /api/events
      */
@@ -362,7 +397,7 @@ class EventsController
 
                 Response::json([
                     'success' => true,
-                    'data' => $this->normalizeEventArray($eventData)
+                    'data' => $this->formatGeneratedInstanceForPublicResponse($this->normalizeEventArray($eventData))
                 ]);
                 return;
             }
@@ -595,7 +630,7 @@ class EventsController
                         } else {
                             $inst['series_id'] = $series['id'];
                             $inst['instance_date'] = $dateKey;
-                            $expanded[] = $inst;
+                            $expanded[] = $this->formatGeneratedInstanceForPublicResponse($inst);
                         }
                     }
                 } else {
@@ -603,7 +638,7 @@ class EventsController
                         $dateKey = substr($inst['start_datetime'], 0, 10);
                         $inst['series_id'] = $series['id'];
                         $inst['instance_date'] = $dateKey;
-                        $expanded[] = $inst;
+                        $expanded[] = $this->formatGeneratedInstanceForPublicResponse($inst);
                     }
                 }
             }
