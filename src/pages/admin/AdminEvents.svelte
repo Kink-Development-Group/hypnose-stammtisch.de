@@ -280,10 +280,10 @@
       }
 
       if (result.success) {
-        await loadEvents();
         showCreateModal = false;
         showEditModal = false;
         resetForm();
+        await loadEvents();
       } else {
         error = result.message || "Fehler beim Speichern";
       }
@@ -297,8 +297,8 @@
       const result = await AdminAPI.deleteEvent(item.id);
 
       if (result.success) {
-        await loadEvents();
         deleteConfirm = null;
+        await loadEvents();
       } else {
         error = result.message || "Fehler beim Löschen";
       }

@@ -19,6 +19,7 @@ use Carbon\Carbon;
  */
 class EventsController
 {
+    private const DEFAULT_TIMEZONE = 'Europe/Berlin';
     private const PUBLIC_OVERRIDE_TYPES = ['changed', 'cancelled'];
     private const PUBLIC_OVERRIDE_STATUSES = ['published', 'cancelled'];
 
@@ -34,21 +35,31 @@ class EventsController
         // Objekt mit toArray Methode
         if (is_object($event) && method_exists($event, 'toArray')) {
             $arr = $event->toArray();
-            $normalized = is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
-            return $event instanceof Event
-                ? $this->formatStoredEventForPublicResponse($normalized)
-                : $normalized;
+            return $this->normalizeObjectEventArray($event, $arr);
         }
         // Objekt hat evtl. Property oder Closure toArray
         if (is_object($event) && isset($event->toArray) && is_callable($event->toArray)) {
             $arr = call_user_func($event->toArray);
-            $normalized = is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
-            return $event instanceof Event
-                ? $this->formatStoredEventForPublicResponse($normalized)
-                : $normalized;
+            return $this->normalizeObjectEventArray($event, $arr);
         }
         // Generischer Fallback
         return $this->normalizeEventArray((array)$event);
+    }
+
+    /**
+     * @param object $event
+     * @param array<string, mixed>|mixed $arrayData
+     * @return array<string, mixed>
+     */
+    private function normalizeObjectEventArray(object $event, mixed $arrayData): array
+    {
+        $normalized = is_array($arrayData)
+            ? $this->normalizeEventArray($arrayData)
+            : (array)$arrayData;
+
+        return $event instanceof Event
+            ? $this->formatStoredEventForPublicResponse($normalized)
+            : $normalized;
     }
 
     /**
@@ -89,7 +100,7 @@ class EventsController
             'slug' => '',
             'start_datetime' => $e['start_datetime'] ?? ($e['start_date'] ?? null),
             'end_datetime' => $e['end_datetime'] ?? ($e['start_datetime'] ?? null),
-            'timezone' => $e['timezone'] ?? 'Europe/Berlin'
+            'timezone' => $e['timezone'] ?? self::DEFAULT_TIMEZONE
         ];
         foreach ($defaults as $k => $v) {
             if (!array_key_exists($k, $e)) {
@@ -110,16 +121,16 @@ class EventsController
      */
     private function formatStoredEventForPublicResponse(array $event): array
     {
-        $timezone = $event['timezone'] ?? 'Europe/Berlin';
+        $timezone = $event['timezone'] ?? self::DEFAULT_TIMEZONE;
 
         if (!is_string($timezone) || trim($timezone) === '') {
-            $timezone = 'Europe/Berlin';
+            $timezone = self::DEFAULT_TIMEZONE;
         }
 
         try {
             $timezoneObject = new \DateTimeZone($timezone);
         } catch (\Throwable) {
-            $timezone = 'Europe/Berlin';
+            $timezone = self::DEFAULT_TIMEZONE;
             $timezoneObject = new \DateTimeZone($timezone);
         }
 
