@@ -61,6 +61,36 @@ class EventsControllerPublicDateFormattingTest extends TestCase
         $this->assertSame('Europe/Berlin', $formatted['timezone']);
     }
 
+    public function testFormatGeneratedInstanceForPublicResponseNormalizesWallClockDatetimes(): void
+    {
+        $method = new ReflectionMethod(EventsController::class, 'formatGeneratedInstanceForPublicResponse');
+        $method->setAccessible(true);
+
+        $formatted = $method->invoke($this->controller, [
+            'start_datetime' => '2026-04-22 19:00:00',
+            'end_datetime' => '2026-04-22 22:30:00',
+            'timezone' => 'Europe/Berlin',
+        ]);
+
+        $this->assertSame('2026-04-22T19:00:00', $formatted['start_datetime']);
+        $this->assertSame('2026-04-22T22:30:00', $formatted['end_datetime']);
+        $this->assertSame('Europe/Berlin', $formatted['timezone']);
+    }
+
+    public function testFormatGeneratedInstanceForPublicResponseLeavesIsoDatetimesUnchanged(): void
+    {
+        $method = new ReflectionMethod(EventsController::class, 'formatGeneratedInstanceForPublicResponse');
+        $method->setAccessible(true);
+
+        $formatted = $method->invoke($this->controller, [
+            'start_datetime' => '2026-04-22T19:00:00',
+            'end_datetime' => '2026-04-22T22:30:00',
+        ]);
+
+        $this->assertSame('2026-04-22T19:00:00', $formatted['start_datetime']);
+        $this->assertSame('2026-04-22T22:30:00', $formatted['end_datetime']);
+    }
+
     public function testEventToArrayFormatsPersistedEventModelDatesForPublicOutput(): void
     {
         $event = Event::fromArray([
