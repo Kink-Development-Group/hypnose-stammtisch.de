@@ -400,6 +400,33 @@ ROBOTS;
         );
     }
 
+    public function testOutputXmlDoesNotMarkSitemapAsNoindex(): void
+    {
+        if (!function_exists('xdebug_get_headers')) {
+            $this->markTestSkipped('xdebug_get_headers() is required to inspect emitted headers');
+        }
+
+        header_remove();
+
+        $controller = new SitemapController();
+        $method = new \ReflectionMethod($controller, 'outputXml');
+        $method->setAccessible(true);
+
+        ob_start();
+        $method->invoke($controller, [[
+            'loc' => 'https://hypnose-stammtisch.de/events/example',
+            'lastmod' => '2026-04-23',
+            'changefreq' => 'daily',
+            'priority' => '0.8',
+        ]]);
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', $output);
+        $this->assertContains('Content-Type: application/xml; charset=utf-8', xdebug_get_headers());
+        $this->assertContains('Cache-Control: public, max-age=3600', xdebug_get_headers());
+        $this->assertNotContains('X-Robots-Tag: noindex', xdebug_get_headers());
+    }
+
     /**
      * @param array<string, mixed> $series
      */
