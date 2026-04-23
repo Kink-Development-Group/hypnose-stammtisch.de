@@ -34,12 +34,18 @@ class EventsController
         // Objekt mit toArray Methode
         if (is_object($event) && method_exists($event, 'toArray')) {
             $arr = $event->toArray();
-            return is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
+            $normalized = is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
+            return $event instanceof Event
+                ? $this->formatStoredEventForPublicResponse($normalized)
+                : $normalized;
         }
         // Objekt hat evtl. Property oder Closure toArray
         if (is_object($event) && isset($event->toArray) && is_callable($event->toArray)) {
             $arr = call_user_func($event->toArray);
-            return is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
+            $normalized = is_array($arr) ? $this->normalizeEventArray($arr) : (array)$arr;
+            return $event instanceof Event
+                ? $this->formatStoredEventForPublicResponse($normalized)
+                : $normalized;
         }
         // Generischer Fallback
         return $this->normalizeEventArray((array)$event);
@@ -91,6 +97,50 @@ class EventsController
             }
         }
         return $e;
+    }
+
+    /**
+     * Convert persisted UTC timestamps to the event timezone for public API output.
+     *
+     * Public recurring instances generated in-memory already use local wall-clock
+     * datetimes, so only stored database rows should pass through this helper.
+     *
+     * @param array<string, mixed> $event
+     * @return array<string, mixed>
+     */
+    private function formatStoredEventForPublicResponse(array $event): array
+    {
+        $timezone = $event['timezone'] ?? 'Europe/Berlin';
+
+        if (!is_string($timezone) || trim($timezone) === '') {
+            $timezone = 'Europe/Berlin';
+        }
+
+        try {
+            $timezoneObject = new \DateTimeZone($timezone);
+        } catch (\Throwable) {
+            $timezone = 'Europe/Berlin';
+            $timezoneObject = new \DateTimeZone($timezone);
+        }
+
+        $event['timezone'] = $timezone;
+
+        foreach (['start_datetime', 'end_datetime'] as $field) {
+            if (empty($event[$field]) || !is_string($event[$field])) {
+                continue;
+            }
+
+            try {
+                $dt = Carbon::parse($event[$field], 'UTC');
+                $event[$field] = $dt
+                    ->setTimezone($timezoneObject)
+                    ->format('Y-m-d\TH:i:s');
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return $event;
     }
 
     /**
@@ -243,7 +293,7 @@ class EventsController
                 if ($override) {
                     Response::json([
                         'success' => true,
-                        'data' => $override
+                        'data' => $this->formatStoredEventForPublicResponse($this->normalizeEventArray($override))
                     ]);
                     return;
                 }
@@ -293,7 +343,7 @@ class EventsController
 
                 Response::json([
                     'success' => true,
-                    'data' => $eventData
+                    'data' => $this->normalizeEventArray($eventData)
                 ]);
                 return;
             }
@@ -509,7 +559,8 @@ class EventsController
                     $overrides = \HypnoseStammtisch\Database\Database::fetchAll($overrideSql, $params);
                     $overrideMap = [];
                     foreach ($overrides as $ov) {
-                        $overrideMap[$ov['instance_date']] = $ov;
+                        $normalizedOverride = $this->formatStoredEventForPublicResponse($this->normalizeEventArray($ov));
+                        $overrideMap[$normalizedOverride['instance_date']] = $normalizedOverride;
                     }
 
                     foreach ($instances as $inst) {

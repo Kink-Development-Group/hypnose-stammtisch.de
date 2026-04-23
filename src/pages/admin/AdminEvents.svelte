@@ -280,10 +280,10 @@
       }
 
       if (result.success) {
+        await loadEvents();
         showCreateModal = false;
         showEditModal = false;
         resetForm();
-        // Die Store-Updates werden automatisch durch optimistische Updates gehandhabt
       } else {
         error = result.message || "Fehler beim Speichern";
       }
@@ -297,8 +297,8 @@
       const result = await AdminAPI.deleteEvent(item.id);
 
       if (result.success) {
+        await loadEvents();
         deleteConfirm = null;
-        // Die Store-Updates werden automatisch durch optimistische Updates gehandhabt
       } else {
         error = result.message || "Fehler beim Löschen";
       }
