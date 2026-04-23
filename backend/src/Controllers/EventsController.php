@@ -136,7 +136,8 @@ class EventsController
         try {
             $timezoneObject = new \DateTimeZone($timezone);
         } catch (\Throwable) {
-            error_log('EventsController: Falling back to default timezone for invalid value "' . $timezone . '"');
+            $sanitizedTimezone = str_replace(["\r", "\n"], ['\\r', '\\n'], $timezone);
+            error_log('EventsController: Falling back to default timezone for invalid value "' . $sanitizedTimezone . '"');
             $timezone = self::DEFAULT_TIMEZONE;
             $timezoneObject = new \DateTimeZone($timezone);
         }
