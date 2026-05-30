@@ -118,7 +118,9 @@ class RRuleProcessor
 
         $eventStart = Carbon::parse($event['start_datetime'], $event['timezone'] ?? 'Europe/Berlin');
         $eventEnd = Carbon::parse($event['end_datetime'], $event['timezone'] ?? 'Europe/Berlin');
-        $duration = $eventEnd->diffInMinutes($eventStart);
+        // Carbon 3 returns a signed float from diffIn*(); force absolute order and
+        // cast to int so addMinutes() below never produces an end before the start.
+        $duration = (int) $eventStart->diffInMinutes($eventEnd, true);
 
         // Convert exdates to Carbon objects for comparison
         $exdateObjects = array_map(function ($date) use ($event) {
@@ -295,7 +297,7 @@ class RRuleProcessor
             switch ($freq) {
                 case 'DAILY':
                     $steps = intdiv(
-                        $eventStart->copy()->startOfDay()->diffInDays($normalizedStartDate->copy()->startOfDay()),
+                        (int) $eventStart->copy()->startOfDay()->diffInDays($normalizedStartDate->copy()->startOfDay()),
                         $interval
                     );
                     $current = $eventStart->copy()->addDays($steps * $interval);
@@ -305,11 +307,11 @@ class RRuleProcessor
                     if ($byDay) {
                         $eventAnchor = $eventStart->copy()->startOfWeek(Carbon::MONDAY);
                         $startAnchor = $normalizedStartDate->copy()->startOfWeek(Carbon::MONDAY);
-                        $steps = intdiv($eventAnchor->diffInWeeks($startAnchor), $interval);
+                        $steps = intdiv((int) $eventAnchor->diffInWeeks($startAnchor), $interval);
                         $current = $eventAnchor->copy()->addWeeks($steps * $interval);
                     } else {
                         $steps = intdiv(
-                            $eventStart->copy()->startOfDay()->diffInWeeks($normalizedStartDate->copy()->startOfDay()),
+                            (int) $eventStart->copy()->startOfDay()->diffInWeeks($normalizedStartDate->copy()->startOfDay()),
                             $interval
                         );
                         $current = $eventStart->copy()->addWeeks($steps * $interval);
@@ -320,11 +322,11 @@ class RRuleProcessor
                     if ($bySetPos !== null || !empty($byDayPositions) || $byMonthDay !== null) {
                         $eventAnchor = $eventStart->copy()->startOfMonth();
                         $startAnchor = $normalizedStartDate->copy()->startOfMonth();
-                        $steps = intdiv($eventAnchor->diffInMonths($startAnchor), $interval);
+                        $steps = intdiv((int) $eventAnchor->diffInMonths($startAnchor), $interval);
                         $current = $eventAnchor->copy()->addMonths($steps * $interval);
                     } else {
                         $steps = intdiv(
-                            $eventStart->copy()->startOfDay()->diffInMonths($normalizedStartDate->copy()->startOfDay()),
+                            (int) $eventStart->copy()->startOfDay()->diffInMonths($normalizedStartDate->copy()->startOfDay()),
                             $interval
                         );
                         $current = $eventStart->copy()->addMonths($steps * $interval);
@@ -333,7 +335,7 @@ class RRuleProcessor
 
                 case 'YEARLY':
                     $steps = intdiv(
-                        $eventStart->copy()->startOfDay()->diffInYears($normalizedStartDate->copy()->startOfDay()),
+                        (int) $eventStart->copy()->startOfDay()->diffInYears($normalizedStartDate->copy()->startOfDay()),
                         $interval
                     );
                     $current = $eventStart->copy()->addYears($steps * $interval);
@@ -779,13 +781,4 @@ class RRuleProcessor
         }
         if (isset($components['UNTIL'])) {
             try {
-                $until = Carbon::parse($components['UNTIL']);
-                $parts[] = 'bis ' . $until->format('d.m.Y');
-            } catch (Exception $e) {
-                // Ignore parse errors
-            }
-        }
-
-        return implode(' ', $parts);
-    }
-}
+                $until = Carbon::parse($components['UNTIL'])

@@ -517,7 +517,11 @@ class EventsController
                         $endDate,
                         $exdatesDecoded
                     );
-                    $expanded = array_merge($expanded, $instances);
+                    // Normalize generated instance datetimes to the ISO-like format
+                    // (Y-m-d\TH:i:s) used elsewhere so browsers parse them consistently.
+                    foreach ($instances as $instance) {
+                        $expanded[] = $this->formatGeneratedInstanceForPublicResponse($instance);
+                    }
                 } catch (\Exception $e) {
                     error_log("Recurring expansion failed for event {$eventArray['id']}: " . $e->getMessage());
                     $expanded[] = $eventArray;
@@ -903,12 +907,4 @@ class EventsController
                     ]
                 ]
             ]);
-        } catch (\Exception $e) {
-            error_log("Error previewing recurring event: " . $e->getMessage());
-            Response::json([
-                'success' => false,
-                'error' => 'Failed to preview recurring event: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-}
+        } catch (\Except
