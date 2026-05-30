@@ -781,4 +781,13 @@ class RRuleProcessor
         }
         if (isset($components['UNTIL'])) {
             try {
-                $until = Carbon::parse($components['UNTIL'])
+                $until = Carbon::parse($components['UNTIL']);
+                $parts[] = 'bis ' . $until->format('d.m.Y');
+            } catch (Exception $e) {
+                // Ignore parse errors
+            }
+        }
+
+        return implode(' ', $parts);
+    }
+}
