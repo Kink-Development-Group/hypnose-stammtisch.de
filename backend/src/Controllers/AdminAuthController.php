@@ -254,11 +254,17 @@ class AdminAuthController
         $valid = \HypnoseStammtisch\Utils\Totp::verify($user['twofa_secret'], $code);
 
         if (!$valid) {
-            // try backup code
-            $backup = Database::fetchOne('SELECT id, code_hash FROM user_twofa_backup_codes WHERE user_id = ? AND used_at IS NULL', [$userId]);
-            if ($backup && password_verify($code, $backup['code_hash'])) {
-                Database::execute('UPDATE user_twofa_backup_codes SET used_at = CURRENT_TIMESTAMP WHERE id = ?', [$backup['id']]);
-                $valid = true;
+            // try backup codes — check every unused code, not just the first one.
+            // Each plaintext code maps to a distinct bcrypt hash, so we must
+            // password_verify against all of them; otherwise only the oldest
+            // unused code would ever match and the rest would be unusable.
+            $backupCodes = Database::fetchAll('SELECT id, code_hash FROM user_twofa_backup_codes WHERE user_id = ? AND used_at IS NULL', [$userId]);
+            foreach ($backupCodes as $backup) {
+                if (password_verify($code, $backup['code_hash'])) {
+                    Database::execute('UPDATE user_twofa_backup_codes SET used_at = CURRENT_TIMESTAMP WHERE id = ?', [$backup['id']]);
+                    $valid = true;
+                    break;
+                }
             }
         }
 

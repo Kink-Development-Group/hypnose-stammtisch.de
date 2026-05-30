@@ -602,4 +602,5 @@ class RRuleProcessorTest extends TestCase
         $this->assertTrue($instance['is_recurring_instance']);
         $this->assertEquals('test-13', $instance['parent_event_id']);
     }
-}
+
+ 
