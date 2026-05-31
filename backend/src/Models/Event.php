@@ -453,14 +453,14 @@ class Event
      */
     private function slugify(string $text): string
     {
-        $text = strtolower($text);
-        // Transliterate German umlauts. NOTE: a string pattern with an array
-        // replacement makes preg_replace() return null, so map each character.
+        // Transliterate German umlauts before lowercasing so uppercase variants
+        // (Ä, Ö, Ü) are handled — strtolower() does not lowercase UTF-8 chars.
         $text = str_replace(
-            ['ä', 'ö', 'ü', 'ß'],
-            ['ae', 'oe', 'ue', 'ss'],
+            ['Ä', 'Ö', 'Ü', 'ä', 'ö', 'ü', 'ß'],
+            ['ae', 'oe', 'ue', 'ae', 'oe', 'ue', 'ss'],
             $text
         );
+        $text = strtolower($text);
         $text = preg_replace('/[^a-z0-9\s-]/', '', $text);
         $text = preg_replace('/[\s-]+/', '-', $text);
 
