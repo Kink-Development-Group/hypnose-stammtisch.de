@@ -499,3 +499,5 @@ class SitemapController
     public static function getStaticPages(): array
     {
         return self::STATIC_PAGES;
+    }
+}

@@ -907,4 +907,12 @@ class EventsController
                     ]
                 ]
             ]);
-        } catch (\Except
+        } catch (\Exception $e) {
+            error_log("Error previewing recurring event: " . $e->getMessage());
+            Response::json([
+                'success' => false,
+                'error' => 'Failed to preview recurring event: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+}
