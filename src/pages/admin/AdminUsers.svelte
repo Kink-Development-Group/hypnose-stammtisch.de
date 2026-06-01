@@ -772,7 +772,9 @@
             </div>
 
             {#if editingUser && currentUser && editingUser.id !== currentUser.id}
-              <div class="pb-2 border-t border-gray-200 dark:border-charcoal-700 pt-6">
+              <div
+                class="pb-2 border-t border-gray-200 dark:border-charcoal-700 pt-6"
+              >
                 <h4
                   class="text-lg font-medium text-gray-900 dark:text-smoke-50 mb-4 flex items-center"
                 >
@@ -797,11 +799,16 @@
                   class="flex items-start justify-between gap-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-rose-50/80 dark:bg-rose-900/20 p-4"
                 >
                   <div class="space-y-1">
-                    <span class="block text-sm font-semibold text-rose-800 dark:text-rose-200">
+                    <span
+                      class="block text-sm font-semibold text-rose-800 dark:text-rose-200"
+                    >
                       2FA für diesen Benutzer zurücksetzen
                     </span>
-                    <span class="block text-xs text-rose-700 dark:text-rose-300 leading-relaxed">
-                      Löscht das hinterlegte 2FA-Secret und alle Backup-Codes. Beim nächsten Login muss 2FA neu eingerichtet werden.
+                    <span
+                      class="block text-xs text-rose-700 dark:text-rose-300 leading-relaxed"
+                    >
+                      Löscht das hinterlegte 2FA-Secret und alle Backup-Codes.
+                      Beim nächsten Login muss 2FA neu eingerichtet werden.
                     </span>
                   </div>
                   <input
@@ -816,7 +823,8 @@
                   <div
                     class="mt-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-800 dark:text-amber-200"
                   >
-                    Der Reset wird erst beim Speichern ausgeführt. Bestehende Backup-Codes werden sofort ungültig.
+                    Der Reset wird erst beim Speichern ausgeführt. Bestehende
+                    Backup-Codes werden sofort ungültig.
                   </div>
                 {/if}
               </div>

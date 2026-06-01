@@ -602,4 +602,36 @@ class RRuleProcessorTest extends TestCase
         $this->assertTrue($instance['is_recurring_instance']);
         $this->assertEquals('test-13', $instance['parent_event_id']);
     }
+
+    public function testExpandedInstanceEndDatetimeNeverPrecedesStartDatetime(): void
+    {
+        // Regression: Carbon 3's diffInMinutes() returns a signed float. When
+        // end_datetime precedes start_datetime (inverted or malformed data), the
+        // absolute cast in expandRecurringEvent() must keep duration >= 0 so that
+        // every generated instance has end_datetime >= start_datetime.
+        $event = [
+            'id' => 'test-duration-regression',
+            'title' => 'Inverted Datetime Event',
+            'start_datetime' => '2025-01-07 21:00:00',
+            'end_datetime'   => '2025-01-07 19:00:00', // end before start
+            'timezone' => 'Europe/Berlin',
+            'rrule' => 'FREQ=WEEKLY;BYDAY=TU;COUNT=3'
+        ];
+
+        $start = Carbon::parse('2025-01-01');
+        $end   = Carbon::parse('2025-01-31');
+
+        $instances = RRuleProcessor::expandRecurringEvent($event, $start, $end);
+
+        $this->assertNotEmpty($instances);
+        foreach ($instances as $instance) {
+            $instanceStart = Carbon::parse($instance['start_datetime']);
+            $instanceEnd   = Carbon::parse($instance['end_datetime']);
+            $this->assertGreaterThanOrEqual(
+                $instanceStart->timestamp,
+                $instanceEnd->timestamp,
+                "Generated instance end_datetime must not precede start_datetime"
+            );
+        }
+    }
 }

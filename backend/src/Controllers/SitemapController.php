@@ -289,7 +289,7 @@ class SitemapController
 
         // Guard against zero-length or malformed time ranges so the sitemap
         // still advances its search window by at least one minute.
-        $durationMinutes = max(1, $eventEnd->diffInMinutes($eventStart));
+        $durationMinutes = max(1, (int) $eventStart->diffInMinutes($eventEnd, true));
         // Search from "now minus duration" so same-day events remain listed
         // while they are still in progress instead of disappearing at start.
         $searchStart = $now->copy()->subMinutes($durationMinutes);

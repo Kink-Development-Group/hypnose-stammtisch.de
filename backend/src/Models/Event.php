@@ -453,8 +453,14 @@ class Event
      */
     private function slugify(string $text): string
     {
+        // Transliterate German umlauts before lowercasing so uppercase variants
+        // (Ä, Ö, Ü) are handled — strtolower() does not lowercase UTF-8 chars.
+        $text = str_replace(
+            ['Ä', 'Ö', 'Ü', 'ä', 'ö', 'ü', 'ß'],
+            ['ae', 'oe', 'ue', 'ae', 'oe', 'ue', 'ss'],
+            $text
+        );
         $text = strtolower($text);
-        $text = preg_replace('/[äöüß]/u', ['ae', 'oe', 'ue', 'ss'], $text);
         $text = preg_replace('/[^a-z0-9\s-]/', '', $text);
         $text = preg_replace('/[\s-]+/', '-', $text);
 
@@ -668,13 +674,3 @@ class Event
                 return $doubleDecoded;
             }
         }
-
-        // If we got an array from first decode, return it
-        if (is_array($decoded)) {
-            return $decoded;
-        }
-
-        // Fallback - treat as single tag
-        return [$tags];
-    }
-}

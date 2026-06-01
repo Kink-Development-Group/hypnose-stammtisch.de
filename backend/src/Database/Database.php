@@ -50,9 +50,16 @@ class Database
                 $config['options'] + [(class_exists(\Pdo\Mysql::class) ? \Pdo\Mysql::ATTR_USE_BUFFERED_QUERY : \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY) => true]
             );
 
-            // Set timezone
-            $timezone = Config::get('app.timezone', 'Europe/Berlin');
-            self::$connection->exec("SET time_zone = '{$timezone}'");
+            // Set timezone.
+            // Bind the value through a prepared statement and whitelist its
+            // characters so a misconfigured / tampered config value can never
+            // be used to inject SQL into the connection bootstrap.
+            $timezone = (string) Config::get('app.timezone', 'Europe/Berlin');
+            if (!preg_match('#^[A-Za-z0-9_+\-/:]+$#', $timezone)) {
+                $timezone = 'Europe/Berlin';
+            }
+            $tzStatement = self::$connection->prepare('SET time_zone = ?');
+            $tzStatement->execute([$timezone]);
         } catch (PDOException $e) {
             $appEnv = ($_ENV['APP_ENV'] ?? Config::get('app.env', 'production'));
             if ($appEnv !== 'testing') {
