@@ -674,3 +674,13 @@ class Event
                 return $doubleDecoded;
             }
         }
+
+        // If we got an array from first decode, return it
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        // Fallback - treat as single tag
+        return [$tags];
+    }
+}
