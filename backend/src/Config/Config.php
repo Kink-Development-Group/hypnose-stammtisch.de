@@ -33,6 +33,7 @@ class Config
         $appConfigPath = $path . '/config/app.php';
         $appConfig = file_exists($appConfigPath) ? require $appConfigPath : [];
         $appName = $appConfig['app']['name'] ?? $_ENV['APP_NAME'] ?? 'Hypnose Stammtisch';
+        $corsConfig = is_array($appConfig['cors'] ?? null) ? $appConfig['cors'] : [];
 
         $smtpEnabled = filter_var($_ENV['MAIL_SMTP_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $smtpHost = $_ENV['MAIL_HOST'] ?? '';
@@ -152,7 +153,9 @@ class Config
 
             // CORS
             'cors' => [
-                'allowed_origins' => explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? 'http://localhost:5173'),
+                'allowed_origins' => !empty($_ENV['CORS_ALLOWED_ORIGINS'])
+                    ? explode(',', $_ENV['CORS_ALLOWED_ORIGINS'])
+                    : ($corsConfig['allowed_origins'] ?? ['http://localhost:5173']),
                 'allowed_methods' => explode(',', $_ENV['CORS_ALLOWED_METHODS'] ?? 'GET,POST,PUT,DELETE,OPTIONS'),
                 'allowed_headers' => explode(',', $_ENV['CORS_ALLOWED_HEADERS'] ?? 'Content-Type,Authorization,X-Requested-With'),
             ],
