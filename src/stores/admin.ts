@@ -598,9 +598,7 @@ export class AdminAPI {
         adminNotifications.success(msg);
       } else {
         this.getEvents();
-        adminNotifications.error(
-          result.message || "Fehler beim Status-Update",
-        );
+        adminNotifications.error(result.message || "Fehler beim Status-Update");
       }
 
       return result;
