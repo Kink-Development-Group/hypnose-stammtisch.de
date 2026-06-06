@@ -18,18 +18,6 @@ CREATE TABLE IF NOT EXISTS failed_login_analytics (
   INDEX idx_last_seen (last_seen)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Procedure to clean up old failed login records (GDPR compliance)
-DELIMITER //
-CREATE PROCEDURE IF NOT EXISTS CleanupOldFailedLogins(IN retention_days INT)
-BEGIN
-  DELETE FROM failed_logins
-  WHERE created_at < DATE_SUB(NOW(), INTERVAL retention_days DAY);
-
-  DELETE FROM failed_login_analytics
-  WHERE last_seen < DATE_SUB(NOW(), INTERVAL retention_days DAY);
-END//
-DELIMITER ;
-
 -- Update existing users table to add security metadata
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS last_failed_login TIMESTAMP NULL AFTER locked_reason,

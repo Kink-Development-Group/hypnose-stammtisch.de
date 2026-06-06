@@ -476,10 +476,18 @@ class SetupController
                 return;
             }
 
-            $this->createAdminUser(self::DEFAULT_HEAD_EMAIL, self::DEFAULT_HEAD_PASSWORD);
+            // Never seed a live system with the well-known weak default
+            // password. In production generate a strong random password that
+            // is surfaced exactly once in the (token-gated) setup response.
+            // Outside production keep the convenient default for local dev.
+            $password = $this->isProduction
+                ? bin2hex(random_bytes(12))
+                : self::DEFAULT_HEAD_PASSWORD;
+
+            $this->createAdminUser(self::DEFAULT_HEAD_EMAIL, $password);
             $this->log('Standard-Admin Zugangsdaten:', 'info');
             $this->log('  E-Mail: ' . self::DEFAULT_HEAD_EMAIL, 'info');
-            $this->log('  Passwort: ' . self::DEFAULT_HEAD_PASSWORD . ' (BITTE SOFORT ÄNDERN!)', 'warn');
+            $this->log('  Passwort: ' . $password . ' (BITTE SOFORT ÄNDERN!)', 'warn');
         } catch (Throwable $e) {
             $this->log('Warnung: Admin-Erstellung fehlgeschlagen: ' . $e->getMessage(), 'warn');
         }

@@ -65,13 +65,20 @@ return [
   ],
 
   'cors' => [
-    'allowed_origins' => [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:5173',
-      'http://127.0.0.1:3000',
-      $_ENV['BASE_URL'] ?? '',
-    ],
+    // Only the configured production origin is allowed by default.
+    // The localhost dev origins are added solely outside production so a
+    // live deployment never reflects credentialed CORS responses back to
+    // a developer's machine. Empty values (e.g. an unset BASE_URL) are
+    // filtered out so an empty Origin header can never match the allowlist.
+    'allowed_origins' => array_values(array_filter(array_merge(
+      [$_ENV['BASE_URL'] ?? ''],
+      (($_ENV['APP_ENV'] ?? 'production') !== 'production') ? [
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:3000',
+      ] : []
+    ), static fn ($o) => $o !== '' && $o !== null)),
     'allowed_methods' => [
       'GET',
       'POST',

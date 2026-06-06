@@ -53,7 +53,9 @@ class Event
         public string $metaDescription = '',
         public string $imageUrl = '',
         public ?string $createdAt = null,
-        public ?string $updatedAt = null
+        public ?string $updatedAt = null,
+        public readonly ?string $seriesId = null,
+        public readonly ?string $instanceDate = null
     ) {}
 
     /**
@@ -373,7 +375,9 @@ class Event
             metaDescription: $data['meta_description'] ?? '',
             imageUrl: $data['image_url'] ?? '',
             createdAt: $data['created_at'] ?? null,
-            updatedAt: $data['updated_at'] ?? null
+            updatedAt: $data['updated_at'] ?? null,
+            seriesId: $data['series_id'] ?? null,
+            instanceDate: $data['instance_date'] ?? null
         );
     }
 
@@ -421,7 +425,9 @@ class Event
             'meta_description' => $this->metaDescription,
             'image_url' => $this->imageUrl,
             'created_at' => $this->createdAt,
-            'updated_at' => $this->updatedAt
+            'updated_at' => $this->updatedAt,
+            'series_id' => $this->seriesId,
+            'instance_date' => $this->instanceDate
         ];
     }
 
@@ -447,8 +453,14 @@ class Event
      */
     private function slugify(string $text): string
     {
+        // Transliterate German umlauts before lowercasing so uppercase variants
+        // (Ä, Ö, Ü) are handled — strtolower() does not lowercase UTF-8 chars.
+        $text = str_replace(
+            ['Ä', 'Ö', 'Ü', 'ä', 'ö', 'ü', 'ß'],
+            ['ae', 'oe', 'ue', 'ae', 'oe', 'ue', 'ss'],
+            $text
+        );
         $text = strtolower($text);
-        $text = preg_replace('/[äöüß]/u', ['ae', 'oe', 'ue', 'ss'], $text);
         $text = preg_replace('/[^a-z0-9\s-]/', '', $text);
         $text = preg_replace('/[\s-]+/', '-', $text);
 
@@ -663,12 +675,6 @@ class Event
             }
         }
 
-        // If we got an array from first decode, return it
-        if (is_array($decoded)) {
-            return $decoded;
-        }
-
-        // Fallback - treat as single tag
-        return [$tags];
+        return is_array($decoded) ? $decoded : [];
     }
 }
