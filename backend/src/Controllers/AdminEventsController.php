@@ -244,7 +244,7 @@ class AdminEventsController
             $result = Database::fetchOne($checkSql, [$id, $id]);
 
             if (!$result) {
-                Response::notFound(['message' => 'Event not found']);
+                Response::notFound(['message' => 'Event or series not found']);
                 return;
             }
 

@@ -60,7 +60,7 @@ export interface AdminUpdateEvent {
   type: "event" | "message";
   action: "create" | "update" | "delete";
   data?: any;
-  id?: number;
+  id?: string | number;
 }
 
 export const adminEventBus = writable<AdminUpdateEvent | null>(null);
@@ -80,13 +80,13 @@ export const adminEventHelpers = {
         String(event.id) === idStr ? { ...event, ...updates } : event,
       ),
     );
-    adminEventBus.set({ type: "event", action: "update", id: id as number, data: updates });
+    adminEventBus.set({ type: "event", action: "update", id, data: updates });
   },
 
   removeEvent: (id: string | number) => {
     const idStr = String(id);
     adminEvents.update((events) => events.filter((event) => String(event.id) !== idStr));
-    adminEventBus.set({ type: "event", action: "delete", id: id as number });
+    adminEventBus.set({ type: "event", action: "delete", id });
   },
 
   updateSeries: (id: string, updates: Record<string, unknown>) => {
