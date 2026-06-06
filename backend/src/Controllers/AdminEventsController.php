@@ -266,7 +266,9 @@ class AdminEventsController
 
             Response::success(['status' => $status], 'Status updated successfully');
         } catch (Exception $e) {
-            Response::error('Failed to update status: ' . $e->getMessage(), 500);
+            error_log('[patchStatus] Exception: ' . $e->getMessage());
+            $debug = \HypnoseStammtisch\Config\Config::get('app.debug', false);
+            Response::error($debug ? 'Failed to update status: ' . $e->getMessage() : 'Failed to update status', 500);
         }
     }
 

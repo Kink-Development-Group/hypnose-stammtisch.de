@@ -578,8 +578,8 @@ export class AdminAPI {
 
   static async updateEventStatus(id: string | number, status: string) {
     const idStr = String(id);
-    // Optimistic update for both events and series stores
-    adminEventHelpers.updateEvent(id as any, { status });
+    // Optimistic update — both maps are safe no-ops for non-matching IDs
+    adminEventHelpers.updateEvent(idStr, { status });
     adminEventHelpers.updateSeries(idStr, { status });
 
     try {
@@ -598,7 +598,7 @@ export class AdminAPI {
         adminNotifications.success(msg);
       } else {
         this.getEvents();
-        adminNotifications.error(result.message || "Fehler beim Status-Update");
+        adminNotifications.error(result.error || result.message || "Fehler beim Status-Update");
       }
 
       return result;
