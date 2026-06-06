@@ -1,4 +1,4 @@
--- Migration 005: Add stammtisch locations table
+-- Migration 009: Add stammtisch locations table
 -- This migration adds the table for managing stammtisch locations on the map
 
 CREATE TABLE IF NOT EXISTS stammtisch_locations (

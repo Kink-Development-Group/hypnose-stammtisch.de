@@ -11,7 +11,3 @@ ALTER TABLE events
 ALTER TABLE events
   ADD UNIQUE KEY unique_series_instance (series_id, instance_date);
 
--- Register migration
-INSERT INTO migrations (version, description)
-VALUES ('004', 'Series overrides & cancellations support (override_type, cancellation_reason, unique per instance)')
-ON DUPLICATE KEY UPDATE description=VALUES(description);
