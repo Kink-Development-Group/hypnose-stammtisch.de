@@ -580,6 +580,7 @@ export class AdminAPI {
     // Temp events use Date.now() (number) as ID until the server responds.
     // Real persisted events always have UUID string IDs — bail out early.
     if (typeof id === "number") {
+      adminNotifications.error("Veranstaltung wird noch gespeichert – bitte kurz warten.");
       return { success: false, message: "Event not yet persisted" };
     }
     const idStr = String(id);
@@ -602,13 +603,13 @@ export class AdminAPI {
               : "Status aktualisiert.";
         adminNotifications.success(msg);
       } else {
-        this.getEvents();
+        this.getEvents().catch(() => {});
         adminNotifications.error(result.error || result.message || "Fehler beim Status-Update");
       }
 
       return result;
     } catch {
-      this.getEvents();
+      this.getEvents().catch(() => {});
       adminNotifications.error("Netzwerkfehler beim Status-Update");
       return { success: false, message: "Network error" };
     }
