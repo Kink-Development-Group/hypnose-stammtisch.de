@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS stammtisch_locations (
   description TEXT,
   contact_email VARCHAR(255),
   contact_phone VARCHAR(50),
-  contact_telegram VARCHAR(100),
+  contact_fetlife VARCHAR(100),
   contact_website VARCHAR(500),
   meeting_frequency VARCHAR(255),
   meeting_location VARCHAR(255),
@@ -38,9 +38,9 @@ CREATE TABLE IF NOT EXISTS stammtisch_locations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert sample data for DACH region
-INSERT INTO stammtisch_locations (
+INSERT IGNORE INTO stammtisch_locations (
   id, name, slug, city, region, country, latitude, longitude,
-  description, contact_email, contact_telegram, meeting_frequency,
+  description, contact_email, contact_fetlife, meeting_frequency,
   meeting_location, tags, is_active, status
 ) VALUES
 (

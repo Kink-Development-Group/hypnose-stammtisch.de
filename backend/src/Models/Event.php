@@ -674,3 +674,7 @@ class Event
                 return $doubleDecoded;
             }
         }
+
+        return is_array($decoded) ? $decoded : [];
+    }
+}
