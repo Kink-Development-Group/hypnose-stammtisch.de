@@ -577,6 +577,11 @@ export class AdminAPI {
   }
 
   static async updateEventStatus(id: string | number, status: string) {
+    // Temp events use Date.now() (number) as ID until the server responds.
+    // Real persisted events always have UUID string IDs — bail out early.
+    if (typeof id === "number") {
+      return { success: false, message: "Event not yet persisted" };
+    }
     const idStr = String(id);
     // Optimistic update — both maps are safe no-ops for non-matching IDs
     adminEventHelpers.updateEvent(idStr, { status });

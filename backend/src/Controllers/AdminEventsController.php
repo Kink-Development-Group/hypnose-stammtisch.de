@@ -238,17 +238,17 @@ class AdminEventsController
         }
 
         try {
-            $checkSql = "SELECT 'event' as type FROM events WHERE id = ?
-                         UNION
-                         SELECT 'series' as type FROM event_series WHERE id = ?";
-            $result = Database::fetchOne($checkSql, [$id, $id]);
+            // Check events first, then series — sequential to avoid UNION
+            // returning an arbitrary row if the same UUID existed in both tables.
+            $isEvent = Database::fetchOne("SELECT id FROM events WHERE id = ?", [$id]);
+            $isSeries = !$isEvent && Database::fetchOne("SELECT id FROM event_series WHERE id = ?", [$id]);
 
-            if (!$result) {
+            if (!$isEvent && !$isSeries) {
                 Response::notFound(['message' => 'Event or series not found']);
                 return;
             }
 
-            if ($result['type'] === 'series') {
+            if ($isSeries) {
                 if (!in_array($status, $allowedSeriesStatuses, true)) {
                     Response::error('Series status must be one of: ' . implode(', ', $allowedSeriesStatuses), 400);
                     return;
