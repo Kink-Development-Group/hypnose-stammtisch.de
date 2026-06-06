@@ -221,7 +221,12 @@ class AdminEventsController
             return;
         }
 
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $decoded = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($decoded)) {
+            Response::error('Invalid JSON body', 400);
+            return;
+        }
+        $input = $decoded;
         $status = $input['status'] ?? null;
 
         $allowedEventStatuses = ['draft', 'published', 'cancelled', 'completed'];

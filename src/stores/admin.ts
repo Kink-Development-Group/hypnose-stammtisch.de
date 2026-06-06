@@ -576,13 +576,14 @@ export class AdminAPI {
     }
   }
 
-  static async updateEventStatus(id: string, status: string) {
+  static async updateEventStatus(id: string | number, status: string) {
+    const idStr = String(id);
     // Optimistic update for both events and series stores
     adminEventHelpers.updateEvent(id as any, { status });
-    adminEventHelpers.updateSeries(id, { status });
+    adminEventHelpers.updateSeries(idStr, { status });
 
     try {
-      const result = await this.request(`/events/${id}/status`, {
+      const result = await this.request(`/events/${idStr}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
       });

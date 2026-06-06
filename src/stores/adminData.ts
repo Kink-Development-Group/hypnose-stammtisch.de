@@ -87,7 +87,7 @@ export const adminEventHelpers = {
     adminEventBus.set({ type: "event", action: "delete", id });
   },
 
-  updateSeries: (id: string, updates: Partial<any>) => {
+  updateSeries: (id: string, updates: Record<string, unknown>) => {
     adminSeries.update((series) =>
       series.map((s) => (s.id === id ? { ...s, ...updates } : s)),
     );
