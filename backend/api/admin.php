@@ -196,6 +196,12 @@ try {
         AdminEventsController::create();
         return;
       }
+    } elseif (preg_match('#^/events/([a-zA-Z0-9\-]+)/status$#', $path, $matches)) {
+      $id = (string)$matches[1];
+      if ($method === 'PATCH') {
+        AdminEventsController::patchStatus($id);
+        return;
+      }
     } elseif (preg_match('#^/events/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
       $id = (string)$matches[1];
       if ($method === 'PUT') {

@@ -576,6 +576,40 @@ export class AdminAPI {
     }
   }
 
+  static async updateEventStatus(id: string, status: string) {
+    // Optimistic update for both events and series stores
+    adminEventHelpers.updateEvent(id as any, { status });
+    adminEventHelpers.updateSeries(id, { status });
+
+    try {
+      const result = await this.request(`/events/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+
+      if (result.success) {
+        const msg =
+          status === "published"
+            ? "Veranstaltung veröffentlicht!"
+            : status === "draft"
+              ? "Veranstaltung als Entwurf gespeichert."
+              : "Status aktualisiert.";
+        adminNotifications.success(msg);
+      } else {
+        this.getEvents();
+        adminNotifications.error(
+          result.message || "Fehler beim Status-Update",
+        );
+      }
+
+      return result;
+    } catch {
+      this.getEvents();
+      adminNotifications.error("Netzwerkfehler beim Status-Update");
+      return { success: false, message: "Network error" };
+    }
+  }
+
   static async deleteEvent(id: number) {
     // Optimistische Aktualisierung: Event sofort entfernen
     adminEventHelpers.removeEvent(id);

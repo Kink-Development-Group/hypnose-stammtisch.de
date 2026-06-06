@@ -87,6 +87,12 @@ export const adminEventHelpers = {
     adminEventBus.set({ type: "event", action: "delete", id });
   },
 
+  updateSeries: (id: string, updates: Partial<any>) => {
+    adminSeries.update((series) =>
+      series.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+    );
+  },
+
   // Messages
   addMessage: (message: AdminMessage) => {
     adminMessages.update((messages) => [message, ...messages]);

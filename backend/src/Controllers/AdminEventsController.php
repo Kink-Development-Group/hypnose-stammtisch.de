@@ -204,6 +204,68 @@ class AdminEventsController
     }
 
     /**
+     * Update only the status of an event or series (PATCH)
+     */
+    public static function patchStatus(string $id): void
+    {
+        AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
+        $user = AdminAuth::getCurrentUser();
+        if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
+            Response::error('Insufficient permissions', 403);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
+            Response::error('Method not allowed', 405);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $status = $input['status'] ?? null;
+
+        $allowedEventStatuses = ['draft', 'published', 'cancelled', 'completed'];
+        $allowedSeriesStatuses = ['draft', 'published', 'cancelled'];
+
+        if (!in_array($status, $allowedEventStatuses, true)) {
+            Response::error('Invalid status. Must be one of: ' . implode(', ', $allowedEventStatuses), 400);
+            return;
+        }
+
+        try {
+            $checkSql = "SELECT 'event' as type FROM events WHERE id = ?
+                         UNION
+                         SELECT 'series' as type FROM event_series WHERE id = ?";
+            $result = Database::fetchOne($checkSql, [$id, $id]);
+
+            if (!$result) {
+                Response::notFound(['message' => 'Event not found']);
+                return;
+            }
+
+            if ($result['type'] === 'series') {
+                if (!in_array($status, $allowedSeriesStatuses, true)) {
+                    Response::error('Series status must be one of: ' . implode(', ', $allowedSeriesStatuses), 400);
+                    return;
+                }
+                Database::execute(
+                    "UPDATE event_series SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [$status, $id]
+                );
+            } else {
+                Database::execute(
+                    "UPDATE events SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [$status, $id]
+                );
+            }
+
+            Response::success(['status' => $status], 'Status updated successfully');
+        } catch (Exception $e) {
+            Response::error('Failed to update status: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
      * Create single event
      */
     private static function createSingleEvent(array $input): void
