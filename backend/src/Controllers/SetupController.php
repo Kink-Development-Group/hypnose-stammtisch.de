@@ -37,7 +37,7 @@ class SetupController
     public function __construct()
     {
         $this->isProduction = ($_ENV['APP_ENV'] ?? 'production') === 'production';
-        $this->isForced = $this->getParam('force', false);
+        $this->isForced = filter_var($this->getParam('force', false), FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
