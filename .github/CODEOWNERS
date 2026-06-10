@@ -1,0 +1,40 @@
+# CODEOWNERS – automatische Review-Anfragen für Pull Requests
+
+# Doku: <https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners>
+
+#
+
+# Die letzte passende Regel gewinnt. Reihenfolge von allgemein -> spezifisch
+
+# Tipp: Statt einer Einzelperson kann hier auch ein Org-Team stehen
+
+# z.B. @Kink-Development-Group/maintainers
+
+# Standard-Owner für alles im Repo
+
+*                           @JosunLP
+
+# Frontend (Svelte / TypeScript)
+
+/src/                       @JosunLP
+/public/                    @JosunLP
+*.svelte                    @JosunLP
+
+# Backend (PHP)
+
+/backend/                   @JosunLP
+
+# Datenbank-Migrationen (sensibel – immer Review)
+
+/backend/migrations/        @JosunLP
+
+# CI / CD, GitHub-Konfiguration und Deployment
+
+/.github/                   @JosunLP
+/nginx.prod.conf            @JosunLP
+/scripts/                   @JosunLP
+
+# Dokumentation
+
+/docs/                      @JosunLP
+*.md                        @JosunLP

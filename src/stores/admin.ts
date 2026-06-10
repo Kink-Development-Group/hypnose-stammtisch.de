@@ -1013,6 +1013,80 @@ export class AdminAPI {
     return res;
   }
 
+  // Event sharing (per-event manager access)
+  // targetType selects the URL: 'series' → /events/series/{id}/managers, else /events/{id}/managers.
+  private static managersBase(targetType: "event" | "series", id: string) {
+    return targetType === "series"
+      ? `/events/series/${id}/managers`
+      : `/events/${id}/managers`;
+  }
+
+  static async getEventManagers(targetType: "event" | "series", id: string) {
+    return this.request(this.managersBase(targetType, id));
+  }
+
+  static async addEventManager(
+    targetType: "event" | "series",
+    id: string,
+    username: string,
+  ) {
+    const res = await this.request(this.managersBase(targetType, id), {
+      method: "POST",
+      body: JSON.stringify({ username }),
+    });
+    if (res.success) {
+      adminNotifications.success("Zugriff gewährt");
+    } else {
+      adminNotifications.error(res.message || "Fehler beim Teilen");
+    }
+    return res;
+  }
+
+  static async removeEventManager(
+    targetType: "event" | "series",
+    id: string,
+    username: string,
+  ) {
+    const res = await this.request(
+      `${this.managersBase(targetType, id)}?username=${encodeURIComponent(username)}`,
+      { method: "DELETE" },
+    );
+    if (res.success) {
+      adminNotifications.success("Zugriff entzogen");
+    } else {
+      adminNotifications.error(res.message || "Fehler beim Entziehen");
+    }
+    return res;
+  }
+
+  static async searchManagerCandidates(query: string) {
+    return this.request(
+      `/events/manager-search?q=${encodeURIComponent(query)}`,
+    );
+  }
+
+  // Head-admin only: reassign the owner of an event/series to another user.
+  static async reassignEventOwner(
+    targetType: "event" | "series",
+    id: string,
+    username: string,
+  ) {
+    const base =
+      targetType === "series"
+        ? `/events/series/${id}/owner`
+        : `/events/${id}/owner`;
+    const res = await this.request(base, {
+      method: "PUT",
+      body: JSON.stringify({ username }),
+    });
+    if (res.success) {
+      adminNotifications.success("Besitzer neu zugewiesen");
+    } else {
+      adminNotifications.error(res.message || "Fehler beim Neuzuweisen");
+    }
+    return res;
+  }
+
   // Users API
   static async getUsers() {
     return this.request("/users");

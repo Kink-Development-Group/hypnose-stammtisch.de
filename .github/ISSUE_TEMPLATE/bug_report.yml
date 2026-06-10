@@ -1,0 +1,107 @@
+name: 🐛 Bug Report
+description: Melde einen Fehler, damit wir ihn beheben können.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke, dass du dir die Zeit nimmst, einen Bug zu melden! 🙏
+        Bitte durchsuche zuerst die [bestehenden Issues](https://github.com/Kink-Development-Group/hypnose-stammtisch.de/issues), um Duplikate zu vermeiden.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Vorab-Prüfung
+      options:
+        - label: Ich habe nach ähnlichen, bereits gemeldeten Issues gesucht.
+          required: true
+        - label: Dies ist ein Bug und keine Sicherheitslücke (diese bitte vertraulich melden, siehe SECURITY.md).
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschreibung
+      description: Was ist passiert? Beschreibe das Problem klar und knapp.
+      placeholder: Beim Klick auf „Event speichern“ passiert nichts …
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Schritte zur Reproduktion
+      description: Wie können wir den Fehler nachstellen?
+      value: |
+        1. Gehe zu '…'
+        2. Klicke auf '…'
+        3. Scrolle zu '…'
+        4. Fehler erscheint
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+      description: Was hättest du stattdessen erwartet?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Betroffener Bereich
+      options:
+        - Frontend (Kalender / UI)
+        - Frontend (Admin-Panel)
+        - Backend / API
+        - Datenbank / Migrationen
+        - Accessibility
+        - Deployment / CI
+        - Sonstiges / unklar
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Schweregrad
+      options:
+        - Niedrig – kosmetisch / kleiner Workaround vorhanden
+        - Mittel – Funktion eingeschränkt
+        - Hoch – Funktion unbrauchbar
+        - Kritisch – Datenverlust / App nicht nutzbar
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Umgebung
+      description: Browser, OS, Gerät und ggf. App-Version / Commit.
+      value: |
+        - Browser: [z.B. Chrome 125, Safari 17]
+        - OS: [z.B. Windows 11, macOS 14, Android 14]
+        - Gerät: [z.B. Desktop, iPhone 15]
+        - Commit / Version: [z.B. main @ abc1234]
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Screenshots
+      description: Relevante Konsolen-Ausgaben, Netzwerk-Fehler oder Screenshots. Bitte Secrets schwärzen.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Zusätzlicher Kontext
+      description: Alles, was bei der Einordnung hilft.
+    validations:
+      required: false
