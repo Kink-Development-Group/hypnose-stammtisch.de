@@ -62,6 +62,8 @@ class AdminEventsController
                     $event['is_owner'] = isset($event['created_by'])
                         && $event['created_by'] !== null
                         && (string)$event['created_by'] === (string)$userId;
+                    // Don't expose the internal owner id; is_owner + owner_username suffice.
+                    unset($event['created_by']);
                     return $event;
                 },
                 Database::fetchAll($eventsSql, $eventParams)
@@ -94,6 +96,8 @@ class AdminEventsController
                     $row['is_owner'] = isset($row['created_by'])
                         && $row['created_by'] !== null
                         && (string)$row['created_by'] === (string)$userId;
+                    // Don't expose the internal owner id; is_owner + owner_username suffice.
+                    unset($row['created_by']);
                     return $row;
                 },
                 Database::fetchAll($seriesSql, $seriesParams)
@@ -121,11 +125,12 @@ class AdminEventsController
      * so callers can treat a returned value as "authorized".
      *
      * @param 'event'|'series' $targetType
+     * @param array<string, mixed>|null $user Pre-fetched current user, to avoid a duplicate lookup.
      * @return array<string, mixed> The authenticated user row
      */
-    private static function requireTargetAccess(string $targetType, string $targetId, bool $ownerOnly = false): array
+    private static function requireTargetAccess(string $targetType, string $targetId, bool $ownerOnly = false, ?array $user = null): array
     {
-        $user = AdminAuth::getCurrentUser();
+        $user ??= AdminAuth::getCurrentUser();
         if (!$user) {
             Response::unauthorized(['message' => 'Authentication required']);
             exit;
@@ -191,11 +196,13 @@ class AdminEventsController
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
         $eventType = $input['event_type'] ?? 'single';
+        // getCurrentUser() returns id as a PDO string; cast for the ?int parameter (strict_types).
+        $createdBy = isset($user['id']) ? (int)$user['id'] : null;
 
         if ($eventType === 'series') {
-            self::createSeries($input);
+            self::createSeries($input, $createdBy);
         } else {
-            self::createSingleEvent($input);
+            self::createSingleEvent($input, $createdBy);
         }
     }
 
@@ -232,7 +239,7 @@ class AdminEventsController
 
         $targetType = $result['type'] === 'series' ? 'series' : 'event';
         // Owner, granted manager, or admin/head may edit.
-        self::requireTargetAccess($targetType, $id);
+        self::requireTargetAccess($targetType, $id, false, $user);
 
         if ($result['type'] === 'series') {
             self::updateSeries($id, $input);
@@ -270,7 +277,7 @@ class AdminEventsController
         $type = $isSeries ? 'series' : 'event';
 
         // Only the owner (or admin/head) may delete; granted managers cannot.
-        self::requireTargetAccess($type, $id, true);
+        self::requireTargetAccess($type, $id, true, $user);
 
         // event role has restricted delete rights (past events only)
         $isEventManager = $user['role'] === 'event_manager';
@@ -366,7 +373,7 @@ class AdminEventsController
             }
 
             // Owner, granted manager, or admin/head may change status.
-            self::requireTargetAccess($isSeries ? 'series' : 'event', $id);
+            self::requireTargetAccess($isSeries ? 'series' : 'event', $id, false, $user);
 
             if ($isSeries) {
                 if (!in_array($status, $allowedSeriesStatuses, true)) {
@@ -395,7 +402,7 @@ class AdminEventsController
     /**
      * Create single event
      */
-    private static function createSingleEvent(array $input): void
+    private static function createSingleEvent(array $input, ?int $createdBy = null): void
     {
         error_log('[createSingleEvent] Input received: ' . json_encode($input));
 
@@ -440,8 +447,6 @@ class AdminEventsController
                 Response::error('end_datetime muss nach start_datetime liegen', 400);
                 return;
             }
-
-            $createdBy = AdminAuth::getCurrentUser()['id'] ?? null;
 
             $sql = "INSERT INTO events (
                 title, slug, description, content, start_datetime, end_datetime, timezone,
@@ -508,7 +513,7 @@ class AdminEventsController
     /**
      * Create event series
      */
-    private static function createSeries(array $input): void
+    private static function createSeries(array $input, ?int $createdBy = null): void
     {
         $validator = new Validator($input);
         $validator->required(['title', 'rrule', 'start_date'])
@@ -568,8 +573,6 @@ class AdminEventsController
 
             $exdatesJson = isset($input['exdates']) ? json_encode($input['exdates']) : null;
             $tagsJson    = isset($input['tags']) ? json_encode($input['tags']) : null;
-
-            $createdBy = AdminAuth::getCurrentUser()['id'] ?? null;
 
             $sql = "INSERT INTO event_series (
         title, slug, description, rrule, start_date, end_date, start_time, end_time, exdates,
@@ -1583,10 +1586,12 @@ class AdminEventsController
         }
 
         try {
-            $like = '%' . $q . '%';
+            // Escape LIKE metacharacters so a query containing % or _ can't widen the match.
+            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q);
+            $like = '%' . $escaped . '%';
             $rows = Database::fetchAll(
                 "SELECT username FROM users
-                 WHERE is_active = 1 AND role = 'event_manager' AND username LIKE ?
+                 WHERE is_active = 1 AND role = 'event_manager' AND username LIKE ? ESCAPE '\\'
                  ORDER BY username ASC LIMIT 10",
                 [$like]
             );
@@ -1648,15 +1653,20 @@ class AdminEventsController
                 return;
             }
 
+            Database::beginTransaction();
             Database::execute("UPDATE {$table} SET created_by = ? WHERE id = ?", [$newOwner['id'], $id]);
             // A grant to the new owner is now redundant — they own the record.
             Database::execute(
                 "DELETE FROM event_access WHERE target_type = ? AND target_id = ? AND user_id = ?",
                 [$targetType, $id, $newOwner['id']]
             );
+            Database::commit();
 
             Response::success(['owner_username' => $newOwner['username']], 'Besitzer neu zugewiesen');
         } catch (\Exception $e) {
+            if (Database::inTransaction()) {
+                Database::rollback();
+            }
             Response::error('Failed to reassign owner: ' . $e->getMessage(), 500);
         }
     }

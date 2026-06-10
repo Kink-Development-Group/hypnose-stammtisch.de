@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from "svelte";
+  import { createEventDispatcher, onDestroy, onMount } from "svelte";
   import { AdminAPI } from "../../stores/admin";
   import Portal from "../ui/Portal.svelte";
 
@@ -29,6 +29,12 @@
   let reassignTimer: ReturnType<typeof setTimeout> | null = null;
 
   onMount(load);
+
+  // Avoid debounce callbacks firing after the modal is destroyed.
+  onDestroy(() => {
+    if (searchTimer) clearTimeout(searchTimer);
+    if (reassignTimer) clearTimeout(reassignTimer);
+  });
 
   async function load() {
     loading = true;
