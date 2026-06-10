@@ -2,7 +2,7 @@ import { writable } from "svelte/store";
 
 // Admin Data Stores für automatische Updates
 export interface AdminEvent {
-  id: number;
+  id: string | number;
   title: string;
   description: string;
   content: string;
@@ -60,7 +60,7 @@ export interface AdminUpdateEvent {
   type: "event" | "message";
   action: "create" | "update" | "delete";
   data?: any;
-  id?: number;
+  id?: string | number;
 }
 
 export const adminEventBus = writable<AdminUpdateEvent | null>(null);
@@ -73,18 +73,26 @@ export const adminEventHelpers = {
     adminEventBus.set({ type: "event", action: "create", data: event });
   },
 
-  updateEvent: (id: number, updates: Partial<AdminEvent>) => {
+  updateEvent: (id: string | number, updates: Partial<AdminEvent>) => {
+    const idStr = String(id);
     adminEvents.update((events) =>
       events.map((event) =>
-        event.id === id ? { ...event, ...updates } : event,
+        String(event.id) === idStr ? { ...event, ...updates } : event,
       ),
     );
     adminEventBus.set({ type: "event", action: "update", id, data: updates });
   },
 
-  removeEvent: (id: number) => {
-    adminEvents.update((events) => events.filter((event) => event.id !== id));
+  removeEvent: (id: string | number) => {
+    const idStr = String(id);
+    adminEvents.update((events) => events.filter((event) => String(event.id) !== idStr));
     adminEventBus.set({ type: "event", action: "delete", id });
+  },
+
+  updateSeries: (id: string, updates: Record<string, unknown>) => {
+    adminSeries.update((series) =>
+      series.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+    );
   },
 
   // Messages

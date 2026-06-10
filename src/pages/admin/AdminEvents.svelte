@@ -489,6 +489,23 @@
                     </div>
 
                     <div class="flex items-center gap-2 sm:self-start">
+                      {#if event.status === "draft"}
+                        <button
+                          on:click={() =>
+                            AdminAPI.updateEventStatus(event.id, "published")}
+                          class="rounded-lg border border-green-200 dark:border-green-700 px-3 py-1 text-sm font-medium text-green-700 dark:text-green-400 transition hover:bg-green-50 dark:hover:bg-green-900/30"
+                        >
+                          Veröffentlichen
+                        </button>
+                      {:else if event.status === "published"}
+                        <button
+                          on:click={() =>
+                            AdminAPI.updateEventStatus(event.id, "draft")}
+                          class="rounded-lg border border-amber-200 dark:border-amber-700 px-3 py-1 text-sm font-medium text-amber-700 dark:text-amber-400 transition hover:bg-amber-50 dark:hover:bg-amber-900/30"
+                        >
+                          Entwurf
+                        </button>
+                      {/if}
                       <button
                         on:click={() => openEditModal(event, "event")}
                         class="rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
@@ -569,6 +586,26 @@
                     </div>
 
                     <div class="flex items-center gap-2 sm:self-start">
+                      {#if seriesItem.status === "draft"}
+                        <button
+                          on:click={() =>
+                            AdminAPI.updateEventStatus(
+                              seriesItem.id,
+                              "published",
+                            )}
+                          class="rounded-lg border border-green-200 dark:border-green-700 px-3 py-1 text-sm font-medium text-green-700 dark:text-green-400 transition hover:bg-green-50 dark:hover:bg-green-900/30"
+                        >
+                          Veröffentlichen
+                        </button>
+                      {:else if seriesItem.status === "published"}
+                        <button
+                          on:click={() =>
+                            AdminAPI.updateEventStatus(seriesItem.id, "draft")}
+                          class="rounded-lg border border-amber-200 dark:border-amber-700 px-3 py-1 text-sm font-medium text-amber-700 dark:text-amber-400 transition hover:bg-amber-50 dark:hover:bg-amber-900/30"
+                        >
+                          Entwurf
+                        </button>
+                      {/if}
                       <button
                         on:click={() => openEditModal(seriesItem, "series")}
                         class="rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"

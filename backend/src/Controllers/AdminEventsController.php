@@ -204,6 +204,75 @@ class AdminEventsController
     }
 
     /**
+     * Update only the status of an event or series (PATCH)
+     */
+    public static function patchStatus(string $id): void
+    {
+        AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
+        $user = AdminAuth::getCurrentUser();
+        if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
+            Response::error('Insufficient permissions', 403);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
+            Response::error('Method not allowed', 405);
+            return;
+        }
+
+        $decoded = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($decoded)) {
+            Response::error('Invalid JSON body', 400);
+            return;
+        }
+        $input = $decoded;
+        $status = $input['status'] ?? null;
+
+        $allowedEventStatuses = ['draft', 'published', 'cancelled', 'completed'];
+        $allowedSeriesStatuses = ['draft', 'published', 'cancelled'];
+
+        if (!in_array($status, $allowedEventStatuses, true)) {
+            Response::error('Invalid status. Must be one of: ' . implode(', ', $allowedEventStatuses), 400);
+            return;
+        }
+
+        try {
+            // Check events first, then series — sequential to avoid UNION
+            // returning an arbitrary row if the same UUID existed in both tables.
+            $isEvent = Database::fetchOne("SELECT id FROM events WHERE id = ?", [$id]);
+            $isSeries = !$isEvent && Database::fetchOne("SELECT id FROM event_series WHERE id = ?", [$id]);
+
+            if (!$isEvent && !$isSeries) {
+                Response::notFound(['message' => 'Event or series not found']);
+                return;
+            }
+
+            if ($isSeries) {
+                if (!in_array($status, $allowedSeriesStatuses, true)) {
+                    Response::error('Series status must be one of: ' . implode(', ', $allowedSeriesStatuses), 400);
+                    return;
+                }
+                Database::execute(
+                    "UPDATE event_series SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [$status, $id]
+                );
+            } else {
+                Database::execute(
+                    "UPDATE events SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [$status, $id]
+                );
+            }
+
+            Response::success(['status' => $status], 'Status updated successfully');
+        } catch (Exception $e) {
+            error_log('[patchStatus] Exception: ' . $e->getMessage());
+            $debug = \HypnoseStammtisch\Config\Config::get('app.debug', false);
+            Response::error($debug ? 'Failed to update status: ' . $e->getMessage() : 'Failed to update status', 500);
+        }
+    }
+
+    /**
      * Create single event
      */
     private static function createSingleEvent(array $input): void

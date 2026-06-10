@@ -121,7 +121,7 @@ class Event
         try {
             $sql = "SELECT * FROM events
                     WHERE status = 'published'
-                    AND start_datetime > NOW()
+                    AND end_datetime > UTC_TIMESTAMP()
                     ORDER BY start_datetime ASC
                     LIMIT ?";
 
@@ -145,7 +145,7 @@ class Event
             $sql = "SELECT * FROM events
                     WHERE status = 'published'
                     AND is_featured = 1
-                    AND start_datetime > NOW()
+                    AND end_datetime > UTC_TIMESTAMP()
                     ORDER BY start_datetime ASC
                     LIMIT ?";
 
