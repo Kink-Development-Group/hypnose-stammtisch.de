@@ -19,6 +19,8 @@ class AdminAuth
     public const MESSAGE_MANAGEMENT_ROLES = ['head', 'admin', 'moderator'];
     public const EVENT_MANAGEMENT_ROLES = ['head', 'admin', 'event_manager'];
     public const EVENT_MANAGER_ONLY_ROLES = ['event_manager'];
+    /** Roles that may see and edit every event regardless of ownership/sharing. */
+    public const EVENT_FULL_ACCESS_ROLES = ['head', 'admin'];
 
     /**
      * Start secure session if not already started

@@ -143,6 +143,12 @@ try {
 
   // Route events endpoints
   if (str_starts_with($path, '/events')) {
+    // Manager autocomplete (fixed path — must be matched before /events/{id})
+    if ($path === '/events/manager-search' && $method === 'GET') {
+      AdminEventsController::searchManagerCandidates();
+      return;
+    }
+
     // Series specific nested routes: /events/series/{id}/...
     if (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/overrides$#', $path, $matches)) {
       $seriesId = (string)$matches[1];
@@ -187,6 +193,24 @@ try {
         \HypnoseStammtisch\Controllers\AdminEventsController::restoreSeriesInstance($seriesId);
         return;
       }
+    } elseif (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/managers$#', $path, $matches)) {
+      $seriesId = (string)$matches[1];
+      if ($method === 'GET') {
+        AdminEventsController::listManagers('series', $seriesId);
+        return;
+      } elseif ($method === 'POST') {
+        AdminEventsController::addManager('series', $seriesId);
+        return;
+      } elseif ($method === 'DELETE') {
+        AdminEventsController::removeManager('series', $seriesId);
+        return;
+      }
+    } elseif (preg_match('#^/events/series/([a-zA-Z0-9\-]+)/owner$#', $path, $matches)) {
+      $seriesId = (string)$matches[1];
+      if (in_array($method, ['PUT', 'PATCH'], true)) {
+        AdminEventsController::reassignOwner('series', $seriesId);
+        return;
+      }
     }
     if ($path === '/events') {
       if ($method === 'GET') {
@@ -204,6 +228,24 @@ try {
       }
       Response::error('Method not allowed', 405);
       return;
+    } elseif (preg_match('#^/events/([a-zA-Z0-9\-]+)/managers$#', $path, $matches)) {
+      $id = (string)$matches[1];
+      if ($method === 'GET') {
+        AdminEventsController::listManagers('event', $id);
+        return;
+      } elseif ($method === 'POST') {
+        AdminEventsController::addManager('event', $id);
+        return;
+      } elseif ($method === 'DELETE') {
+        AdminEventsController::removeManager('event', $id);
+        return;
+      }
+    } elseif (preg_match('#^/events/([a-zA-Z0-9\-]+)/owner$#', $path, $matches)) {
+      $id = (string)$matches[1];
+      if (in_array($method, ['PUT', 'PATCH'], true)) {
+        AdminEventsController::reassignOwner('event', $id);
+        return;
+      }
     } elseif (preg_match('#^/events/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
       $id = (string)$matches[1];
       if ($method === 'PUT') {

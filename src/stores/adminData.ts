@@ -26,6 +26,9 @@ export interface AdminEvent {
   updated_at: string;
   series_id?: string;
   instance_date?: string; // falls Override einer Serie
+  created_by?: number | null; // owning user id
+  owner_username?: string | null; // username of the owner (display only)
+  is_owner?: boolean; // true if the current user owns this event
 }
 
 export interface AdminMessage {

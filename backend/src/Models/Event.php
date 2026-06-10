@@ -55,7 +55,8 @@ class Event
         public ?string $createdAt = null,
         public ?string $updatedAt = null,
         public readonly ?string $seriesId = null,
-        public readonly ?string $instanceDate = null
+        public readonly ?string $instanceDate = null,
+        public ?int $createdBy = null
     ) {}
 
     /**
@@ -377,7 +378,8 @@ class Event
             createdAt: $data['created_at'] ?? null,
             updatedAt: $data['updated_at'] ?? null,
             seriesId: $data['series_id'] ?? null,
-            instanceDate: $data['instance_date'] ?? null
+            instanceDate: $data['instance_date'] ?? null,
+            createdBy: isset($data['created_by']) ? (int)$data['created_by'] : null
         );
     }
 
@@ -428,6 +430,9 @@ class Event
             'updated_at' => $this->updatedAt,
             'series_id' => $this->seriesId,
             'instance_date' => $this->instanceDate
+            // created_by is intentionally omitted: it is an internal owner id and
+            // must not leak through the public events API. Admin ownership logic
+            // works off raw SQL rows, not this model.
         ];
     }
 
