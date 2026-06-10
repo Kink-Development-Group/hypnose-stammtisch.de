@@ -1,0 +1,69 @@
+name: ♿ Accessibility Issue
+description: Melde ein Barrierefreiheits-Problem (WCAG 2.2 AA).
+title: "[A11y]: "
+labels: ["accessibility", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Barrierefreiheit ist für Hypnose-Stammtisch.de ein zentrales Qualitätsziel (WCAG 2.2 AA). Danke, dass du ein Problem meldest! ♿
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Beschreibung der Barriere
+      description: Welches Element ist betroffen und warum stellt es eine Barriere dar?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tooling
+    attributes:
+      label: Genutzte Hilfsmittel / Testmethode
+      multiple: true
+      options:
+        - Tastatur-Navigation
+        - Screenreader (NVDA)
+        - Screenreader (JAWS)
+        - Screenreader (VoiceOver)
+        - Screenreader (TalkBack)
+        - Zoom / Vergrößerung (bis 200 %)
+        - Hoher Kontrast / Farbfehlsichtigkeit
+        - Reduced Motion
+        - Automatischer Test (axe-core / Lighthouse)
+    validations:
+      required: true
+
+  - type: input
+    id: wcag
+    attributes:
+      label: Betroffenes WCAG-Erfolgskriterium (optional)
+      placeholder: "z.B. 1.4.3 Kontrast (Minimum), 2.1.1 Tastatur"
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Erwartetes Verhalten
+      description: Wie sollte sich das Element barrierefrei verhalten?
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Umgebung
+      value: |
+        - Browser:
+        - Betriebssystem:
+        - Assistive Technologie + Version:
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Zusätzlicher Kontext / Screenshots
+    validations:
+      required: false
