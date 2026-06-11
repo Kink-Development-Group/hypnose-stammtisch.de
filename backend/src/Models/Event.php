@@ -115,29 +115,6 @@ class Event
     }
 
     /**
-     * Get upcoming events
-     */
-    public static function getUpcoming(int $limit = 5): array
-    {
-        try {
-            $sql = "SELECT * FROM events
-                    WHERE status = 'published'
-                    AND end_datetime > UTC_TIMESTAMP()
-                    ORDER BY start_datetime ASC
-                    LIMIT ?";
-
-            $rows = Database::fetchAll($sql, [$limit]);
-
-            return array_map([self::class, 'fromArray'], $rows);
-        } catch (\Exception $e) {
-            error_log("Database error in getUpcoming, using mock data: " . $e->getMessage());
-
-            $mockEvents = MockData::getUpcomingEvents($limit);
-            return MockData::getMockEventObjects(['limit' => $limit, 'upcoming_only' => true]);
-        }
-    }
-
-    /**
      * Get featured events
      */
     public static function getFeatured(int $limit = 3): array

@@ -216,26 +216,6 @@ class MockData
     }
 
     /**
-     * Get upcoming events
-     */
-    public static function getUpcomingEvents(int $limit = 10): array
-    {
-        $events = self::getEvents();
-
-        // Filter for upcoming events
-        $upcoming = array_filter($events, function ($event) {
-            return strtotime($event['start_date']) >= strtotime('today');
-        });
-
-        // Sort by start date
-        usort($upcoming, function ($a, $b) {
-            return strtotime($a['start_date']) - strtotime($b['start_date']);
-        });
-
-        return array_slice($upcoming, 0, $limit);
-    }
-
-    /**
      * Get featured events
      */
     public static function getFeaturedEvents(int $limit = 5): array
