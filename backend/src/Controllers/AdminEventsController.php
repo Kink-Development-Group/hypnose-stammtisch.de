@@ -1251,7 +1251,7 @@ class AdminEventsController
                 'series_title' => $series['title'],
             ]);
         } catch (\Exception $e) {
-            Response::error('Failed to get upcoming instances: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to get upcoming instances');
         }
     }
 
@@ -1457,7 +1457,7 @@ class AdminEventsController
                 'managers' => array_map(static fn(array $m): array => ['username' => $m['username']], $managers),
             ]);
         } catch (\Exception $e) {
-            Response::error('Failed to list managers: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to list managers');
         }
     }
 
@@ -1516,7 +1516,7 @@ class AdminEventsController
 
             Response::success(['username' => $grantee['username']], 'Zugriff gewährt');
         } catch (\Exception $e) {
-            Response::error('Failed to add manager: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to add manager');
         }
     }
 
@@ -1556,7 +1556,7 @@ class AdminEventsController
             );
             Response::success(null, 'Zugriff entzogen');
         } catch (\Exception $e) {
-            Response::error('Failed to remove manager: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to remove manager');
         }
     }
 
@@ -1597,7 +1597,7 @@ class AdminEventsController
             );
             Response::success(['usernames' => array_column($rows, 'username')]);
         } catch (\Exception $e) {
-            Response::error('Failed to search managers: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to search managers');
         }
     }
 
@@ -1667,7 +1667,7 @@ class AdminEventsController
             if (Database::inTransaction()) {
                 Database::rollback();
             }
-            Response::error('Failed to reassign owner: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to reassign owner');
         }
     }
 }
