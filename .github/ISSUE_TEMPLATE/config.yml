@@ -1,0 +1,15 @@
+# Deaktiviert leere Issues – Nutzer:innen sollen ein Template wählen.
+blank_issues_enabled: false
+
+contact_links:
+  - name: 💬 Frage oder Diskussion
+    url: https://github.com/Kink-Development-Group/hypnose-stammtisch.de/discussions
+    about: Allgemeine Fragen, Ideen und Austausch mit der Community – kein Bug-Report.
+
+  - name: 🔒 Sicherheitslücke melden (vertraulich)
+    url: https://github.com/Kink-Development-Group/hypnose-stammtisch.de/security/advisories/new
+    about: Sicherheitslücken bitte NICHT öffentlich melden. Nutze private Security Advisories – siehe SECURITY.md.
+
+  - name: 🌐 Website
+    url: https://hypnose-stammtisch.de
+    about: Zur Live-Anwendung von Hypnose-Stammtisch.de.

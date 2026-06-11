@@ -30,15 +30,43 @@ class AdminEventsController
             return;
         }
 
+        $user = AdminAuth::getCurrentUser();
+        if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
+            Response::error('Insufficient permissions to view events', 403);
+            return;
+        }
+
+        // Head/admin see everything; event managers only their own + shared records.
+        $restrictToManager = !AdminAuth::userHasRole($user, AdminAuth::EVENT_FULL_ACCESS_ROLES);
+        $userId = $user['id'];
+
         try {
             // Get single events
-            $eventsSql = "SELECT e.*, NULL as series_title
+            $eventsSql = "SELECT e.*, NULL as series_title, u.username AS owner_username
                          FROM events e
-                         WHERE e.series_id IS NULL
-                         ORDER BY e.start_datetime DESC";
+                         LEFT JOIN users u ON u.id = e.created_by
+                         WHERE e.series_id IS NULL";
+            $eventParams = [];
+            if ($restrictToManager) {
+                $eventsSql .= " AND (e.created_by = ? OR e.id IN (
+                                  SELECT target_id FROM event_access
+                                  WHERE target_type = 'event' AND user_id = ?))";
+                $eventParams[] = $userId;
+                $eventParams[] = $userId;
+            }
+            $eventsSql .= " ORDER BY e.start_datetime DESC";
+
             $events = array_map(
-                fn(array $event): array => self::formatEventForAdminResponse($event),
-                Database::fetchAll($eventsSql)
+                function (array $event) use ($userId): array {
+                    $event = self::formatEventForAdminResponse($event);
+                    $event['is_owner'] = isset($event['created_by'])
+                        && $event['created_by'] !== null
+                        && (string)$event['created_by'] === (string)$userId;
+                    // Don't expose the internal owner id; is_owner + owner_username suffice.
+                    unset($event['created_by']);
+                    return $event;
+                },
+                Database::fetchAll($eventsSql, $eventParams)
             );
 
             // Get event series with aliased fields for frontend compatibility
@@ -49,12 +77,31 @@ class AdminEventsController
                          s.default_category as category,
                          s.default_max_participants as max_participants,
                          s.default_requires_registration as requires_registration,
-                         COUNT(e.id) as generated_events_count
+                         COUNT(e.id) as generated_events_count,
+                         (SELECT username FROM users WHERE users.id = s.created_by) AS owner_username
                          FROM event_series s
-                         LEFT JOIN events e ON e.series_id = s.id
-                         GROUP BY s.id
-                         ORDER BY s.start_date DESC";
-            $series = Database::fetchAll($seriesSql);
+                         LEFT JOIN events e ON e.series_id = s.id";
+            $seriesParams = [];
+            if ($restrictToManager) {
+                $seriesSql .= " WHERE (s.created_by = ? OR s.id IN (
+                                  SELECT target_id FROM event_access
+                                  WHERE target_type = 'series' AND user_id = ?))";
+                $seriesParams[] = $userId;
+                $seriesParams[] = $userId;
+            }
+            $seriesSql .= " GROUP BY s.id ORDER BY s.start_date DESC";
+
+            $series = array_map(
+                function (array $row) use ($userId): array {
+                    $row['is_owner'] = isset($row['created_by'])
+                        && $row['created_by'] !== null
+                        && (string)$row['created_by'] === (string)$userId;
+                    // Don't expose the internal owner id; is_owner + owner_username suffice.
+                    unset($row['created_by']);
+                    return $row;
+                },
+                Database::fetchAll($seriesSql, $seriesParams)
+            );
 
             // Combine and sort by creation date
             $allEvents = array_merge($events, $series);
@@ -67,6 +114,64 @@ class AdminEventsController
         } catch (Exception $e) {
             Response::error('Failed to fetch events: ' . $e->getMessage(), 500);
         }
+    }
+
+    /**
+     * Authorize the current user for a specific event/series and return the user row.
+     *
+     * Head/admin always pass. Event managers must own the target, or — when
+     * $ownerOnly is false — have been granted access via event_access. This
+     * helper emits the appropriate error response and exits when access is denied,
+     * so callers can treat a returned value as "authorized".
+     *
+     * @param 'event'|'series' $targetType
+     * @param array<string, mixed>|null $user Pre-fetched current user, to avoid a duplicate lookup.
+     * @return array<string, mixed> The authenticated user row
+     */
+    private static function requireTargetAccess(string $targetType, string $targetId, bool $ownerOnly = false, ?array $user = null): array
+    {
+        $user ??= AdminAuth::getCurrentUser();
+        if (!$user) {
+            Response::unauthorized(['message' => 'Authentication required']);
+            exit;
+        }
+
+        if (AdminAuth::userHasRole($user, AdminAuth::EVENT_FULL_ACCESS_ROLES)) {
+            return $user;
+        }
+
+        if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
+            Response::error('Insufficient permissions', 403);
+            exit;
+        }
+
+        $table = $targetType === 'series' ? 'event_series' : 'events';
+        $row = Database::fetchOne("SELECT created_by FROM {$table} WHERE id = ?", [$targetId]);
+        if (!$row) {
+            Response::notFound(['message' => 'Event not found']);
+            exit;
+        }
+
+        $isOwner = $row['created_by'] !== null && (string)$row['created_by'] === (string)$user['id'];
+        if ($isOwner) {
+            return $user;
+        }
+
+        if ($ownerOnly) {
+            Response::error('Nur der Eigentümer kann diese Aktion ausführen', 403);
+            exit;
+        }
+
+        $shared = Database::fetchOne(
+            "SELECT id FROM event_access WHERE target_type = ? AND target_id = ? AND user_id = ?",
+            [$targetType, $targetId, $user['id']]
+        );
+        if ($shared) {
+            return $user;
+        }
+
+        Response::error('Keine Berechtigung für dieses Element', 403);
+        exit;
     }
 
     /**
@@ -91,11 +196,13 @@ class AdminEventsController
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
         $eventType = $input['event_type'] ?? 'single';
+        // getCurrentUser() returns id as a PDO string; cast for the ?int parameter (strict_types).
+        $createdBy = isset($user['id']) ? (int)$user['id'] : null;
 
         if ($eventType === 'series') {
-            self::createSeries($input);
+            self::createSeries($input, $createdBy);
         } else {
-            self::createSingleEvent($input);
+            self::createSingleEvent($input, $createdBy);
         }
     }
 
@@ -130,6 +237,10 @@ class AdminEventsController
             return;
         }
 
+        $targetType = $result['type'] === 'series' ? 'series' : 'event';
+        // Owner, granted manager, or admin/head may edit.
+        self::requireTargetAccess($targetType, $id, false, $user);
+
         if ($result['type'] === 'series') {
             self::updateSeries($id, $input);
         } else {
@@ -149,30 +260,40 @@ class AdminEventsController
             Response::error('Authentication required', 401);
             return;
         }
-        // event role has restricted delete rights
-        $isEventManager = $user['role'] === 'event_manager';
 
         if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
             Response::error('Method not allowed', 405);
             return;
         }
 
+        // Resolve type up-front (events first, then series — avoid UNION ambiguity
+        // if the same UUID ever existed in both tables) before opening a transaction.
+        $isEvent = Database::fetchOne("SELECT id FROM events WHERE id = ?", [$id]);
+        $isSeries = !$isEvent ? Database::fetchOne("SELECT id FROM event_series WHERE id = ?", [$id]) : null;
+        if (!$isEvent && !$isSeries) {
+            Response::notFound(['message' => 'Event not found']);
+            return;
+        }
+        $type = $isSeries ? 'series' : 'event';
+
+        // Only the owner (or admin/head) may delete; granted managers cannot.
+        self::requireTargetAccess($type, $id, true, $user);
+
+        // event role has restricted delete rights (past events only)
+        $isEventManager = $user['role'] === 'event_manager';
+
         try {
             Database::beginTransaction();
 
-            // Check if it's a series or single event
-            $checkSql = "SELECT 'event' as type FROM events WHERE id = ?
-                         UNION
-                         SELECT 'series' as type FROM event_series WHERE id = ?";
-            $result = Database::fetchOne($checkSql, [$id, $id]);
-
-            if (!$result) {
-                Response::notFound(['message' => 'Event not found']);
-                return;
-            }
-
-            if ($result['type'] === 'series') {
-                // Delete series and all associated events
+            if ($type === 'series') {
+                // Drop sharing grants first (events.target rows + the series itself),
+                // then the child events and the series.
+                Database::execute(
+                    "DELETE FROM event_access WHERE target_type = 'event'
+                       AND target_id IN (SELECT id FROM events WHERE series_id = ?)",
+                    [$id]
+                );
+                Database::execute("DELETE FROM event_access WHERE target_type = 'series' AND target_id = ?", [$id]);
                 Database::execute("DELETE FROM events WHERE series_id = ?", [$id]);
                 Database::execute("DELETE FROM event_series WHERE id = ?", [$id]);
                 $message = 'Event series deleted successfully';
@@ -181,16 +302,19 @@ class AdminEventsController
                     // Check if event already ended (end_datetime < now UTC)
                     $event = Database::fetchOne("SELECT end_datetime FROM events WHERE id = ?", [$id]);
                     if (!$event) {
+                        Database::rollback();
                         Response::notFound(['message' => 'Event not found']);
                         return;
                     }
                     $now = new \DateTime('now', new \DateTimeZone('UTC'));
                     $end = new \DateTime($event['end_datetime'], new \DateTimeZone('UTC'));
                     if ($end > $now) {
+                        Database::rollback();
                         Response::error('Event-Manager can only delete past events', 403);
                         return;
                     }
                 }
+                Database::execute("DELETE FROM event_access WHERE target_type = 'event' AND target_id = ?", [$id]);
                 Database::execute("DELETE FROM events WHERE id = ?", [$id]);
                 $message = 'Event deleted successfully';
             }
@@ -204,9 +328,81 @@ class AdminEventsController
     }
 
     /**
+     * Update only the status of an event or series (PATCH)
+     */
+    public static function patchStatus(string $id): void
+    {
+        AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
+        $user = AdminAuth::getCurrentUser();
+        if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
+            Response::error('Insufficient permissions', 403);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'PATCH') {
+            Response::error('Method not allowed', 405);
+            return;
+        }
+
+        $decoded = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($decoded)) {
+            Response::error('Invalid JSON body', 400);
+            return;
+        }
+        $input = $decoded;
+        $status = $input['status'] ?? null;
+
+        $allowedEventStatuses = ['draft', 'published', 'cancelled', 'completed'];
+        $allowedSeriesStatuses = ['draft', 'published', 'cancelled'];
+
+        if (!in_array($status, $allowedEventStatuses, true)) {
+            Response::error('Invalid status. Must be one of: ' . implode(', ', $allowedEventStatuses), 400);
+            return;
+        }
+
+        try {
+            // Check events first, then series — sequential to avoid UNION
+            // returning an arbitrary row if the same UUID existed in both tables.
+            $isEvent = Database::fetchOne("SELECT id FROM events WHERE id = ?", [$id]);
+            $isSeries = !$isEvent && Database::fetchOne("SELECT id FROM event_series WHERE id = ?", [$id]);
+
+            if (!$isEvent && !$isSeries) {
+                Response::notFound(['message' => 'Event or series not found']);
+                return;
+            }
+
+            // Owner, granted manager, or admin/head may change status.
+            self::requireTargetAccess($isSeries ? 'series' : 'event', $id, false, $user);
+
+            if ($isSeries) {
+                if (!in_array($status, $allowedSeriesStatuses, true)) {
+                    Response::error('Series status must be one of: ' . implode(', ', $allowedSeriesStatuses), 400);
+                    return;
+                }
+                Database::execute(
+                    "UPDATE event_series SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [$status, $id]
+                );
+            } else {
+                Database::execute(
+                    "UPDATE events SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                    [$status, $id]
+                );
+            }
+
+            Response::success(['status' => $status], 'Status updated successfully');
+        } catch (Exception $e) {
+            error_log('[patchStatus] Exception: ' . $e->getMessage());
+            $debug = \HypnoseStammtisch\Config\Config::get('app.debug', false);
+            Response::error($debug ? 'Failed to update status: ' . $e->getMessage() : 'Failed to update status', 500);
+        }
+    }
+
+    /**
      * Create single event
      */
-    private static function createSingleEvent(array $input): void
+    private static function createSingleEvent(array $input, ?int $createdBy = null): void
     {
         error_log('[createSingleEvent] Input received: ' . json_encode($input));
 
@@ -256,8 +452,8 @@ class AdminEventsController
                 title, slug, description, content, start_datetime, end_datetime, timezone,
                 location_type, location_name, location_address, location_url,
                 category, difficulty_level, max_participants, status, is_featured,
-                requires_registration, organizer_name, organizer_email, tags
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                requires_registration, organizer_name, organizer_email, tags, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             $eventId = Database::insert($sql, [
                 $input['title'],
@@ -279,7 +475,8 @@ class AdminEventsController
                 isset($input['requires_registration']) ? (int)$input['requires_registration'] : 1,
                 $input['organizer_name'] ?? null,
                 $input['organizer_email'] ?? null,
-                isset($input['tags']) ? json_encode($input['tags']) : null
+                isset($input['tags']) ? json_encode($input['tags']) : null,
+                $createdBy
             ]);
 
             Response::success(['id' => $eventId], 'Event created successfully');
@@ -316,7 +513,7 @@ class AdminEventsController
     /**
      * Create event series
      */
-    private static function createSeries(array $input): void
+    private static function createSeries(array $input, ?int $createdBy = null): void
     {
         $validator = new Validator($input);
         $validator->required(['title', 'rrule', 'start_date'])
@@ -381,8 +578,8 @@ class AdminEventsController
         title, slug, description, rrule, start_date, end_date, start_time, end_time, exdates,
         default_location_type, default_location_name,
         default_location_address, default_category, default_max_participants,
-        default_requires_registration, status, tags
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        default_requires_registration, status, tags, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             try {
                 $seriesId = Database::insert($sql, [
@@ -402,7 +599,8 @@ class AdminEventsController
                     $input['default_max_participants'] ?? null,
                     $input['default_requires_registration'] ?? true,
                     $input['status'] ?? 'draft',
-                    $tagsJson
+                    $tagsJson,
+                    $createdBy
                 ]);
             } catch (\Exception $inner) {
                 $innerMsg = $inner->getMessage();
@@ -735,16 +933,14 @@ class AdminEventsController
     {
         AdminAuth::requireAuth();
         AdminAuth::requireCSRF();
-        $user = AdminAuth::getCurrentUser();
-        if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
-            Response::error('Insufficient permissions', 403);
-            return;
-        }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             Response::error('Method not allowed', 405);
             return;
         }
+
+        $user = self::requireTargetAccess('series', $seriesId);
+        $createdBy = $user['id'] ?? null;
 
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         $validator = new Validator($input);
@@ -788,8 +984,8 @@ class AdminEventsController
         title, slug, description, content, start_datetime, end_datetime, timezone,
         location_type, location_name, location_address, location_url, category, difficulty_level,
         max_participants, status, is_featured, requires_registration, organizer_name, organizer_email,
-        tags, series_id, instance_date, parent_event_id, override_type
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+        tags, series_id, instance_date, parent_event_id, override_type, created_by
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
 
             $title = $input['title'] ?? $series['title'];
             $slug = self::generateSlug($title);
@@ -817,7 +1013,8 @@ class AdminEventsController
                 $seriesId,
                 $instanceDate,
                 null,
-                'changed'
+                'changed',
+                $createdBy
             ]);
 
             Response::success(['id' => $eventId], 'Series override created');
@@ -836,6 +1033,7 @@ class AdminEventsController
             Response::error('Method not allowed', 405);
             return;
         }
+        self::requireTargetAccess('series', $seriesId);
         try {
             $rows = array_map(
                 fn(array $event): array => self::formatEventForAdminResponse($event),
@@ -858,6 +1056,7 @@ class AdminEventsController
             Response::error('Method not allowed', 405);
             return;
         }
+        self::requireTargetAccess('series', $seriesId);
         try {
             $row = Database::fetchOne('SELECT id FROM events WHERE id = ? AND series_id = ?', [$overrideId, $seriesId]);
             if (!$row) {
@@ -882,6 +1081,7 @@ class AdminEventsController
             Response::error('Method not allowed', 405);
             return;
         }
+        self::requireTargetAccess('series', $seriesId);
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         if (empty($input['date'])) {
             Response::error('date required', 400);
@@ -916,6 +1116,7 @@ class AdminEventsController
             Response::error('Method not allowed', 405);
             return;
         }
+        self::requireTargetAccess('series', $seriesId);
         $date = $_GET['date'] ?? null;
         if (!$date) {
             Response::error('date query param required', 400);
@@ -946,6 +1147,7 @@ class AdminEventsController
             Response::error('Method not allowed', 405);
             return;
         }
+        self::requireTargetAccess('series', $seriesId);
         try {
             $series = Database::fetchOne('SELECT exdates FROM event_series WHERE id = ?', [$seriesId]);
             if (!$series) {
@@ -972,6 +1174,8 @@ class AdminEventsController
             Response::error('Method not allowed', 405);
             return;
         }
+
+        self::requireTargetAccess('series', $seriesId);
 
         $limit = isset($_GET['limit']) ? min((int) $_GET['limit'], 52) : 10;
 
@@ -1109,6 +1313,8 @@ class AdminEventsController
             Response::error('Method not allowed', 405);
             return;
         }
+        $user = self::requireTargetAccess('series', $seriesId);
+        $createdBy = $user['id'] ?? null;
         $input = json_decode(file_get_contents('php://input'), true) ?? [];
         if (empty($input['instance_date'])) {
             Response::error('instance_date required', 400);
@@ -1149,7 +1355,7 @@ class AdminEventsController
             $tz = self::DEFAULT_EVENT_TIMEZONE;
             $startUTC = self::convertToUTC($instanceDate . ' ' . $series['start_time'], $tz);
             $endUTC = self::convertToUTC($instanceDate . ' ' . $series['end_time'], $tz);
-            $insertSql = 'INSERT INTO events (title, slug, start_datetime, end_datetime, timezone, category, status, tags, series_id, instance_date, parent_event_id, override_type, cancellation_reason) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)';
+            $insertSql = 'INSERT INTO events (title, slug, start_datetime, end_datetime, timezone, category, status, tags, series_id, instance_date, parent_event_id, override_type, cancellation_reason, created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
             $title = $series['title'] . ' (abgesagt)';
             $slug = self::generateSlug($title . '-' . $instanceDate);
             $id = Database::insert($insertSql, [
@@ -1165,7 +1371,8 @@ class AdminEventsController
                 $instanceDate,
                 null,
                 'cancelled',
-                $input['reason'] ?? null
+                $input['reason'] ?? null,
+                $createdBy
             ]);
             Response::success(['id' => $id], 'Instance cancelled');
         } catch (\Exception $e) {
@@ -1185,6 +1392,7 @@ class AdminEventsController
             Response::error('Method not allowed', 405);
             return;
         }
+        self::requireTargetAccess('series', $seriesId);
         $instanceDate = $_GET['instance_date'] ?? null;
         if (!$instanceDate) {
             Response::error('instance_date query param required', 400);
@@ -1206,6 +1414,260 @@ class AdminEventsController
             Response::success(null, 'No cancellation to remove');
         } catch (\Exception $e) {
             Response::error('Failed to restore instance: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * List the managers an event/series is shared with (owner + grantees).
+     * Only the owner (or admin/head) may view the share list.
+     * Returns usernames only — never any personal detail of another manager.
+     *
+     * GET /events/{id}/managers  |  GET /events/series/{id}/managers
+     *
+     * @param 'event'|'series' $targetType
+     */
+    public static function listManagers(string $targetType, string $id): void
+    {
+        AdminAuth::requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            Response::error('Method not allowed', 405);
+            return;
+        }
+        self::requireTargetAccess($targetType, $id, true);
+
+        try {
+            $table = $targetType === 'series' ? 'event_series' : 'events';
+            $target = Database::fetchOne(
+                "SELECT u.username AS owner_username
+                 FROM {$table} t LEFT JOIN users u ON u.id = t.created_by
+                 WHERE t.id = ?",
+                [$id]
+            );
+            $managers = Database::fetchAll(
+                "SELECT u.username
+                 FROM event_access ea
+                 JOIN users u ON u.id = ea.user_id
+                 WHERE ea.target_type = ? AND ea.target_id = ?
+                 ORDER BY u.username ASC",
+                [$targetType, $id]
+            );
+
+            Response::success([
+                'owner_username' => $target['owner_username'] ?? null,
+                'managers' => array_map(static fn(array $m): array => ['username' => $m['username']], $managers),
+            ]);
+        } catch (\Exception $e) {
+            Response::error('Failed to list managers: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Grant another event manager access to an event/series by username.
+     * Only the owner (or admin/head) may grant. Access can only be granted to an
+     * active user whose role is event_manager. No personal details are returned or
+     * required — just the username.
+     *
+     * POST /events/{id}/managers  body { username }
+     *
+     * @param 'event'|'series' $targetType
+     */
+    public static function addManager(string $targetType, string $id): void
+    {
+        AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            Response::error('Method not allowed', 405);
+            return;
+        }
+        $actor = self::requireTargetAccess($targetType, $id, true);
+
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $username = isset($input['username']) ? trim((string)$input['username']) : '';
+        if ($username === '') {
+            Response::error('username erforderlich', 400);
+            return;
+        }
+
+        try {
+            // Only active event managers may be granted access.
+            $grantee = Database::fetchOne(
+                "SELECT id, username FROM users WHERE username = ? AND is_active = 1 AND role = 'event_manager'",
+                [$username]
+            );
+            if (!$grantee) {
+                Response::error('Kein aktiver Event-Manager mit diesem Benutzernamen gefunden', 404);
+                return;
+            }
+
+            // Owner already has full access — granting to them is a no-op.
+            $table = $targetType === 'series' ? 'event_series' : 'events';
+            $target = Database::fetchOne("SELECT created_by FROM {$table} WHERE id = ?", [$id]);
+            if ($target && (string)$target['created_by'] === (string)$grantee['id']) {
+                Response::error('Dieser Benutzer ist bereits der Eigentümer', 400);
+                return;
+            }
+
+            Database::execute(
+                "INSERT INTO event_access (target_type, target_id, user_id, granted_by)
+                 VALUES (?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE granted_by = ?",
+                [$targetType, $id, $grantee['id'], $actor['id'], $actor['id']]
+            );
+
+            Response::success(['username' => $grantee['username']], 'Zugriff gewährt');
+        } catch (\Exception $e) {
+            Response::error('Failed to add manager: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Revoke a previously granted manager's access by username.
+     * Only the owner (or admin/head) may revoke.
+     *
+     * DELETE /events/{id}/managers?username=...
+     *
+     * @param 'event'|'series' $targetType
+     */
+    public static function removeManager(string $targetType, string $id): void
+    {
+        AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
+        if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
+            Response::error('Method not allowed', 405);
+            return;
+        }
+        self::requireTargetAccess($targetType, $id, true);
+
+        $username = isset($_GET['username']) ? trim((string)$_GET['username']) : '';
+        if ($username === '') {
+            Response::error('username Query-Parameter erforderlich', 400);
+            return;
+        }
+
+        try {
+            $grantee = Database::fetchOne("SELECT id FROM users WHERE username = ?", [$username]);
+            if (!$grantee) {
+                Response::error('Benutzer nicht gefunden', 404);
+                return;
+            }
+            Database::execute(
+                "DELETE FROM event_access WHERE target_type = ? AND target_id = ? AND user_id = ?",
+                [$targetType, $id, $grantee['id']]
+            );
+            Response::success(null, 'Zugriff entzogen');
+        } catch (\Exception $e) {
+            Response::error('Failed to remove manager: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Autocomplete helper for the share dialog: returns matching event-manager
+     * usernames only. Deliberately exposes no email, id, or other personal detail.
+     *
+     * GET /events/manager-search?q=...
+     */
+    public static function searchManagerCandidates(): void
+    {
+        AdminAuth::requireAuth();
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            Response::error('Method not allowed', 405);
+            return;
+        }
+        $user = AdminAuth::getCurrentUser();
+        if (!AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES)) {
+            Response::error('Insufficient permissions', 403);
+            return;
+        }
+
+        $q = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
+        if (mb_strlen($q) < 2) {
+            Response::success(['usernames' => []]);
+            return;
+        }
+
+        try {
+            // Escape LIKE metacharacters so a query containing % or _ can't widen the match.
+            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $q);
+            $like = '%' . $escaped . '%';
+            $rows = Database::fetchAll(
+                "SELECT username FROM users
+                 WHERE is_active = 1 AND role = 'event_manager' AND username LIKE ? ESCAPE '\\'
+                 ORDER BY username ASC LIMIT 10",
+                [$like]
+            );
+            Response::success(['usernames' => array_column($rows, 'username')]);
+        } catch (\Exception $e) {
+            Response::error('Failed to search managers: ' . $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Reassign the owner of an event/series to another event-capable user.
+     * Head-admin only. The new owner must be an active user whose role can manage
+     * events (head, admin, or event_manager).
+     *
+     * PUT /events/{id}/owner  |  PUT /events/series/{id}/owner   body { username }
+     *
+     * @param 'event'|'series' $targetType
+     */
+    public static function reassignOwner(string $targetType, string $id): void
+    {
+        AdminAuth::requireAuth();
+        AdminAuth::requireCSRF();
+        if (!in_array($_SERVER['REQUEST_METHOD'], ['PUT', 'PATCH'], true)) {
+            Response::error('Method not allowed', 405);
+            return;
+        }
+
+        $user = AdminAuth::getCurrentUser();
+        if (!AdminAuth::userHasRole($user, AdminAuth::HEAD_ADMIN_ROLES)) {
+            Response::error('Nur der Head-Admin kann Veranstaltungen neu zuweisen', 403);
+            return;
+        }
+
+        $table = $targetType === 'series' ? 'event_series' : 'events';
+        $target = Database::fetchOne("SELECT id FROM {$table} WHERE id = ?", [$id]);
+        if (!$target) {
+            Response::notFound(['message' => 'Event not found']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $username = isset($input['username']) ? trim((string)$input['username']) : '';
+        if ($username === '') {
+            Response::error('username erforderlich', 400);
+            return;
+        }
+
+        try {
+            $newOwner = Database::fetchOne(
+                "SELECT id, username, role FROM users WHERE username = ? AND is_active = 1",
+                [$username]
+            );
+            if (!$newOwner) {
+                Response::error('Kein aktiver Benutzer mit diesem Benutzernamen gefunden', 404);
+                return;
+            }
+            if (!in_array($newOwner['role'], AdminAuth::EVENT_MANAGEMENT_ROLES, true)) {
+                Response::error('Der neue Besitzer muss Veranstaltungen verwalten dürfen', 400);
+                return;
+            }
+
+            Database::beginTransaction();
+            Database::execute("UPDATE {$table} SET created_by = ? WHERE id = ?", [$newOwner['id'], $id]);
+            // A grant to the new owner is now redundant — they own the record.
+            Database::execute(
+                "DELETE FROM event_access WHERE target_type = ? AND target_id = ? AND user_id = ?",
+                [$targetType, $id, $newOwner['id']]
+            );
+            Database::commit();
+
+            Response::success(['owner_username' => $newOwner['username']], 'Besitzer neu zugewiesen');
+        } catch (\Exception $e) {
+            if (Database::inTransaction()) {
+                Database::rollback();
+            }
+            Response::error('Failed to reassign owner: ' . $e->getMessage(), 500);
         }
     }
 }

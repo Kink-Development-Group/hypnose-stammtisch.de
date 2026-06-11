@@ -18,7 +18,7 @@
       isLoading.set(true);
 
       // In a real app, this would be an API call
-      const response = await fetch("/api/events?limit=6&upcoming=true");
+      const response = await fetch("/api/events/upcoming?limit=6");
       if (response.ok) {
         const result = await response.json();
         const apiEvents = result.success ? result.data : [];

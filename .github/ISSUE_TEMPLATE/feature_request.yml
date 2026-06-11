@@ -1,0 +1,75 @@
+name: ✨ Feature Request
+description: Schlage eine neue Funktion oder Verbesserung vor.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke für deinen Vorschlag! 💡
+        Bitte prüfe zuerst die [bestehenden Issues](https://github.com/Kink-Development-Group/hypnose-stammtisch.de/issues) und [Diskussionen](https://github.com/Kink-Development-Group/hypnose-stammtisch.de/discussions).
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Vorab-Prüfung
+      options:
+        - label: Ich habe nach ähnlichen Vorschlägen gesucht.
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Motivation
+      description: Welches Problem löst dieses Feature? Was nervt aktuell?
+      placeholder: Als Event-Manager möchte ich …, weil …
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Gewünschte Lösung
+      description: Wie sollte die Funktion idealerweise aussehen / funktionieren?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativen
+      description: Welche anderen Ansätze hast du erwogen?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Betroffener Bereich
+      options:
+        - Frontend (Kalender / UI)
+        - Frontend (Admin-Panel)
+        - Backend / API
+        - Datenbank / Migrationen
+        - Accessibility
+        - Deployment / CI
+        - Sonstiges
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: considerations
+    attributes:
+      label: Berücksichtigungen
+      options:
+        - label: Die Funktion sollte WCAG 2.2 AA (Barrierefreiheit) wahren.
+        - label: Die Funktion benötigt Dark-Mode-Unterstützung.
+        - label: Ich bin bereit, an der Umsetzung mitzuwirken.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Zusätzlicher Kontext
+      description: Mockups, Links, Beispiele aus anderen Projekten o.Ä.
+    validations:
+      required: false

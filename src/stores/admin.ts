@@ -576,6 +576,45 @@ export class AdminAPI {
     }
   }
 
+  static async updateEventStatus(id: string | number, status: string) {
+    // Temp events use Date.now() (number) as ID until the server responds.
+    // Real persisted events always have UUID string IDs — bail out early.
+    if (typeof id === "number") {
+      adminNotifications.error("Veranstaltung wird noch gespeichert – bitte kurz warten.");
+      return { success: false, message: "Event not yet persisted" };
+    }
+    const idStr = String(id);
+    // Optimistic update — both maps are safe no-ops for non-matching IDs
+    adminEventHelpers.updateEvent(idStr, { status });
+    adminEventHelpers.updateSeries(idStr, { status });
+
+    try {
+      const result = await this.request(`/events/${idStr}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+
+      if (result.success) {
+        const msg =
+          status === "published"
+            ? "Veranstaltung veröffentlicht!"
+            : status === "draft"
+              ? "Veranstaltung als Entwurf gespeichert."
+              : "Status aktualisiert.";
+        adminNotifications.success(msg);
+      } else {
+        this.getEvents().catch(() => {});
+        adminNotifications.error(result.error || result.message || "Fehler beim Status-Update");
+      }
+
+      return result;
+    } catch {
+      this.getEvents().catch(() => {});
+      adminNotifications.error("Netzwerkfehler beim Status-Update");
+      return { success: false, message: "Network error" };
+    }
+  }
+
   static async deleteEvent(id: number) {
     // Optimistische Aktualisierung: Event sofort entfernen
     adminEventHelpers.removeEvent(id);
@@ -970,6 +1009,80 @@ export class AdminAPI {
       adminNotifications.error(
         res.message || "Fehler beim Entfernen der EXDATE",
       );
+    }
+    return res;
+  }
+
+  // Event sharing (per-event manager access)
+  // targetType selects the URL: 'series' → /events/series/{id}/managers, else /events/{id}/managers.
+  private static managersBase(targetType: "event" | "series", id: string) {
+    return targetType === "series"
+      ? `/events/series/${id}/managers`
+      : `/events/${id}/managers`;
+  }
+
+  static async getEventManagers(targetType: "event" | "series", id: string) {
+    return this.request(this.managersBase(targetType, id));
+  }
+
+  static async addEventManager(
+    targetType: "event" | "series",
+    id: string,
+    username: string,
+  ) {
+    const res = await this.request(this.managersBase(targetType, id), {
+      method: "POST",
+      body: JSON.stringify({ username }),
+    });
+    if (res.success) {
+      adminNotifications.success("Zugriff gewährt");
+    } else {
+      adminNotifications.error(res.message || "Fehler beim Teilen");
+    }
+    return res;
+  }
+
+  static async removeEventManager(
+    targetType: "event" | "series",
+    id: string,
+    username: string,
+  ) {
+    const res = await this.request(
+      `${this.managersBase(targetType, id)}?username=${encodeURIComponent(username)}`,
+      { method: "DELETE" },
+    );
+    if (res.success) {
+      adminNotifications.success("Zugriff entzogen");
+    } else {
+      adminNotifications.error(res.message || "Fehler beim Entziehen");
+    }
+    return res;
+  }
+
+  static async searchManagerCandidates(query: string) {
+    return this.request(
+      `/events/manager-search?q=${encodeURIComponent(query)}`,
+    );
+  }
+
+  // Head-admin only: reassign the owner of an event/series to another user.
+  static async reassignEventOwner(
+    targetType: "event" | "series",
+    id: string,
+    username: string,
+  ) {
+    const base =
+      targetType === "series"
+        ? `/events/series/${id}/owner`
+        : `/events/${id}/owner`;
+    const res = await this.request(base, {
+      method: "PUT",
+      body: JSON.stringify({ username }),
+    });
+    if (res.success) {
+      adminNotifications.success("Besitzer neu zugewiesen");
+    } else {
+      adminNotifications.error(res.message || "Fehler beim Neuzuweisen");
     }
     return res;
   }

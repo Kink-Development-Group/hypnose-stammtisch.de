@@ -4,6 +4,7 @@
   import { SvelteSet } from "svelte/reactivity";
   import User from "../../classes/User";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
+  import EventShareModal from "../../components/admin/EventShareModal.svelte";
   import RecurrenceBuilder from "../../components/admin/recurrence/RecurrenceBuilder.svelte";
   import SeriesManagement from "../../components/admin/SeriesManagement.svelte";
   import {
@@ -29,6 +30,9 @@
   let editingItem: any = null;
   let deleteConfirm: any = null;
   let currentUser: User | null = null;
+  // Record currently open in the share dialog (null = closed)
+  let shareTarget: { type: "event" | "series"; id: string; title: string } | null =
+    null;
 
   // Track which series details are expanded (persists across data refreshes)
   let expandedSeriesIds = new SvelteSet<string>();
@@ -307,14 +311,27 @@
     }
   }
 
-  function canDelete(_item: any): boolean {
+  function canDelete(item: any): boolean {
     if (!currentUser) return false;
     // Head & Admin: alles
     if (currentUser.role === "head" || currentUser.role === "admin")
       return true;
-    // Event-Manager: jetzt volle Verwaltung inkl. Serien-Löschung
-    if (currentUser.role === "event_manager") return true;
+    // Event-Manager: nur eigene Veranstaltungen (geteilte dürfen nur bearbeitet werden)
+    if (currentUser.role === "event_manager") return item?.is_owner === true;
     return false;
+  }
+
+  // Owner or admin/head may manage sharing; granted managers may not re-share.
+  function canShare(item: any): boolean {
+    if (!currentUser) return false;
+    if (currentUser.role === "head" || currentUser.role === "admin")
+      return true;
+    if (currentUser.role === "event_manager") return item?.is_owner === true;
+    return false;
+  }
+
+  function openShare(item: any, type: "event" | "series") {
+    shareTarget = { type, id: String(item.id), title: item.title };
   }
 
   // --- Erweiterte Formularlogik für neues Multi-Sektions-Formular ---
@@ -477,6 +494,14 @@
                             Featured
                           </span>
                         {/if}
+                        {#if event.owner_username}
+                          <span
+                            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 dark:bg-charcoal-700 text-slate-600 dark:text-smoke-400"
+                            title="Eigentümer"
+                          >
+                            @{event.owner_username}
+                          </span>
+                        {/if}
                       </div>
                       <div class="text-sm text-slate-700 dark:text-smoke-300">
                         {formatDate(event.start_datetime)} - {formatDate(
@@ -489,6 +514,31 @@
                     </div>
 
                     <div class="flex items-center gap-2 sm:self-start">
+                      {#if event.status === "draft"}
+                        <button
+                          on:click={() =>
+                            AdminAPI.updateEventStatus(event.id, "published")}
+                          class="rounded-lg border border-green-200 dark:border-green-700 px-3 py-1 text-sm font-medium text-green-700 dark:text-green-400 transition hover:bg-green-50 dark:hover:bg-green-900/30"
+                        >
+                          Veröffentlichen
+                        </button>
+                      {:else if event.status === "published"}
+                        <button
+                          on:click={() =>
+                            AdminAPI.updateEventStatus(event.id, "draft")}
+                          class="rounded-lg border border-amber-200 dark:border-amber-700 px-3 py-1 text-sm font-medium text-amber-700 dark:text-amber-400 transition hover:bg-amber-50 dark:hover:bg-amber-900/30"
+                        >
+                          Entwurf
+                        </button>
+                      {/if}
+                      {#if canShare(event)}
+                        <button
+                          on:click={() => openShare(event, "event")}
+                          class="rounded-lg border border-indigo-100 dark:border-indigo-800 px-3 py-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 transition hover:border-indigo-200 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                        >
+                          Teilen
+                        </button>
+                      {/if}
                       <button
                         on:click={() => openEditModal(event, "event")}
                         class="rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
@@ -505,8 +555,8 @@
                       {:else if currentUser?.role === "event_manager"}
                         <span
                           class="text-xs text-slate-500"
-                          title="Nur vergangene Veranstaltungen können gelöscht werden"
-                          >(nur vergangene löschbar)</span
+                          title="Diese Veranstaltung wurde mit Ihnen geteilt – nur der Eigentümer kann sie löschen"
+                          >(geteilt)</span
                         >
                       {/if}
                     </div>
@@ -556,6 +606,14 @@
                         >
                           Serie
                         </span>
+                        {#if seriesItem.owner_username}
+                          <span
+                            class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-slate-100 dark:bg-charcoal-700 text-slate-600 dark:text-smoke-400"
+                            title="Eigentümer"
+                          >
+                            @{seriesItem.owner_username}
+                          </span>
+                        {/if}
                       </div>
                       <div
                         class="text-sm text-slate-700 dark:text-smoke-300 break-all"
@@ -569,6 +627,34 @@
                     </div>
 
                     <div class="flex items-center gap-2 sm:self-start">
+                      {#if seriesItem.status === "draft"}
+                        <button
+                          on:click={() =>
+                            AdminAPI.updateEventStatus(
+                              seriesItem.id,
+                              "published",
+                            )}
+                          class="rounded-lg border border-green-200 dark:border-green-700 px-3 py-1 text-sm font-medium text-green-700 dark:text-green-400 transition hover:bg-green-50 dark:hover:bg-green-900/30"
+                        >
+                          Veröffentlichen
+                        </button>
+                      {:else if seriesItem.status === "published"}
+                        <button
+                          on:click={() =>
+                            AdminAPI.updateEventStatus(seriesItem.id, "draft")}
+                          class="rounded-lg border border-amber-200 dark:border-amber-700 px-3 py-1 text-sm font-medium text-amber-700 dark:text-amber-400 transition hover:bg-amber-50 dark:hover:bg-amber-900/30"
+                        >
+                          Entwurf
+                        </button>
+                      {/if}
+                      {#if canShare(seriesItem)}
+                        <button
+                          on:click={() => openShare(seriesItem, "series")}
+                          class="rounded-lg border border-indigo-100 dark:border-indigo-800 px-3 py-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 transition hover:border-indigo-200 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                        >
+                          Teilen
+                        </button>
+                      {/if}
                       <button
                         on:click={() => openEditModal(seriesItem, "series")}
                         class="rounded-lg border border-blue-100 dark:border-blue-800 px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 transition hover:border-blue-200 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/30"
@@ -1177,5 +1263,17 @@
         </div>
       </div>
     </Portal>
+  {/if}
+
+  <!-- Share / grant access modal -->
+  {#if shareTarget}
+    <EventShareModal
+      targetType={shareTarget.type}
+      targetId={shareTarget.id}
+      title={shareTarget.title}
+      canReassign={currentUser?.role === "head"}
+      on:changed={() => loadEvents()}
+      on:close={() => (shareTarget = null)}
+    />
   {/if}
 </AdminLayout>
