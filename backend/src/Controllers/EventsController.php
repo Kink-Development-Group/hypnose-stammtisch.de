@@ -24,6 +24,12 @@ class EventsController
     private const PUBLIC_OVERRIDE_STATUSES = ['published', 'cancelled'];
 
     /**
+     * How far ahead the upcoming endpoint expands recurring series/events. Chosen
+     * generously so even sparse (e.g. monthly) series can fill the requested limit.
+     */
+    private const UPCOMING_EXPANSION_MONTHS = 24;
+
+    /**
      * Helper function to convert event to array (handles mock objects)
      */
     private function eventToArray($event): array
@@ -245,8 +251,25 @@ class EventsController
             $limit = (int)($_GET['limit'] ?? 5);
             $limit = min(max($limit, 1), 20); // Between 1 and 20
 
-            $events = Event::getUpcoming($limit);
-            $eventsData = array_map(fn($event) => $this->eventToArray($event), $events);
+            $now = Carbon::now(self::DEFAULT_TIMEZONE);
+
+            // Expand legacy recurring events and series (event_series) into concrete
+            // instances so recurring offers whose base/start date lies in the past
+            // still contribute their upcoming occurrences. Querying the events table
+            // alone (Event::getUpcoming) misses dynamically generated series instances
+            // entirely and drops recurring rows once their original date has passed.
+            //
+            // The lower bound is widened by a day so the timezone offset between the
+            // UTC-stored events table and the local wall-clock reference cannot drop a
+            // near-term event; the precise cut-off is applied afterwards on the
+            // already timezone-normalized instances.
+            $filters = [
+                'from_date' => $now->copy()->subDay()->startOfDay()->toDateTimeString(),
+                'to_date' => $now->copy()->addMonths(self::UPCOMING_EXPANSION_MONTHS)->toDateTimeString(),
+            ];
+
+            $expanded = $this->getExpandedEvents($filters);
+            $eventsData = $this->selectUpcomingFromExpanded($expanded, $now->getTimestamp(), $limit);
 
             Response::json([
                 'success' => true,
@@ -263,6 +286,50 @@ class EventsController
                 'error' => 'Failed to fetch upcoming events'
             ], 500);
         }
+    }
+
+    /**
+     * Reduce an expanded event list to the public "upcoming" view: drop events that
+     * have already ended or are cancelled, order by start, and cap to $limit.
+     *
+     * @param array<int, array<string, mixed>> $expanded
+     * @param int $referenceTimestamp Unix timestamp used as the "now" boundary
+     * @return array<int, array<string, mixed>>
+     */
+    private function selectUpcomingFromExpanded(array $expanded, int $referenceTimestamp, int $limit): array
+    {
+        $upcoming = array_filter($expanded, function (array $event) use ($referenceTimestamp): bool {
+            if ($this->isCancelledEvent($event)) {
+                return false;
+            }
+
+            // Treat an event as upcoming while it has not ended yet (mirrors the
+            // previous end_datetime > now semantics so currently running events stay).
+            $end = $event['end_datetime'] ?? ($event['start_datetime'] ?? null);
+            if (!is_string($end) || $end === '') {
+                return false;
+            }
+
+            $endTimestamp = strtotime($end);
+
+            return $endTimestamp !== false && $endTimestamp > $referenceTimestamp;
+        });
+
+        usort(
+            $upcoming,
+            static fn (array $a, array $b): int => strtotime($a['start_datetime']) <=> strtotime($b['start_datetime'])
+        );
+
+        return array_slice(array_values($upcoming), 0, max($limit, 0));
+    }
+
+    /**
+     * @param array<string, mixed> $event
+     */
+    private function isCancelledEvent(array $event): bool
+    {
+        return ($event['override_type'] ?? null) === 'cancelled'
+            || ($event['status'] ?? null) === 'cancelled';
     }
 
     /**
