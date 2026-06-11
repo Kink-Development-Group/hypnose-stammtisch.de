@@ -95,7 +95,7 @@
     "marked": "^18.0.5",
     "qrcode": "^1.5.4",
     "rrule": "^2.8.1",
-    "svelte-spa-router": "^4.0.1",
+    "svelte-spa-router": "^5.1.0",
     "zod": "^4.3.6"
   }
 }
