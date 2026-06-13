@@ -360,10 +360,15 @@ TEXT;
         try {
             $mail = self::createMailer();
 
-            // Override the from address with the selected sender
-            $mail->setFrom($fromEmail, $fromName);
+            // Always send with the authenticated SMTP identity as the envelope
+            // From address so the relay accepts the mail and SPF/DKIM/DMARC line
+            // up — a misconfigured admin_email_addresses row must not be able to
+            // break delivery. The selected sender is surfaced to the recipient
+            // via the From display name and the Reply-To address instead.
+            $fromAddress = (string) Config::get('mail.from_email', $fromEmail);
+            $mail->setFrom($fromAddress, $fromName);
 
-            // Set reply-to (defaults to from address)
+            // Replies go to the selected admin address (falls back to it directly).
             $mail->addReplyTo($replyTo ?? $fromEmail, $fromName);
 
             // Add recipient
