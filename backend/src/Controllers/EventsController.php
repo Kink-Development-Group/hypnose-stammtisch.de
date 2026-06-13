@@ -255,9 +255,10 @@ class EventsController
 
             // Expand legacy recurring events and series (event_series) into concrete
             // instances so recurring offers whose base/start date lies in the past
-            // still contribute their upcoming occurrences. Querying the events table
-            // alone (Event::getUpcoming) misses dynamically generated series instances
-            // entirely and drops recurring rows once their original date has passed.
+            // still contribute their upcoming occurrences. A plain published +
+            // end_datetime query against the events table alone misses dynamically
+            // generated series instances entirely and drops recurring rows once their
+            // original date has passed.
             //
             // The lower bound is widened by a day so the timezone offset between the
             // UTC-stored events table and the local wall-clock reference cannot drop a
