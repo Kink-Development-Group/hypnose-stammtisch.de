@@ -15,9 +15,9 @@ use ReflectionMethod;
  * Regression coverage for the upcoming-events endpoint.
  *
  * The homepage "Kommende Veranstaltungen" widget previously read the events table
- * directly (Event::getUpcoming), so recurring series whose start/base date lies in
- * the past contributed no upcoming occurrences at all. upcoming() now expands
- * series + legacy recurring events and keeps only the ones that have not ended.
+ * directly, so recurring series whose start/base date lies in the past contributed
+ * no upcoming occurrences at all. upcoming() now expands series + legacy recurring
+ * events and keeps only the ones that have not ended.
  */
 class EventsControllerUpcomingTest extends TestCase
 {

@@ -112,7 +112,7 @@ class AdminEventsController
                 'total' => count($allEvents)
             ]);
         } catch (Exception $e) {
-            Response::error('Failed to fetch events: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to fetch events');
         }
     }
 
@@ -323,7 +323,7 @@ class AdminEventsController
             Response::success(null, $message);
         } catch (Exception $e) {
             Database::rollback();
-            Response::error('Failed to delete event: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to delete event');
         }
     }
 
@@ -711,7 +711,7 @@ class AdminEventsController
 
             Response::success(null, 'Event updated successfully');
         } catch (Exception $e) {
-            Response::error('Failed to update event: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to update event');
         }
     }
 
@@ -828,7 +828,7 @@ class AdminEventsController
 
             Response::success(null, 'Event series updated successfully');
         } catch (Exception $e) {
-            Response::error('Failed to update event series: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to update event series');
         }
     }
 
@@ -1019,7 +1019,7 @@ class AdminEventsController
 
             Response::success(['id' => $eventId], 'Series override created');
         } catch (\Exception $e) {
-            Response::error('Failed to create override: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to create override');
         }
     }
 
@@ -1041,7 +1041,7 @@ class AdminEventsController
             );
             Response::success(['overrides' => $rows]);
         } catch (\Exception $e) {
-            Response::error('Failed to list overrides: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to list overrides');
         }
     }
 
@@ -1066,7 +1066,7 @@ class AdminEventsController
             Database::execute('DELETE FROM events WHERE id = ?', [$overrideId]);
             Response::success(null, 'Override deleted');
         } catch (\Exception $e) {
-            Response::error('Failed to delete override: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to delete override');
         }
     }
 
@@ -1101,7 +1101,7 @@ class AdminEventsController
             Database::execute('UPDATE event_series SET exdates = ? WHERE id = ?', [json_encode($exdates), $seriesId]);
             Response::success(['exdates' => $exdates], 'EXDATE added');
         } catch (\Exception $e) {
-            Response::error('Failed to add exdate: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to add exdate');
         }
     }
 
@@ -1133,7 +1133,7 @@ class AdminEventsController
             Database::execute('UPDATE event_series SET exdates = ? WHERE id = ?', [json_encode($exdates), $seriesId]);
             Response::success(['exdates' => $exdates], 'EXDATE removed');
         } catch (\Exception $e) {
-            Response::error('Failed to remove exdate: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to remove exdate');
         }
     }
 
@@ -1157,7 +1157,7 @@ class AdminEventsController
             $exdates = JsonHelper::decodeArray($series['exdates']);
             Response::success(['exdates' => $exdates]);
         } catch (\Exception $e) {
-            Response::error('Failed to get exdates: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to get exdates');
         }
     }
 
@@ -1251,7 +1251,7 @@ class AdminEventsController
                 'series_title' => $series['title'],
             ]);
         } catch (\Exception $e) {
-            Response::error('Failed to get upcoming instances: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to get upcoming instances');
         }
     }
 
@@ -1376,7 +1376,7 @@ class AdminEventsController
             ]);
             Response::success(['id' => $id], 'Instance cancelled');
         } catch (\Exception $e) {
-            Response::error('Failed to cancel instance: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to cancel instance');
         }
     }
 
@@ -1413,7 +1413,7 @@ class AdminEventsController
             // Wenn geändert, nur Status zurücksetzen (kein echtes cancel restore nötig)
             Response::success(null, 'No cancellation to remove');
         } catch (\Exception $e) {
-            Response::error('Failed to restore instance: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to restore instance');
         }
     }
 
@@ -1457,7 +1457,7 @@ class AdminEventsController
                 'managers' => array_map(static fn(array $m): array => ['username' => $m['username']], $managers),
             ]);
         } catch (\Exception $e) {
-            Response::error('Failed to list managers: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to list managers');
         }
     }
 
@@ -1516,7 +1516,7 @@ class AdminEventsController
 
             Response::success(['username' => $grantee['username']], 'Zugriff gewährt');
         } catch (\Exception $e) {
-            Response::error('Failed to add manager: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to add manager');
         }
     }
 
@@ -1556,7 +1556,7 @@ class AdminEventsController
             );
             Response::success(null, 'Zugriff entzogen');
         } catch (\Exception $e) {
-            Response::error('Failed to remove manager: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to remove manager');
         }
     }
 
@@ -1597,7 +1597,7 @@ class AdminEventsController
             );
             Response::success(['usernames' => array_column($rows, 'username')]);
         } catch (\Exception $e) {
-            Response::error('Failed to search managers: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to search managers');
         }
     }
 
@@ -1667,7 +1667,7 @@ class AdminEventsController
             if (Database::inTransaction()) {
                 Database::rollback();
             }
-            Response::error('Failed to reassign owner: ' . $e->getMessage(), 500);
+            Response::serverError($e, 'Failed to reassign owner');
         }
     }
 }

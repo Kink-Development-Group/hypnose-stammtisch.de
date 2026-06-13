@@ -7,11 +7,14 @@
   export let contactName: string = "";
   export let originalSubject: string = "";
 
+  // Field names mirror the backend payload from
+  // AdminMessagesController::getEmailAddresses (display_name/department, not name/description).
   interface EmailAddress {
     id: number;
-    name: string;
     email: string;
-    description: string;
+    display_name: string;
+    department: string;
+    is_default?: boolean | number;
   }
 
   interface MessageResponse {
@@ -56,9 +59,14 @@
       const result = await AdminAPI.getEmailAddresses();
       if (result.success) {
         emailAddresses = result.data;
-        // Select first email by default
+        // Preselect the address flagged is_default; fall back to the first one.
+        // Choosing it explicitly keeps the default robust even if the backend's
+        // ORDER BY (is_default DESC, …) ever changes.
         if (emailAddresses.length > 0 && !selectedEmailId) {
-          selectedEmailId = emailAddresses[0].id;
+          const defaultAddress =
+            emailAddresses.find((addr) => Boolean(addr.is_default)) ??
+            emailAddresses[0];
+          selectedEmailId = defaultAddress.id;
         }
       }
     } catch (error) {
@@ -147,17 +155,27 @@
           >
             Absender
           </label>
-          <select
-            id="from-email-select"
-            bind:value={selectedEmailId}
-            class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            {#each emailAddresses as emailAddr (emailAddr.id)}
-              <option value={emailAddr.id}>
-                {emailAddr.name} ({emailAddr.email}) - {emailAddr.description}
-              </option>
-            {/each}
-          </select>
+          {#if emailAddresses.length === 0}
+            <div
+              class="px-3 py-2 text-sm rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300"
+            >
+              Keine aktiven Absendeadressen konfiguriert. Bitte zuerst
+              (z.&nbsp;B. über das Setup oder eine Migration) mindestens eine
+              aktive Absendeadresse anlegen, um per E-Mail antworten zu können.
+            </div>
+          {:else}
+            <select
+              id="from-email-select"
+              bind:value={selectedEmailId}
+              class="w-full px-3 py-2 border border-gray-300 dark:border-charcoal-600 bg-white dark:bg-charcoal-800 text-gray-900 dark:text-smoke-50 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {#each emailAddresses as emailAddr (emailAddr.id)}
+                <option value={emailAddr.id}>
+                  {emailAddr.display_name} ({emailAddr.email}) - {emailAddr.department}
+                </option>
+              {/each}
+            </select>
+          {/if}
         </div>
 
         <!-- To Email (readonly) -->
