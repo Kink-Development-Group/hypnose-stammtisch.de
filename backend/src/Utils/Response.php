@@ -177,6 +177,24 @@ class Response
     }
 
     /**
+     * Send a 500 response for an unexpected server-side exception.
+     *
+     * The full exception message is always written to the error log, but only
+     * surfaced to the client when app.debug is enabled. In production the client
+     * receives the generic $message only, so internal details (SQL fragments,
+     * stack traces) are not leaked. Mirrors the gating used in
+     * AdminEventsController::patchStatus().
+     */
+    public static function serverError(\Throwable $e, string $message, int $statusCode = 500): void
+    {
+        error_log($message . ': ' . $e->getMessage());
+
+        $debug = \HypnoseStammtisch\Config\Config::get('app.debug', false);
+
+        self::error($debug ? $message . ': ' . $e->getMessage() : $message, $statusCode);
+    }
+
+    /**
      * Send success response with standard format
      */
     public static function success(
