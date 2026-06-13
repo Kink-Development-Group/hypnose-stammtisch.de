@@ -9,10 +9,17 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["svelte", "svelte-spa-router"],
-          calendar: ["rrule", "dayjs", "ical.js"],
-          ui: ["marked", "dompurify", "zod"],
+        // vite 8 bundles with rolldown, which only accepts the function form of
+        // manualChunks (the object form throws "manualChunks is not a function").
+        // Group the same vendor libraries by their node_modules path.
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return;
+          if (/[\\/]node_modules[\\/](svelte|svelte-spa-router)[\\/]/.test(id))
+            return "vendor";
+          if (/[\\/]node_modules[\\/](rrule|dayjs|ical\.js)[\\/]/.test(id))
+            return "calendar";
+          if (/[\\/]node_modules[\\/](marked|dompurify|zod)[\\/]/.test(id))
+            return "ui";
         },
       },
     },
