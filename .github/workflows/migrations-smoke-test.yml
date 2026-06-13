@@ -1,0 +1,110 @@
+name: Migrations Smoke Test
+
+# The production deploy runs migrations as a manual step against the live DB,
+# and neither the migration runner nor phpunit run in CI. This workflow
+# exercises every migration against a real database service from a clean
+# schema so a broken or non-idempotent migration is caught here instead of on
+# first execution against prod (see issue #102).
+#
+# Engine: MariaDB. The migrations use MariaDB-flavoured idioms (CREATE INDEX
+# IF NOT EXISTS, ALTER TABLE ... ADD COLUMN IF NOT EXISTS) that plain MySQL
+# rejects, and prod runs on Hetzner shared hosting (MariaDB), so we must test
+# against MariaDB to mirror production.
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - "backend/migrations/**"
+      - "backend/src/Config/**"
+      - "backend/src/Database/**"
+      - "backend/src/Utils/SqlStatementParser.php"
+      - "backend/composer.json"
+      - "backend/composer.lock"
+      - "backend/scripts/ci_verify_migrations.php"
+      - ".github/workflows/migrations-smoke-test.yml"
+  pull_request:
+    branches:
+      - dev
+      - main
+    paths:
+      - "backend/migrations/**"
+      - "backend/src/Config/**"
+      - "backend/src/Database/**"
+      - "backend/src/Utils/SqlStatementParser.php"
+      - "backend/composer.json"
+      - "backend/composer.lock"
+      - "backend/scripts/ci_verify_migrations.php"
+      - ".github/workflows/migrations-smoke-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  migrate-mariadb:
+    name: Run migrations against MariaDB
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: hypnose_stammtisch
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo, pdo_mysql, mbstring, json, openssl
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Create .env pointing at the MariaDB service
+        run: |
+          cat > .env <<'EOF'
+          DB_HOST=127.0.0.1
+          DB_PORT=3306
+          DB_NAME=hypnose_stammtisch
+          DB_USER=root
+          DB_PASS=root
+          APP_ENV=testing
+          APP_DEBUG=true
+          # Use a fixed UTC offset rather than a named zone: the ephemeral CI
+          # MariaDB has no timezone tables loaded, so `SET time_zone = 'Europe/Berlin'`
+          # would fail. Migrations do not depend on the session timezone.
+          CALENDAR_TIMEZONE=+00:00
+          EOF
+
+      - name: Run migrations (first pass)
+        run: php migrations/migrate.php migrate
+
+      - name: Run migrations again (idempotency)
+        run: |
+          php migrations/migrate.php migrate | tee second-run.log
+          if ! grep -q "No new migrations to execute." second-run.log; then
+            echo "::error::Second migrate run was not a no-op — migrations are not idempotent."
+            exit 1
+          fi
+
+      - name: Verify seed + recorded versions
+        run: php scripts/ci_verify_migrations.php
