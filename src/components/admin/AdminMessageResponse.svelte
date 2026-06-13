@@ -59,9 +59,14 @@
       const result = await AdminAPI.getEmailAddresses();
       if (result.success) {
         emailAddresses = result.data;
-        // Select first email by default
+        // Preselect the address flagged is_default; fall back to the first one.
+        // Choosing it explicitly keeps the default robust even if the backend's
+        // ORDER BY (is_default DESC, …) ever changes.
         if (emailAddresses.length > 0 && !selectedEmailId) {
-          selectedEmailId = emailAddresses[0].id;
+          const defaultAddress =
+            emailAddresses.find((addr) => Boolean(addr.is_default)) ??
+            emailAddresses[0];
+          selectedEmailId = defaultAddress.id;
         }
       }
     } catch (error) {
@@ -154,9 +159,9 @@
             <div
               class="px-3 py-2 text-sm rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300"
             >
-              Keine aktiven Absendeadressen konfiguriert. Bitte zuerst (z.&nbsp;B.
-              über das Setup oder eine Migration) mindestens eine aktive
-              Absendeadresse anlegen, um per E-Mail antworten zu können.
+              Keine aktiven Absendeadressen konfiguriert. Bitte zuerst
+              (z.&nbsp;B. über das Setup oder eine Migration) mindestens eine
+              aktive Absendeadresse anlegen, um per E-Mail antworten zu können.
             </div>
           {:else}
             <select
