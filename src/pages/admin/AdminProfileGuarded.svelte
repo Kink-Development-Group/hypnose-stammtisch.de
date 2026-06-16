@@ -3,6 +3,7 @@
   import { get } from "svelte/store";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
   import { adminAuth, adminAuthState } from "../../stores/admin";
+  import { adminGet, adminPost, adminPut } from "../../utils/adminApi";
 
   let username = "";
   let email = "";
@@ -30,12 +31,11 @@
     }
     // Load backup status
     try {
-      const r = await fetch("/api/admin/auth/2fa/backup-codes/status", {
-        credentials: "include",
-      });
-      if (r.ok) {
-        const j = await r.json();
-        if (j.success) backupRemaining = j.data.remaining;
+      const result = await adminGet<{ remaining: number }>(
+        "/api/admin/auth/2fa/backup-codes/status",
+      );
+      if (result.success && result.data) {
+        backupRemaining = result.data.remaining;
       }
     } catch {
       /* ignore */
@@ -61,16 +61,14 @@
     error = "";
     message = "";
     try {
-      const r = await fetch("/api/admin/auth/2fa/backup-codes/generate", {
-        method: "POST",
-        credentials: "include",
-      });
-      const j = await r.json();
-      if (j.success) {
+      const result = await adminPost<{ codes: string[] }>(
+        "/api/admin/auth/2fa/backup-codes/generate",
+      );
+      if (result.success && result.data) {
         message = "Neue Backup-Codes generiert. Alte wurden ungültig.";
-        backupRemaining = j.data.codes.length;
+        backupRemaining = result.data.codes.length;
         // optional: anzeigen / download
-        const blob = new Blob([j.data.codes.join("\n")], {
+        const blob = new Blob([result.data.codes.join("\n")], {
           type: "text/plain",
         });
         const url = URL.createObjectURL(blob);
@@ -80,7 +78,7 @@
         a.click();
         URL.revokeObjectURL(url);
       } else {
-        error = j.message || "Fehler beim Generieren";
+        error = result.message || "Fehler beim Generieren";
       }
     } catch {
       error = "Netzwerkfehler";
@@ -107,13 +105,7 @@
       body.current_password = currentPassword;
     }
 
-    const res = await fetch("/api/admin/users/me", {
-      method: "PUT",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const json = await res.json();
+    const json = await adminPut("/api/admin/users/me", body);
     if (json.success) {
       message = resetTwofa
         ? "Profil aktualisiert. 2FA wurde zurückgesetzt – bitte neu einrichten beim nächsten Login."
