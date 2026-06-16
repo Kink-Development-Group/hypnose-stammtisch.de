@@ -7,6 +7,10 @@
 
   let username = "";
   let email = "";
+  // The confirmed address currently stored on the server, plus any pending
+  // (unconfirmed) change still awaiting the email link.
+  let confirmedEmail = "";
+  let pendingEmail: string | null = null;
   let password = "";
   let currentPassword = "";
   let loading = false;
@@ -28,6 +32,8 @@
     if (current) {
       username = current.username;
       email = current.email;
+      confirmedEmail = current.email;
+      pendingEmail = current.pending_email;
     }
     // Load backup status
     try {
@@ -105,21 +111,37 @@
       body.current_password = currentPassword;
     }
 
+    // Remember whether this save requests an email change; the new address
+    // only becomes active after the confirmation link is clicked.
+    const emailChangeRequested = !!body.email && body.email !== confirmedEmail;
+
     const json = await adminPut("/api/admin/users/me", body);
     if (json.success) {
-      message = resetTwofa
-        ? "Profil aktualisiert. 2FA wurde zurückgesetzt – bitte neu einrichten beim nächsten Login."
-        : "Profil gespeichert.";
       password = "";
       currentPassword = "";
       resetTwofa = false;
       // Wenn 2FA reset: ausloggen damit Setup erzwungen wird
       if (body.reset_twofa) {
+        message =
+          "Profil aktualisiert. 2FA wurde zurückgesetzt – bitte neu einrichten beim nächsten Login.";
         await adminAuth.logout();
         window.location.href = "/admin/login";
       } else {
-        // refresh status
+        // Refresh from the server so the form reflects the confirmed state.
         await adminAuth.checkStatus();
+        const updated = get(adminAuthState).user;
+        if (updated) {
+          username = updated.username;
+          confirmedEmail = updated.email;
+          pendingEmail = updated.pending_email;
+          // Keep the input on the confirmed address — a requested change only
+          // takes effect once the link in the confirmation email is clicked.
+          email = updated.email;
+        }
+        message =
+          emailChangeRequested && pendingEmail
+            ? `Profil gespeichert. Wir haben eine Bestätigungs-E-Mail an ${pendingEmail} gesendet – deine E-Mail-Adresse ändert sich erst, nachdem du den Link darin bestätigt hast.`
+            : "Profil gespeichert.";
       }
     } else {
       error = json.message || "Fehler beim Speichern";
@@ -282,9 +304,33 @@
                 autocomplete="email"
               />
             </div>
-            <p class="text-xs text-slate-700 dark:text-smoke-300">
-              Änderungen erfordern Bestätigung über eine E‑Mail.
-            </p>
+            {#if pendingEmail}
+              <p
+                class="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-300"
+              >
+                <svg
+                  class="mt-0.5 h-4 w-4 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  ><path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"
+                  /></svg
+                >
+                <span>
+                  Ausstehende Änderung auf <strong>{pendingEmail}</strong>.
+                  Bitte bestätige den Link in der E‑Mail. Bis dahin bleibt
+                  <strong>{confirmedEmail}</strong> aktiv.
+                </span>
+              </p>
+            {:else}
+              <p class="text-xs text-slate-700 dark:text-smoke-300">
+                Änderungen erfordern Bestätigung über eine E‑Mail.
+              </p>
+            {/if}
           </div>
           <!-- Password -->
           <div class="space-y-1 md:col-span-2">
