@@ -38,7 +38,15 @@
     location_url: z.string().url("Ungültige URL").optional().or(z.literal("")),
     location_instructions: z.string().optional(),
     category: z
-      .enum(["workshop", "stammtisch", "practice", "lecture", "special"])
+      .enum([
+        "workshop",
+        "stammtisch",
+        "practice",
+        "lecture",
+        "special",
+        "convention",
+        "party",
+      ])
       .default("stammtisch"),
     difficulty_level: z
       .enum(["beginner", "intermediate", "advanced", "all"])
@@ -418,6 +426,8 @@
           <option value="practice">Praxis-Session</option>
           <option value="lecture">Vortrag</option>
           <option value="special">Besondere Veranstaltung</option>
+          <option value="convention">Convention</option>
+          <option value="party">Party</option>
         </select>
       </div>
 
