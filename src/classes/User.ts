@@ -20,6 +20,8 @@ export const UserSchema = z.object({
   id: z.union([z.string().uuid(), z.number()]).transform(String),
   username: z.string().min(1),
   email: z.string().email(),
+  // Pending (unconfirmed) email change; null/absent when none is in flight.
+  pending_email: z.string().email().nullable().optional(),
   role: z.nativeEnum(Role),
   is_active: z.boolean().optional().default(true),
   last_login: z
@@ -83,6 +85,9 @@ export default class User {
   /** User's email address */
   public email: string;
 
+  /** Pending (unconfirmed) email change, or null if none is in flight */
+  public pending_email: string | null;
+
   /** User's role determining permissions */
   public role: Role;
 
@@ -114,6 +119,7 @@ export default class User {
     this.id = validated.id;
     this.username = validated.username;
     this.email = validated.email;
+    this.pending_email = validated.pending_email ?? null;
     this.role = validated.role;
     this.is_active = validated.is_active;
     this.last_login = validated.last_login
@@ -356,6 +362,7 @@ export default class User {
       id: this.id,
       username: this.username,
       email: this.email,
+      pending_email: this.pending_email,
       role: this.role,
       is_active: this.is_active,
       last_login: this.last_login?.toISOString() || null,

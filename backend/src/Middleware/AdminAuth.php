@@ -88,7 +88,7 @@ class AdminAuth
             return null;
         }
 
-        $sql = "SELECT id, username, email, role, is_active, last_login, created_at, updated_at
+        $sql = "SELECT id, username, email, pending_email, role, is_active, last_login, created_at, updated_at
             FROM users WHERE id = ? AND is_active = 1";
         $user = Database::fetchOne($sql, [$_SESSION['admin_user_id']]);
 
