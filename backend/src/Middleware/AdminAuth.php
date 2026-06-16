@@ -220,7 +220,7 @@ class AdminAuth
     {
         // Ensure string for DB layer (Prepared Statements akzeptieren beides, wir normalisieren dennoch)
         $idParam = (string)$userId;
-        $sql = "SELECT id, username, email, role, is_active, last_login, created_at, updated_at, twofa_enabled FROM users WHERE id = ?";
+        $sql = "SELECT id, username, email, pending_email, role, is_active, last_login, created_at, updated_at, twofa_enabled FROM users WHERE id = ?";
         $user = Database::fetchOne($sql, [$idParam]);
 
         if (!$user) {
@@ -244,6 +244,7 @@ class AdminAuth
                 'id' => $user['id'],
                 'username' => $user['username'],
                 'email' => $user['email'],
+                'pending_email' => $user['pending_email'] ?? null,
                 'role' => $user['role'],
                 'is_active' => (bool)$user['is_active'],
                 'last_login' => $user['last_login'],
