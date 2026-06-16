@@ -88,13 +88,18 @@ class UserController
         if (isset($input['email']) && $input['email'] !== $current['email']) {
             // create pending email change with token
             $token = self::generateSecureToken();
+            // Send the confirmation first: if it cannot be delivered, don't
+            // record a pending change the user could never confirm — surface an
+            // honest error instead of a misleading success.
+            if (!self::sendEmailChangeConfirmation($current['email'], $input['email'], $token)) {
+                Response::error('Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut.', 502);
+                return;
+            }
             $fields[] = 'pending_email = ?';
             $params[] = $input['email'];
             $fields[] = 'email_change_token = ?';
             $params[] = $token;
             $fields[] = 'email_change_requested_at = CURRENT_TIMESTAMP';
-            // send confirmation email
-            self::sendEmailChangeConfirmation($current['email'], $input['email'], $token);
         }
         if (!empty($input['password'])) {
             $fields[] = 'password_hash = ?';
@@ -170,13 +175,17 @@ class UserController
             if (isset($input[$f])) {
                 if ($f === 'email') {
                     $token = self::generateSecureToken();
+                    // Send the confirmation first; abort without recording a
+                    // pending change if it cannot be delivered (see updateMe()).
+                    if (!self::sendEmailChangeConfirmation(null, $input[$f], $token)) {
+                        Response::error('Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut.', 502);
+                        return;
+                    }
                     $fields[] = 'pending_email = ?';
                     $params[] = $input[$f];
                     $fields[] = 'email_change_token = ?';
                     $params[] = $token;
                     $fields[] = 'email_change_requested_at = CURRENT_TIMESTAMP';
-                    // send confirmation to new email only
-                    self::sendEmailChangeConfirmation(null, $input[$f], $token);
                 } else {
                     $fields[] = "$f = ?";
                     $params[] = $input[$f];
@@ -213,9 +222,9 @@ class UserController
         Response::success(['updated' => true, 'user' => $user], 'User updated');
     }
 
-    private static function sendEmailChangeConfirmation(?string $oldEmail, string $newEmail, string $token): void
+    private static function sendEmailChangeConfirmation(?string $oldEmail, string $newEmail, string $token): bool
     {
-        EmailService::sendEmailChangeConfirmation($oldEmail, $newEmail, $token);
+        return EmailService::sendEmailChangeConfirmation($oldEmail, $newEmail, $token);
     }
 
     private static function generateSecureToken(): string
