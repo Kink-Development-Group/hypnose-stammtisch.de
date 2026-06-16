@@ -244,6 +244,7 @@ class AdminAuth
                 'id' => $user['id'],
                 'username' => $user['username'],
                 'email' => $user['email'],
+                'pending_email' => $user['pending_email'] ?? null,
                 'role' => $user['role'],
                 'is_active' => (bool)$user['is_active'],
                 'last_login' => $user['last_login'],
