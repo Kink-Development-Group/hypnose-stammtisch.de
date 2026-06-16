@@ -176,7 +176,9 @@ class MockData
             'webinar' => 'Webinar',
             'therapie' => 'Therapie',
             'ausbildung' => 'Ausbildung',
-            'konferenz' => 'Konferenz'
+            'konferenz' => 'Konferenz',
+            'con' => 'Con',
+            'party' => 'Party'
         ];
     }
 
