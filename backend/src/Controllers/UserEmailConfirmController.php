@@ -28,8 +28,12 @@ class UserEmailConfirmController
             return;
         }
 
+        // Read "now" from the database in the same query so the TTL comparison
+        // is independent of the PHP timezone: both timestamps come from the DB
+        // clock, so any DB<->PHP offset cancels out.
         $row = Database::fetchOne(
-            'SELECT id, pending_email, email_change_requested_at FROM users WHERE email_change_token = ? AND pending_email IS NOT NULL',
+            'SELECT id, pending_email, email_change_requested_at, CURRENT_TIMESTAMP AS db_now
+             FROM users WHERE email_change_token = ? AND pending_email IS NOT NULL',
             [$token]
         );
 
@@ -40,9 +44,11 @@ class UserEmailConfirmController
 
         // Reject (and clean up) links whose request is older than the TTL.
         $requestedAt = $row['email_change_requested_at'] ?? null;
-        if ($requestedAt !== null) {
+        $dbNow = $row['db_now'] ?? null;
+        if ($requestedAt !== null && $dbNow !== null) {
             $requestedTs = strtotime((string)$requestedAt);
-            if ($requestedTs !== false && (time() - $requestedTs) > self::TOKEN_TTL_SECONDS) {
+            $nowTs = strtotime((string)$dbNow);
+            if ($requestedTs !== false && $nowTs !== false && ($nowTs - $requestedTs) > self::TOKEN_TTL_SECONDS) {
                 Database::execute(
                     'UPDATE users SET pending_email = NULL, email_change_token = NULL, email_change_requested_at = NULL WHERE id = ?',
                     [$row['id']]
