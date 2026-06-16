@@ -263,7 +263,7 @@
     <Portal>
       {#if isMobile}
         <div
-          class="fixed inset-0 bg-black/50 z-40 animate-fade-in"
+          class="fixed inset-0 bg-black/50 z-[10040] animate-fade-in"
           on:click={close}
           on:keydown={(e) => e.key === "Escape" && close()}
           role="button"
@@ -277,7 +277,7 @@
         aria-label="Uhrzeit auswählen"
         aria-modal={isMobile ? "true" : undefined}
         class="{isMobile
-          ? 'fixed inset-x-0 bottom-0 z-50 rounded-t-2xl'
+          ? 'fixed inset-x-0 bottom-0 z-[10050] rounded-t-2xl'
           : 'fixed z-[10050] rounded-xl'} bg-charcoal-800 dark:bg-charcoal-800 shadow-xl border border-gray-200 dark:border-charcoal-600 overflow-hidden animate-fade-in sm:min-w-[280px]"
         style={isMobile ? undefined : pickerStyle}
       >
