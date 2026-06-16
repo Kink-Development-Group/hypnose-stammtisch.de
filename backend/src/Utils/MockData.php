@@ -165,18 +165,21 @@ class MockData
     }
 
     /**
-     * Get mock event categories
+     * Get event categories.
+     *
+     * Mirrors the canonical category ENUM on `events.category` /
+     * `event_series.default_category` (migration 001 + 013) and the
+     * submission allowlist in FormController::validateEventSubmission().
+     * Keep these in sync — this list is served via GET /api/events/meta.
      */
     public static function getCategories(): array
     {
         return [
             'workshop' => 'Workshop',
-            'seminar' => 'Seminar',
             'stammtisch' => 'Stammtisch',
-            'webinar' => 'Webinar',
-            'therapie' => 'Therapie',
-            'ausbildung' => 'Ausbildung',
-            'konferenz' => 'Konferenz',
+            'practice' => 'Praxis',
+            'lecture' => 'Vortrag',
+            'special' => 'Special',
             'con' => 'Con',
             'party' => 'Party'
         ];
