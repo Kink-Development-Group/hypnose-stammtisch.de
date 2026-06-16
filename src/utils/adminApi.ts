@@ -114,7 +114,7 @@ export async function adminApi<T = unknown>(
       console.error("Failed to get CSRF token:", error);
       return {
         success: false,
-        message: "Security token error. Please refresh the page.",
+        message: "Sicherheitstoken-Fehler. Bitte lade die Seite neu.",
       };
     }
   }
@@ -175,13 +175,12 @@ export async function adminApi<T = unknown>(
 
     return (await response.json()) as AdminApiResponse<T>;
   } catch (error) {
+    // The technical error (e.g. "Failed to fetch") is kept in the console for
+    // debugging; the user-facing message stays German like the rest of the UI.
     console.error("Admin API error:", error);
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Network error. Please try again.",
+      message: "Netzwerkfehler. Bitte versuche es erneut.",
     };
   }
 }
