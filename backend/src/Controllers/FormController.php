@@ -323,7 +323,7 @@ class FormController
         }
 
         // Category validation
-        if (!empty($data['category']) && !in_array($data['category'], ['workshop', 'stammtisch', 'practice', 'lecture', 'special', 'con', 'party'])) {
+        if (!empty($data['category']) && !in_array($data['category'], ['workshop', 'stammtisch', 'practice', 'lecture', 'special', 'convention', 'party'])) {
             $errors[] = 'Invalid event category';
         }
 

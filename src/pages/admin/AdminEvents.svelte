@@ -885,7 +885,7 @@
                     <option value="practice">Praxis</option>
                     <option value="lecture">Vortrag</option>
                     <option value="special">Special</option>
-                    <option value="con">Con</option>
+                    <option value="convention">Convention</option>
                     <option value="party">Party</option>
                   </select>
                 </div>

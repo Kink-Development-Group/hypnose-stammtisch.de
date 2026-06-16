@@ -180,7 +180,7 @@ class MockData
             'practice' => 'Praxis',
             'lecture' => 'Vortrag',
             'special' => 'Special',
-            'con' => 'Con',
+            'convention' => 'Convention',
             'party' => 'Party'
         ];
     }

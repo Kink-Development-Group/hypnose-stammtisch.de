@@ -44,7 +44,7 @@
         "practice",
         "lecture",
         "special",
-        "con",
+        "convention",
         "party",
       ])
       .default("stammtisch"),
@@ -426,7 +426,7 @@
           <option value="practice">Praxis-Session</option>
           <option value="lecture">Vortrag</option>
           <option value="special">Besondere Veranstaltung</option>
-          <option value="con">Con</option>
+          <option value="convention">Convention</option>
           <option value="party">Party</option>
         </select>
       </div>
