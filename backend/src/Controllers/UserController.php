@@ -181,14 +181,18 @@ class UserController
             Response::error('Validation failed', 400, array_merge($validator->getErrors(), $errors));
             return;
         }
-        $target = Database::fetchOne('SELECT id, email FROM users WHERE id = ?', [$id]);
+        $target = Database::fetchOne('SELECT id, username, email, role, is_active FROM users WHERE id = ?', [$id]);
         if (!$target) {
             Response::error('User not found', 404);
             return;
         }
         $fields = [];
         $params = [];
-        if (isset($input['username'])) {
+        // The admin form always resubmits every (pre-filled) field, so compare
+        // against the stored values and only write the ones that actually
+        // changed — otherwise every save triggers no-op UPDATEs and a
+        // misleading audit-log entry implying fields changed that did not.
+        if (isset($input['username']) && $input['username'] !== $target['username']) {
             $fields[] = 'username = ?';
             $params[] = $input['username'];
         }
@@ -196,11 +200,11 @@ class UserController
             $fields[] = 'password_hash = ?';
             $params[] = password_hash($input['password'], PASSWORD_DEFAULT);
         }
-        if (isset($input['role'])) {
+        if (isset($input['role']) && $input['role'] !== $target['role']) {
             $fields[] = 'role = ?';
             $params[] = $input['role'];
         }
-        if (isset($input['is_active'])) {
+        if (isset($input['is_active']) && ($input['is_active'] ? 1 : 0) !== (int)$target['is_active']) {
             $fields[] = 'is_active = ?';
             $params[] = $input['is_active'] ? 1 : 0;
         }

@@ -120,8 +120,15 @@
       password = "";
       currentPassword = "";
       resetTwofa = false;
-      // Wenn 2FA reset: ausloggen damit Setup erzwungen wird
-      if (body.reset_twofa) {
+      const emailChangeFailed = !!(
+        json.data as { email_change_failed?: boolean }
+      )?.email_change_failed;
+      // Wenn 2FA reset: ausloggen damit Setup erzwungen wird – aber NICHT, wenn
+      // gleichzeitig der E-Mail-Versand fehlschlug: dann muss die Warnung
+      // sichtbar bleiben (der sofortige Redirect würde sie verschlucken). Der
+      // 2FA-Reset ist serverseitig bereits passiert; der nächste Login erzwingt
+      // ohnehin die Neueinrichtung.
+      if (body.reset_twofa && !emailChangeFailed) {
         message =
           "Profil aktualisiert. 2FA wurde zurückgesetzt – bitte neu einrichten beim nächsten Login.";
         await adminAuth.logout();
@@ -138,13 +145,21 @@
           // takes effect once the link in the confirmation email is clicked.
           email = updated.email;
         }
-        if ((json.data as { email_change_failed?: boolean })?.email_change_failed) {
+        if (emailChangeFailed) {
           // Saved, but the confirmation mail failed (#123). Surface it as an
-          // error so the user knows the address change did not take effect.
+          // error so the user knows the address change did not take effect —
+          // even when 2FA was reset in the same save.
+          if (typeof body.email === "string") {
+            // Keep the typed (failed) address so "try again" actually retries
+            // instead of re-sending the unchanged, confirmed address.
+            email = body.email;
+          }
           error =
             json.message ||
             "Profil gespeichert, aber die Bestätigungs-E-Mail konnte nicht gesendet werden. Deine E-Mail-Adresse bleibt unverändert.";
-          message = "";
+          message = body.reset_twofa
+            ? "2FA wurde zurückgesetzt – bitte beim nächsten Login neu einrichten."
+            : "";
         } else {
           message =
             emailChangeRequested && pendingEmail
