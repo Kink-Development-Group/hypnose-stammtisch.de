@@ -423,7 +423,7 @@
         >
           <option value="stammtisch">Stammtisch</option>
           <option value="workshop">Workshop</option>
-          <option value="practice">Praxis-Session</option>
+          <option value="practice">Praxis</option>
           <option value="lecture">Vortrag</option>
           <option value="special">Besondere Veranstaltung</option>
           <option value="convention">Convention</option>
