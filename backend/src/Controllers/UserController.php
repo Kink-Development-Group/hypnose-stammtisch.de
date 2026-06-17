@@ -85,22 +85,6 @@ class UserController
             $fields[] = 'username = ?';
             $params[] = $input['username'];
         }
-        if (isset($input['email']) && $input['email'] !== $current['email']) {
-            // create pending email change with token
-            $token = self::generateSecureToken();
-            // Send the confirmation first: if it cannot be delivered, don't
-            // record a pending change the user could never confirm — surface an
-            // honest error instead of a misleading success.
-            if (!self::sendEmailChangeConfirmation($current['email'], $input['email'], $token)) {
-                Response::error('Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut.', 502);
-                return;
-            }
-            $fields[] = 'pending_email = ?';
-            $params[] = $input['email'];
-            $fields[] = 'email_change_token = ?';
-            $params[] = $token;
-            $fields[] = 'email_change_requested_at = CURRENT_TIMESTAMP';
-        }
         if (!empty($input['password'])) {
             $fields[] = 'password_hash = ?';
             $params[] = password_hash($input['password'], PASSWORD_DEFAULT);
@@ -109,7 +93,29 @@ class UserController
             $fields[] = 'twofa_secret = NULL';
             $fields[] = 'twofa_enabled = 0';
         }
+        // Handle the email change last so a failed confirmation mail never
+        // silently discards the other field changes above (#123). The pending
+        // change is only recorded once the confirmation mail is on its way; if
+        // it cannot be delivered we still persist the remaining changes and
+        // surface an honest error about the e-mail.
+        $emailChangeFailed = false;
+        if (isset($input['email']) && $input['email'] !== $current['email']) {
+            $token = self::generateSecureToken();
+            if (self::sendEmailChangeConfirmation($current['email'], $input['email'], $token)) {
+                $fields[] = 'pending_email = ?';
+                $params[] = $input['email'];
+                $fields[] = 'email_change_token = ?';
+                $params[] = $token;
+                $fields[] = 'email_change_requested_at = CURRENT_TIMESTAMP';
+            } else {
+                $emailChangeFailed = true;
+            }
+        }
         if (!$fields) {
+            if ($emailChangeFailed) {
+                Response::error('Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut.', 502);
+                return;
+            }
             Response::success(['updated' => false, 'user' => $current], 'No changes');
             return;
         }
@@ -120,6 +126,10 @@ class UserController
         }
         AuditLogger::log('user.profile_update', 'user', (string)$current['id'], ['fields' => $fields]);
         $updated = AdminAuth::getCurrentUser();
+        if ($emailChangeFailed) {
+            Response::error('Deine Änderungen wurden gespeichert, aber die Bestätigungs-E-Mail für die neue Adresse konnte nicht gesendet werden. Die E-Mail-Adresse bleibt unverändert. Bitte versuche es später erneut.', 502);
+            return;
+        }
         Response::success(['updated' => true, 'user' => $updated], 'Profile updated');
     }
 
@@ -164,33 +174,16 @@ class UserController
             Response::error('Validation failed', 400, array_merge($validator->getErrors(), $errors));
             return;
         }
-        $target = Database::fetchOne('SELECT id FROM users WHERE id = ?', [$id]);
+        $target = Database::fetchOne('SELECT id, email FROM users WHERE id = ?', [$id]);
         if (!$target) {
             Response::error('User not found', 404);
             return;
         }
         $fields = [];
         $params = [];
-        foreach (['username', 'email'] as $f) {
-            if (isset($input[$f])) {
-                if ($f === 'email') {
-                    $token = self::generateSecureToken();
-                    // Send the confirmation first; abort without recording a
-                    // pending change if it cannot be delivered (see updateMe()).
-                    if (!self::sendEmailChangeConfirmation(null, $input[$f], $token)) {
-                        Response::error('Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut.', 502);
-                        return;
-                    }
-                    $fields[] = 'pending_email = ?';
-                    $params[] = $input[$f];
-                    $fields[] = 'email_change_token = ?';
-                    $params[] = $token;
-                    $fields[] = 'email_change_requested_at = CURRENT_TIMESTAMP';
-                } else {
-                    $fields[] = "$f = ?";
-                    $params[] = $input[$f];
-                }
-            }
+        if (isset($input['username'])) {
+            $fields[] = 'username = ?';
+            $params[] = $input['username'];
         }
         if (!empty($input['password'])) {
             $fields[] = 'password_hash = ?';
@@ -208,7 +201,29 @@ class UserController
             $fields[] = 'twofa_secret = NULL';
             $fields[] = 'twofa_enabled = 0';
         }
+        // Handle the email change last so a failed confirmation mail never
+        // silently discards the other field changes above (#123). Pass the
+        // target's current address as the old email so the account holder is
+        // notified (CC'd) about the admin-initiated change instead of it
+        // happening silently (#128).
+        $emailChangeFailed = false;
+        if (isset($input['email'])) {
+            $token = self::generateSecureToken();
+            if (self::sendEmailChangeConfirmation($target['email'], $input['email'], $token)) {
+                $fields[] = 'pending_email = ?';
+                $params[] = $input['email'];
+                $fields[] = 'email_change_token = ?';
+                $params[] = $token;
+                $fields[] = 'email_change_requested_at = CURRENT_TIMESTAMP';
+            } else {
+                $emailChangeFailed = true;
+            }
+        }
         if (!$fields) {
+            if ($emailChangeFailed) {
+                Response::error('Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es später erneut.', 502);
+                return;
+            }
             Response::success(['updated' => false], 'No changes');
             return;
         }
@@ -218,7 +233,13 @@ class UserController
             Database::execute('DELETE FROM user_twofa_backup_codes WHERE user_id = ?', [$id]);
         }
         AuditLogger::log('admin.user_update', 'user', (string)$id, ['fields' => $fields]);
-        $user = Database::fetchOne('SELECT id, username, email, role, is_active, last_login, created_at, updated_at FROM users WHERE id = ?', [$id]);
+        // Include pending_email so the admin UI can surface an in-flight email
+        // change instead of appearing to have done nothing (#125).
+        $user = Database::fetchOne('SELECT id, username, email, pending_email, role, is_active, last_login, created_at, updated_at FROM users WHERE id = ?', [$id]);
+        if ($emailChangeFailed) {
+            Response::error('Die Änderungen wurden gespeichert, aber die Bestätigungs-E-Mail für die neue Adresse konnte nicht gesendet werden. Die E-Mail-Adresse bleibt unverändert. Bitte versuche es später erneut.', 502);
+            return;
+        }
         Response::success(['updated' => true, 'user' => $user], 'User updated');
     }
 
