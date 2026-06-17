@@ -74,8 +74,10 @@
   }
 
   function getNotificationClasses(type: string): string {
+    // pointer-events-auto re-enables clicks on the toast itself; the container
+    // is pointer-events-none so its transparent area never blocks the UI.
     const baseClasses =
-      "p-4 rounded-lg shadow-lg border-l-4 transition-all duration-300 ease-in-out";
+      "pointer-events-auto p-4 rounded-lg shadow-lg border-l-4 transition-all duration-300 ease-in-out";
 
     switch (type) {
       case "success":
@@ -108,8 +110,15 @@
 </script>
 
 <!-- Admin Notification Container -->
+<!--
+  Anchored bottom-right (away from the top header) and pointer-events-none so
+  the toast stack can never overlap or block header controls such as the logout
+  button — even while a semi-transparent notification is visible. See #113.
+-->
 {#if adminNotifications.length > 0}
-  <div class="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+  <div
+    class="pointer-events-none fixed bottom-4 right-4 z-50 space-y-2 max-w-sm"
+  >
     {#each adminNotifications as notification (notification.id)}
       <div
         class={getNotificationClasses(notification.type)}
