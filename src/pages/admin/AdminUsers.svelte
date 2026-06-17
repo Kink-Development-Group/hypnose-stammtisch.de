@@ -150,20 +150,12 @@
       );
 
       if (result.success) {
-        if (result.data?.email_change_failed) {
-          // Saved, but the e-mail confirmation failed (#123) — warn instead of
-          // claiming a clean success. The list still reloads below so the
-          // persisted changes are reflected.
-          error =
-            result.message ||
-            `Benutzer "${formData.username}" wurde gespeichert, aber die Bestätigungs-E-Mail konnte nicht gesendet werden.`;
-          success = "";
-        } else {
-          success = formData.reset_twofa
-            ? `Benutzer "${formData.username}" wurde aktualisiert und muss 2FA neu einrichten.`
-            : `Benutzer "${formData.username}" wurde erfolgreich aktualisiert.`;
-          error = "";
-        }
+        // Note: resetForm() below clears `success`/`error`, so these banners
+        // are not the surface here — the warning/success is shown via the toast
+        // in AdminAPI.updateUser (which also handles email_change_failed).
+        success = formData.reset_twofa
+          ? `Benutzer "${formData.username}" wurde aktualisiert und muss 2FA neu einrichten.`
+          : `Benutzer "${formData.username}" wurde erfolgreich aktualisiert.`;
         editingUser = null;
         resetForm();
         await loadUsers();
