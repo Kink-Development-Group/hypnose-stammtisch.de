@@ -138,10 +138,19 @@
           // takes effect once the link in the confirmation email is clicked.
           email = updated.email;
         }
-        message =
-          emailChangeRequested && pendingEmail
-            ? `Profil gespeichert. Wir haben eine Bestätigungs-E-Mail an ${pendingEmail} gesendet – deine E-Mail-Adresse ändert sich erst, nachdem du den Link darin bestätigt hast.`
-            : "Profil gespeichert.";
+        if ((json.data as { email_change_failed?: boolean })?.email_change_failed) {
+          // Saved, but the confirmation mail failed (#123). Surface it as an
+          // error so the user knows the address change did not take effect.
+          error =
+            json.message ||
+            "Profil gespeichert, aber die Bestätigungs-E-Mail konnte nicht gesendet werden. Deine E-Mail-Adresse bleibt unverändert.";
+          message = "";
+        } else {
+          message =
+            emailChangeRequested && pendingEmail
+              ? `Profil gespeichert. Wir haben eine Bestätigungs-E-Mail an ${pendingEmail} gesendet – deine E-Mail-Adresse ändert sich erst, nachdem du den Link darin bestätigt hast.`
+              : "Profil gespeichert.";
+        }
       }
     } else {
       error = json.message || "Fehler beim Speichern";

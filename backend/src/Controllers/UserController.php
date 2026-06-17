@@ -127,7 +127,14 @@ class UserController
         AuditLogger::log('user.profile_update', 'user', (string)$current['id'], ['fields' => $fields]);
         $updated = AdminAuth::getCurrentUser();
         if ($emailChangeFailed) {
-            Response::error('Deine Änderungen wurden gespeichert, aber die Bestätigungs-E-Mail für die neue Adresse konnte nicht gesendet werden. Die E-Mail-Adresse bleibt unverändert. Bitte versuche es später erneut.', 502);
+            // The other fields were persisted; only the e-mail confirmation
+            // failed. Report success — so the client keeps and reflects the
+            // saved changes — but flag the failed e-mail so the UI warns
+            // instead of silently claiming the address change is pending (#123).
+            Response::success(
+                ['updated' => true, 'user' => $updated, 'email_change_failed' => true],
+                'Deine Änderungen wurden gespeichert, aber die Bestätigungs-E-Mail für die neue Adresse konnte nicht gesendet werden. Die E-Mail-Adresse bleibt unverändert. Bitte versuche es später erneut.'
+            );
             return;
         }
         Response::success(['updated' => true, 'user' => $updated], 'Profile updated');
@@ -205,9 +212,12 @@ class UserController
         // silently discards the other field changes above (#123). Pass the
         // target's current address as the old email so the account holder is
         // notified (CC'd) about the admin-initiated change instead of it
-        // happening silently (#128).
+        // happening silently (#128). Only act when the address actually
+        // changes — the admin form always submits the (pre-filled) email, so
+        // without this guard every edit would trigger a spurious confirmation
+        // flow and CC the account holder on every save.
         $emailChangeFailed = false;
-        if (isset($input['email'])) {
+        if (isset($input['email']) && $input['email'] !== $target['email']) {
             $token = self::generateSecureToken();
             if (self::sendEmailChangeConfirmation($target['email'], $input['email'], $token)) {
                 $fields[] = 'pending_email = ?';
@@ -237,7 +247,14 @@ class UserController
         // change instead of appearing to have done nothing (#125).
         $user = Database::fetchOne('SELECT id, username, email, pending_email, role, is_active, last_login, created_at, updated_at FROM users WHERE id = ?', [$id]);
         if ($emailChangeFailed) {
-            Response::error('Die Änderungen wurden gespeichert, aber die Bestätigungs-E-Mail für die neue Adresse konnte nicht gesendet werden. Die E-Mail-Adresse bleibt unverändert. Bitte versuche es später erneut.', 502);
+            // Other fields were persisted; only the e-mail confirmation failed.
+            // Report success with a flag so the admin UI refreshes the saved
+            // changes and warns about the e-mail instead of treating the whole
+            // request as failed (#123).
+            Response::success(
+                ['updated' => true, 'user' => $user, 'email_change_failed' => true],
+                'Die Änderungen wurden gespeichert, aber die Bestätigungs-E-Mail für die neue Adresse konnte nicht gesendet werden. Die E-Mail-Adresse bleibt unverändert. Bitte versuche es später erneut.'
+            );
             return;
         }
         Response::success(['updated' => true, 'user' => $user], 'User updated');
