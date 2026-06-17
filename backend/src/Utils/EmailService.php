@@ -212,11 +212,19 @@ TEXT;
      */
     private static function getEmailChangeConfirmationHtml(
         string $confirmUrl,
-        string $newEmail
+        string $newEmail,
+        bool $adminInitiated = false
     ): string {
         $escapedUrl = htmlspecialchars($confirmUrl, ENT_QUOTES, 'UTF-8');
         $escapedEmail = htmlspecialchars($newEmail, ENT_QUOTES, 'UTF-8');
         $appName = htmlspecialchars(self::getAppName(), ENT_QUOTES, 'UTF-8');
+
+        $intro = $adminInitiated
+            ? "Ein Administrator hat veranlasst, deine Admin-E-Mail-Adresse auf <strong>{$escapedEmail}</strong> zu ändern."
+            : "Du hast angefragt, deine Admin-E-Mail-Adresse auf <strong>{$escapedEmail}</strong> zu ändern.";
+        $footer = $adminInitiated
+            ? 'Falls du diese Änderung nicht möchtest, ignoriere diese E-Mail bitte und wende dich an dein Administrations-Team. Bis zur Bestätigung bleibt deine bisherige E-Mail-Adresse unverändert.'
+            : 'Falls du diese Änderung nicht angefordert hast, ignoriere diese E-Mail bitte. In diesem Fall bleibt deine bisherige E-Mail-Adresse unverändert.';
 
         return <<<HTML
 <!DOCTYPE html>
@@ -230,7 +238,7 @@ TEXT;
   <div style="background-color: #f4f4f4; border-radius: 5px; padding: 20px; margin-bottom: 20px;">
     <h2 style="color: #5a67d8; margin-top: 0;">E-Mail-Adresse bestätigen</h2>
     <p>Hallo!</p>
-    <p>Du hast angefragt, deine Admin-E-Mail-Adresse auf <strong>{$escapedEmail}</strong> zu ändern.</p>
+    <p>{$intro}</p>
     <p>Bitte bestätige diese Änderung, indem du auf den folgenden Button klickst:</p>
     <p style="text-align: center; margin: 30px 0;">
       <a href="{$escapedUrl}"
@@ -243,8 +251,7 @@ TEXT;
       {$escapedUrl}
     </p>
     <p style="color: #666; font-size: 14px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-      Falls du diese Änderung nicht angefordert hast, ignoriere diese E-Mail bitte.
-      In diesem Fall bleibt deine bisherige E-Mail-Adresse unverändert.
+      {$footer}
     </p>
   </div>
   <p style="color: #999; font-size: 12px; text-align: center;">
@@ -264,21 +271,28 @@ HTML;
      */
     private static function getEmailChangeConfirmationText(
         string $confirmUrl,
-        string $newEmail
+        string $newEmail,
+        bool $adminInitiated = false
     ): string {
         $appName = self::getAppName();
+
+        $intro = $adminInitiated
+            ? "Ein Administrator hat veranlasst, deine Admin-E-Mail-Adresse auf {$newEmail} zu ändern."
+            : "Du hast angefragt, deine Admin-E-Mail-Adresse auf {$newEmail} zu ändern.";
+        $footer = $adminInitiated
+            ? "Falls du diese Änderung nicht möchtest, ignoriere diese E-Mail und wende dich an dein Administrations-Team.\nBis zur Bestätigung bleibt deine bisherige E-Mail-Adresse unverändert."
+            : "Falls du diese Änderung nicht angefordert hast, ignoriere diese E-Mail einfach.\nIn diesem Fall bleibt deine bisherige E-Mail-Adresse unverändert.";
 
         return <<<TEXT
 E-Mail-Adresse bestätigen - {$appName}
 
-Du hast angefragt, deine Admin-E-Mail-Adresse auf {$newEmail} zu ändern.
+{$intro}
 
 Bitte bestätige die Änderung über den folgenden Link:
 
 {$confirmUrl}
 
-Falls du diese Änderung nicht angefordert hast, ignoriere diese E-Mail einfach.
-In diesem Fall bleibt deine bisherige E-Mail-Adresse unverändert.
+{$footer}
 
 ---
 © 2025 {$appName}. Alle Rechte vorbehalten.
@@ -291,12 +305,16 @@ TEXT;
      * @param string|null $oldEmail Old email address (optional, for CC)
      * @param string $newEmail New email address
      * @param string $confirmationToken Email change confirmation token
+     * @param bool $adminInitiated True when a head admin (not the account
+     *     holder) triggered the change — adjusts the wording so the CC'd holder
+     *     is not falsely told they requested it.
      * @return bool True if email was sent successfully
      */
     public static function sendEmailChangeConfirmation(
         ?string $oldEmail,
         string $newEmail,
-        string $confirmationToken
+        string $confirmationToken,
+        bool $adminInitiated = false
     ): bool {
         try {
             $mail = self::createMailer();
@@ -318,10 +336,10 @@ TEXT;
             $mail->Subject = 'E-Mail Änderung bestätigen - ' . $appName;
 
             // HTML body
-            $mail->Body = self::getEmailChangeConfirmationHtml($confirmUrl, $newEmail);
+            $mail->Body = self::getEmailChangeConfirmationHtml($confirmUrl, $newEmail, $adminInitiated);
 
             // Plain text alternative
-            $mail->AltBody = self::getEmailChangeConfirmationText($confirmUrl, $newEmail);
+            $mail->AltBody = self::getEmailChangeConfirmationText($confirmUrl, $newEmail, $adminInitiated);
 
             // Send email
             $mail->send();

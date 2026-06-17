@@ -148,15 +148,20 @@
         if (emailChangeFailed) {
           // Saved, but the confirmation mail failed (#123). Surface it as an
           // error so the user knows the address change did not take effect —
-          // even when 2FA was reset in the same save.
-          if (typeof body.email === "string") {
+          // even when 2FA was reset in the same save. Name the failed address
+          // so it stays distinguishable from the amber "pending change" banner
+          // of an earlier, still-valid request.
+          const failedAddress =
+            typeof body.email === "string" ? body.email : "";
+          if (failedAddress) {
             // Keep the typed (failed) address so "try again" actually retries
             // instead of re-sending the unchanged, confirmed address.
-            email = body.email;
+            email = failedAddress;
           }
-          error =
-            json.message ||
-            "Profil gespeichert, aber die Bestätigungs-E-Mail konnte nicht gesendet werden. Deine E-Mail-Adresse bleibt unverändert.";
+          error = failedAddress
+            ? `Die Bestätigungs-E-Mail an ${failedAddress} konnte nicht gesendet werden – diese Adresse wurde NICHT übernommen. Bitte versuche es später erneut.`
+            : json.message ||
+              "Profil gespeichert, aber die Bestätigungs-E-Mail konnte nicht gesendet werden. Deine E-Mail-Adresse bleibt unverändert.";
           message = body.reset_twofa
             ? "2FA wurde zurückgesetzt – bitte beim nächsten Login neu einrichten."
             : "";

@@ -150,15 +150,24 @@
       );
 
       if (result.success) {
-        // Note: resetForm() below clears `success`/`error`, so these banners
-        // are not the surface here — the warning/success is shown via the toast
-        // in AdminAPI.updateUser (which also handles email_change_failed).
-        success = formData.reset_twofa
-          ? `Benutzer "${formData.username}" wurde aktualisiert und muss 2FA neu einrichten.`
-          : `Benutzer "${formData.username}" wurde erfolgreich aktualisiert.`;
+        // resetForm() clears success/error, so capture what we need and set the
+        // banner AFTERWARDS — this gives a persistent surface for the
+        // email-change warning, which the auto-dismissing toast alone does not.
+        const savedName = formData.username;
+        const wasTwofaReset = !!formData.reset_twofa;
+        const emailChangeFailed = !!result.data?.email_change_failed;
         editingUser = null;
         resetForm();
         await loadUsers();
+        if (emailChangeFailed) {
+          error =
+            result.message ||
+            `Benutzer "${savedName}" wurde gespeichert, aber die Bestätigungs-E-Mail für die neue Adresse konnte nicht gesendet werden.`;
+        } else {
+          success = wasTwofaReset
+            ? `Benutzer "${savedName}" wurde aktualisiert und muss 2FA neu einrichten.`
+            : `Benutzer "${savedName}" wurde erfolgreich aktualisiert.`;
+        }
       } else {
         if (result.details) {
           const fieldErrors = Object.entries(result.details)
@@ -977,6 +986,14 @@
                       <p class="text-sm text-slate-500 dark:text-smoke-400">
                         {user.email}
                       </p>
+                      {#if user.pending_email}
+                        <p
+                          class="text-xs font-medium text-amber-600 dark:text-amber-400"
+                          title="Adressänderung ausstehend – erst nach Bestätigung des Links aktiv"
+                        >
+                          Ausstehend: {user.pending_email} (unbestätigt)
+                        </p>
+                      {/if}
                     </div>
                   </td>
                   <td class="px-6 py-4">
@@ -1068,6 +1085,14 @@
                   <p class="text-sm text-slate-500 dark:text-smoke-400">
                     {user.email}
                   </p>
+                  {#if user.pending_email}
+                    <p
+                      class="text-xs font-medium text-amber-600 dark:text-amber-400"
+                      title="Adressänderung ausstehend – erst nach Bestätigung des Links aktiv"
+                    >
+                      Ausstehend: {user.pending_email} (unbestätigt)
+                    </p>
+                  {/if}
                   <div class="mt-2 flex flex-wrap items-center gap-2">
                     <span
                       class={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${UserHelpers.getRoleBadgeClass(user.role)}`}
