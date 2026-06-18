@@ -120,8 +120,15 @@
       password = "";
       currentPassword = "";
       resetTwofa = false;
-      // Wenn 2FA reset: ausloggen damit Setup erzwungen wird
-      if (body.reset_twofa) {
+      const emailChangeFailed = !!(
+        json.data as { email_change_failed?: boolean }
+      )?.email_change_failed;
+      // Wenn 2FA reset: ausloggen damit Setup erzwungen wird – aber NICHT, wenn
+      // gleichzeitig der E-Mail-Versand fehlschlug: dann muss die Warnung
+      // sichtbar bleiben (der sofortige Redirect würde sie verschlucken). Der
+      // 2FA-Reset ist serverseitig bereits passiert; der nächste Login erzwingt
+      // ohnehin die Neueinrichtung.
+      if (body.reset_twofa && !emailChangeFailed) {
         message =
           "Profil aktualisiert. 2FA wurde zurückgesetzt – bitte neu einrichten beim nächsten Login.";
         await adminAuth.logout();
@@ -138,10 +145,32 @@
           // takes effect once the link in the confirmation email is clicked.
           email = updated.email;
         }
-        message =
-          emailChangeRequested && pendingEmail
-            ? `Profil gespeichert. Wir haben eine Bestätigungs-E-Mail an ${pendingEmail} gesendet – deine E-Mail-Adresse ändert sich erst, nachdem du den Link darin bestätigt hast.`
-            : "Profil gespeichert.";
+        if (emailChangeFailed) {
+          // Saved, but the confirmation mail failed (#123). Surface it as an
+          // error so the user knows the address change did not take effect —
+          // even when 2FA was reset in the same save. Name the failed address
+          // so it stays distinguishable from the amber "pending change" banner
+          // of an earlier, still-valid request.
+          const failedAddress =
+            typeof body.email === "string" ? body.email : "";
+          if (failedAddress) {
+            // Keep the typed (failed) address so "try again" actually retries
+            // instead of re-sending the unchanged, confirmed address.
+            email = failedAddress;
+          }
+          error = failedAddress
+            ? `Die Bestätigungs-E-Mail an ${failedAddress} konnte nicht gesendet werden – diese Adresse wurde NICHT übernommen. Bitte versuche es später erneut.`
+            : json.message ||
+              "Profil gespeichert, aber die Bestätigungs-E-Mail konnte nicht gesendet werden. Deine E-Mail-Adresse bleibt unverändert.";
+          message = body.reset_twofa
+            ? "2FA wurde zurückgesetzt – bitte beim nächsten Login neu einrichten."
+            : "";
+        } else {
+          message =
+            emailChangeRequested && pendingEmail
+              ? `Profil gespeichert. Wir haben eine Bestätigungs-E-Mail an ${pendingEmail} gesendet – deine E-Mail-Adresse ändert sich erst, nachdem du den Link darin bestätigt hast.`
+              : "Profil gespeichert.";
+        }
       }
     } else {
       error = json.message || "Fehler beim Speichern";
