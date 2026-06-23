@@ -49,7 +49,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:13.0.1-resolute-rc
+        image: mariadb:12.3.2
         env:
           MARIADB_ROOT_PASSWORD: root
           MARIADB_DATABASE: hypnose_stammtisch
