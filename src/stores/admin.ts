@@ -1134,7 +1134,17 @@ export class AdminAPI {
     });
 
     if (result.success) {
-      adminNotifications.success("Benutzer erfolgreich aktualisiert!");
+      // The user was saved, but the e-mail confirmation may have failed
+      // (#123). Surface that as an error toast instead of a misleading
+      // "successfully updated" so the admin notices the address didn't change.
+      if (result.data?.email_change_failed) {
+        adminNotifications.error(
+          result.message ||
+            "Benutzer gespeichert, aber die Bestätigungs-E-Mail konnte nicht gesendet werden.",
+        );
+      } else {
+        adminNotifications.success("Benutzer erfolgreich aktualisiert!");
+      }
     } else {
       adminNotifications.error(
         result.message || "Fehler beim Aktualisieren des Benutzers",

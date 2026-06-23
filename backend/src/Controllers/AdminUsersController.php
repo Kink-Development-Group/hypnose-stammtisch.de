@@ -42,7 +42,9 @@ class AdminUsersController
         self::requireHeadAdmin();
 
         try {
-            $sql = "SELECT id, username, email, role, is_active, last_login, created_at, updated_at
+            // pending_email lets the admin list flag an in-flight (unconfirmed)
+            // email change instead of just showing the old address (#125).
+            $sql = "SELECT id, username, email, pending_email, role, is_active, last_login, created_at, updated_at
                     FROM users
                     ORDER BY created_at DESC";
 

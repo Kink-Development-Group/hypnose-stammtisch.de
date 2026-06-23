@@ -67,7 +67,7 @@
     }, 200);
   }
 
-  async function addManager(name?: string) {
+  async function addManager(name: string | undefined = undefined) {
     const username = (name ?? usernameInput).trim();
     if (!username || adding) return;
     adding = true;
@@ -119,7 +119,7 @@
     }, 200);
   }
 
-  async function reassignOwner(name?: string) {
+  async function reassignOwner(name: string | undefined = undefined) {
     const username = (name ?? reassignInput).trim();
     if (!username || reassigning) return;
     reassigning = true;

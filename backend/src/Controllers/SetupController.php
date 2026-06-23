@@ -166,9 +166,9 @@ class SetupController
 
         $checks = [
             'php_version' => [
-                'required' => '8.1.0',
+                'required' => '8.5',
                 'current' => PHP_VERSION,
-                'passed' => version_compare(PHP_VERSION, '8.1.0', '>='),
+                'passed' => version_compare(PHP_VERSION, '8.5', '>='),
             ],
             'extensions' => [],
             'directories' => [],

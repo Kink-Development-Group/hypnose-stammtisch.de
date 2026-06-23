@@ -1,0 +1,21 @@
+diff --git a/dist/Router.svelte b/dist/Router.svelte
+--- a/dist/Router.svelte
++++ b/dist/Router.svelte
+@@ -194,7 +194,7 @@
+  * <a href="/books" use:link>View books</a>
+  * ```
+  */
+-export function link(node: HTMLElement, opts?: LinkActionInternalOpts | string): {
++export function link(node: HTMLElement, opts: LinkActionInternalOpts | string | undefined = undefined): {
+     update(updated?: LinkActionInternalOpts | string): void
+     destroy(): void
+ } {
+@@ -222,7 +222,7 @@
+     node.addEventListener('click', clickHandler)
+
+     return {
+-        update(updated?: LinkActionInternalOpts | string): void {
++        update(updated: LinkActionInternalOpts | string | undefined = undefined): void {
+             currentOpts = linkOpts(updated)
+             updateLinkHref(node, currentOpts)
+         },

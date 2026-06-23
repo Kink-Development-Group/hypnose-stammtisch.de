@@ -117,7 +117,7 @@
 -->
 {#if adminNotifications.length > 0}
   <div
-    class="pointer-events-none fixed bottom-4 right-4 z-50 space-y-2 max-w-sm"
+    class="pointer-events-none fixed bottom-4 right-4 z-[10060] space-y-2 max-w-sm"
   >
     {#each adminNotifications as notification (notification.id)}
       <div
