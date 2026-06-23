@@ -119,7 +119,7 @@
     }, 200);
   }
 
-  async function reassignOwner(name?: string) {
+  async function reassignOwner(name: string | undefined = undefined) {
     const username = (name ?? reassignInput).trim();
     if (!username || reassigning) return;
     reassigning = true;
