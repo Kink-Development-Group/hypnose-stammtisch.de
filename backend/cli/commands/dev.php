@@ -404,7 +404,7 @@ class DevelopmentCommand
     $this->output(str_repeat('=', 40), 'info');
 
     $checks = [
-      'PHP Version >= 8.0' => version_compare(PHP_VERSION, '8.0.0', '>='),
+      'PHP Version >= 8.5' => version_compare(PHP_VERSION, '8.5', '>='),
       'PDO Extension' => extension_loaded('pdo'),
       'PDO MySQL Extension' => extension_loaded('pdo_mysql'),
       'cURL Extension' => extension_loaded('curl'),
