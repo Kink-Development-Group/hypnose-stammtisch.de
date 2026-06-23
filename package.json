@@ -85,6 +85,9 @@
     "vitepress": "^1.6.4",
     "vitest": "^4.1.9"
   },
+  "patchedDependencies": {
+    "svelte-spa-router@5.1.0": "patches/svelte-spa-router@5.1.0.patch"
+  },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@types/leaflet": "^1.9.21",

@@ -67,7 +67,7 @@
     }, 200);
   }
 
-  async function addManager(name?: string) {
+  async function addManager(name: string | undefined = undefined) {
     const username = (name ?? usernameInput).trim();
     if (!username || adding) return;
     adding = true;
