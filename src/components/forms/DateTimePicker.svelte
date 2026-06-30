@@ -349,7 +349,7 @@
     class="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left text-sm rounded-lg border transition-all duration-200
            {disabled
       ? 'bg-gray-100 dark:bg-charcoal-800 text-gray-400 dark:text-smoke-600 cursor-not-allowed'
-      : 'bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 cursor-pointer hover:border-primary-400 dark:hover:border-primary-500'}
+      : 'bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 cursor-pointer hover:border-primary-400 dark:hover:border-primary-500'}
            {error
       ? 'border-boundaries ring-1 ring-boundaries'
       : 'border-gray-300 dark:border-charcoal-500'}
@@ -432,7 +432,7 @@
         aria-modal={isMobile ? "true" : undefined}
         class="{isMobile
           ? 'fixed inset-x-0 bottom-0 z-[10050] max-h-[90vh] overflow-y-auto rounded-t-2xl'
-          : 'fixed z-[10050] rounded-xl'} bg-charcoal-800 dark:bg-charcoal-800 shadow-xl border border-gray-200 dark:border-charcoal-600 overflow-hidden animate-fade-in sm:min-w-[320px]"
+          : 'fixed z-[10050] rounded-xl'} bg-white dark:bg-charcoal-800 shadow-xl border border-gray-200 dark:border-charcoal-600 overflow-hidden animate-fade-in sm:min-w-[320px]"
         style={isMobile ? undefined : pickerStyle}
       >
         <!-- Mobile Header with Close Button -->
@@ -621,7 +621,7 @@
         <!-- Time Section -->
         {#if mode !== "date"}
           <div
-            class="p-4 border-t border-gray-200 dark:border-charcoal-600 bg-charcoal-800 dark:bg-charcoal-850"
+            class="p-4 border-t border-gray-200 dark:border-charcoal-600 bg-gray-50 dark:bg-charcoal-900"
           >
             <div
               class="text-xs font-medium text-gray-500 dark:text-smoke-400 mb-3 uppercase tracking-wide"
@@ -659,7 +659,7 @@
                   value={String(hours).padStart(2, "0")}
                   on:change={(e) =>
                     updateHours(parseInt(e.currentTarget.value) || 0)}
-                  class="w-14 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  class="w-14 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   aria-label="Stunden"
                 />
                 <button
@@ -717,7 +717,7 @@
                   value={String(minutes).padStart(2, "0")}
                   on:change={(e) =>
                     updateMinutes(parseInt(e.currentTarget.value) || 0)}
-                  class="w-14 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  class="w-14 h-12 text-center text-2xl font-bold rounded-lg border border-gray-300 dark:border-charcoal-500 bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   aria-label="Minuten"
                 />
                 <button
@@ -768,7 +768,7 @@
 
         <!-- Footer Actions -->
         <div
-          class="flex items-center justify-between gap-2 p-3 border-t border-gray-200 dark:border-charcoal-600 bg-charcoal-800 dark:bg-charcoal-850"
+          class="flex items-center justify-between gap-2 p-3 border-t border-gray-200 dark:border-charcoal-600 bg-gray-50 dark:bg-charcoal-900"
         >
           <div class="flex gap-2">
             {#if mode !== "time"}
