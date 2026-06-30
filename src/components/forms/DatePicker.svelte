@@ -19,6 +19,9 @@
   export let placeholder: string = "Datum auswählen";
   export let onchange: ((detail: { value: string }) => void) | undefined =
     undefined;
+  // Force dark styling regardless of the global theme class on <html>. Used on
+  // the public site, which is always dark but does not set the `.dark` class.
+  export let forceDark: boolean = false;
 
   // Internal state
   let isOpen = false;
@@ -218,7 +221,7 @@
   });
 </script>
 
-<div class="relative" bind:this={containerRef}>
+<div class="relative" class:dark={forceDark} bind:this={containerRef}>
   {#if label}
     <label
       for={id}
@@ -244,7 +247,7 @@
     class="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left text-sm rounded-lg border transition-all duration-200
            {disabled
       ? 'bg-gray-100 dark:bg-charcoal-800 text-gray-400 dark:text-smoke-600 cursor-not-allowed'
-      : 'bg-charcoal-800 dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 cursor-pointer hover:border-primary-400 dark:hover:border-primary-500'}
+      : 'bg-white dark:bg-charcoal-700 text-gray-900 dark:text-smoke-100 cursor-pointer hover:border-primary-400 dark:hover:border-primary-500'}
            {error
       ? 'border-boundaries ring-1 ring-boundaries'
       : 'border-gray-300 dark:border-charcoal-500'}
@@ -292,7 +295,7 @@
   {/if}
 
   {#if isOpen}
-    <Portal>
+    <Portal containerClass={forceDark ? "dark" : ""}>
       {#if isMobile}
         <div
           class="fixed inset-0 bg-black/50 z-[10040] animate-fade-in"
@@ -310,7 +313,7 @@
         aria-modal={isMobile ? "true" : undefined}
         class="{isMobile
           ? 'fixed inset-x-0 bottom-0 z-[10050] max-h-[85vh] overflow-y-auto rounded-t-2xl'
-          : 'fixed z-[10050] rounded-xl'} bg-charcoal-800 dark:bg-charcoal-800 shadow-xl border border-gray-200 dark:border-charcoal-600 overflow-hidden animate-fade-in sm:min-w-[300px]"
+          : 'fixed z-[10050] rounded-xl'} bg-white dark:bg-charcoal-800 shadow-xl border border-gray-200 dark:border-charcoal-600 overflow-hidden animate-fade-in sm:min-w-[300px]"
         style={isMobile ? undefined : pickerStyle}
       >
         <!-- Mobile Header -->
@@ -491,7 +494,7 @@
 
         <!-- Footer Actions -->
         <div
-          class="flex items-center justify-between gap-2 p-3 border-t border-gray-200 dark:border-charcoal-600 bg-charcoal-800 dark:bg-charcoal-900"
+          class="flex items-center justify-between gap-2 p-3 border-t border-gray-200 dark:border-charcoal-600 bg-gray-50 dark:bg-charcoal-900"
         >
           <div class="flex gap-2">
             <button

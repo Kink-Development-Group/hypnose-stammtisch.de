@@ -467,6 +467,7 @@
         bind:value={formData.start_datetime}
         required
         mode="datetime"
+        forceDark
         error={errors.start_datetime || ""}
       />
 
@@ -478,6 +479,7 @@
         required
         mode="datetime"
         minDate={formData.start_datetime?.split("T")[0]}
+        forceDark
         error={errors.end_datetime || ""}
       />
 

@@ -3,6 +3,9 @@
 
   // Target element for portal (default: document.body)
   export let target: HTMLElement | string = "body";
+  // Extra classes for the portal container. Lets a caller carry a scope (e.g.
+  // `dark`) onto the portalled subtree without mutating global document state.
+  export let containerClass = "";
 
   let portalContainer: HTMLDivElement;
   let targetElement: HTMLElement | null = null;
@@ -29,7 +32,7 @@
   });
 </script>
 
-<div bind:this={portalContainer} class="portal-container">
+<div bind:this={portalContainer} class="portal-container {containerClass}">
   <slot />
 </div>
 
