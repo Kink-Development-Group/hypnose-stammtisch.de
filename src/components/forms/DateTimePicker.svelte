@@ -20,6 +20,9 @@
   export let placeholder: string = "";
   export let onchange: ((detail: { value: string }) => void) | undefined =
     undefined;
+  // Force dark styling regardless of the global theme class on <html>. Used on
+  // the public site, which is always dark but does not set the `.dark` class.
+  export let forceDark: boolean = false;
 
   // Internal state
   let isOpen = false;
@@ -323,7 +326,7 @@
   }
 </script>
 
-<div class="relative" bind:this={containerRef}>
+<div class="relative" class:dark={forceDark} bind:this={containerRef}>
   {#if label}
     <label
       for={id}
@@ -414,7 +417,7 @@
   {/if}
 
   {#if isOpen}
-    <Portal>
+    <Portal containerClass={forceDark ? "dark" : ""}>
       {#if isMobile}
         <div
           class="fixed inset-0 bg-black/50 z-[10040] animate-fade-in"

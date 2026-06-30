@@ -2,7 +2,7 @@
   import dayjs from "dayjs";
   import timezone from "dayjs/plugin/timezone";
   import utc from "dayjs/plugin/utc";
-  import { onDestroy, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { z } from "zod";
   import InvisibleCaptcha from "../shared/InvisibleCaptcha.svelte";
   import MarkdownEditor from "../shared/MarkdownEditor.svelte";
@@ -145,34 +145,11 @@
     formData.end_datetime &&
     dayjs(formData.end_datetime).isAfter(dayjs(formData.start_datetime));
 
-  // The public site is always dark-themed but does not set the `.dark` class on
-  // <html>, so the date/time pickers (which rely on `dark:` variants) would
-  // render their light styling here. Provide a dark context while this form is
-  // mounted so the pickers — including their portalled dialogs on <body> —
-  // match the surrounding dark form. We only remove the class if we added it,
-  // to avoid clobbering an existing admin theme setting.
-  let addedDarkClass = false;
-
   onMount(() => {
     // Set default start time to next hour
     const nextHour = dayjs().add(1, "hour").startOf("hour");
     formData.start_datetime = nextHour.format("YYYY-MM-DDTHH:mm");
     formData.end_datetime = nextHour.add(2, "hours").format("YYYY-MM-DDTHH:mm");
-
-    if (typeof document !== "undefined") {
-      const root = document.documentElement;
-      if (!root.classList.contains("dark")) {
-        root.classList.add("dark");
-        addedDarkClass = true;
-      }
-    }
-  });
-
-  onDestroy(() => {
-    if (addedDarkClass && typeof document !== "undefined") {
-      document.documentElement.classList.remove("dark");
-      addedDarkClass = false;
-    }
   });
 
   // Form submission
@@ -490,6 +467,7 @@
         bind:value={formData.start_datetime}
         required
         mode="datetime"
+        forceDark
         error={errors.start_datetime || ""}
       />
 
@@ -501,6 +479,7 @@
         required
         mode="datetime"
         minDate={formData.start_datetime?.split("T")[0]}
+        forceDark
         error={errors.end_datetime || ""}
       />
 
