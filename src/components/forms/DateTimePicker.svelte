@@ -241,11 +241,15 @@
     );
   }
 
-  function isSelected(day: number): boolean {
-    if (!selectedDate) return false;
-    const sel = dayjs(selectedDate);
+  // `sel` is passed in from the markup so Svelte tracks `selectedDate` as a
+  // dependency of the {#each} block. Without it the selection highlight would
+  // not move when a day in the current month is picked (selectedDate changes
+  // but calendarDays/viewMonth/viewYear don't, so the block wouldn't re-render).
+  function isSelected(day: number, sel: string): boolean {
+    if (!sel) return false;
+    const d = dayjs(sel);
     return (
-      day === sel.date() && viewMonth === sel.month() && viewYear === sel.year()
+      day === d.date() && viewMonth === d.month() && viewYear === d.year()
     );
   }
 
@@ -600,7 +604,7 @@
                     on:click={() => selectDay(day)}
                     disabled={isDisabledDate(day)}
                     class="w-10 h-10 sm:w-9 sm:h-9 rounded-lg text-sm font-medium transition-all duration-150 touch-manipulation
-                         {isSelected(day)
+                         {isSelected(day, selectedDate)
                       ? 'bg-primary-600 text-white shadow-sm'
                       : isToday(day)
                         ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
@@ -610,8 +614,10 @@
                       : 'cursor-pointer'}"
                     aria-label="{day}. {months[
                       viewMonth
-                    ]} {viewYear}, {isSelected(day) ? 'ausgewählt' : ''}"
-                    aria-pressed={isSelected(day)}
+                    ]} {viewYear}, {isSelected(day, selectedDate)
+                      ? 'ausgewählt'
+                      : ''}"
+                    aria-pressed={isSelected(day, selectedDate)}
                   >
                     {day}
                   </button>
