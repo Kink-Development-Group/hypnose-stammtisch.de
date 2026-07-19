@@ -373,8 +373,13 @@ class ICSGenerator
             $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
         }
 
-        while (ob_get_level() > 0 && ob_end_clean()) {
-            // discard whatever was buffered before the calendar
+        // Discard whatever was buffered before the calendar. ob_end_clean()
+        // returns false for a buffer that cannot be removed - stop there rather
+        // than spinning forever on it.
+        while (ob_get_level() > 0) {
+            if (!ob_end_clean()) {
+                break;
+            }
         }
 
         if (!headers_sent()) {
