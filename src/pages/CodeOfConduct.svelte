@@ -370,6 +370,9 @@
             <strong>Hilfetelefon Gewalt gegen Frauen:</strong> 08000 116 016
           </p>
           <p>
+            <strong>Hilfetelefon Gewalt an Männern:</strong> 0800 123 9900
+          </p>
+          <p>
             <strong>Kassenärztlicher Notdienst:</strong> 116 117
           </p>
         </div>

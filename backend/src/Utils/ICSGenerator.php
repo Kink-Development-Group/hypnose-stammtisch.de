@@ -125,13 +125,14 @@ class ICSGenerator
             $lines[] = 'LOCATION:' . self::escapeValue($location);
         }
 
-        // Organizer
+        // Organizer - CN is a property parameter, not part of the value (RFC 5545 §3.8.4.3)
         if (!empty($event['organizer_email'])) {
-            $organizer = 'MAILTO:' . $event['organizer_email'];
+            $property = 'ORGANIZER';
             if (!empty($event['organizer_name'])) {
-                $organizer = 'CN=' . self::escapeValue($event['organizer_name']) . ':' . $organizer;
+                $cn = str_replace('"', '', $event['organizer_name']);
+                $property .= ';CN="' . $cn . '"';
             }
-            $lines[] = 'ORGANIZER:' . $organizer;
+            $lines[] = $property . ':MAILTO:' . $event['organizer_email'];
         }
 
         // URL
@@ -239,8 +240,10 @@ class ICSGenerator
         }
 
         // Event details
+        // Note: use real newlines here; escapeValue() converts them to the
+        // literal "\n" sequence required by RFC 5545 exactly once.
         if (!empty($event['category'])) {
-            $description[] = "\\nKategorie: " . ucfirst($event['category']);
+            $description[] = "\nKategorie: " . ucfirst($event['category']);
         }
 
         if (!empty($event['difficulty_level']) && $event['difficulty_level'] !== 'all') {
@@ -254,30 +257,30 @@ class ICSGenerator
         // Location details - convert Markdown
         if (!empty($event['location_instructions'])) {
             $locationInstructions = self::markdownToPlainText($event['location_instructions']);
-            $description[] = "\\nAnfahrt: " . strip_tags($locationInstructions);
+            $description[] = "\nAnfahrt: " . strip_tags($locationInstructions);
         }
 
         // Requirements - convert Markdown
         if (!empty($event['requirements'])) {
             $requirements = self::markdownToPlainText($event['requirements']);
-            $description[] = "\\nVoraussetzungen: " . strip_tags($requirements);
+            $description[] = "\nVoraussetzungen: " . strip_tags($requirements);
         }
 
         // Safety notes - convert Markdown
         if (!empty($event['safety_notes'])) {
             $safetyNotes = self::markdownToPlainText($event['safety_notes']);
-            $description[] = "\\nSicherheitshinweise: " . strip_tags($safetyNotes);
+            $description[] = "\nSicherheitshinweise: " . strip_tags($safetyNotes);
         }
 
         // Preparation notes - convert Markdown
         if (!empty($event['preparation_notes'])) {
             $prepNotes = self::markdownToPlainText($event['preparation_notes']);
-            $description[] = "\\nVorbereitung: " . strip_tags($prepNotes);
+            $description[] = "\nVorbereitung: " . strip_tags($prepNotes);
         }
 
         // Contact info
         if (!empty($event['organizer_name']) || !empty($event['organizer_email'])) {
-            $description[] = "\\nKontakt:";
+            $description[] = "\nKontakt:";
             if (!empty($event['organizer_name'])) {
                 $description[] = "Name: " . $event['organizer_name'];
             }
@@ -287,9 +290,9 @@ class ICSGenerator
         }
 
         // Event URL
-        $description[] = "\\nMehr Informationen: https://" . self::DOMAIN . "/events/" . $event['id'];
+        $description[] = "\nMehr Informationen: https://" . self::DOMAIN . "/events/" . $event['id'];
 
-        return implode("\\n", $description);
+        return implode("\n", $description);
     }
 
     /**
@@ -388,7 +391,6 @@ class ICSGenerator
         $result = [];
         $currentLine = '';
         $isFirstLine = true;
-        $maxBytes = 75;
 
         // Process character by character to avoid breaking UTF-8 sequences
         $length = mb_strlen($line, 'UTF-8');
@@ -438,10 +440,9 @@ class ICSGenerator
             $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
         }
 
-        // Add UTF-8 BOM for better compatibility with calendar clients
-        // Many clients (Outlook, Apple Calendar) need this to properly detect UTF-8
-        $bom = "\xEF\xBB\xBF";
-        $icsContent = $bom . $icsContent;
+        // No UTF-8 BOM: RFC 5545 requires the stream to start with "BEGIN:VCALENDAR";
+        // a BOM breaks strict parsers (Thunderbird, ical.js, Google import).
+        // UTF-8 is declared via the Content-Type charset instead.
 
         // Set appropriate headers - explicitly set UTF-8 encoding
         header('Content-Type: text/calendar; charset=utf-8');
@@ -466,9 +467,7 @@ class ICSGenerator
             $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
         }
 
-        // Add UTF-8 BOM for better compatibility with calendar clients
-        $bom = "\xEF\xBB\xBF";
-        $icsContent = $bom . $icsContent;
+        // No UTF-8 BOM (see outputCalendarFeed)
 
         // Set appropriate headers
         header('Content-Type: text/calendar; charset=utf-8');
@@ -587,8 +586,8 @@ class ICSGenerator
             $description = self::markdownToPlainText($series['description']);
             $description = strip_tags($description);
 
-            // Add series URL
-            $description .= "\\n\\nMehr Informationen: https://" . self::DOMAIN . "/events";
+            // Add series URL (real newlines - escapeValue converts them once)
+            $description .= "\n\nMehr Informationen: https://" . self::DOMAIN . "/events";
 
             $lines[] = 'DESCRIPTION:' . self::escapeValue($description);
         }
@@ -691,9 +690,7 @@ class ICSGenerator
             $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
         }
 
-        // Add UTF-8 BOM for better compatibility with calendar clients
-        $bom = "\xEF\xBB\xBF";
-        $icsContent = $bom . $icsContent;
+        // No UTF-8 BOM (see outputCalendarFeed)
 
         // Set appropriate headers
         header('Content-Type: text/calendar; charset=utf-8');
