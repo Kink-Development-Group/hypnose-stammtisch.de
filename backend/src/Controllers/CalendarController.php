@@ -6,10 +6,8 @@ namespace HypnoseStammtisch\Controllers;
 
 use HypnoseStammtisch\Models\Event;
 use HypnoseStammtisch\Database\Database;
-use HypnoseStammtisch\Utils\JsonHelper;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\ICSGenerator;
-use HypnoseStammtisch\Utils\RRuleProcessor;
 use HypnoseStammtisch\Config\Config;
 use Carbon\Carbon;
 
@@ -19,19 +17,32 @@ use Carbon\Carbon;
 class CalendarController
 {
     /**
+     * Reduce the token from the URL to either a real token or null.
+     *
+     * Both callers pass null for the public feed (no path segment, no ?token),
+     * so the null has to be absorbed before it reaches a string function - with
+     * strict_types that is a TypeError, not a coercion.
+     */
+    private static function normalizeFeedToken(?string $token): ?string
+    {
+        $normalized = trim($token ?? '');
+
+        if ($normalized === '' || strcasecmp($normalized, 'public') === 0) {
+            return null;
+        }
+
+        return $normalized;
+    }
+
+    /**
      * Generate ICS calendar feed
      * GET /api/calendar/feed
      * GET /api/calendar/feed/{token}
      */
-    public function feed(string $token = null): void
+    public function feed(?string $token = null): void
     {
         try {
-            // Normalize special values that represent the public feed
-            $normalizedToken = $token !== null ? trim($token) : null;
-
-            if ($normalizedToken === '' || strcasecmp($normalizedToken, 'public') === 0) {
-                $normalizedToken = null;
-            }
+            $normalizedToken = self::normalizeFeedToken($token);
 
             // Validate token if provided
             if ($normalizedToken && !$this->validateFeedToken($normalizedToken)) {
@@ -42,14 +53,16 @@ class CalendarController
             // Get events with expansion for recurring events
             $events = $this->getExpandedEventsForFeed();
 
-            // Generate ICS content using the new ICSGenerator
-            $filename = $normalizedToken ? 'private-calendar.ics' : 'public-calendar.ics';
-            ICSGenerator::outputCalendarFeed($events, $filename);
-
-            // Update token access tracking
+            // Track access before writing the body: once the calendar is out,
+            // the error handler below can only append JSON to it and trigger
+            // "headers already sent".
             if ($normalizedToken) {
                 $this->updateTokenAccess($normalizedToken);
             }
+
+            // Generate ICS content using the new ICSGenerator
+            $filename = $normalizedToken ? 'private-calendar.ics' : 'public-calendar.ics';
+            ICSGenerator::outputCalendarFeed($events, $filename);
         } catch (\Exception $e) {
             error_log("Calendar feed error: " . $e->getMessage());
             Response::json(['success' => false, 'error' => 'Failed to generate calendar feed'], 500);
@@ -96,232 +109,13 @@ class CalendarController
                 return;
             }
 
-            $icsContent = $this->generateIcsContent([$event]);
-
-            $filename = $this->sanitizeFilename($event->title) . '.ics';
-            Response::ics($icsContent, $filename);
+            // Same generator as the feed - it escapes per RFC 5545, keeps the
+            // TZID resolvable and discards anything buffered before the stream.
+            ICSGenerator::outputSingleEvent($this->eventToArray($event));
         } catch (\Exception $e) {
             error_log("Event ICS error: " . $e->getMessage());
             Response::error('Failed to generate event ICS', 500);
         }
-    }
-
-    /**
-     * Generate ICS content from events
-     */
-    private function generateIcsContent(array $events): string
-    {
-        $timezone = Config::get('calendar.timezone', 'Europe/Berlin');
-        $appName = Config::getAppName(true);
-        $prodId = '-//' . $appName . '//Calendar Feed//DE';
-        $calName = $appName;
-        $calDesc = 'Events der ' . $appName . ' Community';
-
-        $ics = [
-            'BEGIN:VCALENDAR',
-            'VERSION:2.0',
-            'PRODID:' . $prodId,
-            'CALSCALE:GREGORIAN',
-            'METHOD:PUBLISH',
-            'X-WR-CALNAME:' . $calName,
-            'X-WR-CALDESC:' . $calDesc,
-            'X-WR-TIMEZONE:' . $timezone,
-        ];
-
-        // Add timezone definition
-        $ics = array_merge($ics, $this->getTimezoneDefinition($timezone));
-
-        // Add events
-        foreach ($events as $event) {
-            $ics = array_merge($ics, $this->generateEventIcs($event));
-        }
-
-        $ics[] = 'END:VCALENDAR';
-
-        return implode("\r\n", $ics) . "\r\n";
-    }
-
-    /**
-     * Generate ICS for single event
-     */
-    private function generateEventIcs(Event $event): array
-    {
-        $timezone = Config::get('calendar.timezone', 'Europe/Berlin');
-
-        // Convert dates to UTC
-        $startDt = Carbon::createFromFormat('Y-m-d H:i:s', $event->startDatetime, $timezone);
-        $endDt = Carbon::createFromFormat('Y-m-d H:i:s', $event->endDatetime, $timezone);
-
-        $uid = 'event-' . $event->id . '@hypnose-stammtisch.de';
-        $timestamp = Carbon::now('UTC')->format('Ymd\THis\Z');
-
-        // Location string
-        $location = $this->formatLocation($event);
-
-        // Description
-        $description = $this->formatDescription($event);
-
-        // URL
-        $url = Config::get('app.frontend_url') . '/events/' . $event->slug;
-
-        $eventIcs = [
-            'BEGIN:VEVENT',
-            'UID:' . $uid,
-            'DTSTAMP:' . $timestamp,
-            'DTSTART;TZID=' . $timezone . ':' . $startDt->format('Ymd\THis'),
-            'DTEND;TZID=' . $timezone . ':' . $endDt->format('Ymd\THis'),
-            'SUMMARY:' . $this->escapeIcsValue($event->title),
-            'DESCRIPTION:' . $this->escapeIcsValue($description),
-            'URL:' . $url,
-            'CATEGORIES:' . strtoupper($event->category),
-            'STATUS:CONFIRMED',
-            'TRANSP:OPAQUE'
-        ];
-
-        if ($location) {
-            $eventIcs[] = 'LOCATION:' . $this->escapeIcsValue($location);
-        }
-
-        if ($event->organizerName && $event->organizerEmail) {
-            $eventIcs[] = 'ORGANIZER;CN=' . $this->escapeIcsValue($event->organizerName) . ':mailto:' . $event->organizerEmail;
-        }
-
-        // Add recurrence rule if event is recurring
-        if ($event->isRecurring && $event->rrule) {
-            $eventIcs[] = 'RRULE:' . $event->rrule;
-        }
-
-        $eventIcs[] = 'END:VEVENT';
-
-        return $eventIcs;
-    }
-
-    /**
-     * Get timezone definition for ICS
-     */
-    private function getTimezoneDefinition(string $timezone): array
-    {
-        // Simplified timezone definition for Europe/Berlin
-        if ($timezone === 'Europe/Berlin') {
-            return [
-                'BEGIN:VTIMEZONE',
-                'TZID:Europe/Berlin',
-                'BEGIN:DAYLIGHT',
-                'TZOFFSETFROM:+0100',
-                'TZOFFSETTO:+0200',
-                'TZNAME:CEST',
-                'DTSTART:19700329T020000',
-                'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU',
-                'END:DAYLIGHT',
-                'BEGIN:STANDARD',
-                'TZOFFSETFROM:+0200',
-                'TZOFFSETTO:+0100',
-                'TZNAME:CET',
-                'DTSTART:19701025T030000',
-                'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU',
-                'END:STANDARD',
-                'END:VTIMEZONE'
-            ];
-        }
-
-        return [];
-    }
-
-    /**
-     * Format location for ICS
-     */
-    private function formatLocation(Event $event): string
-    {
-        $parts = [];
-
-        if ($event->locationName) {
-            $parts[] = $event->locationName;
-        }
-
-        if ($event->locationAddress) {
-            $parts[] = $event->locationAddress;
-        }
-
-        if ($event->locationType === 'online' && $event->locationUrl) {
-            $parts[] = $event->locationUrl;
-        }
-
-        return implode(', ', $parts);
-    }
-
-    /**
-     * Format description for ICS
-     */
-    private function formatDescription(Event $event): string
-    {
-        $parts = [];
-
-        if ($event->description) {
-            $parts[] = $event->description;
-        }
-
-        if ($event->requirements) {
-            $parts[] = "\n\nVoraussetzungen: " . $event->requirements;
-        }
-
-        if ($event->safetyNotes) {
-            $parts[] = "\n\nSicherheitshinweise: " . $event->safetyNotes;
-        }
-
-        if ($event->preparationNotes) {
-            $parts[] = "\n\nVorbereitung: " . $event->preparationNotes;
-        }
-
-        // Add registration info
-        if ($event->requiresRegistration) {
-            $parts[] = "\n\nAnmeldung erforderlich.";
-
-            if ($event->registrationDeadline) {
-                $deadline = Carbon::createFromFormat('Y-m-d H:i:s', $event->registrationDeadline);
-                $parts[] = "Anmeldeschluss: " . $deadline->format('d.m.Y H:i');
-            }
-        }
-
-        return implode('', $parts);
-    }
-
-    /**
-     * Escape values for ICS format
-     */
-    private function escapeIcsValue(string $value): string
-    {
-        // Remove HTML tags
-        $value = strip_tags($value);
-
-        // Escape special characters
-        $value = str_replace(['\\', ',', ';', "\n", "\r"], ['\\\\', '\\,', '\\;', '\\n', ''], $value);
-
-        // Limit line length (fold long lines)
-        return $this->foldIcsLine($value);
-    }
-
-    /**
-     * Fold long ICS lines
-     */
-    private function foldIcsLine(string $line): string
-    {
-        if (strlen($line) <= 75) {
-            return $line;
-        }
-
-        $folded = substr($line, 0, 75);
-        $remainder = substr($line, 75);
-
-        while (strlen($remainder) > 74) {
-            $folded .= "\r\n " . substr($remainder, 0, 74);
-            $remainder = substr($remainder, 74);
-        }
-
-        if (strlen($remainder) > 0) {
-            $folded .= "\r\n " . $remainder;
-        }
-
-        return $folded;
     }
 
     /**
@@ -396,69 +190,20 @@ class CalendarController
     }
 
     /**
-     * Sanitize filename
-     */
-    private function sanitizeFilename(string $filename): string
-    {
-        $filename = preg_replace('/[^a-zA-Z0-9\-_]/', '-', $filename);
-        $filename = preg_replace('/-+/', '-', $filename);
-
-        return trim($filename, '-');
-    }
-
-    /**
-     * Get expanded events for calendar feed including recurring instances
+     * Get expanded events for calendar feed including recurring instances.
+     *
+     * Delegates to EventsController so the feed shows exactly what the site
+     * shows. Its own expansion only knew the events table plus legacy
+     * `is_recurring` rows, so everything authored as a series (event_series)
+     * was missing from the feed - which is how a site with upcoming events
+     * ended up publishing a calendar with no VEVENT at all.
      */
     private function getExpandedEventsForFeed(): array
     {
-        // Get base events for the next year
-        $baseEvents = Event::getAllPublished([
-            'from_date' => date('Y-m-d', strtotime('-1 month')),
-            'to_date' => date('Y-m-d', strtotime('+1 year'))
+        return (new EventsController())->getExpandedEvents([
+            'from_date' => Carbon::now()->subMonth()->startOfDay()->toDateTimeString(),
+            'to_date' => Carbon::now()->addYear()->toDateTimeString(),
         ]);
-
-        $expandedEvents = [];
-        $startDate = Carbon::now()->subMonth();
-        $endDate = Carbon::now()->addYear();
-
-        foreach ($baseEvents as $event) {
-            $eventArray = $this->eventToArray($event);
-
-            if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
-                // Expand recurring event
-                try {
-                    $instances = RRuleProcessor::expandRecurringEvent(
-                        $eventArray,
-                        $startDate,
-                        $endDate,
-                        JsonHelper::decodeArray($eventArray['exdates'] ?? '[]')
-                    );
-
-                    if (!empty($instances)) {
-                        $expandedEvents = array_merge($expandedEvents, $instances);
-                    } else {
-                        // If expansion returned no instances (e.g., all dates in past),
-                        // add base event if it falls within range
-                        $eventStart = Carbon::parse($eventArray['start_datetime']);
-                        if ($eventStart->between($startDate, $endDate)) {
-                            $expandedEvents[] = $eventArray;
-                        }
-                    }
-                } catch (\Exception $e) {
-                    error_log("Error expanding recurring event {$eventArray['id']}: " . $e->getMessage());
-                    // Add the base event if expansion fails
-                    $expandedEvents[] = $eventArray;
-                }
-            } else {
-                // Add single event (also handles is_recurring=true with empty rrule)
-                $eventStart = Carbon::parse($eventArray['start_datetime']);
-                if ($eventStart->between($startDate, $endDate)) {
-                    $expandedEvents[] = $eventArray;
-                }
-            }
-        }
-
-        return $expandedEvents;
     }
 
     /**

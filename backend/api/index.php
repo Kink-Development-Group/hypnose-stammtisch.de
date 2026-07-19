@@ -13,6 +13,12 @@ declare(strict_types=1);
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
 
+// Ab hier puffern, noch bevor der Autoloader lädt: eine Notice beim Laden einer
+// Klasse würde sonst direkt rausgehen, die Header festschreiben und binäre
+// Antworten (ICS-Feed, Downloads) unbrauchbar machen. Responses, die einen
+// sauberen Stream brauchen, verwerfen den Puffer gezielt.
+ob_start();
+
 // Set timezone
 date_default_timezone_set('Europe/Berlin');
 

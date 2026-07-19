@@ -54,7 +54,7 @@ class Response
      * @param string|null $filename Optional filename for the download
      * @param string|null $allowedBasePath Optional base path restriction (defaults to uploads folder)
      */
-    public static function download(string $filepath, string $filename = null, string $allowedBasePath = null): void
+    public static function download(string $filepath, ?string $filename = null, ?string $allowedBasePath = null): void
     {
         // Resolve paths for security check
         $realPath = realpath($filepath);

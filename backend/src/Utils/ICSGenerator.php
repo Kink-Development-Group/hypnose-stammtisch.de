@@ -17,6 +17,13 @@ class ICSGenerator
     private const DOMAIN = 'hypnose-stammtisch.de';
 
     /**
+     * The only zone we ship a VTIMEZONE definition for (getTimezoneDefinition()).
+     * RFC 5545 §3.2.19 requires a TZID parameter to reference a VTIMEZONE in the
+     * same calendar object, so every emitted TZID has to be exactly this.
+     */
+    private const DEFAULT_TIMEZONE = 'Europe/Berlin';
+
+    /**
      * Retrieve the configured application name with fallback for ICS metadata.
      */
     private static function getAppName(): string
@@ -84,7 +91,7 @@ class ICSGenerator
      */
     private static function formatEvent(array $event): array
     {
-        $timezone = $event['timezone'] ?? 'Europe/Berlin';
+        $timezone = self::resolveTimezone($event['timezone'] ?? null);
         $lines = [];
 
         $startTime = Carbon::parse($event['start_datetime'], $timezone);
@@ -93,10 +100,26 @@ class ICSGenerator
         // Event start
         $lines[] = 'BEGIN:VEVENT';
 
-        // UID - unique identifier
-        $uid = isset($event['parent_event_id'])
-            ? 'event-' . $event['parent_event_id'] . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN
-            : 'event-' . $event['id'] . '@' . self::DOMAIN;
+        // UID - must be stable per occurrence and unique across them. Expanded
+        // instances share the id of what they were generated from ("series_<id>"
+        // for every date of a series), so the date has to be part of the UID or
+        // clients collapse a whole series into a single event.
+        $eventId = self::stripControlChars((string)($event['id'] ?? ''));
+        if (!empty($event['series_id'])) {
+            // Series membership wins over parent_event_id: a generated instance
+            // carries both, a per-date override only series_id (its
+            // parent_event_id is null). Keying on series_id gives the same UID
+            // either way, so editing or cancelling one occurrence updates the
+            // event the subscriber already has instead of replacing it with a
+            // new one and leaving the original behind as a ghost.
+            $uid = 'series-' . self::stripControlChars((string)$event['series_id'])
+                . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN;
+        } elseif (isset($event['parent_event_id'])) {
+            $uid = 'event-' . self::stripControlChars((string)$event['parent_event_id'])
+                . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN;
+        } else {
+            $uid = 'event-' . $eventId . '@' . self::DOMAIN;
+        }
         $lines[] = 'UID:' . $uid;
 
         // DTSTAMP - creation timestamp
@@ -104,11 +127,16 @@ class ICSGenerator
 
         // Dates and times
         if (!empty($event['is_all_day'])) {
+            // DATE values carry no TZID, so the dates stay in the event's own zone
             $lines[] = 'DTSTART;VALUE=DATE:' . $startTime->format('Ymd');
             $lines[] = 'DTEND;VALUE=DATE:' . $endTime->addDay()->format('Ymd');
         } else {
-            $lines[] = 'DTSTART;TZID=' . $timezone . ':' . $startTime->format('Ymd\THis');
-            $lines[] = 'DTEND;TZID=' . $timezone . ':' . $endTime->format('Ymd\THis');
+            // Normalise to the one zone we define a VTIMEZONE for instead of
+            // emitting a dangling TZID; the absolute instant is preserved.
+            $lines[] = 'DTSTART;TZID=' . self::DEFAULT_TIMEZONE . ':'
+                . $startTime->copy()->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
+            $lines[] = 'DTEND;TZID=' . self::DEFAULT_TIMEZONE . ':'
+                . $endTime->copy()->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
         }
 
         // Basic properties
@@ -125,17 +153,17 @@ class ICSGenerator
             $lines[] = 'LOCATION:' . self::escapeValue($location);
         }
 
-        // Organizer
+        // Organizer - CN is a property parameter, not part of the value (RFC 5545 §3.8.4.3)
         if (!empty($event['organizer_email'])) {
-            $organizer = 'MAILTO:' . $event['organizer_email'];
+            $property = 'ORGANIZER';
             if (!empty($event['organizer_name'])) {
-                $organizer = 'CN=' . self::escapeValue($event['organizer_name']) . ':' . $organizer;
+                $property .= ';CN="' . self::escapeParamValue($event['organizer_name']) . '"';
             }
-            $lines[] = 'ORGANIZER:' . $organizer;
+            $lines[] = $property . ':MAILTO:' . self::stripControlChars($event['organizer_email']);
         }
 
         // URL
-        $eventUrl = 'https://' . self::DOMAIN . '/events/' . $event['id'];
+        $eventUrl = 'https://' . self::DOMAIN . '/events/' . $eventId;
         $lines[] = 'URL:' . $eventUrl;
 
         // Categories/tags
@@ -239,8 +267,10 @@ class ICSGenerator
         }
 
         // Event details
+        // Note: use real newlines here; escapeValue() converts them to the
+        // literal "\n" sequence required by RFC 5545 exactly once.
         if (!empty($event['category'])) {
-            $description[] = "\\nKategorie: " . ucfirst($event['category']);
+            $description[] = "\nKategorie: " . ucfirst($event['category']);
         }
 
         if (!empty($event['difficulty_level']) && $event['difficulty_level'] !== 'all') {
@@ -254,30 +284,30 @@ class ICSGenerator
         // Location details - convert Markdown
         if (!empty($event['location_instructions'])) {
             $locationInstructions = self::markdownToPlainText($event['location_instructions']);
-            $description[] = "\\nAnfahrt: " . strip_tags($locationInstructions);
+            $description[] = "\nAnfahrt: " . strip_tags($locationInstructions);
         }
 
         // Requirements - convert Markdown
         if (!empty($event['requirements'])) {
             $requirements = self::markdownToPlainText($event['requirements']);
-            $description[] = "\\nVoraussetzungen: " . strip_tags($requirements);
+            $description[] = "\nVoraussetzungen: " . strip_tags($requirements);
         }
 
         // Safety notes - convert Markdown
         if (!empty($event['safety_notes'])) {
             $safetyNotes = self::markdownToPlainText($event['safety_notes']);
-            $description[] = "\\nSicherheitshinweise: " . strip_tags($safetyNotes);
+            $description[] = "\nSicherheitshinweise: " . strip_tags($safetyNotes);
         }
 
         // Preparation notes - convert Markdown
         if (!empty($event['preparation_notes'])) {
             $prepNotes = self::markdownToPlainText($event['preparation_notes']);
-            $description[] = "\\nVorbereitung: " . strip_tags($prepNotes);
+            $description[] = "\nVorbereitung: " . strip_tags($prepNotes);
         }
 
         // Contact info
         if (!empty($event['organizer_name']) || !empty($event['organizer_email'])) {
-            $description[] = "\\nKontakt:";
+            $description[] = "\nKontakt:";
             if (!empty($event['organizer_name'])) {
                 $description[] = "Name: " . $event['organizer_name'];
             }
@@ -287,9 +317,9 @@ class ICSGenerator
         }
 
         // Event URL
-        $description[] = "\\nMehr Informationen: https://" . self::DOMAIN . "/events/" . $event['id'];
+        $description[] = "\nMehr Informationen: https://" . self::DOMAIN . "/events/" . $event['id'];
 
-        return implode("\\n", $description);
+        return implode("\n", $description);
     }
 
     /**
@@ -300,6 +330,105 @@ class ICSGenerator
         // Escape special characters
         $value = str_replace(['\\', ';', ',', "\n", "\r"], ['\\\\', '\\;', '\\,', '\\n', '\\r'], $value);
         return $value;
+    }
+
+    /**
+     * Remove characters that can break out of a content line.
+     *
+     * RFC 5545 forbids CTLs inside content lines; a raw CR/LF would end the
+     * line and let user-supplied text inject arbitrary calendar properties.
+     * Used for values that are not TEXT (URIs, parameters) and therefore
+     * cannot go through escapeValue().
+     */
+    private static function stripControlChars(string $value): string
+    {
+        // Byte-wise on purpose: every UTF-8 continuation byte is >= 0x80, so
+        // dropping the C0 range and DEL never damages a multi-byte sequence.
+        return preg_replace('/[\x00-\x1F\x7F]/', '', $value) ?? '';
+    }
+
+    /**
+     * Sanitize a property parameter value used inside a quoted string.
+     * On top of the CTLs, DQUOTE has to go: it would terminate the quoted
+     * value early (RFC 5545 QSAFE-CHAR).
+     */
+    private static function escapeParamValue(string $value): string
+    {
+        return str_replace('"', '', self::stripControlChars($value));
+    }
+
+    /**
+     * Send a generated calendar as a download.
+     *
+     * An ICS stream has to start with "BEGIN:VCALENDAR", so anything that
+     * leaked into the output buffer before us - a deprecation notice, stray
+     * whitespace, a BOM - is discarded first. api/index.php opens the buffer
+     * before the autoloader runs so even notices raised while loading a class
+     * are caught here. No BOM is added either: it breaks strict parsers
+     * (Thunderbird, ical.js, Google import); UTF-8 is declared via Content-Type.
+     *
+     * If output was already flushed the response cannot be repaired, and
+     * sending headers anyway would only stack "headers already sent" warnings
+     * on top of it - so the content is emitted bare.
+     */
+    private static function sendCalendarResponse(string $icsContent, string $filename): void
+    {
+        if (!mb_check_encoding($icsContent, 'UTF-8')) {
+            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
+        }
+
+        // Discard whatever was buffered before the calendar. ob_end_clean()
+        // returns false for a buffer that cannot be removed - stop there rather
+        // than spinning forever on it.
+        while (ob_get_level() > 0) {
+            if (!ob_end_clean()) {
+                break;
+            }
+        }
+
+        if (!headers_sent()) {
+            header('Content-Type: text/calendar; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . self::sanitizeFilename($filename) . '"');
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+            header('Content-Length: ' . strlen($icsContent));
+        }
+
+        echo $icsContent;
+    }
+
+    /**
+     * Reduce a filename to characters that are safe inside a quoted
+     * Content-Disposition value. PHP's header() already refuses CR/LF, but a
+     * DQUOTE would still break out of the filename.
+     */
+    private static function sanitizeFilename(string $filename): string
+    {
+        $safe = preg_replace('/[^A-Za-z0-9._-]/', '-', $filename) ?? '';
+        $safe = trim($safe, '-');
+
+        return $safe === '' ? 'calendar.ics' : $safe;
+    }
+
+    /**
+     * Resolve a stored timezone identifier to one PHP actually knows.
+     *
+     * Guards the Carbon::parse() calls: an unknown identifier would throw and
+     * take the whole feed down, and it must never reach a content line either.
+     */
+    private static function resolveTimezone(mixed $timezone): string
+    {
+        if (!is_string($timezone) || $timezone === '') {
+            return self::DEFAULT_TIMEZONE;
+        }
+
+        try {
+            new \DateTimeZone($timezone);
+        } catch (\Exception) {
+            return self::DEFAULT_TIMEZONE;
+        }
+
+        return $timezone;
     }
 
     /**
@@ -388,7 +517,6 @@ class ICSGenerator
         $result = [];
         $currentLine = '';
         $isFirstLine = true;
-        $maxBytes = 75;
 
         // Process character by character to avoid breaking UTF-8 sequences
         $length = mb_strlen($line, 'UTF-8');
@@ -433,24 +561,8 @@ class ICSGenerator
     {
         $icsContent = self::generateCalendarFeed($events);
 
-        // Ensure content is valid UTF-8
-        if (!mb_check_encoding($icsContent, 'UTF-8')) {
-            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
-        }
 
-        // Add UTF-8 BOM for better compatibility with calendar clients
-        // Many clients (Outlook, Apple Calendar) need this to properly detect UTF-8
-        $bom = "\xEF\xBB\xBF";
-        $icsContent = $bom . $icsContent;
-
-        // Set appropriate headers - explicitly set UTF-8 encoding
-        header('Content-Type: text/calendar; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Cache-Control: no-cache, must-revalidate');
-        header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
-        header('Content-Length: ' . strlen($icsContent));
-
-        echo $icsContent;
+        self::sendCalendarResponse($icsContent, $filename);
     }
 
     /**
@@ -459,25 +571,10 @@ class ICSGenerator
     public static function outputSingleEvent(array $event): void
     {
         $icsContent = self::generateSingleEvent($event);
-        $filename = 'event-' . ($event['slug'] ?? $event['id']) . '.ics';
+        $filename = self::sanitizeFilename('event-' . ($event['slug'] ?? $event['id']) . '.ics');
 
-        // Ensure content is valid UTF-8
-        if (!mb_check_encoding($icsContent, 'UTF-8')) {
-            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
-        }
 
-        // Add UTF-8 BOM for better compatibility with calendar clients
-        $bom = "\xEF\xBB\xBF";
-        $icsContent = $bom . $icsContent;
-
-        // Set appropriate headers
-        header('Content-Type: text/calendar; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Cache-Control: no-cache, must-revalidate');
-        header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
-        header('Content-Length: ' . strlen($icsContent));
-
-        echo $icsContent;
+        self::sendCalendarResponse($icsContent, $filename);
     }
 
     /**
@@ -497,7 +594,7 @@ class ICSGenerator
      */
     private static function formatSeriesEvent(array $series): array
     {
-        $timezone = $series['timezone'] ?? 'Europe/Berlin';
+        $timezone = self::resolveTimezone($series['timezone'] ?? null);
         $lines = [];
 
         // Get start time from series
@@ -539,19 +636,24 @@ class ICSGenerator
         $lines[] = 'BEGIN:VEVENT';
 
         // UID - unique identifier for the series
-        $lines[] = 'UID:series-' . $series['id'] . '@' . self::DOMAIN;
+        $lines[] = 'UID:series-' . self::stripControlChars((string)($series['id'] ?? '')) . '@' . self::DOMAIN;
 
         // DTSTAMP - creation timestamp
         $lines[] = 'DTSTAMP:' . Carbon::now('UTC')->format('Ymd\THis\Z');
 
         // Dates and times with RRULE for recurrence
-        $lines[] = 'DTSTART;TZID=' . $timezone . ':' . $startDate->format('Ymd\THis');
-        $lines[] = 'DTEND;TZID=' . $timezone . ':' . $endDate->format('Ymd\THis');
+        // Normalised to DEFAULT_TIMEZONE - see formatEvent() for the reasoning
+        $lines[] = 'DTSTART;TZID=' . self::DEFAULT_TIMEZONE . ':'
+            . $startDate->copy()->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
+        $lines[] = 'DTEND;TZID=' . self::DEFAULT_TIMEZONE . ':'
+            . $endDate->copy()->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
 
         // RRULE for recurrence - enhanced for maximum compatibility
         if (!empty($series['rrule'])) {
-            // Clean RRULE - remove DTSTART prefix if present
-            $rrule = $series['rrule'];
+            // Clean RRULE - remove DTSTART prefix if present.
+            // RECUR is a structured value that escapeValue() would corrupt, so
+            // CTLs are stripped instead to keep the rule on a single line.
+            $rrule = self::stripControlChars((string)$series['rrule']);
             if (str_starts_with($rrule, 'DTSTART')) {
                 // Extract just the RRULE part
                 if (preg_match('/RRULE:(.+)$/m', $rrule, $matches)) {
@@ -575,7 +677,8 @@ class ICSGenerator
                     $exdateCarbon = Carbon::parse($exdate, $timezone);
                     // Set same time as DTSTART for proper exclusion
                     $exdateCarbon->setTime($startDate->hour, $startDate->minute);
-                    $lines[] = 'EXDATE;TZID=' . $timezone . ':' . $exdateCarbon->format('Ymd\THis');
+                    $lines[] = 'EXDATE;TZID=' . self::DEFAULT_TIMEZONE . ':'
+                        . $exdateCarbon->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
                 }
             }
         }
@@ -587,8 +690,8 @@ class ICSGenerator
             $description = self::markdownToPlainText($series['description']);
             $description = strip_tags($description);
 
-            // Add series URL
-            $description .= "\\n\\nMehr Informationen: https://" . self::DOMAIN . "/events";
+            // Add series URL (real newlines - escapeValue converts them once)
+            $description .= "\n\nMehr Informationen: https://" . self::DOMAIN . "/events";
 
             $lines[] = 'DESCRIPTION:' . self::escapeValue($description);
         }
@@ -684,24 +787,9 @@ class ICSGenerator
     public static function outputSeriesEvent(array $series): void
     {
         $icsContent = self::generateSeriesEvent($series);
-        $filename = 'series-' . ($series['slug'] ?? $series['id']) . '.ics';
+        $filename = self::sanitizeFilename('series-' . ($series['slug'] ?? $series['id']) . '.ics');
 
-        // Ensure content is valid UTF-8
-        if (!mb_check_encoding($icsContent, 'UTF-8')) {
-            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
-        }
 
-        // Add UTF-8 BOM for better compatibility with calendar clients
-        $bom = "\xEF\xBB\xBF";
-        $icsContent = $bom . $icsContent;
-
-        // Set appropriate headers
-        header('Content-Type: text/calendar; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Cache-Control: no-cache, must-revalidate');
-        header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
-        header('Content-Length: ' . strlen($icsContent));
-
-        echo $icsContent;
+        self::sendCalendarResponse($icsContent, $filename);
     }
 }
