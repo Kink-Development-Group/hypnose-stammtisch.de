@@ -129,10 +129,9 @@ class ICSGenerator
         if (!empty($event['organizer_email'])) {
             $property = 'ORGANIZER';
             if (!empty($event['organizer_name'])) {
-                $cn = str_replace('"', '', $event['organizer_name']);
-                $property .= ';CN="' . $cn . '"';
+                $property .= ';CN="' . self::escapeParamValue($event['organizer_name']) . '"';
             }
-            $lines[] = $property . ':MAILTO:' . $event['organizer_email'];
+            $lines[] = $property . ':MAILTO:' . self::stripControlChars($event['organizer_email']);
         }
 
         // URL
@@ -303,6 +302,31 @@ class ICSGenerator
         // Escape special characters
         $value = str_replace(['\\', ';', ',', "\n", "\r"], ['\\\\', '\\;', '\\,', '\\n', '\\r'], $value);
         return $value;
+    }
+
+    /**
+     * Remove characters that can break out of a content line.
+     *
+     * RFC 5545 forbids CTLs inside content lines; a raw CR/LF would end the
+     * line and let user-supplied text inject arbitrary calendar properties.
+     * Used for values that are not TEXT (URIs, parameters) and therefore
+     * cannot go through escapeValue().
+     */
+    private static function stripControlChars(string $value): string
+    {
+        // Byte-wise on purpose: every UTF-8 continuation byte is >= 0x80, so
+        // dropping the C0 range and DEL never damages a multi-byte sequence.
+        return preg_replace('/[\x00-\x1F\x7F]/', '', $value) ?? '';
+    }
+
+    /**
+     * Sanitize a property parameter value used inside a quoted string.
+     * On top of the CTLs, DQUOTE has to go: it would terminate the quoted
+     * value early (RFC 5545 QSAFE-CHAR).
+     */
+    private static function escapeParamValue(string $value): string
+    {
+        return str_replace('"', '', self::stripControlChars($value));
     }
 
     /**
