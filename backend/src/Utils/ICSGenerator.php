@@ -105,13 +105,17 @@ class ICSGenerator
         // for every date of a series), so the date has to be part of the UID or
         // clients collapse a whole series into a single event.
         $eventId = self::stripControlChars((string)($event['id'] ?? ''));
-        if (isset($event['parent_event_id'])) {
-            $uid = 'event-' . self::stripControlChars((string)$event['parent_event_id'])
-                . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN;
-        } elseif (!empty($event['series_id'])) {
-            // Also covers per-date overrides: they keep the UID of the instance
-            // they replace, so editing one occurrence does not spawn a new event.
+        if (!empty($event['series_id'])) {
+            // Series membership wins over parent_event_id: a generated instance
+            // carries both, a per-date override only series_id (its
+            // parent_event_id is null). Keying on series_id gives the same UID
+            // either way, so editing or cancelling one occurrence updates the
+            // event the subscriber already has instead of replacing it with a
+            // new one and leaving the original behind as a ghost.
             $uid = 'series-' . self::stripControlChars((string)$event['series_id'])
+                . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN;
+        } elseif (isset($event['parent_event_id'])) {
+            $uid = 'event-' . self::stripControlChars((string)$event['parent_event_id'])
                 . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN;
         } else {
             $uid = 'event-' . $eventId . '@' . self::DOMAIN;

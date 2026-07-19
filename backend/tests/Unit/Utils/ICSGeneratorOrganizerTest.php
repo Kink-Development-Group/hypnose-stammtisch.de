@@ -206,45 +206,55 @@ class ICSGeneratorOrganizerTest extends TestCase
     );
   }
 
+  /**
+   * A generated series instance as RRuleProcessor emits it: the series id
+   * doubles as the event id, and parent_event_id is set to that same value.
+   *
+   * @return array<int, string>
+   */
+  private function seriesInstance(string $seriesId, string $date): array
+  {
+    return $this->formatEvent([
+      'id' => 'series_' . $seriesId,
+      'parent_event_id' => 'series_' . $seriesId,
+      'series_id' => $seriesId,
+      'start_datetime' => $date . ' 19:00:00',
+      'end_datetime' => $date . ' 22:00:00',
+    ]);
+  }
+
   public function testSeriesInstancesGetDistinctUidsPerOccurrence(): void
   {
-    // Every expanded instance of a series carries the same id
-    // ("series_<id>"), so without the date in the UID a client would collapse
-    // the whole series into one event.
-    $july = $this->formatEvent([
-      'id' => 'series_abc',
-      'series_id' => 'abc',
-      'start_datetime' => '2026-07-20 19:00:00',
-      'end_datetime' => '2026-07-20 22:00:00',
-    ]);
-    $august = $this->formatEvent([
-      'id' => 'series_abc',
-      'series_id' => 'abc',
-      'start_datetime' => '2026-08-17 19:00:00',
-      'end_datetime' => '2026-08-17 22:00:00',
-    ]);
+    // Every expanded instance of a series shares one id ("series_<id>"), so
+    // without the date in the UID a client would collapse the whole series
+    // into a single event.
+    $july = $this->seriesInstance('abc', '2026-07-20');
+    $august = $this->seriesInstance('abc', '2026-08-17');
 
-    $julyUid = $this->lineStartingWith($july, 'UID');
-    $augustUid = $this->lineStartingWith($august, 'UID');
-
-    $this->assertSame('UID:series-abc-20260720@hypnose-stammtisch.de', $julyUid);
-    $this->assertNotSame($julyUid, $augustUid);
+    $this->assertSame(
+      'UID:series-abc-20260720@hypnose-stammtisch.de',
+      $this->lineStartingWith($july, 'UID')
+    );
+    $this->assertNotSame(
+      $this->lineStartingWith($july, 'UID'),
+      $this->lineStartingWith($august, 'UID')
+    );
   }
 
   public function testSeriesOverrideKeepsTheUidOfTheOccurrenceItReplaces(): void
   {
-    // An override is a real events row with its own id; it must not appear as
-    // a second, separate event next to the instance it replaces.
-    $instance = $this->formatEvent([
-      'id' => 'series_abc',
-      'series_id' => 'abc',
-      'start_datetime' => '2026-07-20 19:00:00',
-      'end_datetime' => '2026-07-20 22:00:00',
-    ]);
+    // An override is a real events row: its own id, series_id set, but
+    // parent_event_id null. It replaces the generated instance for that date,
+    // so it has to carry the same UID - otherwise cancelling an occurrence
+    // makes the subscriber's original event vanish instead of turning into a
+    // cancellation.
+    $instance = $this->seriesInstance('abc', '2026-07-20');
     $override = $this->formatEvent([
       'id' => 'real-row-id',
+      'parent_event_id' => null,
       'series_id' => 'abc',
       'instance_date' => '2026-07-20',
+      'status' => 'cancelled',
       'start_datetime' => '2026-07-20 19:00:00',
       'end_datetime' => '2026-07-20 22:00:00',
     ]);
@@ -252,6 +262,24 @@ class ICSGeneratorOrganizerTest extends TestCase
     $this->assertSame(
       $this->lineStartingWith($instance, 'UID'),
       $this->lineStartingWith($override, 'UID')
+    );
+    $this->assertContains('STATUS:CANCELLED', $override);
+  }
+
+  public function testLegacyRecurringInstancesStillKeyOnParentEvent(): void
+  {
+    // Non-series recurring events have no series_id and must keep the
+    // parent-based UID scheme.
+    $lines = $this->formatEvent([
+      'id' => 'legacy-1',
+      'parent_event_id' => 'legacy-base',
+      'start_datetime' => '2026-07-20 19:00:00',
+      'end_datetime' => '2026-07-20 22:00:00',
+    ]);
+
+    $this->assertSame(
+      'UID:event-legacy-base-20260720@hypnose-stammtisch.de',
+      $this->lineStartingWith($lines, 'UID')
     );
   }
 
