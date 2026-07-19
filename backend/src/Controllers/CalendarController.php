@@ -23,7 +23,7 @@ class CalendarController
      * GET /api/calendar/feed
      * GET /api/calendar/feed/{token}
      */
-    public function feed(string $token = null): void
+    public function feed(?string $token = null): void
     {
         try {
             // Normalize special values that represent the public feed

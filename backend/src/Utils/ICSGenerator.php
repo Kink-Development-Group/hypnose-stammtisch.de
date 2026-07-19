@@ -344,6 +344,41 @@ class ICSGenerator
     }
 
     /**
+     * Send a generated calendar as a download.
+     *
+     * An ICS stream has to start with "BEGIN:VCALENDAR", so anything that
+     * leaked into the output buffer before us - a deprecation notice, stray
+     * whitespace, a BOM - is discarded first. api/index.php opens the buffer
+     * before the autoloader runs so even notices raised while loading a class
+     * are caught here. No BOM is added either: it breaks strict parsers
+     * (Thunderbird, ical.js, Google import); UTF-8 is declared via Content-Type.
+     *
+     * If output was already flushed the response cannot be repaired, and
+     * sending headers anyway would only stack "headers already sent" warnings
+     * on top of it - so the content is emitted bare.
+     */
+    private static function sendCalendarResponse(string $icsContent, string $filename): void
+    {
+        if (!mb_check_encoding($icsContent, 'UTF-8')) {
+            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
+        }
+
+        while (ob_get_level() > 0 && ob_end_clean()) {
+            // discard whatever was buffered before the calendar
+        }
+
+        if (!headers_sent()) {
+            header('Content-Type: text/calendar; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . self::sanitizeFilename($filename) . '"');
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+            header('Content-Length: ' . strlen($icsContent));
+        }
+
+        echo $icsContent;
+    }
+
+    /**
      * Reduce a filename to characters that are safe inside a quoted
      * Content-Disposition value. PHP's header() already refuses CR/LF, but a
      * DQUOTE would still break out of the filename.
@@ -507,23 +542,8 @@ class ICSGenerator
     {
         $icsContent = self::generateCalendarFeed($events);
 
-        // Ensure content is valid UTF-8
-        if (!mb_check_encoding($icsContent, 'UTF-8')) {
-            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
-        }
 
-        // No UTF-8 BOM: RFC 5545 requires the stream to start with "BEGIN:VCALENDAR";
-        // a BOM breaks strict parsers (Thunderbird, ical.js, Google import).
-        // UTF-8 is declared via the Content-Type charset instead.
-
-        // Set appropriate headers - explicitly set UTF-8 encoding
-        header('Content-Type: text/calendar; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . self::sanitizeFilename($filename) . '"');
-        header('Cache-Control: no-cache, must-revalidate');
-        header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
-        header('Content-Length: ' . strlen($icsContent));
-
-        echo $icsContent;
+        self::sendCalendarResponse($icsContent, $filename);
     }
 
     /**
@@ -534,21 +554,8 @@ class ICSGenerator
         $icsContent = self::generateSingleEvent($event);
         $filename = self::sanitizeFilename('event-' . ($event['slug'] ?? $event['id']) . '.ics');
 
-        // Ensure content is valid UTF-8
-        if (!mb_check_encoding($icsContent, 'UTF-8')) {
-            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
-        }
 
-        // No UTF-8 BOM (see outputCalendarFeed)
-
-        // Set appropriate headers
-        header('Content-Type: text/calendar; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . self::sanitizeFilename($filename) . '"');
-        header('Cache-Control: no-cache, must-revalidate');
-        header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
-        header('Content-Length: ' . strlen($icsContent));
-
-        echo $icsContent;
+        self::sendCalendarResponse($icsContent, $filename);
     }
 
     /**
@@ -763,20 +770,7 @@ class ICSGenerator
         $icsContent = self::generateSeriesEvent($series);
         $filename = self::sanitizeFilename('series-' . ($series['slug'] ?? $series['id']) . '.ics');
 
-        // Ensure content is valid UTF-8
-        if (!mb_check_encoding($icsContent, 'UTF-8')) {
-            $icsContent = mb_convert_encoding($icsContent, 'UTF-8', 'auto');
-        }
 
-        // No UTF-8 BOM (see outputCalendarFeed)
-
-        // Set appropriate headers
-        header('Content-Type: text/calendar; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . self::sanitizeFilename($filename) . '"');
-        header('Cache-Control: no-cache, must-revalidate');
-        header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
-        header('Content-Length: ' . strlen($icsContent));
-
-        echo $icsContent;
+        self::sendCalendarResponse($icsContent, $filename);
     }
 }
