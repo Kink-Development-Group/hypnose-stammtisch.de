@@ -100,12 +100,22 @@ class ICSGenerator
         // Event start
         $lines[] = 'BEGIN:VEVENT';
 
-        // UID - unique identifier
+        // UID - must be stable per occurrence and unique across them. Expanded
+        // instances share the id of what they were generated from ("series_<id>"
+        // for every date of a series), so the date has to be part of the UID or
+        // clients collapse a whole series into a single event.
         $eventId = self::stripControlChars((string)($event['id'] ?? ''));
-        $uid = isset($event['parent_event_id'])
-            ? 'event-' . self::stripControlChars((string)$event['parent_event_id'])
-                . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN
-            : 'event-' . $eventId . '@' . self::DOMAIN;
+        if (isset($event['parent_event_id'])) {
+            $uid = 'event-' . self::stripControlChars((string)$event['parent_event_id'])
+                . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN;
+        } elseif (!empty($event['series_id'])) {
+            // Also covers per-date overrides: they keep the UID of the instance
+            // they replace, so editing one occurrence does not spawn a new event.
+            $uid = 'series-' . self::stripControlChars((string)$event['series_id'])
+                . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN;
+        } else {
+            $uid = 'event-' . $eventId . '@' . self::DOMAIN;
+        }
         $lines[] = 'UID:' . $uid;
 
         // DTSTAMP - creation timestamp

@@ -206,6 +206,65 @@ class ICSGeneratorOrganizerTest extends TestCase
     );
   }
 
+  public function testSeriesInstancesGetDistinctUidsPerOccurrence(): void
+  {
+    // Every expanded instance of a series carries the same id
+    // ("series_<id>"), so without the date in the UID a client would collapse
+    // the whole series into one event.
+    $july = $this->formatEvent([
+      'id' => 'series_abc',
+      'series_id' => 'abc',
+      'start_datetime' => '2026-07-20 19:00:00',
+      'end_datetime' => '2026-07-20 22:00:00',
+    ]);
+    $august = $this->formatEvent([
+      'id' => 'series_abc',
+      'series_id' => 'abc',
+      'start_datetime' => '2026-08-17 19:00:00',
+      'end_datetime' => '2026-08-17 22:00:00',
+    ]);
+
+    $julyUid = $this->lineStartingWith($july, 'UID');
+    $augustUid = $this->lineStartingWith($august, 'UID');
+
+    $this->assertSame('UID:series-abc-20260720@hypnose-stammtisch.de', $julyUid);
+    $this->assertNotSame($julyUid, $augustUid);
+  }
+
+  public function testSeriesOverrideKeepsTheUidOfTheOccurrenceItReplaces(): void
+  {
+    // An override is a real events row with its own id; it must not appear as
+    // a second, separate event next to the instance it replaces.
+    $instance = $this->formatEvent([
+      'id' => 'series_abc',
+      'series_id' => 'abc',
+      'start_datetime' => '2026-07-20 19:00:00',
+      'end_datetime' => '2026-07-20 22:00:00',
+    ]);
+    $override = $this->formatEvent([
+      'id' => 'real-row-id',
+      'series_id' => 'abc',
+      'instance_date' => '2026-07-20',
+      'start_datetime' => '2026-07-20 19:00:00',
+      'end_datetime' => '2026-07-20 22:00:00',
+    ]);
+
+    $this->assertSame(
+      $this->lineStartingWith($instance, 'UID'),
+      $this->lineStartingWith($override, 'UID')
+    );
+  }
+
+  public function testStandaloneEventKeepsItsPlainUid(): void
+  {
+    $lines = $this->formatEvent(['id' => 'plain-1']);
+
+    $this->assertSame(
+      'UID:event-plain-1@hypnose-stammtisch.de',
+      $this->lineStartingWith($lines, 'UID')
+    );
+  }
+
   public function testControlCharsInIdCannotInjectProperties(): void
   {
     $lines = $this->formatEvent(['id' => "1\r\nX-EVIL:1"]);

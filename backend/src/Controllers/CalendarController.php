@@ -6,10 +6,8 @@ namespace HypnoseStammtisch\Controllers;
 
 use HypnoseStammtisch\Models\Event;
 use HypnoseStammtisch\Database\Database;
-use HypnoseStammtisch\Utils\JsonHelper;
 use HypnoseStammtisch\Utils\Response;
 use HypnoseStammtisch\Utils\ICSGenerator;
-use HypnoseStammtisch\Utils\RRuleProcessor;
 use HypnoseStammtisch\Config\Config;
 use Carbon\Carbon;
 
@@ -55,14 +53,16 @@ class CalendarController
             // Get events with expansion for recurring events
             $events = $this->getExpandedEventsForFeed();
 
-            // Generate ICS content using the new ICSGenerator
-            $filename = $normalizedToken ? 'private-calendar.ics' : 'public-calendar.ics';
-            ICSGenerator::outputCalendarFeed($events, $filename);
-
-            // Update token access tracking
+            // Track access before writing the body: once the calendar is out,
+            // the error handler below can only append JSON to it and trigger
+            // "headers already sent".
             if ($normalizedToken) {
                 $this->updateTokenAccess($normalizedToken);
             }
+
+            // Generate ICS content using the new ICSGenerator
+            $filename = $normalizedToken ? 'private-calendar.ics' : 'public-calendar.ics';
+            ICSGenerator::outputCalendarFeed($events, $filename);
         } catch (\Exception $e) {
             error_log("Calendar feed error: " . $e->getMessage());
             Response::json(['success' => false, 'error' => 'Failed to generate calendar feed'], 500);
@@ -190,58 +190,20 @@ class CalendarController
     }
 
     /**
-     * Get expanded events for calendar feed including recurring instances
+     * Get expanded events for calendar feed including recurring instances.
+     *
+     * Delegates to EventsController so the feed shows exactly what the site
+     * shows. Its own expansion only knew the events table plus legacy
+     * `is_recurring` rows, so everything authored as a series (event_series)
+     * was missing from the feed - which is how a site with upcoming events
+     * ended up publishing a calendar with no VEVENT at all.
      */
     private function getExpandedEventsForFeed(): array
     {
-        // Get base events for the next year
-        $baseEvents = Event::getAllPublished([
-            'from_date' => date('Y-m-d', strtotime('-1 month')),
-            'to_date' => date('Y-m-d', strtotime('+1 year'))
+        return (new EventsController())->getExpandedEvents([
+            'from_date' => Carbon::now()->subMonth()->startOfDay()->toDateTimeString(),
+            'to_date' => Carbon::now()->addYear()->toDateTimeString(),
         ]);
-
-        $expandedEvents = [];
-        $startDate = Carbon::now()->subMonth();
-        $endDate = Carbon::now()->addYear();
-
-        foreach ($baseEvents as $event) {
-            $eventArray = $this->eventToArray($event);
-
-            if (!empty($eventArray['is_recurring']) && !empty($eventArray['rrule'])) {
-                // Expand recurring event
-                try {
-                    $instances = RRuleProcessor::expandRecurringEvent(
-                        $eventArray,
-                        $startDate,
-                        $endDate,
-                        JsonHelper::decodeArray($eventArray['exdates'] ?? '[]')
-                    );
-
-                    if (!empty($instances)) {
-                        $expandedEvents = array_merge($expandedEvents, $instances);
-                    } else {
-                        // If expansion returned no instances (e.g., all dates in past),
-                        // add base event if it falls within range
-                        $eventStart = Carbon::parse($eventArray['start_datetime']);
-                        if ($eventStart->between($startDate, $endDate)) {
-                            $expandedEvents[] = $eventArray;
-                        }
-                    }
-                } catch (\Exception $e) {
-                    error_log("Error expanding recurring event {$eventArray['id']}: " . $e->getMessage());
-                    // Add the base event if expansion fails
-                    $expandedEvents[] = $eventArray;
-                }
-            } else {
-                // Add single event (also handles is_recurring=true with empty rrule)
-                $eventStart = Carbon::parse($eventArray['start_datetime']);
-                if ($eventStart->between($startDate, $endDate)) {
-                    $expandedEvents[] = $eventArray;
-                }
-            }
-        }
-
-        return $expandedEvents;
     }
 
     /**

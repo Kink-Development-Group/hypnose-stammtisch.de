@@ -556,9 +556,12 @@ class EventsController
     }
 
     /**
-     * Get expanded events including recurring instances
+     * Get expanded events including recurring instances.
+     *
+     * Public because the calendar feed needs the exact same view: a plain query
+     * against the events table misses series instances entirely.
      */
-    private function getExpandedEvents(array $filters): array
+    public function getExpandedEvents(array $filters): array
     {
         // Date range
         $startDate = isset($filters['from_date']) ? Carbon::parse($filters['from_date']) : Carbon::now();
