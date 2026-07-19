@@ -17,6 +17,13 @@ class ICSGenerator
     private const DOMAIN = 'hypnose-stammtisch.de';
 
     /**
+     * The only zone we ship a VTIMEZONE definition for (getTimezoneDefinition()).
+     * RFC 5545 §3.2.19 requires a TZID parameter to reference a VTIMEZONE in the
+     * same calendar object, so every emitted TZID has to be exactly this.
+     */
+    private const DEFAULT_TIMEZONE = 'Europe/Berlin';
+
+    /**
      * Retrieve the configured application name with fallback for ICS metadata.
      */
     private static function getAppName(): string
@@ -84,7 +91,7 @@ class ICSGenerator
      */
     private static function formatEvent(array $event): array
     {
-        $timezone = $event['timezone'] ?? 'Europe/Berlin';
+        $timezone = self::resolveTimezone($event['timezone'] ?? null);
         $lines = [];
 
         $startTime = Carbon::parse($event['start_datetime'], $timezone);
@@ -94,9 +101,11 @@ class ICSGenerator
         $lines[] = 'BEGIN:VEVENT';
 
         // UID - unique identifier
+        $eventId = self::stripControlChars((string)($event['id'] ?? ''));
         $uid = isset($event['parent_event_id'])
-            ? 'event-' . $event['parent_event_id'] . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN
-            : 'event-' . $event['id'] . '@' . self::DOMAIN;
+            ? 'event-' . self::stripControlChars((string)$event['parent_event_id'])
+                . '-' . $startTime->format('Ymd') . '@' . self::DOMAIN
+            : 'event-' . $eventId . '@' . self::DOMAIN;
         $lines[] = 'UID:' . $uid;
 
         // DTSTAMP - creation timestamp
@@ -104,11 +113,16 @@ class ICSGenerator
 
         // Dates and times
         if (!empty($event['is_all_day'])) {
+            // DATE values carry no TZID, so the dates stay in the event's own zone
             $lines[] = 'DTSTART;VALUE=DATE:' . $startTime->format('Ymd');
             $lines[] = 'DTEND;VALUE=DATE:' . $endTime->addDay()->format('Ymd');
         } else {
-            $lines[] = 'DTSTART;TZID=' . $timezone . ':' . $startTime->format('Ymd\THis');
-            $lines[] = 'DTEND;TZID=' . $timezone . ':' . $endTime->format('Ymd\THis');
+            // Normalise to the one zone we define a VTIMEZONE for instead of
+            // emitting a dangling TZID; the absolute instant is preserved.
+            $lines[] = 'DTSTART;TZID=' . self::DEFAULT_TIMEZONE . ':'
+                . $startTime->copy()->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
+            $lines[] = 'DTEND;TZID=' . self::DEFAULT_TIMEZONE . ':'
+                . $endTime->copy()->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
         }
 
         // Basic properties
@@ -135,7 +149,7 @@ class ICSGenerator
         }
 
         // URL
-        $eventUrl = 'https://' . self::DOMAIN . '/events/' . $event['id'];
+        $eventUrl = 'https://' . self::DOMAIN . '/events/' . $eventId;
         $lines[] = 'URL:' . $eventUrl;
 
         // Categories/tags
@@ -330,6 +344,40 @@ class ICSGenerator
     }
 
     /**
+     * Reduce a filename to characters that are safe inside a quoted
+     * Content-Disposition value. PHP's header() already refuses CR/LF, but a
+     * DQUOTE would still break out of the filename.
+     */
+    private static function sanitizeFilename(string $filename): string
+    {
+        $safe = preg_replace('/[^A-Za-z0-9._-]/', '-', $filename) ?? '';
+        $safe = trim($safe, '-');
+
+        return $safe === '' ? 'calendar.ics' : $safe;
+    }
+
+    /**
+     * Resolve a stored timezone identifier to one PHP actually knows.
+     *
+     * Guards the Carbon::parse() calls: an unknown identifier would throw and
+     * take the whole feed down, and it must never reach a content line either.
+     */
+    private static function resolveTimezone(mixed $timezone): string
+    {
+        if (!is_string($timezone) || $timezone === '') {
+            return self::DEFAULT_TIMEZONE;
+        }
+
+        try {
+            new \DateTimeZone($timezone);
+        } catch (\Exception) {
+            return self::DEFAULT_TIMEZONE;
+        }
+
+        return $timezone;
+    }
+
+    /**
      * Convert Markdown to readable plain text for ICS descriptions
      * Preserves the semantic meaning while removing Markdown syntax
      */
@@ -470,7 +518,7 @@ class ICSGenerator
 
         // Set appropriate headers - explicitly set UTF-8 encoding
         header('Content-Type: text/calendar; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Disposition: attachment; filename="' . self::sanitizeFilename($filename) . '"');
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
         header('Content-Length: ' . strlen($icsContent));
@@ -484,7 +532,7 @@ class ICSGenerator
     public static function outputSingleEvent(array $event): void
     {
         $icsContent = self::generateSingleEvent($event);
-        $filename = 'event-' . ($event['slug'] ?? $event['id']) . '.ics';
+        $filename = self::sanitizeFilename('event-' . ($event['slug'] ?? $event['id']) . '.ics');
 
         // Ensure content is valid UTF-8
         if (!mb_check_encoding($icsContent, 'UTF-8')) {
@@ -495,7 +543,7 @@ class ICSGenerator
 
         // Set appropriate headers
         header('Content-Type: text/calendar; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Disposition: attachment; filename="' . self::sanitizeFilename($filename) . '"');
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
         header('Content-Length: ' . strlen($icsContent));
@@ -520,7 +568,7 @@ class ICSGenerator
      */
     private static function formatSeriesEvent(array $series): array
     {
-        $timezone = $series['timezone'] ?? 'Europe/Berlin';
+        $timezone = self::resolveTimezone($series['timezone'] ?? null);
         $lines = [];
 
         // Get start time from series
@@ -562,19 +610,24 @@ class ICSGenerator
         $lines[] = 'BEGIN:VEVENT';
 
         // UID - unique identifier for the series
-        $lines[] = 'UID:series-' . $series['id'] . '@' . self::DOMAIN;
+        $lines[] = 'UID:series-' . self::stripControlChars((string)($series['id'] ?? '')) . '@' . self::DOMAIN;
 
         // DTSTAMP - creation timestamp
         $lines[] = 'DTSTAMP:' . Carbon::now('UTC')->format('Ymd\THis\Z');
 
         // Dates and times with RRULE for recurrence
-        $lines[] = 'DTSTART;TZID=' . $timezone . ':' . $startDate->format('Ymd\THis');
-        $lines[] = 'DTEND;TZID=' . $timezone . ':' . $endDate->format('Ymd\THis');
+        // Normalised to DEFAULT_TIMEZONE - see formatEvent() for the reasoning
+        $lines[] = 'DTSTART;TZID=' . self::DEFAULT_TIMEZONE . ':'
+            . $startDate->copy()->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
+        $lines[] = 'DTEND;TZID=' . self::DEFAULT_TIMEZONE . ':'
+            . $endDate->copy()->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
 
         // RRULE for recurrence - enhanced for maximum compatibility
         if (!empty($series['rrule'])) {
-            // Clean RRULE - remove DTSTART prefix if present
-            $rrule = $series['rrule'];
+            // Clean RRULE - remove DTSTART prefix if present.
+            // RECUR is a structured value that escapeValue() would corrupt, so
+            // CTLs are stripped instead to keep the rule on a single line.
+            $rrule = self::stripControlChars((string)$series['rrule']);
             if (str_starts_with($rrule, 'DTSTART')) {
                 // Extract just the RRULE part
                 if (preg_match('/RRULE:(.+)$/m', $rrule, $matches)) {
@@ -598,7 +651,8 @@ class ICSGenerator
                     $exdateCarbon = Carbon::parse($exdate, $timezone);
                     // Set same time as DTSTART for proper exclusion
                     $exdateCarbon->setTime($startDate->hour, $startDate->minute);
-                    $lines[] = 'EXDATE;TZID=' . $timezone . ':' . $exdateCarbon->format('Ymd\THis');
+                    $lines[] = 'EXDATE;TZID=' . self::DEFAULT_TIMEZONE . ':'
+                        . $exdateCarbon->setTimezone(self::DEFAULT_TIMEZONE)->format('Ymd\THis');
                 }
             }
         }
@@ -707,7 +761,7 @@ class ICSGenerator
     public static function outputSeriesEvent(array $series): void
     {
         $icsContent = self::generateSeriesEvent($series);
-        $filename = 'series-' . ($series['slug'] ?? $series['id']) . '.ics';
+        $filename = self::sanitizeFilename('series-' . ($series['slug'] ?? $series['id']) . '.ics');
 
         // Ensure content is valid UTF-8
         if (!mb_check_encoding($icsContent, 'UTF-8')) {
@@ -718,7 +772,7 @@ class ICSGenerator
 
         // Set appropriate headers
         header('Content-Type: text/calendar; charset=utf-8');
-        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Disposition: attachment; filename="' . self::sanitizeFilename($filename) . '"');
         header('Cache-Control: no-cache, must-revalidate');
         header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
         header('Content-Length: ' . strlen($icsContent));

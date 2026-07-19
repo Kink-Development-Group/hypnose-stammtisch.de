@@ -138,4 +138,81 @@ class ICSGeneratorOrganizerTest extends TestCase
       $this->organizerLine($lines)
     );
   }
+
+  private function lineStartingWith(array $lines, string $prefix): string
+  {
+    foreach ($lines as $line) {
+      if (str_starts_with($line, $prefix)) {
+        return $line;
+      }
+    }
+
+    return '';
+  }
+
+  public function testTzidAlwaysReferencesTheDefinedVtimezone(): void
+  {
+    // Only Europe/Berlin has a VTIMEZONE in the feed, so a TZID pointing
+    // anywhere else would be a dangling reference (RFC 5545 §3.2.19).
+    $lines = $this->formatEvent([
+      'timezone' => 'America/New_York',
+      'start_datetime' => '2026-08-01 12:00:00',
+      'end_datetime' => '2026-08-01 14:00:00',
+    ]);
+
+    // 12:00 in New York (UTC-4 in August) is 18:00 in Berlin.
+    $this->assertSame(
+      'DTSTART;TZID=Europe/Berlin:20260801T180000',
+      $this->lineStartingWith($lines, 'DTSTART')
+    );
+    $this->assertSame(
+      'DTEND;TZID=Europe/Berlin:20260801T200000',
+      $this->lineStartingWith($lines, 'DTEND')
+    );
+  }
+
+  public function testUnknownTimezoneFallsBackInsteadOfThrowing(): void
+  {
+    $lines = $this->formatEvent([
+      'timezone' => "Europe/Berlin\r\nX-EVIL:1",
+      'start_datetime' => '2026-08-01 18:00:00',
+      'end_datetime' => '2026-08-01 20:00:00',
+    ]);
+
+    $this->assertSame(
+      'DTSTART;TZID=Europe/Berlin:20260801T180000',
+      $this->lineStartingWith($lines, 'DTSTART')
+    );
+    foreach ($lines as $line) {
+      $this->assertStringStartsNotWith('X-EVIL', $line);
+    }
+  }
+
+  public function testAllDayEventKeepsItsDateAndEmitsNoTzid(): void
+  {
+    $lines = $this->formatEvent([
+      'is_all_day' => 1,
+      'start_datetime' => '2026-08-01 00:00:00',
+      'end_datetime' => '2026-08-01 00:00:00',
+    ]);
+
+    $this->assertSame(
+      'DTSTART;VALUE=DATE:20260801',
+      $this->lineStartingWith($lines, 'DTSTART')
+    );
+    $this->assertStringNotContainsString(
+      'TZID',
+      $this->lineStartingWith($lines, 'DTSTART')
+    );
+  }
+
+  public function testControlCharsInIdCannotInjectProperties(): void
+  {
+    $lines = $this->formatEvent(['id' => "1\r\nX-EVIL:1"]);
+
+    $this->assertSame('UID:event-1X-EVIL:1@hypnose-stammtisch.de', $this->lineStartingWith($lines, 'UID'));
+    foreach ($lines as $line) {
+      $this->assertStringStartsNotWith('X-EVIL', $line);
+    }
+  }
 }
