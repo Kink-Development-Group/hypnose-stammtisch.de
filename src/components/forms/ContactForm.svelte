@@ -353,8 +353,7 @@
         placeholder="Beschreiben Sie Ihr Anliegen so detailliert wie möglich..."
         required
         aria-describedby={errors.message ? "message-error" : "message-help"}
-        aria-invalid={errors.message ? "true" : "false"}
-      ></textarea>
+        aria-invalid={errors.message ? "true" : "false"}></textarea>
 
       <div class="mt-2 flex items-center justify-between">
         <p id="message-help" class="text-sm text-smoke-400">

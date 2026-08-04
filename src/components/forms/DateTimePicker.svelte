@@ -248,9 +248,7 @@
   function isSelected(day: number, sel: string): boolean {
     if (!sel) return false;
     const d = dayjs(sel);
-    return (
-      day === d.date() && viewMonth === d.month() && viewYear === d.year()
-    );
+    return day === d.date() && viewMonth === d.month() && viewYear === d.year();
   }
 
   function isDisabledDate(day: number): boolean {

@@ -349,8 +349,7 @@
       class="w-full px-4 py-3 {textareaClasses} border border-t-0 rounded-b-lg focus:outline-none focus:ring-2 focus:border-transparent font-mono text-sm"
       aria-describedby={ariaDescribedBy ||
         (error ? `${id}-error` : helpText ? `${id}-help` : undefined)}
-      aria-invalid={error ? "true" : "false"}
-    ></textarea>
+      aria-invalid={error ? "true" : "false"}></textarea>
   {/if}
 
   <!-- Help text and character count -->

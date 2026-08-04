@@ -478,8 +478,7 @@
           rows="2"
           bind:value={manualString}
           on:input={emitManual}
-          {disabled}
-        ></textarea>
+          {disabled}></textarea>
         <div class="text-[10px] text-slate-600 dark:text-smoke-300">
           RRULE wird automatisch generiert – manuelle Bearbeitung überschreibt
           die Felder oben.

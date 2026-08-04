@@ -124,7 +124,11 @@
     if (!username || reassigning) return;
     reassigning = true;
     error = "";
-    const res = await AdminAPI.reassignEventOwner(targetType, targetId, username);
+    const res = await AdminAPI.reassignEventOwner(
+      targetType,
+      targetId,
+      username,
+    );
     if (res.success) {
       reassignInput = "";
       reassignSuggestions = [];
@@ -185,7 +189,8 @@
       {:else}
         {#if ownerUsername}
           <p class="mt-4 text-sm text-slate-600 dark:text-smoke-400">
-            Eigentümer: <span class="font-medium text-gray-900 dark:text-smoke-100"
+            Eigentümer: <span
+              class="font-medium text-gray-900 dark:text-smoke-100"
               >@{ownerUsername}</span
             >
           </p>
@@ -275,7 +280,9 @@
 
         {#if canReassign}
           <!-- Reassign owner (head admin only) -->
-          <div class="mt-5 pt-4 border-t border-gray-200 dark:border-charcoal-600">
+          <div
+            class="mt-5 pt-4 border-t border-gray-200 dark:border-charcoal-600"
+          >
             <h4
               class="text-sm font-medium text-gray-700 dark:text-smoke-300 mb-2"
             >
