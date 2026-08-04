@@ -31,8 +31,11 @@
   let deleteConfirm: any = null;
   let currentUser: User | null = null;
   // Record currently open in the share dialog (null = closed)
-  let shareTarget: { type: "event" | "series"; id: string; title: string } | null =
-    null;
+  let shareTarget: {
+    type: "event" | "series";
+    id: string;
+    title: string;
+  } | null = null;
 
   // Track which series details are expanded (persists across data refreshes)
   let expandedSeriesIds = new SvelteSet<string>();

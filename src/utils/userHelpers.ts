@@ -162,10 +162,7 @@ export class UserHelpers {
   static hasPermission(
     user: User | null,
     permission:
-      | "manage_users"
-      | "manage_events"
-      | "manage_messages"
-      | "manage_security",
+      "manage_users" | "manage_events" | "manage_messages" | "manage_security",
   ): boolean {
     if (!user) return false;
 

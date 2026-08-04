@@ -88,7 +88,9 @@ export const adminEventHelpers = {
 
   removeEvent: (id: string | number) => {
     const idStr = String(id);
-    adminEvents.update((events) => events.filter((event) => String(event.id) !== idStr));
+    adminEvents.update((events) =>
+      events.filter((event) => String(event.id) !== idStr),
+    );
     adminEventBus.set({ type: "event", action: "delete", id });
   },
 
