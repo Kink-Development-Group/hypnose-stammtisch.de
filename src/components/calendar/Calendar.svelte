@@ -80,34 +80,43 @@
   const assignWeekLanes = (week: typeof monthDays) => {
     const lanes: DayCellRow[][] = [];
 
-    // Mehrtägige Segmente der Woche nach Event gruppieren.
-    const grouped = new Map<
-      string,
-      { segment: EventDaySegment; dayIndex: number }[]
-    >();
+    // Mehrtägige Segmente der Woche nach Event gruppieren. Eine Woche enthält
+    // höchstens sieben Tage, deshalb genügt die lineare Suche über die Liste.
+    const grouped: {
+      key: string;
+      entries: { segment: EventDaySegment; dayIndex: number }[];
+    }[] = [];
 
     week.forEach((day, dayIndex) => {
       day.segments
         .filter((segment) => segment.isMultiDay)
         .forEach((segment) => {
           const key = segmentKey(segment);
-          const entries = grouped.get(key) ?? [];
-          entries.push({ segment, dayIndex });
-          grouped.set(key, entries);
+          const group = grouped.find((candidate) => candidate.key === key);
+
+          if (group) {
+            group.entries.push({ segment, dayIndex });
+          } else {
+            grouped.push({ key, entries: [{ segment, dayIndex }] });
+          }
         });
     });
 
     // Früher beginnende und längere Events bekommen die oberen Zeilen.
-    const ordered = [...grouped.values()].sort((a, b) => {
-      if (a[0].dayIndex !== b[0].dayIndex) return a[0].dayIndex - b[0].dayIndex;
-      if (a[0].segment.dayCount !== b[0].segment.dayCount) {
-        return b[0].segment.dayCount - a[0].segment.dayCount;
-      }
-      return (
-        a[0].segment.event.startDate.getTime() -
-        b[0].segment.event.startDate.getTime()
-      );
-    });
+    const ordered = grouped
+      .map((group) => group.entries)
+      .sort((a, b) => {
+        if (a[0].dayIndex !== b[0].dayIndex) {
+          return a[0].dayIndex - b[0].dayIndex;
+        }
+        if (a[0].segment.dayCount !== b[0].segment.dayCount) {
+          return b[0].segment.dayCount - a[0].segment.dayCount;
+        }
+        return (
+          a[0].segment.event.startDate.getTime() -
+          b[0].segment.event.startDate.getTime()
+        );
+      });
 
     ordered.forEach((entries) => {
       const dayIndexes = entries.map((entry) => entry.dayIndex);
