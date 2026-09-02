@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
   import AdminLayout from "../../components/admin/AdminLayout.svelte";
+  import PasskeyManager from "../../components/admin/PasskeyManager.svelte";
   import { adminAuth, adminAuthState } from "../../stores/admin";
   import { adminGet, adminPost, adminPut } from "../../utils/adminApi";
 
@@ -720,5 +721,7 @@
         </div>
       </div>
     </form>
+
+    <PasskeyManager />
   </div>
 </AdminLayout>

@@ -1,6 +1,7 @@
 import { writable } from "svelte/store";
 import User from "../classes/User";
 import { clearCsrfToken, getCsrfToken } from "../utils/adminApi";
+import { loginWithPasskey as passkeyLogin } from "../utils/webauthn";
 import { adminEventHelpers, adminNotifications } from "./adminData";
 
 export interface AdminAuthState {
@@ -134,6 +135,43 @@ class AdminAuthStore {
         message: "Network error occurred",
       };
     }
+  }
+
+  /**
+   * Sign in with a passkey.
+   *
+   * A verified passkey covers both factors at once (the authenticator plus its
+   * PIN/biometrics), so a successful ceremony authenticates the session
+   * directly — no TOTP step follows. Password + TOTP remains available.
+   */
+  async loginWithPasskey() {
+    adminAuthState.update((state) => ({
+      ...state,
+      loading: true,
+      lastError: undefined,
+    }));
+
+    const result = await passkeyLogin();
+
+    if (result.success && result.data) {
+      const user = User.fromApiData(result.data);
+      adminAuthState.update((state) => ({
+        ...state,
+        isAuthenticated: true,
+        user,
+        loading: false,
+        twofaPending: false,
+        stage: "login",
+      }));
+    } else {
+      adminAuthState.update((state) => ({
+        ...state,
+        loading: false,
+        lastError: result.message,
+      }));
+    }
+
+    return result;
   }
 
   /**

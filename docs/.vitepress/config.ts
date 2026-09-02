@@ -18,6 +18,7 @@ export default defineConfig({
         items: [
           { text: "Implementierung", link: "/security/implementation" },
           { text: "Account Lockout", link: "/security/lockout" },
+          { text: "Passkeys", link: "/security/passkeys" },
           { text: "Testkonfiguration", link: "/security/test-configuration" },
         ],
       },
@@ -44,6 +45,7 @@ export default defineConfig({
           items: [
             { text: "Implementierung", link: "/security/implementation" },
             { text: "Account Lockout", link: "/security/lockout" },
+            { text: "Passkeys", link: "/security/passkeys" },
             { text: "Testkonfiguration", link: "/security/test-configuration" },
           ],
         },

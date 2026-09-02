@@ -83,7 +83,7 @@ Alle erwarteten Tabellen (siehe Baseline-Datei) müssen vorhanden sein.
 ## Tabellenüberblick (Auszug)
 
 - events, event_series, event_registrations
-- users (+ 2FA + pending email fields), user_twofa_backup_codes
+- users (+ 2FA + pending email fields), user_twofa_backup_codes, user_webauthn_credentials (Passkeys)
 - contact_submissions, submissions
 - message_notes, message_responses, admin_email_addresses
 - calendar_feed_tokens, sessions
