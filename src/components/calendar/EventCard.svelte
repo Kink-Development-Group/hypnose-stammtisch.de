@@ -4,6 +4,11 @@
   import { createEventDispatcher } from "svelte";
   import { openEventModal } from "../../stores/calendar";
   import type { Event } from "../../types/calendar";
+  import {
+    getEventDayCount,
+    getEventDayRange,
+    isMultiDayEvent,
+  } from "../../utils/eventDates";
 
   export let event: Event;
   export let showModal: boolean = true;
@@ -13,10 +18,27 @@
   // Format dates
   dayjs.locale("de");
 
-  $: formattedDate = dayjs(event.startDate).format("DD. MMM YYYY");
-  $: formattedTime = event.isAllDay
-    ? "Ganztägig"
-    : `${dayjs(event.startDate).format("HH:mm")} - ${dayjs(event.endDate).format("HH:mm")}`;
+  // Mehrtägige Events zeigen ihren gesamten Zeitraum, nicht nur den Starttag.
+  $: isMultiDay = isMultiDayEvent(event);
+  $: formattedDate = isMultiDay
+    ? `${dayjs(event.startDate).format("DD. MMM")} - ${getEventDayRange(event).end.format("DD. MMM YYYY")}`
+    : dayjs(event.startDate).format("DD. MMM YYYY");
+  $: formattedTime = (() => {
+    if (event.isAllDay) {
+      return isMultiDay
+        ? `Ganztägig (${getEventDayCount(event)} Tage)`
+        : "Ganztägig";
+    }
+
+    const start = dayjs(event.startDate).format("HH:mm");
+    const end = dayjs(event.endDate).format("HH:mm");
+
+    // Bei mehrtägigen Events wäre "18:00 - 14:00" irreführend, weil die Zeiten
+    // an unterschiedlichen Tagen liegen.
+    return isMultiDay
+      ? `Beginn ${start} Uhr · Ende ${end} Uhr`
+      : `${start} - ${end}`;
+  })();
 
   // Strip Markdown for preview display
   function stripMarkdown(text: string): string {
