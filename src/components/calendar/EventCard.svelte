@@ -20,9 +20,20 @@
 
   // Mehrtägige Events zeigen ihren gesamten Zeitraum, nicht nur den Starttag.
   $: isMultiDay = isMultiDayEvent(event);
-  $: formattedDate = isMultiDay
-    ? `${dayjs(event.startDate).format("DD. MMM")} - ${getEventDayRange(event).end.format("DD. MMM YYYY")}`
-    : dayjs(event.startDate).format("DD. MMM YYYY");
+  $: formattedDate = (() => {
+    const start = dayjs(event.startDate);
+
+    if (!isMultiDay) {
+      return start.format("DD. MMM YYYY");
+    }
+
+    const end = getEventDayRange(event).end;
+    // Jahreswechsel: ohne Jahresangabe am Start wäre "28. Dez - 02. Jan 2027"
+    // nicht eindeutig.
+    const startFormat = start.isSame(end, "year") ? "DD. MMM" : "DD. MMM YYYY";
+
+    return `${start.format(startFormat)} - ${end.format("DD. MMM YYYY")}`;
+  })();
   $: formattedTime = (() => {
     if (event.isAllDay) {
       return isMultiDay

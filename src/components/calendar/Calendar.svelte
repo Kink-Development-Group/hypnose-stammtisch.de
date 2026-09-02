@@ -143,12 +143,27 @@
         rows.pop();
       }
 
+      // Nur tatsächlich sichtbare Events zählen gegen das Zeilenlimit –
+      // Platzhalter dürfen keine echten Termine aus der Zelle verdrängen.
+      const visibleRows: DayCellRow[] = [];
+      let visibleCount = 0;
+      let hiddenCount = 0;
+
+      for (const row of rows) {
+        if (visibleCount < MAX_VISIBLE_ROWS_PER_DAY) {
+          visibleRows.push(row);
+          if (row !== null) {
+            visibleCount += 1;
+          }
+        } else if (row !== null) {
+          hiddenCount += 1;
+        }
+      }
+
       return {
         ...day,
-        rows: rows.slice(0, MAX_VISIBLE_ROWS_PER_DAY),
-        hiddenCount: rows
-          .slice(MAX_VISIBLE_ROWS_PER_DAY)
-          .filter((row) => row !== null).length,
+        rows: visibleRows,
+        hiddenCount,
       };
     });
   };
@@ -219,10 +234,17 @@
     }
 
     const lastDay = start.add(segment.dayCount - 1, "day");
+    const end = dayjs(event.endDate);
+
+    // Endet das Event exakt um Mitternacht, zählt der Folgetag nicht mehr zum
+    // Zeitraum – die Uhrzeit gehört dann als 24:00 zum letzten Tag.
+    const endTime = end.isAfter(lastDay.endOf("day"))
+      ? "24:00"
+      : end.format("HH:mm");
 
     return event.isAllDay
       ? `${start.format("DD.MM.YYYY")} bis ${lastDay.format("DD.MM.YYYY")}, ganztägig`
-      : `${start.format("DD.MM.")} ${start.format("HH:mm")} Uhr bis ${lastDay.format("DD.MM.YYYY")} ${dayjs(event.endDate).format("HH:mm")} Uhr`;
+      : `${start.format("DD.MM.")} ${start.format("HH:mm")} Uhr bis ${lastDay.format("DD.MM.YYYY")} ${endTime} Uhr`;
   };
 
   // Accessible Name eines Segments. Fortsetzungstage nennen ihre Position im

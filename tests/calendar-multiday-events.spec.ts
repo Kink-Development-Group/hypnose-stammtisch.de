@@ -165,15 +165,18 @@ test.describe("Mehrtägige Events in der Wochenansicht", () => {
 
     await page.getByRole("button", { name: "Woche", exact: true }).click();
 
-    // Von der aktuellen Woche zur Woche des Zeitraums navigieren.
+    // Von der aktuellen Woche zur Woche des Zeitraums navigieren. Je nach
+    // Testlaufdatum liegt sie vor oder hinter der aktuellen Woche.
     const weekOffset = startOfGermanWeek(spanStart).diff(
       startOfGermanWeek(dayjs()),
       "week",
     );
-    const nextWeekButton = page.getByRole("button", { name: /Nächste Woche/ });
+    const stepButton = page.getByRole("button", {
+      name: weekOffset < 0 ? /Vorherige Woche/ : /Nächste Woche/,
+    });
 
-    for (let step = 0; step < weekOffset; step++) {
-      await nextWeekButton.click();
+    for (let step = 0; step < Math.abs(weekOffset); step++) {
+      await stepButton.click();
     }
 
     await expect(
@@ -251,5 +254,74 @@ test.describe("Überlappende mehrtägige Events", () => {
     // … und liegen dabei auf unterschiedlichen Zeilen, auch am Donnerstag,
     // an dem das erste Event bereits vorbei ist.
     expect(bY[0]).toBeGreaterThan(aY[0]);
+  });
+});
+
+test.describe("Tageszellen mit vielen Lanes", () => {
+  test.use({ viewport: { width: 1280, height: 900 } });
+
+  test("verdrängt einzelne Termine nicht durch leere Lane-Platzhalter", async ({
+    page,
+  }) => {
+    await bypassComplianceModals(page);
+
+    // Drei überlappende mehrtägige Events belegen Mo–Mi drei Lanes. Am Freitag
+    // sind alle drei Lanes leer; der Einzeltermin dort darf nicht hinter
+    // unsichtbaren Platzhaltern verschwinden.
+    const spans = [0, 1, 2].map((index) => ({
+      id: 20 + index,
+      title: `Paralleler Kurs ${index + 1}`,
+      description: "Montag bis Mittwoch",
+      start_datetime: `${weekMonday.format("YYYY-MM-DD")}T${10 + index}:00:00`,
+      end_datetime: `${weekMonday.add(2, "day").format("YYYY-MM-DD")}T16:00:00`,
+      timezone: "Europe/Berlin",
+      location_type: "physical",
+      tags: [],
+      created_at: "2026-03-01T08:00:00Z",
+      updated_at: "2026-03-01T08:00:00Z",
+    }));
+
+    await page.route("**/api/events?view=expanded**", async (route) => {
+      await fulfillJson(route, {
+        success: true,
+        data: [
+          ...spans,
+          {
+            id: 30,
+            title: "Freitagstermin",
+            description: "Einzelner Termin am Freitag",
+            start_datetime: `${weekMonday.add(4, "day").format("YYYY-MM-DD")}T19:00:00`,
+            end_datetime: `${weekMonday.add(4, "day").format("YYYY-MM-DD")}T21:00:00`,
+            timezone: "Europe/Berlin",
+            location_type: "online",
+            tags: [],
+            created_at: "2026-03-01T08:00:00Z",
+            updated_at: "2026-03-01T08:00:00Z",
+          },
+        ],
+      });
+    });
+
+    await page.goto("/events");
+    await page.waitForLoadState("networkidle");
+
+    const fridayEvent = page.getByRole("button", { name: /Freitagstermin/ });
+    await expect(fridayEvent).toBeVisible();
+    await expect(fridayEvent).toBeEnabled();
+
+    // Kein "+N weitere" in der Freitagszelle – es gibt nichts zu verbergen.
+    const fridayCell = page
+      .locator(".calendar-day", { has: fridayEvent })
+      .first();
+    await expect(fridayCell.getByText(/weitere/)).toHaveCount(0);
+
+    // Alle drei Balken bleiben am Montag sichtbar.
+    for (const index of [1, 2, 3]) {
+      await expect(
+        page.getByRole("button", {
+          name: new RegExp(`Paralleler Kurs ${index}.*Tag 1 von 3`),
+        }),
+      ).toBeVisible();
+    }
   });
 });
