@@ -122,6 +122,36 @@ test.describe("Admin-Verwaltung der bekannten Event-Reihen", () => {
     await expect(page.getByText("Hypno Study Frankfurt")).toBeVisible();
   });
 
+  test("führt den Fokus in den Dialog und wieder zurück", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(
+      isMobile,
+      "Die Tabellen-Interaktion wird als Desktop-Flow geprüft.",
+    );
+
+    await bypassComplianceModals(page);
+    await mockAdminSession(page, headAdmin);
+    await page.route("**/api/admin/known-event-series", async (route) => {
+      await fulfillJson(route, { success: true, data: seriesFixtures });
+    });
+
+    await page.goto("/admin/known-event-series");
+    await dismissComplianceUiIfNeeded(page);
+
+    const createButton = page.getByRole("button", { name: "Neue Event-Reihe" });
+    await createButton.click();
+
+    // Focus has to land inside the dialog, not stay on the button behind it.
+    await expect(page.getByLabel("Titel")).toBeFocused();
+
+    // Escape closes the dialog and hands focus back to the trigger.
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(createButton).toBeFocused();
+  });
+
   test("sortiert per Tastatur und schickt die neue Reihenfolge an das Backend", async ({
     page,
     isMobile,

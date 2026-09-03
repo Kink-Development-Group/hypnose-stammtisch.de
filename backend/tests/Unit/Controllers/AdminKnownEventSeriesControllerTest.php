@@ -231,6 +231,32 @@ class AdminKnownEventSeriesControllerTest extends TestCase
         $this->assertArrayHasKey('formats', $errors);
     }
 
+    /**
+     * `(bool)"false"` is true, so a stray string must be rejected rather than
+     * cast — otherwise it would publish a series meant to stay hidden.
+     */
+    public function testNonBooleanIsActiveIsRejected(): void
+    {
+        $errors = AdminKnownEventSeriesController::collectValidationErrors(
+            ['is_active' => 'false'],
+            true
+        );
+
+        $this->assertArrayHasKey('is_active', $errors);
+    }
+
+    public function testBooleanAndNumericIsActiveAreAccepted(): void
+    {
+        foreach ([true, false, 0, 1, '0', '1'] as $value) {
+            $errors = AdminKnownEventSeriesController::collectValidationErrors(
+                ['is_active' => $value],
+                true
+            );
+
+            $this->assertSame([], $errors, 'is_active ' . var_export($value, true) . ' should pass');
+        }
+    }
+
     public function testNegativeSortOrderIsRejected(): void
     {
         $errors = AdminKnownEventSeriesController::collectValidationErrors(

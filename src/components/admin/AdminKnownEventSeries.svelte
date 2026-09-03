@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import {
     KnownEventSeriesStatus,
     NextEventSource,
@@ -26,6 +26,13 @@
   let showForm = false;
   let editingSeries: AdminKnownEventSeries | null = null;
   let saving = false;
+  /** Blocks a second reorder while one is still in flight, so two quick clicks
+   * cannot race and leave the list disagreeing with the stored order. */
+  let reordering = false;
+  let titleInput: HTMLInputElement | null = null;
+  let createButton: HTMLButtonElement | null = null;
+  /** The control that opened the dialog, to hand focus back to on close. */
+  let formTrigger: HTMLElement | null = null;
 
   const emptyForm: KnownEventSeriesFormData = {
     title: "",
@@ -119,19 +126,44 @@
     }
   }
 
+  /**
+   * Announce a completed action to screen readers.
+   *
+   * A live region only speaks when its text changes, so the message is cleared
+   * first — otherwise moving the same entry twice would stay silent.
+   */
+  async function announce(message: string): Promise<void> {
+    statusMessage = "";
+    await tick();
+    statusMessage = message;
+  }
+
   function resetForm(): void {
     formData = { ...emptyForm, formats: [], tags: [] };
     formatInput = "";
     tagInput = "";
   }
 
-  function startCreate(): void {
-    resetForm();
-    editingSeries = null;
+  /**
+   * Open the dialog and move focus into it, remembering where focus came from.
+   */
+  async function openForm(trigger: EventTarget | null): Promise<void> {
+    formTrigger = trigger instanceof HTMLElement ? trigger : null;
     showForm = true;
+    await tick();
+    titleInput?.focus();
   }
 
-  function startEdit(entry: AdminKnownEventSeries): void {
+  function startCreate(trigger: EventTarget | null = null): void {
+    resetForm();
+    editingSeries = null;
+    void openForm(trigger);
+  }
+
+  function startEdit(
+    entry: AdminKnownEventSeries,
+    trigger: EventTarget | null = null,
+  ): void {
     formData = {
       title: entry.title,
       location: entry.location,
@@ -150,13 +182,25 @@
     formatInput = "";
     tagInput = "";
     editingSeries = entry;
-    showForm = true;
+    void openForm(trigger);
   }
 
   function cancelForm(): void {
     showForm = false;
     editingSeries = null;
     resetForm();
+
+    // Hand focus back where it came from; a reload may have replaced that row,
+    // so fall back to the create button rather than dropping focus to the body.
+    const trigger = formTrigger;
+    formTrigger = null;
+    void tick().then(() => {
+      if (trigger?.isConnected) {
+        trigger.focus();
+      } else {
+        createButton?.focus();
+      }
+    });
   }
 
   function addFormat(): void {
@@ -242,9 +286,11 @@
       const wasEditing = Boolean(editingSeries);
       cancelForm();
       await loadSeries();
-      statusMessage = wasEditing
-        ? `Event-Reihe „${savedTitle}“ wurde gespeichert.`
-        : `Event-Reihe „${savedTitle}“ wurde angelegt.`;
+      await announce(
+        wasEditing
+          ? `Event-Reihe „${savedTitle}“ wurde gespeichert.`
+          : `Event-Reihe „${savedTitle}“ wurde angelegt.`,
+      );
     } catch (err) {
       error =
         err instanceof Error
@@ -278,7 +324,7 @@
       }
 
       await loadSeries();
-      statusMessage = `Event-Reihe „${entry.title}“ wurde gelöscht.`;
+      await announce(`Event-Reihe „${entry.title}“ wurde gelöscht.`);
     } catch (err) {
       error =
         err instanceof Error ? err.message : "Unbekannter Fehler beim Löschen";
@@ -307,7 +353,9 @@
       }
 
       await loadSeries();
-      statusMessage = `Event-Reihe „${entry.title}“ ist jetzt ${statusLabel(status)}.`;
+      await announce(
+        `Event-Reihe „${entry.title}“ ist jetzt ${statusLabel(status)}.`,
+      );
     } catch (err) {
       error =
         err instanceof Error
@@ -325,10 +373,11 @@
    */
   async function move(index: number, direction: -1 | 1): Promise<void> {
     const target = index + direction;
-    if (target < 0 || target >= series.length) {
+    if (reordering || target < 0 || target >= series.length) {
       return;
     }
 
+    reordering = true;
     const reordered = [...series];
     const [moved] = reordered.splice(index, 1);
     reordered.splice(target, 0, moved);
@@ -346,7 +395,9 @@
         );
       }
 
-      statusMessage = `„${moved.title}“ ist jetzt an Position ${target + 1} von ${reordered.length}.`;
+      await announce(
+        `„${moved.title}“ ist jetzt an Position ${target + 1} von ${reordered.length}.`,
+      );
     } catch (err) {
       error =
         err instanceof Error
@@ -355,6 +406,8 @@
       console.error("Error reordering known event series:", err);
       // The server rejected the new order — go back to what it actually stores.
       await loadSeries();
+    } finally {
+      reordering = false;
     }
   }
 
@@ -407,7 +460,8 @@
       </p>
     </div>
     <button
-      on:click={startCreate}
+      bind:this={createButton}
+      on:click={(event) => startCreate(event.currentTarget)}
       class="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
     >
       Neue Event-Reihe
@@ -446,7 +500,7 @@
           ist, wird die Sektion auf der Startseite ausgeblendet.
         </p>
         <button
-          on:click={startCreate}
+          on:click={(event) => startCreate(event.currentTarget)}
           class="mt-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
         >
           Erste Event-Reihe anlegen
@@ -499,7 +553,7 @@
                     <button
                       type="button"
                       on:click={() => move(index, -1)}
-                      disabled={index === 0}
+                      disabled={index === 0 || reordering}
                       aria-label={`„${entry.title}“ nach oben verschieben`}
                       class="px-2 py-1 rounded border border-gray-300 dark:border-charcoal-500 text-gray-700 dark:text-smoke-200 hover:bg-gray-100 dark:hover:bg-charcoal-600 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
@@ -508,7 +562,7 @@
                     <button
                       type="button"
                       on:click={() => move(index, 1)}
-                      disabled={index === series.length - 1}
+                      disabled={index === series.length - 1 || reordering}
                       aria-label={`„${entry.title}“ nach unten verschieben`}
                       class="px-2 py-1 rounded border border-gray-300 dark:border-charcoal-500 text-gray-700 dark:text-smoke-200 hover:bg-gray-100 dark:hover:bg-charcoal-600 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
@@ -553,7 +607,8 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div class="flex flex-wrap gap-2">
                     <button
-                      on:click={() => startEdit(entry)}
+                      on:click={(event) =>
+                        startEdit(entry, event.currentTarget)}
                       class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                     >
                       Bearbeiten
@@ -647,6 +702,7 @@
                   <input
                     id="series-title"
                     type="text"
+                    bind:this={titleInput}
                     bind:value={formData.title}
                     required
                     minlength="3"

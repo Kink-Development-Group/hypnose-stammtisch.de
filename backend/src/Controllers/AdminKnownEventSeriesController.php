@@ -496,6 +496,14 @@ class AdminKnownEventSeriesController
             }
         }
 
+        // Rejected rather than cast: `(bool)"false"` is true, so a stray string
+        // would publish a series on the home page that was meant to stay hidden.
+        if (array_key_exists('is_active', $input) && !is_bool($input['is_active'])) {
+            if (!in_array($input['is_active'], [0, 1, '0', '1'], true)) {
+                $errors['is_active'] = 'Is active must be a boolean';
+            }
+        }
+
         return $errors;
     }
 

@@ -77,6 +77,10 @@ Wie im öffentlichen Kalender zählen dabei nur veröffentlichte Overrides
 (`override_type` `changed`/`cancelled` mit Status `published`/`cancelled`). Ein
 Override im Entwurf verschiebt den Termin auf der Startseite also noch nicht.
 
+Ebenfalls wie im Kalender wird ein Termin über seinen ursprünglichen Tag
+zugeordnet: Ein bereits vergangener Termin, der nach vorne in die Zukunft
+verschoben wurde, taucht deshalb nicht als „nächster Termin“ auf.
+
 Ein `manual` gepflegter Text veraltet weiterhin von selbst; wo es geht, ist die
 Verknüpfung die bessere Wahl.
 
