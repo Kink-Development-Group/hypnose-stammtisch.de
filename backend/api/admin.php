@@ -18,6 +18,7 @@ use HypnoseStammtisch\Controllers\AdminUsersController;
 use HypnoseStammtisch\Controllers\AdminSecurityController;
 use HypnoseStammtisch\Controllers\UserController;
 use HypnoseStammtisch\Controllers\PasswordResetController;
+use HypnoseStammtisch\Controllers\WebAuthnController;
 use HypnoseStammtisch\Utils\Response;
 
 // Load configuration
@@ -73,6 +74,32 @@ try {
   }
   if ($path === '/auth/2fa/backup-codes/status' && $method === 'GET') {
     AdminAuthController::twofaBackupStatus();
+    return;
+  }
+
+  // Passkey (WebAuthn) endpoints — alternative login path next to password + TOTP
+  if ($path === '/auth/webauthn/register/options' && $method === 'POST') {
+    WebAuthnController::registerOptions();
+    return;
+  }
+  if ($path === '/auth/webauthn/register/verify' && $method === 'POST') {
+    WebAuthnController::registerVerify();
+    return;
+  }
+  if ($path === '/auth/webauthn/login/options' && $method === 'POST') {
+    WebAuthnController::loginOptions();
+    return;
+  }
+  if ($path === '/auth/webauthn/login/verify' && $method === 'POST') {
+    WebAuthnController::loginVerify();
+    return;
+  }
+  if ($path === '/auth/webauthn/credentials' && $method === 'GET') {
+    WebAuthnController::listCredentials();
+    return;
+  }
+  if (preg_match('#^/auth/webauthn/credentials/([a-zA-Z0-9\-]+)$#', $path, $matches) && $method === 'DELETE') {
+    WebAuthnController::deleteCredential((string)$matches[1]);
     return;
   }
 

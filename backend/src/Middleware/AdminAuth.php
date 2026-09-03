@@ -218,6 +218,18 @@ class AdminAuth
      */
     public static function finalizeTwoFactor(int|string $userId): array
     {
+        return self::finalizeLogin($userId, 'password_totp');
+    }
+
+    /**
+     * Mark the session as fully authenticated.
+     *
+     * Called once a login has passed all required factors — either password +
+     * TOTP or a verified passkey assertion. `$method` is recorded in the session
+     * so later requests can tell which path was used.
+     */
+    public static function finalizeLogin(int|string $userId, string $method): array
+    {
         // Ensure string for DB layer (Prepared Statements akzeptieren beides, wir normalisieren dennoch)
         $idParam = (string)$userId;
         $sql = "SELECT id, username, email, pending_email, role, is_active, last_login, created_at, updated_at, twofa_enabled FROM users WHERE id = ?";
@@ -235,6 +247,7 @@ class AdminAuth
         $_SESSION['admin_user_email'] = $user['email'];
         $_SESSION['admin_user_role'] = $user['role'];
         $_SESSION['admin_2fa_verified'] = true;
+        $_SESSION['admin_auth_method'] = $method;
 
         unset($_SESSION['admin_user_pending_id'], $_SESSION['admin_user_password_ok']);
 

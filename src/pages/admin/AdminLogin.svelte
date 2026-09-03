@@ -6,6 +6,7 @@
   import BrandLogo from "../../components/ui/BrandLogo.svelte";
   import QrCode from "../../components/ui/QrCode.svelte";
   import { adminAuth, adminAuthState } from "../../stores/admin";
+  import { isPasskeySupported } from "../../utils/webauthn";
 
   // CAPTCHA component reference
   let captchaComponent: InvisibleCaptcha;
@@ -15,6 +16,9 @@
   let loading = false;
   let error = "";
   let twofaCode = ""; // used for both TOTP or backup code depending on toggle
+  let passkeyLoading = false;
+  // Only browsers that can talk to an authenticator get the passkey option.
+  let passkeySupported = false;
   $: state = $adminAuthState;
 
   // Aufbereitete Darstellung des Secrets (Gruppierung für manuelle Eingabe)
@@ -34,6 +38,8 @@
   }
 
   onMount(async () => {
+    passkeySupported = isPasskeySupported();
+
     // Check if user is already authenticated
     const status = await adminAuth.checkStatus();
 
@@ -90,6 +96,22 @@
     if (event.key === "Enter") {
       handleLogin();
     }
+  }
+
+  async function handlePasskeyLogin() {
+    passkeyLoading = true;
+    error = "";
+
+    const result = await adminAuth.loginWithPasskey();
+
+    if (result.success) {
+      // A verified passkey authenticates the session directly – no 2FA step.
+      push("/admin/events");
+    } else {
+      error = result.message || "Passkey-Anmeldung fehlgeschlagen.";
+    }
+
+    passkeyLoading = false;
   }
 
   async function handleVerify2FA() {
@@ -227,6 +249,79 @@
           </button>
         </div>
       </form>
+
+      {#if passkeySupported}
+        <div class="space-y-3">
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+              <div
+                class="w-full border-t border-slate-300 dark:border-charcoal-600"
+              ></div>
+            </div>
+            <p class="relative flex justify-center">
+              <span
+                class="bg-gray-100 dark:bg-charcoal-900 px-3 text-xs font-medium uppercase tracking-wide text-slate-600 dark:text-smoke-400"
+                >oder</span
+              >
+            </p>
+          </div>
+
+          <button
+            type="button"
+            on:click={handlePasskeyLogin}
+            disabled={passkeyLoading || loading}
+            aria-busy={passkeyLoading}
+            class="group relative w-full flex items-center justify-center gap-2 py-2 px-4 border border-slate-300 dark:border-charcoal-600 text-sm font-medium rounded-md text-slate-900 dark:text-smoke-50 bg-white dark:bg-charcoal-800 hover:bg-slate-50 dark:hover:bg-charcoal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-charcoal-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {#if passkeyLoading}
+              <svg
+                class="animate-spin h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Warte auf Passkey…
+            {:else}
+              <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15 7a4 4 0 11-8 0 4 4 0 018 0zM5 21v-2a4 4 0 014-4h1m8 1v6m0 0l2-2m-2 2l-2-2m4-5a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              Mit Passkey anmelden
+            {/if}
+          </button>
+
+          <p class="text-xs text-slate-600 dark:text-smoke-400 leading-snug">
+            Passkeys sind an dieses Gerät gebunden und phishing-resistent. Der
+            Passkey muss vorher im Profil angelegt worden sein – die Anmeldung
+            mit Passwort und 2FA-Code bleibt weiterhin möglich.
+          </p>
+        </div>
+      {/if}
     {:else if state.stage === "setup"}
       <div class="mt-8 space-y-6">
         <h3 class="text-lg font-semibold text-slate-900 dark:text-smoke-50">
