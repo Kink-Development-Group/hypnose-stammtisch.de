@@ -164,7 +164,8 @@ class WebAuthnController
         AdminAuth::startSession();
 
         $ip = IpBanManager::getClientIP();
-        if (IpBanManager::checkIPBanMiddleware($ip)['blocked']) {
+        $ipBan = IpBanManager::checkIPBanMiddleware($ip);
+        if ($ipBan && !empty($ipBan['blocked'])) {
             Response::error('Access denied', 403);
             return;
         }
@@ -204,7 +205,8 @@ class WebAuthnController
         AdminAuth::startSession();
 
         $ip = IpBanManager::getClientIP();
-        if (IpBanManager::checkIPBanMiddleware($ip)['blocked']) {
+        $ipBan = IpBanManager::checkIPBanMiddleware($ip);
+        if ($ipBan && !empty($ipBan['blocked'])) {
             Response::error('Access denied', 403);
             return;
         }
