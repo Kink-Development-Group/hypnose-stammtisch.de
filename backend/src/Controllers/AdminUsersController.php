@@ -377,6 +377,7 @@ class AdminUsersController
             'can_manage_users' => AdminAuth::userHasRole($user, AdminAuth::HEAD_ADMIN_ROLES),
             'can_manage_events' => AdminAuth::userHasRole($user, AdminAuth::EVENT_MANAGEMENT_ROLES),
             'can_manage_security' => AdminAuth::userHasRole($user, AdminAuth::SECURITY_MANAGEMENT_ROLES),
+            'can_manage_known_event_series' => AdminAuth::userHasRole($user, AdminAuth::EVENT_FULL_ACCESS_ROLES),
             'can_view_messages' => AdminAuth::userHasRole($user, AdminAuth::MESSAGE_MANAGEMENT_ROLES),
             'role' => $user['role']
         ];

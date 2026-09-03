@@ -48,6 +48,16 @@
       permissionKey: "can_manage_events",
     },
     {
+      key: "known-event-series",
+      href: "/admin/known-event-series",
+      label: "Event-Reihen",
+      icon: [
+        "M4 6a2 2 0 012-2h12a2 2 0 012 2v2H4V6z",
+        "M4 10h16v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8zm4 3h8",
+      ],
+      permissionKey: "can_manage_known_event_series",
+    },
+    {
       key: "users",
       href: "/admin/users",
       label: "Admin-Benutzer",

@@ -285,6 +285,27 @@ export default class User {
   }
 
   /**
+   * Check if user may manage the "Bekannte Event-Reihen" section of the home page.
+   *
+   * @returns `true` if user is Head Admin or Admin
+   *
+   * @remarks
+   * Deliberately narrower than {@link canManageEvents}: an Event Manager curates
+   * events but does not decide which series the home page advertises. Mirrors
+   * `AdminAuth::EVENT_FULL_ACCESS_ROLES` in the backend, which enforces it.
+   *
+   * @example
+   * ```typescript
+   * if (currentUser.canManageKnownEventSeries()) {
+   *   // Show the event series management UI
+   * }
+   * ```
+   */
+  canManageKnownEventSeries(): boolean {
+    return this.role === Role.HEADADMIN || this.role === Role.ADMIN;
+  }
+
+  /**
    * Check if user has access to security management features.
    *
    * @returns `true` if user is Head Admin or Admin

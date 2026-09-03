@@ -99,3 +99,37 @@ describe("User.getRoleDisplayName()", () => {
     expect(displayName).toBe("role.unknown");
   });
 });
+
+describe("User.canManageKnownEventSeries()", () => {
+  const baseUserData = {
+    id: "123e4567-e89b-12d3-a456-426614174000",
+    username: "testuser",
+    email: "test@example.com",
+    is_active: true,
+    last_login: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  it("should allow head admins", () => {
+    const user = new User({ ...baseUserData, role: Role.HEADADMIN });
+    expect(user.canManageKnownEventSeries()).toBe(true);
+  });
+
+  it("should allow admins", () => {
+    const user = new User({ ...baseUserData, role: Role.ADMIN });
+    expect(user.canManageKnownEventSeries()).toBe(true);
+  });
+
+  it("should deny event managers even though they may manage events", () => {
+    const user = new User({ ...baseUserData, role: Role.EVENTMANAGER });
+
+    expect(user.canManageEvents()).toBe(true);
+    expect(user.canManageKnownEventSeries()).toBe(false);
+  });
+
+  it("should deny moderators", () => {
+    const user = new User({ ...baseUserData, role: Role.MODERATOR });
+    expect(user.canManageKnownEventSeries()).toBe(false);
+  });
+});

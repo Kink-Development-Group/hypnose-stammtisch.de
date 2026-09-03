@@ -19,6 +19,7 @@
   import Terms from "./pages/Terms.svelte";
   // Import admin pages
   import AdminEventsGuarded from "./pages/admin/AdminEventsGuarded.svelte";
+  import AdminKnownEventSeriesGuarded from "./pages/admin/AdminKnownEventSeriesGuarded.svelte";
   import AdminLogin from "./pages/admin/AdminLogin.svelte";
   import AdminMessagesGuarded from "./pages/admin/AdminMessagesGuarded.svelte";
   import AdminProfileGuarded from "./pages/admin/AdminProfileGuarded.svelte";
@@ -49,6 +50,7 @@
     "/admin/security": AdminSecurityGuarded,
     "/admin/users": AdminUsersGuarded,
     "/admin/stammtisch-locations": AdminStammtischLocationsGuarded,
+    "/admin/known-event-series": AdminKnownEventSeriesGuarded,
     "/admin/profile": AdminProfileGuarded,
     // Regular routes
     "/": Home,

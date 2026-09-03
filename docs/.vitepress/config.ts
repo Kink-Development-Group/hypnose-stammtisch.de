@@ -36,7 +36,13 @@ export default defineConfig({
       "/admin/": [
         {
           text: "Admin",
-          items: [{ text: "Management System", link: "/admin/management" }],
+          items: [
+            { text: "Management System", link: "/admin/management" },
+            {
+              text: "Bekannte Event-Reihen",
+              link: "/admin/known-event-series",
+            },
+          ],
         },
       ],
       "/security/": [
