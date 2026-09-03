@@ -27,6 +27,9 @@
 
   async function refresh() {
     loading = true;
+    // A previous load error must not survive a successful reload, otherwise the
+    // stale red banner sits next to the green success message.
+    error = "";
     const result = await listPasskeys();
     if (result.success && result.data) {
       credentials = result.data.credentials;

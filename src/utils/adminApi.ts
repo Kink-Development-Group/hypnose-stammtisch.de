@@ -83,7 +83,10 @@ interface AdminApiOptions extends Omit<RequestInit, "body"> {
 export interface AdminApiResponse<T = unknown> {
   success: boolean;
   data?: T;
+  /** Present on successful responses (`Response::success()`). */
   message?: string;
+  /** Present on failed responses — `Response::error()` serializes the text here. */
+  error?: string;
   errors?: Record<string, string[]>;
 }
 

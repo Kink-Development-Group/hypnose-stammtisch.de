@@ -93,7 +93,7 @@ class WebAuthnController
             return;
         }
 
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $input = self::decodeJsonBody();
 
         // Validate the name before consuming the challenge: a rejected name
         // would otherwise burn the pending ceremony and force a full restart.
@@ -221,7 +221,7 @@ class WebAuthnController
             return;
         }
 
-        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        $input = self::decodeJsonBody();
         $credentialJson = self::extractCredentialJson($input);
         if ($credentialJson === null) {
             Response::error('Ungültige Authenticator-Antwort', 400);
@@ -369,6 +369,23 @@ class WebAuthnController
         }
 
         return $pending;
+    }
+
+    /**
+     * Decode the JSON request body into an array.
+     *
+     * A body that is not a JSON object (a bare scalar, `null`, or malformed
+     * JSON) decodes to a non-array value that `?? []` would not catch, which
+     * would then hit the array-typed parameters below as a TypeError. Anything
+     * that is not an array is treated as an empty body instead.
+     *
+     * @return array<string, mixed>
+     */
+    private static function decodeJsonBody(): array
+    {
+        $decoded = json_decode((string)file_get_contents('php://input'), true);
+
+        return is_array($decoded) ? $decoded : [];
     }
 
     /**

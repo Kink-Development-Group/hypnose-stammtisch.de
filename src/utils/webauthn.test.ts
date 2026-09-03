@@ -165,6 +165,9 @@ describe("webauthn helpers", () => {
     expect(result.data).toEqual({ id: 42, role: "head" });
   });
 
+  // `Response::error()` serializes its text under `error`, not `message` — a
+  // helper reading only `message` would swallow every backend error string and
+  // always fall through to the generic wording.
   it("passes the backend error message through on a rejected login", async () => {
     adminApi
       .mockResolvedValueOnce({
@@ -173,14 +176,29 @@ describe("webauthn helpers", () => {
       })
       .mockResolvedValueOnce({
         success: false,
-        message: "Passkey-Anmeldung fehlgeschlagen",
+        error: "Account is temporarily locked due to security reasons",
       });
     startAuthentication.mockResolvedValue({ id: "cred-1", type: "public-key" });
 
     const result = await loginWithPasskey();
 
     expect(result.success).toBe(false);
-    expect(result.message).toBe("Passkey-Anmeldung fehlgeschlagen");
+    expect(result.message).toBe(
+      "Account is temporarily locked due to security reasons",
+    );
+  });
+
+  it("surfaces the backend reason when registration options are refused", async () => {
+    adminPost.mockResolvedValueOnce({
+      success: false,
+      error: "Maximale Anzahl an Passkeys erreicht.",
+    });
+
+    const result = await registerPasskey("Laptop");
+
+    expect(result.success).toBe(false);
+    expect(result.message).toBe("Maximale Anzahl an Passkeys erreicht.");
+    expect(startRegistration).not.toHaveBeenCalled();
   });
 
   it("url-encodes the credential ID when deleting", async () => {

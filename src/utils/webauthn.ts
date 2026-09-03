@@ -20,6 +20,7 @@ import type {
   PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
 import { adminApi, adminDelete, adminGet, adminPost } from "./adminApi";
+import type { AdminApiResponse } from "./adminApi";
 
 /** A registered passkey as returned by the admin API. Never contains key material. */
 export interface PasskeyCredential {
@@ -39,6 +40,20 @@ export interface PasskeyResult<T = undefined> {
 
 const BASE = "/api/admin/auth/webauthn";
 
+/**
+ * The user facing text of an API response.
+ *
+ * `Response::success()` puts its text under `message`, `Response::error()` under
+ * `error` — reading only one of them would swallow every backend error string
+ * and always fall through to the generic wording.
+ */
+function apiMessage(
+  result: AdminApiResponse<unknown>,
+  fallback: string,
+): string {
+  return result.message ?? result.error ?? fallback;
+}
+
 /** Whether this browser can talk to an authenticator at all. */
 export function isPasskeySupported(): boolean {
   return typeof window !== "undefined" && browserSupportsWebAuthn();
@@ -57,7 +72,7 @@ export async function listPasskeys(): Promise<
 
   return {
     success: !!result.success,
-    message: result.message ?? "",
+    message: apiMessage(result, ""),
     data: result.data,
   };
 }
@@ -82,8 +97,10 @@ export async function registerPasskey(
   if (!optionsResult.success || !optionsResult.data?.options) {
     return {
       success: false,
-      message:
-        optionsResult.message ?? "Passkey-Registrierung konnte nicht starten.",
+      message: apiMessage(
+        optionsResult,
+        "Passkey-Registrierung konnte nicht starten.",
+      ),
     };
   }
 
@@ -106,11 +123,12 @@ export async function registerPasskey(
 
   return {
     success: !!verifyResult.success,
-    message:
-      verifyResult.message ??
-      (verifyResult.success
+    message: apiMessage(
+      verifyResult,
+      verifyResult.success
         ? "Passkey registriert."
-        : "Passkey konnte nicht gespeichert werden."),
+        : "Passkey konnte nicht gespeichert werden.",
+    ),
     data: verifyResult.data?.credential,
   };
 }
@@ -123,11 +141,12 @@ export async function deletePasskey(id: string): Promise<PasskeyResult> {
 
   return {
     success: !!result.success,
-    message:
-      result.message ??
-      (result.success
+    message: apiMessage(
+      result,
+      result.success
         ? "Passkey gelöscht."
-        : "Passkey konnte nicht gelöscht werden."),
+        : "Passkey konnte nicht gelöscht werden.",
+    ),
   };
 }
 
@@ -154,8 +173,10 @@ export async function loginWithPasskey(): Promise<
   if (!optionsResult.success || !optionsResult.data?.options) {
     return {
       success: false,
-      message:
-        optionsResult.message ?? "Passkey-Anmeldung konnte nicht starten.",
+      message: apiMessage(
+        optionsResult,
+        "Passkey-Anmeldung konnte nicht starten.",
+      ),
     };
   }
 
@@ -175,11 +196,12 @@ export async function loginWithPasskey(): Promise<
 
   return {
     success: !!verifyResult.success,
-    message:
-      verifyResult.message ??
-      (verifyResult.success
+    message: apiMessage(
+      verifyResult,
+      verifyResult.success
         ? "Anmeldung erfolgreich."
-        : "Passkey-Anmeldung fehlgeschlagen."),
+        : "Passkey-Anmeldung fehlgeschlagen.",
+    ),
     data: verifyResult.data,
   };
 }
