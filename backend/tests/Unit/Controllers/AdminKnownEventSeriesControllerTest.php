@@ -139,6 +139,31 @@ class AdminKnownEventSeriesControllerTest extends TestCase
         $this->assertSame([], $errors);
     }
 
+    /**
+     * A partial update may touch the text alone on a row that is already
+     * `manual`, so its shape is checked whenever it is sent — not only when the
+     * request also names the mode. The column stops at 255 characters.
+     */
+    public function testManualTextIsBoundedEvenWithoutTheSource(): void
+    {
+        $errors = AdminKnownEventSeriesController::collectValidationErrors(
+            ['next_event_text' => str_repeat('a', 256)],
+            true
+        );
+
+        $this->assertArrayHasKey('next_event_text', $errors);
+    }
+
+    public function testManualTextOfUsableLengthPassesOnItsOwn(): void
+    {
+        $errors = AdminKnownEventSeriesController::collectValidationErrors(
+            ['next_event_text' => 'Fr, 6. Sep 2026'],
+            true
+        );
+
+        $this->assertSame([], $errors);
+    }
+
     public function testUnknownNextEventSourceIsRejected(): void
     {
         $errors = AdminKnownEventSeriesController::collectValidationErrors([

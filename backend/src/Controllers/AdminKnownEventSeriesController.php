@@ -218,13 +218,32 @@ class AdminKnownEventSeriesController
         // The "next date" mode decides which of its two companion fields matters,
         // so validate the mode that will be stored, not just the one that was sent.
         $effectiveSource = $input['next_event_source'] ?? $series->nextEventSource;
+        // `array_key_exists`, not `??`: an explicit null is a request to drop the
+        // link, and must be validated as such instead of falling back to the
+        // stored id — otherwise the update would store a dangling `auto` row.
+        $effectiveLinkedId = array_key_exists('linked_series_id', $input)
+            ? $input['linked_series_id']
+            : $series->linkedSeriesId;
         $linkError = self::checkLinkedSeries([
             'next_event_source' => $effectiveSource,
-            'linked_series_id' => $input['linked_series_id'] ?? $series->linkedSeriesId,
+            'linked_series_id' => $effectiveLinkedId,
         ]);
         if ($linkError !== null) {
             Response::error('Validation failed', 400, $linkError);
             return;
+        }
+
+        // Same reasoning for the manual text: a request that only clears it would
+        // otherwise leave a `manual` row with nothing to show.
+        if ($effectiveSource === 'manual') {
+            $effectiveText = array_key_exists('next_event_text', $input)
+                ? $input['next_event_text']
+                : $series->nextEventText;
+            $textError = self::manualTextError($effectiveText);
+            if ($textError !== null) {
+                Response::error('Validation failed', 400, ['next_event_text' => $textError]);
+                return;
+            }
         }
 
         try {
@@ -446,14 +465,23 @@ class AdminKnownEventSeriesController
             }
         }
 
+        // The shape of the text is checked whenever it is sent, not only when the
+        // request also names the mode: a partial update may touch the text alone
+        // on a row that is already `manual`, and the column stops at 255.
+        if (isset($input['next_event_text'])) {
+            $text = $input['next_event_text'];
+            if (!is_string($text) || mb_strlen($text) > 255) {
+                $errors['next_event_text'] = 'Next event text must be a string of at most 255 characters';
+            }
+        }
+
         if (isset($input['next_event_source'])) {
             if (!in_array($input['next_event_source'], KnownEventSeries::NEXT_EVENT_SOURCES, true)) {
                 $errors['next_event_source'] = 'Next event source must be auto, manual, or none';
             } elseif ($input['next_event_source'] === 'manual') {
-                $text = $input['next_event_text'] ?? null;
-                if (!is_string($text) || trim($text) === '' || mb_strlen($text) > 255) {
-                    $errors['next_event_text'] =
-                        'A manual next date needs a text of 1 to 255 characters';
+                $textError = self::manualTextError($input['next_event_text'] ?? null);
+                if ($textError !== null) {
+                    $errors['next_event_text'] = $textError;
                 }
             }
         }
@@ -469,6 +497,21 @@ class AdminKnownEventSeriesController
         }
 
         return $errors;
+    }
+
+    /**
+     * A `manual` next date needs a usable text, or the card silently loses the
+     * line it exists for.
+     *
+     * @return string|null The message, or null when the text is fine
+     */
+    private static function manualTextError(mixed $text): ?string
+    {
+        if (!is_string($text) || trim($text) === '' || mb_strlen($text) > 255) {
+            return 'A manual next date needs a text of 1 to 255 characters';
+        }
+
+        return null;
     }
 
     /**

@@ -28,6 +28,14 @@ class KnownEventSeries
     /** How far ahead a linked series is expanded when looking for the next date. */
     private const NEXT_OCCURRENCE_LOOKAHEAD_MONTHS = 18;
 
+    /**
+     * Which instance overrides may change a public date, mirroring
+     * `EventsController::PUBLIC_OVERRIDE_TYPES` / `PUBLIC_OVERRIDE_STATUSES`.
+     * Drafts stay invisible here exactly as they do in the calendar.
+     */
+    private const PUBLIC_OVERRIDE_TYPES = ['changed', 'cancelled'];
+    private const PUBLIC_OVERRIDE_STATUSES = ['published', 'cancelled'];
+
     public function __construct(
         public ?string $id = null,
         public string $title = '',
@@ -249,10 +257,20 @@ class KnownEventSeries
 
     /**
      * Persist a new order. `$orderedIds` is the full list of ids, first to last.
+     *
+     * All or nothing: a renumbering that stops half way would leave duplicate
+     * sort orders behind and let the title tiebreaker decide the rest.
      */
     public static function reorder(array $orderedIds): bool
     {
+        $startedTransaction = false;
+
         try {
+            if (!Database::inTransaction()) {
+                Database::beginTransaction();
+                $startedTransaction = true;
+            }
+
             $position = 1;
             foreach ($orderedIds as $id) {
                 Database::execute(
@@ -262,8 +280,16 @@ class KnownEventSeries
                 $position++;
             }
 
+            if ($startedTransaction) {
+                Database::commit();
+            }
+
             return true;
         } catch (\Exception $e) {
+            if ($startedTransaction && Database::inTransaction()) {
+                Database::rollback();
+            }
+
             error_log('Error reordering known event series: ' . $e->getMessage());
             return false;
         }
@@ -369,6 +395,11 @@ class KnownEventSeries
      *
      * Kept free of database access so the selection rules stay unit-testable.
      *
+     * Every datetime handed in — instances and override starts alike — must be an
+     * Europe/Berlin wall-clock string; `getOverridesFrom()` converts the UTC values
+     * stored in `events` before they get here, so the list sorts and compares in a
+     * single timezone.
+     *
      * @param array<int, array<string, mixed>> $instances Expanded RRULE instances
      * @param array<string, array{override_type: ?string, start_datetime: ?string}> $overrides Keyed by instance date (Y-m-d)
      */
@@ -412,23 +443,42 @@ class KnownEventSeries
     /**
      * Stored overrides of a series from `$from` onwards, keyed by instance date.
      *
+     * Mirrors the public calendar (`EventsController::getPublicSeriesOverrideConstraint`):
+     * only overrides that are actually public may move or drop a date on the home
+     * page — a freshly created override defaults to `status = 'draft'` and must not
+     * change what visitors see before it is published.
+     *
+     * `events.start_datetime` is stored in UTC, while the expanded instances carry
+     * Europe/Berlin wall-clock strings, so the override start is converted here.
+     * That keeps `selectNextOccurrence()` a pure comparison over one timezone.
+     *
      * @return array<string, array{override_type: ?string, start_datetime: ?string}>
      */
     private static function getOverridesFrom(string $seriesId, Carbon $from): array
     {
         try {
+            $typePlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_TYPES), '?'));
+            $statusPlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_STATUSES), '?'));
+
             $rows = Database::fetchAll(
                 "SELECT instance_date, start_datetime, override_type
                  FROM events
-                 WHERE series_id = ? AND instance_date >= ? AND override_type IS NOT NULL",
-                [$seriesId, $from->toDateString()]
+                 WHERE series_id = ? AND instance_date >= ?
+                   AND override_type IN ($typePlaceholders)
+                   AND status IN ($statusPlaceholders)",
+                [
+                    $seriesId,
+                    $from->toDateString(),
+                    ...self::PUBLIC_OVERRIDE_TYPES,
+                    ...self::PUBLIC_OVERRIDE_STATUSES,
+                ]
             );
 
             $overrides = [];
             foreach ($rows as $row) {
                 $overrides[(string)$row['instance_date']] = [
                     'override_type' => $row['override_type'] ?? null,
-                    'start_datetime' => $row['start_datetime'] ?? null,
+                    'start_datetime' => self::toBerlinWallClock($row['start_datetime'] ?? null),
                 ];
             }
 
@@ -436,6 +486,27 @@ class KnownEventSeries
         } catch (\Exception $e) {
             error_log('Error fetching series overrides: ' . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Read a UTC datetime as stored in `events` and return it as an
+     * Europe/Berlin wall-clock string, so it can be compared and sorted against
+     * the instances RRuleProcessor generates.
+     */
+    private static function toBerlinWallClock(mixed $utcDatetime): ?string
+    {
+        if (!is_string($utcDatetime) || trim($utcDatetime) === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($utcDatetime, 'UTC')
+                ->setTimezone('Europe/Berlin')
+                ->toDateTimeString();
+        } catch (\Exception $e) {
+            error_log('Error normalizing override start: ' . $e->getMessage());
+            return null;
         }
     }
 

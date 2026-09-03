@@ -73,6 +73,10 @@ EXDATEs und gespeicherte Instanz-Overrides — ein verschobener Termin liefert
 seine neue Startzeit, ein abgesagter wird übersprungen — und liefert den ersten
 Termin ab „jetzt“ als ISO-Zeitstempel. Formatiert wird erst im Frontend.
 
+Wie im öffentlichen Kalender zählen dabei nur veröffentlichte Overrides
+(`override_type` `changed`/`cancelled` mit Status `published`/`cancelled`). Ein
+Override im Entwurf verschiebt den Termin auf der Startseite also noch nicht.
+
 Ein `manual` gepflegter Text veraltet weiterhin von selbst; wo es geht, ist die
 Verknüpfung die bessere Wahl.
 

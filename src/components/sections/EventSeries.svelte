@@ -99,6 +99,7 @@
       <!-- Event Series Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {#each series as entry (entry.id)}
+          {@const nextEvent = formatNextEvent(entry)}
           <div class="card hover:shadow-glow transition-all duration-300 group">
             <!-- Header -->
             <div class="mb-4">
@@ -192,14 +193,14 @@
                       {entry.price}
                     </div>
                   {/if}
-                  {#if formatNextEvent(entry)}
+                  {#if nextEvent}
                     <div class="text-xs text-smoke-500">
                       {#if entry.nextEvent.source === NextEventSource.AUTO && entry.nextEvent.datetime}
                         <time datetime={entry.nextEvent.datetime}>
-                          {formatNextEvent(entry)}
+                          {nextEvent}
                         </time>
                       {:else}
-                        {formatNextEvent(entry)}
+                        {nextEvent}
                       {/if}
                     </div>
                   {/if}
