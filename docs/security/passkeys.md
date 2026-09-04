@@ -77,8 +77,9 @@ auch keine Auskunft darüber, welche Konten oder Passkeys existieren.
 
 ## Konfiguration
 
-Alle Werte sind optional; ohne Angabe werden sie aus `FRONTEND_URL` bzw.
-`APP_URL` abgeleitet.
+Auf der Produktionsdomain sind alle Werte optional; ohne Angabe werden sie aus
+`FRONTEND_URL` bzw. `APP_URL` abgeleitet. **Auf jedem anderen Host sind sie
+Pflicht** – siehe den folgenden Kasten.
 
 ```env
 # Relying Party ID – die Domain, an die der Passkey gebunden wird.
@@ -97,6 +98,38 @@ WEBAUTHN_ORIGINS=https://hypnose-stammtisch.de,https://www.hypnose-stammtisch.de
 Die Relying Party ID ist Teil des Credentials. Ändert sie sich, sind **alle**
 bestehenden Passkeys ungültig und müssen neu registriert werden. Passwort + TOTP
 bleibt in diesem Fall der Weg zurück ins Konto.
+:::
+
+::: danger Subdomains (Beta, Staging) brauchen eigene Werte
+Erlaubt sind ausschließlich die abgeleiteten Origins **und deren www-/apex-
+Gegenstück** — sonst nichts. Läuft eine Umgebung unter einer anderen Subdomain,
+während `FRONTEND_URL`/`APP_URL` auf die Produktionsdomain zeigen (oder gar nicht
+gesetzt sind — der Default ist ebenfalls die Produktionsdomain), scheitert **jede
+Registrierung**:
+
+```
+Passkey konnte nicht verifiziert werden: Invalid origin. Subdomains are not allowed.
+```
+
+Der Fehler ist besonders tückisch, weil der Browser die Zeremonie vorher
+anstandslos durchlaufen lässt: `rp.id = hypnose-stammtisch.de` ist ein zulässiges
+Domain-Suffix von `beta.hypnose-stammtisch.de`, der Authenticator fragt also nach
+Biometrie — erst der Server lehnt ab.
+
+Für eine Beta-Umgebung gehört deshalb in die `.env`:
+
+```env
+WEBAUTHN_RP_ID=beta.hypnose-stammtisch.de
+WEBAUTHN_ORIGINS=https://beta.hypnose-stammtisch.de
+```
+
+Damit sind Beta-Passkeys sauber von der Produktion getrennt. Wer stattdessen nur
+`WEBAUTHN_ORIGINS` um die Beta-Adresse ergänzt, behält die Produktions-RP-ID —
+die Credentials liegen dann zwar in der Beta-Datenbank, sind aber an die
+Produktionsdomain gebunden.
+
+Auf Shared Hosting mit Deploy über das `ENV`-Secret gilt: Der Wert gehört in das
+Secret, nicht auf den Server — der Deploy überschreibt die `.env` bei jedem Lauf.
 :::
 
 In der lokalen Entwicklung funktioniert `http://localhost:5173` ohne weitere
