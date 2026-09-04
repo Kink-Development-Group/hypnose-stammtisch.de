@@ -89,18 +89,9 @@
     </div>
   </section>
 
-  <!-- Event Series Section -->
-  <section class="py-16 bg-charcoal-900" aria-labelledby="event-series-heading">
-    <div class="container mx-auto px-4">
-      <h2
-        id="event-series-heading"
-        class="text-3xl md:text-4xl font-display font-bold text-center text-smoke-50 mb-12"
-      >
-        Unsere Event-Reihen
-      </h2>
-      <EventSeries />
-    </div>
-  </section>
+  <!-- Event Series Section — the component brings its own heading and hides
+       itself entirely while no series is published. -->
+  <EventSeries />
 
   <!-- Intro Guide Section -->
   <section class="py-16 bg-charcoal-800" aria-labelledby="intro-guide-heading">

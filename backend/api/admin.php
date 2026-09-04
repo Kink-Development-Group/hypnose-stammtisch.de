@@ -12,6 +12,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Controllers\AdminAuthController;
 use HypnoseStammtisch\Controllers\AdminEventsController;
+use HypnoseStammtisch\Controllers\AdminKnownEventSeriesController;
 use HypnoseStammtisch\Controllers\AdminMessagesController;
 use HypnoseStammtisch\Controllers\AdminStammtischLocationController;
 use HypnoseStammtisch\Controllers\AdminUsersController;
@@ -387,6 +388,41 @@ try {
         return;
       } elseif ($method === 'DELETE') {
         AdminStammtischLocationController::delete($id);
+        return;
+      }
+    }
+  }
+
+  // Route known event series endpoints (head admins and admins only)
+  if (str_starts_with($path, '/known-event-series')) {
+    if ($path === '/known-event-series') {
+      if ($method === 'GET') {
+        AdminKnownEventSeriesController::index();
+        return;
+      } elseif ($method === 'POST') {
+        AdminKnownEventSeriesController::create();
+        return;
+      }
+    } elseif ($path === '/known-event-series/linkable-series') {
+      if ($method === 'GET') {
+        AdminKnownEventSeriesController::linkableSeries();
+        return;
+      }
+    } elseif ($path === '/known-event-series/reorder') {
+      if ($method === 'POST') {
+        AdminKnownEventSeriesController::reorder();
+        return;
+      }
+    } elseif (preg_match('#^/known-event-series/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+      $id = (string)$matches[1];
+      if ($method === 'GET') {
+        AdminKnownEventSeriesController::show($id);
+        return;
+      } elseif ($method === 'PUT') {
+        AdminKnownEventSeriesController::update($id);
+        return;
+      } elseif ($method === 'DELETE') {
+        AdminKnownEventSeriesController::delete($id);
         return;
       }
     }

@@ -162,7 +162,11 @@ export class UserHelpers {
   static hasPermission(
     user: User | null,
     permission:
-      "manage_users" | "manage_events" | "manage_messages" | "manage_security",
+      | "manage_users"
+      | "manage_events"
+      | "manage_messages"
+      | "manage_security"
+      | "manage_known_event_series",
   ): boolean {
     if (!user) return false;
 
@@ -175,6 +179,8 @@ export class UserHelpers {
         return user.canManageMessages();
       case "manage_security":
         return user.canManageSecurity();
+      case "manage_known_event_series":
+        return user.canManageKnownEventSeries();
       default:
         return false;
     }
@@ -206,12 +212,17 @@ export class UserHelpers {
     can_manage_events: boolean;
     can_manage_messages: boolean;
     can_manage_security: boolean;
+    can_manage_known_event_series: boolean;
   } {
     return {
       can_manage_users: this.hasPermission(user, "manage_users"),
       can_manage_events: this.hasPermission(user, "manage_events"),
       can_manage_messages: this.hasPermission(user, "manage_messages"),
       can_manage_security: this.hasPermission(user, "manage_security"),
+      can_manage_known_event_series: this.hasPermission(
+        user,
+        "manage_known_event_series",
+      ),
     };
   }
 }
