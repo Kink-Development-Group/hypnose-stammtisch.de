@@ -26,7 +26,10 @@ CREATE TABLE IF NOT EXISTS user_webauthn_credentials (
   public_key TEXT NOT NULL,
 
   -- Signaturzähler des Authenticators; ein nicht steigender Zähler deutet auf
-  -- ein geklontes Credential hin und führt zur Ablehnung des Logins.
+  -- ein geklontes Credential hin und führt zur Ablehnung des Logins. Wirksam
+  -- nur bei Authenticatoren, die überhaupt einen Zähler führen: synchronisierte
+  -- Passkeys melden durchgängig 0, der Wert bleibt hier 0 und die Prüfung
+  -- greift nicht (spec-konform, siehe docs/security/passkeys.md).
   sign_count BIGINT UNSIGNED NOT NULL DEFAULT 0,
 
   -- JSON-Array der vom Authenticator gemeldeten Transports (z. B. ["internal"]).

@@ -302,9 +302,14 @@ class KnownEventSeries
      * series as an ISO datetime, `none` nothing. The frontend decides how to
      * render either — the backend never formats a date for display.
      *
+     * Pass `$resolvedOccurrences` (linked series id => ISO datetime or null) to
+     * reuse a batch lookup instead of querying per card; `toPublicPayload()`
+     * does exactly that. Without it the linked series is resolved on the spot.
+     *
+     * @param array<string, ?string>|null $resolvedOccurrences
      * @return array{source: string, text: ?string, datetime: ?string}
      */
-    public function resolveNextEvent(): array
+    public function resolveNextEvent(?array $resolvedOccurrences = null): array
     {
         $resolved = [
             'source' => $this->nextEventSource,
@@ -318,10 +323,43 @@ class KnownEventSeries
         }
 
         if ($this->nextEventSource === 'auto' && $this->linkedSeriesId) {
-            $resolved['datetime'] = self::resolveNextOccurrence($this->linkedSeriesId);
+            $resolved['datetime'] = $resolvedOccurrences !== null
+                ? ($resolvedOccurrences[$this->linkedSeriesId] ?? null)
+                : self::resolveNextOccurrence($this->linkedSeriesId);
         }
 
         return $resolved;
+    }
+
+    /**
+     * Public payload for a whole list of cards, with every linked series
+     * resolved in one go.
+     *
+     * The home page is the most visited page of the site and calls this on every
+     * request. Resolving card by card would cost two queries per linked series;
+     * here it is two queries in total, no matter how many cards are linked. The
+     * RRULE expansion still runs per series, but it is pure computation —
+     * `RRuleProcessor::initializeIterationCursor()` jumps to the start of the
+     * window instead of iterating from DTSTART.
+     *
+     * @param self[] $series
+     * @return array<int, array<string, mixed>>
+     */
+    public static function toPublicPayload(array $series): array
+    {
+        $linkedIds = [];
+        foreach ($series as $entry) {
+            if ($entry->nextEventSource === 'auto' && $entry->linkedSeriesId) {
+                $linkedIds[] = $entry->linkedSeriesId;
+            }
+        }
+
+        $occurrences = self::resolveNextOccurrences($linkedIds);
+
+        return array_map(
+            static fn(self $entry): array => $entry->toPublicArray($occurrences),
+            array_values($series)
+        );
     }
 
     /**
@@ -333,61 +371,120 @@ class KnownEventSeries
      */
     public static function resolveNextOccurrence(string $seriesId, ?Carbon $from = null): ?string
     {
+        return self::resolveNextOccurrences([$seriesId], $from)[$seriesId] ?? null;
+    }
+
+    /**
+     * The same for several series at once — two queries in total instead of two
+     * per series.
+     *
+     * Ids that name no published series are present in the result with `null`,
+     * so a caller can look up every id it asked for.
+     *
+     * @param string[] $seriesIds
+     * @return array<string, ?string>
+     */
+    public static function resolveNextOccurrences(array $seriesIds, ?Carbon $from = null): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            $seriesIds,
+            static fn($id): bool => is_string($id) && $id !== ''
+        )));
+
+        $resolved = array_fill_keys($ids, null);
+
+        if ($ids === []) {
+            return $resolved;
+        }
+
         $from = $from ? $from->copy() : Carbon::now('Europe/Berlin');
 
         try {
-            $series = Database::fetchOne(
-                "SELECT * FROM event_series WHERE id = ? AND status = 'published'",
-                [$seriesId]
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $rows = Database::fetchAll(
+                "SELECT * FROM event_series WHERE id IN ($placeholders) AND status = 'published'",
+                $ids
             );
 
-            if (!$series) {
+            if ($rows === []) {
+                return $resolved;
+            }
+
+            $overrides = self::getOverridesFrom(array_column($rows, 'id'), $from);
+
+            foreach ($rows as $series) {
+                $seriesId = (string)$series['id'];
+
+                // Per series, so one unparsable row does not blank out the
+                // dates of every other card on the page.
+                try {
+                    $resolved[$seriesId] = self::nextOccurrenceOfSeries(
+                        $series,
+                        $overrides[$seriesId] ?? [],
+                        $from
+                    );
+                } catch (\Exception $e) {
+                    error_log(
+                        'Error resolving next occurrence for series ' . $seriesId
+                        . ': ' . $e->getMessage()
+                    );
+                }
+            }
+
+            return $resolved;
+        } catch (\Exception $e) {
+            error_log('Error resolving next occurrences: ' . $e->getMessage());
+            return $resolved;
+        }
+    }
+
+    /**
+     * Next occurrence of one already loaded `event_series` row.
+     *
+     * Like `selectNextOccurrence()` this touches no database, so the window and
+     * expansion rules stay unit-testable — and so the batch lookup above can run
+     * it per series without paying for another query.
+     *
+     * @param array<string, mixed> $series Row from `event_series`
+     * @param array<string, array{override_type: ?string, start_datetime: ?string}> $overrides Keyed by instance date (Y-m-d)
+     */
+    public static function nextOccurrenceOfSeries(array $series, array $overrides, Carbon $from): ?string
+    {
+        $windowEnd = $from->copy()->addMonths(self::NEXT_OCCURRENCE_LOOKAHEAD_MONTHS);
+
+        if (!empty($series['end_date'])) {
+            $seriesEnd = Carbon::parse($series['end_date'])->endOfDay();
+            if ($seriesEnd->lt($from)) {
                 return null;
             }
-
-            $windowEnd = $from->copy()->addMonths(self::NEXT_OCCURRENCE_LOOKAHEAD_MONTHS);
-
-            if (!empty($series['end_date'])) {
-                $seriesEnd = Carbon::parse($series['end_date'])->endOfDay();
-                if ($seriesEnd->lt($from)) {
-                    return null;
-                }
-                if ($seriesEnd->lt($windowEnd)) {
-                    $windowEnd = $seriesEnd;
-                }
+            if ($seriesEnd->lt($windowEnd)) {
+                $windowEnd = $seriesEnd;
             }
-
-            $startTime = $series['start_time'] ?? '00:00:00';
-            $endTime = $series['end_time'] ?? date('H:i:s', strtotime($startTime) + 7200);
-
-            $pseudoEvent = [
-                'id' => 'series_' . $series['id'],
-                'title' => $series['title'],
-                'start_datetime' => Carbon::parse(
-                    $series['start_date'] . ' ' . $startTime,
-                    'Europe/Berlin'
-                )->toDateTimeString(),
-                'end_datetime' => Carbon::parse(
-                    $series['start_date'] . ' ' . $endTime,
-                    'Europe/Berlin'
-                )->toDateTimeString(),
-                'timezone' => 'Europe/Berlin',
-                'rrule' => $series['rrule'],
-                'is_recurring' => true,
-            ];
-
-            $exdates = JsonHelper::decodeArray($series['exdates'] ?? '[]');
-            $instances = RRuleProcessor::expandRecurringEvent($pseudoEvent, $from, $windowEnd, $exdates);
-
-            return self::selectNextOccurrence(
-                $instances,
-                self::getOverridesFrom($series['id'], $from),
-                $from
-            );
-        } catch (\Exception $e) {
-            error_log('Error resolving next occurrence for series ' . $seriesId . ': ' . $e->getMessage());
-            return null;
         }
+
+        $startTime = $series['start_time'] ?? '00:00:00';
+        $endTime = $series['end_time'] ?? date('H:i:s', strtotime($startTime) + 7200);
+
+        $pseudoEvent = [
+            'id' => 'series_' . $series['id'],
+            'title' => $series['title'],
+            'start_datetime' => Carbon::parse(
+                $series['start_date'] . ' ' . $startTime,
+                'Europe/Berlin'
+            )->toDateTimeString(),
+            'end_datetime' => Carbon::parse(
+                $series['start_date'] . ' ' . $endTime,
+                'Europe/Berlin'
+            )->toDateTimeString(),
+            'timezone' => 'Europe/Berlin',
+            'rrule' => $series['rrule'],
+            'is_recurring' => true,
+        ];
+
+        $exdates = JsonHelper::decodeArray($series['exdates'] ?? '[]');
+        $instances = RRuleProcessor::expandRecurringEvent($pseudoEvent, $from, $windowEnd, $exdates);
+
+        return self::selectNextOccurrence($instances, $overrides, $from);
     }
 
     /**
@@ -441,7 +538,8 @@ class KnownEventSeries
     }
 
     /**
-     * Stored overrides of a series from `$from` onwards, keyed by instance date.
+     * Stored overrides of the given series from `$from` onwards, grouped by
+     * series id and keyed by instance date.
      *
      * Mirrors the public calendar (`EventsController::getPublicSeriesOverrideConstraint`):
      * only overrides that are actually public may move or drop a date on the home
@@ -452,22 +550,28 @@ class KnownEventSeries
      * Europe/Berlin wall-clock strings, so the override start is converted here.
      * That keeps `selectNextOccurrence()` a pure comparison over one timezone.
      *
-     * @return array<string, array{override_type: ?string, start_datetime: ?string}>
+     * @param string[] $seriesIds
+     * @return array<string, array<string, array{override_type: ?string, start_datetime: ?string}>>
      */
-    private static function getOverridesFrom(string $seriesId, Carbon $from): array
+    private static function getOverridesFrom(array $seriesIds, Carbon $from): array
     {
+        if ($seriesIds === []) {
+            return [];
+        }
+
         try {
+            $seriesPlaceholders = implode(',', array_fill(0, count($seriesIds), '?'));
             $typePlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_TYPES), '?'));
             $statusPlaceholders = implode(',', array_fill(0, count(self::PUBLIC_OVERRIDE_STATUSES), '?'));
 
             $rows = Database::fetchAll(
-                "SELECT instance_date, start_datetime, override_type
+                "SELECT series_id, instance_date, start_datetime, override_type
                  FROM events
-                 WHERE series_id = ? AND instance_date >= ?
+                 WHERE series_id IN ($seriesPlaceholders) AND instance_date >= ?
                    AND override_type IN ($typePlaceholders)
                    AND status IN ($statusPlaceholders)",
                 [
-                    $seriesId,
+                    ...array_values($seriesIds),
                     $from->toDateString(),
                     ...self::PUBLIC_OVERRIDE_TYPES,
                     ...self::PUBLIC_OVERRIDE_STATUSES,
@@ -476,7 +580,7 @@ class KnownEventSeries
 
             $overrides = [];
             foreach ($rows as $row) {
-                $overrides[(string)$row['instance_date']] = [
+                $overrides[(string)$row['series_id']][(string)$row['instance_date']] = [
                     'override_type' => $row['override_type'] ?? null,
                     'start_datetime' => self::toBerlinWallClock($row['start_datetime'] ?? null),
                 ];
@@ -569,8 +673,10 @@ class KnownEventSeries
 
     /**
      * Public shape: what the home page needs, with the next date already resolved.
+     *
+     * @param array<string, ?string>|null $resolvedOccurrences See `resolveNextEvent()`
      */
-    public function toPublicArray(): array
+    public function toPublicArray(?array $resolvedOccurrences = null): array
     {
         return [
             'id' => $this->id,
@@ -583,7 +689,7 @@ class KnownEventSeries
             'price' => $this->price,
             'tags' => $this->tags,
             'detailUrl' => $this->detailUrl,
-            'nextEvent' => $this->resolveNextEvent(),
+            'nextEvent' => $this->resolveNextEvent($resolvedOccurrences),
         ];
     }
 
