@@ -33,9 +33,11 @@ export interface EventDaySegment {
  */
 function resolveEndDay(event: Event): Dayjs {
   const start = dayjs(event.startDate).startOf("day");
-  const end = dayjs(event.endDate);
+  // `dayjs(undefined)` ist *jetzt*, nicht Invalid Date: ohne die Prüfung auf
+  // einen gesetzten Wert liefe ein Event ohne Enddatum vom Starttag bis heute.
+  const end = event.endDate ? dayjs(event.endDate) : null;
 
-  if (!end.isValid() || end.isBefore(event.startDate)) {
+  if (!end || !end.isValid() || end.isBefore(event.startDate)) {
     return start;
   }
 

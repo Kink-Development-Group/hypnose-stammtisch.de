@@ -64,8 +64,15 @@ auch keine Auskunft darüber, welche Konten oder Passkeys existieren.
   `FailedLoginTracker` in dieselbe Lockout-Logik wie Passwort-Logins.
 - **Challenges sind einmalig** und laufen nach 5 Minuten ab
   (`WebAuthnService::CHALLENGE_TTL`).
-- **Signaturzähler**: Ein nicht steigender `sign_count` deutet auf ein
-  geklontes Credential hin und führt zur Ablehnung.
+- **Signaturzähler**: Führt ein Authenticator einen Zähler, dann deutet ein
+  nicht steigender `sign_count` auf ein geklontes Credential hin und führt zur
+  Ablehnung. `CheckCounter` aus `web-auth/webauthn-lib` prüft allerdings nur,
+  solange nicht gespeicherter **und** gemeldeter Zähler beide `0` sind.
+  Synchronisierte Passkeys (iCloud-Schlüsselbund, Google Password Manager, die
+  meisten Plattform-Authenticatoren) melden durchgängig `0` — für sie ist diese
+  Prüfung also wirkungslos. Das ist spec-konform (WebAuthn L3, §6.1.1) und liegt
+  in der Natur der Sache: Solche Credentials werden per Design über mehrere
+  Geräte repliziert, die Klon-Erkennung liegt beim Anbieter des Schlüsselbunds.
 - **Origin- und RP-ID-Bindung**: Nur die konfigurierten Origins werden
   akzeptiert (siehe unten).
 - **Session-Regeneration** direkt vor dem Öffnen der Admin-Session.

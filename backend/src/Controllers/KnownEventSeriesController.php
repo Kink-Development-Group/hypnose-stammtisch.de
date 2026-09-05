@@ -22,7 +22,11 @@ class KnownEventSeriesController
     {
         try {
             $series = KnownEventSeries::getAllPublished();
-            $payload = array_map(fn($entry) => $entry->toPublicArray(), $series);
+
+            // Batched on purpose: this endpoint is hit on every home page view,
+            // and resolving each card on its own would cost two queries per
+            // linked series.
+            $payload = KnownEventSeries::toPublicPayload($series);
 
             Response::success($payload, 'Known event series retrieved successfully');
         } catch (\Exception $e) {

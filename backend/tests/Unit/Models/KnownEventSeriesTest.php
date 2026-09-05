@@ -18,6 +18,26 @@ class KnownEventSeriesTest extends TestCase
         return array_map(fn(string $start) => ['start_datetime' => $start], $starts);
     }
 
+    /**
+     * A published `event_series` row as `resolveNextOccurrences()` loads it:
+     * first Friday of every month, 19:00.
+     *
+     * @return array<string, mixed>
+     */
+    private function series(): array
+    {
+        return [
+            'id' => 'series-1',
+            'title' => 'Hamburger Hypnose Munch',
+            'start_date' => '2026-01-02',
+            'start_time' => '19:00:00',
+            'end_time' => '23:00:00',
+            'end_date' => null,
+            'rrule' => 'FREQ=MONTHLY;BYDAY=1FR',
+            'exdates' => '[]',
+        ];
+    }
+
     public function testPicksTheFirstUpcomingOccurrence(): void
     {
         $next = KnownEventSeries::selectNextOccurrence(
@@ -131,6 +151,55 @@ class KnownEventSeriesTest extends TestCase
     {
         $this->assertNull(KnownEventSeries::selectNextOccurrence(
             [],
+            [],
+            Carbon::parse('2026-09-01 12:00:00', 'Europe/Berlin')
+        ));
+    }
+
+    /**
+     * The batch lookup resolves each series through this pure step, so the
+     * window and expansion rules are covered without touching the database.
+     */
+    public function testNextOccurrenceOfSeriesExpandsTheRrule(): void
+    {
+        $next = KnownEventSeries::nextOccurrenceOfSeries(
+            $this->series(),
+            [],
+            Carbon::parse('2026-09-01 12:00:00', 'Europe/Berlin')
+        );
+
+        $this->assertNotNull($next);
+        $this->assertStringStartsWith('2026-09-04T19:00:00', $next);
+    }
+
+    public function testNextOccurrenceOfSeriesHonoursOverrides(): void
+    {
+        $next = KnownEventSeries::nextOccurrenceOfSeries(
+            $this->series(),
+            [
+                '2026-09-04' => [
+                    'override_type' => 'cancelled',
+                    'start_datetime' => null,
+                ],
+            ],
+            Carbon::parse('2026-09-01 12:00:00', 'Europe/Berlin')
+        );
+
+        $this->assertNotNull($next);
+        $this->assertStringStartsWith('2026-10-02T19:00:00', $next);
+    }
+
+    /**
+     * A series that ended before the window starts has no next date at all —
+     * the expansion must not run past `end_date`.
+     */
+    public function testNextOccurrenceOfSeriesStopsAfterItsEndDate(): void
+    {
+        $series = $this->series();
+        $series['end_date'] = '2026-08-31';
+
+        $this->assertNull(KnownEventSeries::nextOccurrenceOfSeries(
+            $series,
             [],
             Carbon::parse('2026-09-01 12:00:00', 'Europe/Berlin')
         ));

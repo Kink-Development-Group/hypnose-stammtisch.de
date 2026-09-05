@@ -60,6 +60,16 @@ describe("getEventDayCount()", () => {
     expect(getEventDayCount(invalidEnd)).toBe(1);
     expect(getEventDayCount(endBeforeStart)).toBe(1);
   });
+
+  // dayjs(undefined) ist *jetzt*: ohne die Prüfung auf einen gesetzten Wert
+  // liefe so ein Event vom Starttag bis heute statt über einen Tag.
+  it("fällt bei fehlendem Ende auf den Starttag zurück", () => {
+    const event = makeEvent("2026-09-10T18:00:00", "2026-09-10T21:00:00", {
+      endDate: undefined as unknown as Date,
+    });
+    expect(getEventDayCount(event)).toBe(1);
+    expect(isMultiDayEvent(event)).toBe(false);
+  });
 });
 
 describe("eventOccursOnDay()", () => {
