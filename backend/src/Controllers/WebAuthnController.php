@@ -132,7 +132,15 @@ class WebAuthnController
             AuditLogger::log('webauthn.register_failed', 'user', (string)$user['id'], [
                 'reason' => $e->getMessage(),
             ]);
-            Response::error('Passkey konnte nicht verifiziert werden', 400);
+            // Anders als beim Login darf der Grund hier mitgehen: Der Aufrufer ist
+            // ein bereits vollständig authentifizierter Admin, es gibt also nichts
+            // preiszugeben, was er nicht ohnehin sehen dürfte. Ohne den Grund bleibt
+            // eine Fehlkonfiguration unsichtbar — der Audit-Log-Eintrag ist nur über
+            // die Datenbank einsehbar, eine Oberfläche dafür gibt es nicht.
+            Response::error(
+                'Passkey konnte nicht verifiziert werden: ' . $e->getMessage(),
+                400
+            );
             return;
         }
 

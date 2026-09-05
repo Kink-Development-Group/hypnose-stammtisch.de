@@ -160,6 +160,55 @@ final class WebAuthnServiceTest extends TestCase
         $this->register($authenticator, $options, self::ORIGIN, 'evil.example.com');
     }
 
+    /**
+     * Eine Subdomain ist kein erlaubtes Origin — auch dann nicht, wenn der
+     * Browser die Zeremonie zulässt.
+     *
+     * `rp.id = hypnose-stammtisch.de` ist ein zulässiges Domain-Suffix von
+     * `beta.hypnose-stammtisch.de`; der Authenticator läuft deshalb durch und
+     * fragt nach Biometrie. Erst die Origin-Prüfung auf dem Server schlägt zu.
+     * Für Beta-/Staging-Umgebungen müssen `WEBAUTHN_RP_ID` und
+     * `WEBAUTHN_ORIGINS` den tatsächlichen Host nennen.
+     */
+    public function testRegistrationRejectsSubdomainOfAllowedOrigin(): void
+    {
+        $authenticator = new FakeAuthenticator();
+        $options = $this->registrationOptions();
+
+        $response = $this->attestationResponse($authenticator->createAttestation(
+            self::RP_ID,
+            'https://beta.' . self::RP_ID,
+            $options->challenge
+        ));
+
+        $this->expectExceptionMessage('Invalid origin. Subdomains are not allowed.');
+        WebAuthnService::verifyRegistration($response, $options, 'beta.' . self::RP_ID);
+    }
+
+    /**
+     * Der Controller legt die Options als JSON in der Session ab und stellt sie
+     * für die Verifikation wieder her. Der Round-Trip darf die Zeremonie nicht
+     * beschädigen — die übrigen Tests arbeiten mit dem Original-Objekt und
+     * würden einen Serialisierungsfehler nicht bemerken.
+     */
+    public function testRegistrationSucceedsWithOptionsRestoredFromSession(): void
+    {
+        $authenticator = new FakeAuthenticator();
+        $stored = WebAuthnService::serializeOptions($this->registrationOptions());
+        $restored = WebAuthnService::deserializeRegistrationOptions($stored);
+
+        $response = $this->attestationResponse($authenticator->createAttestation(
+            self::RP_ID,
+            self::ORIGIN,
+            $restored->challenge
+        ));
+
+        $record = WebAuthnService::verifyRegistration($response, $restored, self::RP_ID);
+
+        self::assertSame($authenticator->credentialId(), $record->publicKeyCredentialId);
+        self::assertSame(self::USER_HANDLE, $record->userHandle);
+    }
+
     public function testRegistrationRejectsForeignChallenge(): void
     {
         $authenticator = new FakeAuthenticator();
