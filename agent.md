@@ -430,6 +430,7 @@ const summary = getRRuleSummary(event.rrule);
 | `005_add_stammtisch_locations.sql`           | Stammtisch-Standorte    |
 | `006_security_enhancements.sql`              | Security-Erweiterungen  |
 | `007_password_reset_tokens.sql`              | Passwort-Reset          |
+| `014_add_webauthn_credentials.sql`           | Passkeys (WebAuthn)     |
 
 **Wichtig**: `001_initial_schema.sql` enthält das komplette Schema – in der Entwicklung bei Änderungen die Baseline aktualisieren.
 
@@ -443,6 +444,8 @@ const summary = getRRuleSummary(event.rrule);
 - 2FA mit TOTP (Google Authenticator kompatibel)
 - Backup-Codes für 2FA-Wiederherstellung
 - Session-Regeneration alle 30 Minuten
+- Passkeys (WebAuthn) als alternativer, phishing-resistenter Login-Pfad;
+  Passwort + TOTP bleibt der Fallback (`docs/security/passkeys.md`)
 
 ### Rate Limiting & Account Protection
 
@@ -529,6 +532,20 @@ bun run test:a11y    # Playwright + axe-core Tests
 | DELETE  | `/users/{id}`      | Benutzer löschen       |
 | GET     | `/messages`        | Nachrichten            |
 | DELETE  | `/messages/{id}`   | Nachricht löschen      |
+
+### Passkeys (`/api/admin/auth/webauthn/...`)
+
+Alternativer Login-Pfad neben Passwort + TOTP – siehe
+[`docs/security/passkeys.md`](docs/security/passkeys.md).
+
+| Methode | Endpunkt            | Auth | Beschreibung                        |
+| ------- | ------------------- | ---- | ----------------------------------- |
+| POST    | `/register/options` | ja   | Challenge für die Registrierung     |
+| POST    | `/register/verify`  | ja   | Attestation prüfen und speichern    |
+| POST    | `/login/options`    | nein | Challenge für die Anmeldung         |
+| POST    | `/login/verify`     | nein | Assertion prüfen und Session öffnen |
+| GET     | `/credentials`      | ja   | Eigene Passkeys auflisten           |
+| DELETE  | `/credentials/{id}` | ja   | Eigenen Passkey löschen             |
 
 ---
 

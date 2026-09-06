@@ -83,7 +83,10 @@ interface AdminApiOptions extends Omit<RequestInit, "body"> {
 export interface AdminApiResponse<T = unknown> {
   success: boolean;
   data?: T;
+  /** Present on successful responses (`Response::success()`). */
   message?: string;
+  /** Present on failed responses — `Response::error()` serializes the text here. */
+  error?: string;
   errors?: Record<string, string[]>;
 }
 
@@ -147,11 +150,12 @@ export async function adminApi<T = unknown>(
     if (response.status === 403 && isMutating && !skipCsrf) {
       const result = (await response.json()) as AdminApiResponse<T>;
 
-      // Check if it's a CSRF error and retry once with a fresh token
-      if (
-        result.message?.toLowerCase().includes("csrf") ||
-        result.message?.toLowerCase().includes("token")
-      ) {
+      // Check if it's a CSRF error and retry once with a fresh token.
+      // `Response::error()` serializes its text under `error`, `Response::success()`
+      // under `message` — reading only one of them would never detect the
+      // "Invalid or missing CSRF token" reply and the retry would never happen.
+      const reason = (result.message ?? result.error ?? "").toLowerCase();
+      if (reason.includes("csrf") || reason.includes("token")) {
         console.warn("CSRF token expired, fetching new token...");
         csrfToken = null;
 

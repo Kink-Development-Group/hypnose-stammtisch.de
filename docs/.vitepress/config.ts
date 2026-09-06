@@ -18,6 +18,7 @@ export default defineConfig({
         items: [
           { text: "Implementierung", link: "/security/implementation" },
           { text: "Account Lockout", link: "/security/lockout" },
+          { text: "Passkeys", link: "/security/passkeys" },
           { text: "Testkonfiguration", link: "/security/test-configuration" },
         ],
       },
@@ -35,7 +36,13 @@ export default defineConfig({
       "/admin/": [
         {
           text: "Admin",
-          items: [{ text: "Management System", link: "/admin/management" }],
+          items: [
+            { text: "Management System", link: "/admin/management" },
+            {
+              text: "Bekannte Event-Reihen",
+              link: "/admin/known-event-series",
+            },
+          ],
         },
       ],
       "/security/": [
@@ -44,6 +51,7 @@ export default defineConfig({
           items: [
             { text: "Implementierung", link: "/security/implementation" },
             { text: "Account Lockout", link: "/security/lockout" },
+            { text: "Passkeys", link: "/security/passkeys" },
             { text: "Testkonfiguration", link: "/security/test-configuration" },
           ],
         },

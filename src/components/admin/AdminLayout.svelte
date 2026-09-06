@@ -21,6 +21,7 @@
     can_manage_messages: false,
     can_manage_users: false,
     can_manage_security: false,
+    can_manage_known_event_series: false,
   };
   let isNavOpen = false;
   let mobileNavDialog: HTMLDivElement | null = null;
@@ -56,6 +57,7 @@
       can_manage_messages: false,
       can_manage_users: false,
       can_manage_security: false,
+      can_manage_known_event_series: false,
     };
 
     let popHandler: (() => void) | null = null;
@@ -134,6 +136,7 @@
       can_manage_messages: false,
       can_manage_users: false,
       can_manage_security: false,
+      can_manage_known_event_series: false,
     };
 
     if (typeof window !== "undefined") {

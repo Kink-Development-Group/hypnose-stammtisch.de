@@ -12,12 +12,14 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use HypnoseStammtisch\Config\Config;
 use HypnoseStammtisch\Controllers\AdminAuthController;
 use HypnoseStammtisch\Controllers\AdminEventsController;
+use HypnoseStammtisch\Controllers\AdminKnownEventSeriesController;
 use HypnoseStammtisch\Controllers\AdminMessagesController;
 use HypnoseStammtisch\Controllers\AdminStammtischLocationController;
 use HypnoseStammtisch\Controllers\AdminUsersController;
 use HypnoseStammtisch\Controllers\AdminSecurityController;
 use HypnoseStammtisch\Controllers\UserController;
 use HypnoseStammtisch\Controllers\PasswordResetController;
+use HypnoseStammtisch\Controllers\WebAuthnController;
 use HypnoseStammtisch\Utils\Response;
 
 // Load configuration
@@ -73,6 +75,32 @@ try {
   }
   if ($path === '/auth/2fa/backup-codes/status' && $method === 'GET') {
     AdminAuthController::twofaBackupStatus();
+    return;
+  }
+
+  // Passkey (WebAuthn) endpoints — alternative login path next to password + TOTP
+  if ($path === '/auth/webauthn/register/options' && $method === 'POST') {
+    WebAuthnController::registerOptions();
+    return;
+  }
+  if ($path === '/auth/webauthn/register/verify' && $method === 'POST') {
+    WebAuthnController::registerVerify();
+    return;
+  }
+  if ($path === '/auth/webauthn/login/options' && $method === 'POST') {
+    WebAuthnController::loginOptions();
+    return;
+  }
+  if ($path === '/auth/webauthn/login/verify' && $method === 'POST') {
+    WebAuthnController::loginVerify();
+    return;
+  }
+  if ($path === '/auth/webauthn/credentials' && $method === 'GET') {
+    WebAuthnController::listCredentials();
+    return;
+  }
+  if (preg_match('#^/auth/webauthn/credentials/([a-zA-Z0-9\-]+)$#', $path, $matches) && $method === 'DELETE') {
+    WebAuthnController::deleteCredential((string)$matches[1]);
     return;
   }
 
@@ -360,6 +388,41 @@ try {
         return;
       } elseif ($method === 'DELETE') {
         AdminStammtischLocationController::delete($id);
+        return;
+      }
+    }
+  }
+
+  // Route known event series endpoints (head admins and admins only)
+  if (str_starts_with($path, '/known-event-series')) {
+    if ($path === '/known-event-series') {
+      if ($method === 'GET') {
+        AdminKnownEventSeriesController::index();
+        return;
+      } elseif ($method === 'POST') {
+        AdminKnownEventSeriesController::create();
+        return;
+      }
+    } elseif ($path === '/known-event-series/linkable-series') {
+      if ($method === 'GET') {
+        AdminKnownEventSeriesController::linkableSeries();
+        return;
+      }
+    } elseif ($path === '/known-event-series/reorder') {
+      if ($method === 'POST') {
+        AdminKnownEventSeriesController::reorder();
+        return;
+      }
+    } elseif (preg_match('#^/known-event-series/([a-zA-Z0-9\-]+)$#', $path, $matches)) {
+      $id = (string)$matches[1];
+      if ($method === 'GET') {
+        AdminKnownEventSeriesController::show($id);
+        return;
+      } elseif ($method === 'PUT') {
+        AdminKnownEventSeriesController::update($id);
+        return;
+      } elseif ($method === 'DELETE') {
+        AdminKnownEventSeriesController::delete($id);
         return;
       }
     }

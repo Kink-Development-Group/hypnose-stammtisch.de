@@ -41,6 +41,7 @@ use HypnoseStammtisch\Controllers\EventsController;
 use HypnoseStammtisch\Controllers\ContactController;
 use HypnoseStammtisch\Controllers\CalendarController;
 use HypnoseStammtisch\Controllers\FormController;
+use HypnoseStammtisch\Controllers\KnownEventSeriesController;
 use HypnoseStammtisch\Controllers\SitemapController;
 use HypnoseStammtisch\Controllers\StammtischLocationController;
 use HypnoseStammtisch\Utils\Response;
@@ -160,6 +161,10 @@ function route(string $method, array $segments): void
         handleStammtischLocationRoutes($method, $action, $id);
         break;
 
+      case 'known-event-series':
+        handleKnownEventSeriesRoutes($method, $action);
+        break;
+
       case 'captcha':
         handleCaptchaRoutes($method, $action);
         break;
@@ -200,6 +205,7 @@ function handleApiInfo(): void
         'GET /calendar/feed/{token}' => 'Get private ICS calendar feed',
         'GET /calendar/meta' => 'Get calendar metadata',
         'GET /calendar/event/{id}/ics' => 'Get ICS for single event',
+        'GET /known-event-series' => 'Get the published event series shown on the home page',
         'GET /stammtisch-locations' => 'Get all published stammtisch locations',
         'GET /stammtisch-locations/meta' => 'Get stammtisch location metadata',
         'GET /stammtisch-locations/{id}' => 'Get single stammtisch location by ID',
@@ -378,6 +384,23 @@ function handleStammtischLocationRoutes(string $method, ?string $action, ?string
   } else {
     Response::error('Method not allowed', 405);
   }
+}
+
+// Handle known event series routes (the "Bekannte Event-Reihen" home page section)
+function handleKnownEventSeriesRoutes(string $method, ?string $action): void
+{
+  if ($method !== 'GET') {
+    Response::error('Method not allowed', 405);
+    return;
+  }
+
+  if ($action) {
+    Response::error('Invalid known-event-series endpoint', 404);
+    return;
+  }
+
+  // GET /known-event-series
+  (new KnownEventSeriesController())->index();
 }
 
 // Handle CAPTCHA configuration routes

@@ -16,6 +16,7 @@
     showEventModal,
   } from "../stores/calendar";
   import { addNotification } from "../stores/ui";
+  import { eventOverlapsMonth } from "../utils/eventDates";
   import { transformApiEvents } from "../utils/eventTransform";
 
   let searchTerm = "";
@@ -25,43 +26,25 @@
   // Derived store for current month's active (non-cancelled) events
   const currentMonthActiveEvents = derived(
     [filteredEvents, currentDate],
-    ([$filteredEvents, $currentDate]) => {
-      const currentMonth = $currentDate.getMonth();
-      const currentYear = $currentDate.getFullYear();
-
-      return $filteredEvents.filter((event) => {
-        // Only count events in the current month
-        const eventDate = event.startDate;
-        if (
-          eventDate.getMonth() !== currentMonth ||
-          eventDate.getFullYear() !== currentYear
-        ) {
+    ([$filteredEvents, $currentDate]) =>
+      $filteredEvents.filter((event) => {
+        // Mehrtägige Events zählen auch dann zum Monat, wenn sie im Vor- oder
+        // Folgemonat beginnen bzw. enden.
+        if (!eventOverlapsMonth(event, $currentDate)) {
           return false;
         }
         // Exclude cancelled events from the count
-        if (event.isCancelled) {
-          return false;
-        }
-        return true;
-      });
-    },
+        return !event.isCancelled;
+      }),
   );
 
   // Derived store for current month's events (including cancelled for display)
   const currentMonthEvents = derived(
     [filteredEvents, currentDate],
-    ([$filteredEvents, $currentDate]) => {
-      const currentMonth = $currentDate.getMonth();
-      const currentYear = $currentDate.getFullYear();
-
-      return $filteredEvents.filter((event) => {
-        const eventDate = event.startDate;
-        return (
-          eventDate.getMonth() === currentMonth &&
-          eventDate.getFullYear() === currentYear
-        );
-      });
-    },
+    ([$filteredEvents, $currentDate]) =>
+      $filteredEvents.filter((event) =>
+        eventOverlapsMonth(event, $currentDate),
+      ),
   );
 
   // Function to load events for a given date
