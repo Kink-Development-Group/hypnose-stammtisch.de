@@ -16,7 +16,7 @@
   ></div>
 
   <div
-    class="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6"
+    class="fixed bottom-0 left-0 right-0 z-50 max-h-full overflow-y-auto overscroll-contain p-4 md:p-6"
     transition:fly={{ y: 100, duration: 300 }}
     role="dialog"
     aria-modal="true"
