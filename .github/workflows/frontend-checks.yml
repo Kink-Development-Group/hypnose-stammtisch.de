@@ -1,0 +1,73 @@
+name: Frontend Checks
+
+# The frontend quality gate. Until now nothing in CI ran svelte-check, ESLint,
+# Prettier or the Vitest suite — only migrations, the labeler, dependency review
+# and the deploy. That gap is why the `typescript@7` bump (#147) could break
+# `bun run check` and `eslint` repo-wide and stay unnoticed for weeks: both
+# commands aborted before doing any work, and nothing reported it.
+#
+# Every step is read-only. Note that `bun run lint` is NOT usable here — it runs
+# `prettier --write` and would rewrite files instead of reporting them; the
+# read-only counterparts are `lint:ci` and `format:check`.
+#
+# Deliberately no `paths:` filter: a required check that is path-filtered never
+# reports on PRs outside those paths and then blocks them. The job is cheap
+# enough (a few seconds of work after the install) to just always run.
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Format, lint, types and unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        id: install
+        run: bun install --frozen-lockfile
+
+      # The checks below each run even when an earlier one failed, so a single
+      # CI run surfaces every problem instead of only the first. They are all
+      # skipped when the install itself failed, since none of them could work.
+      - name: Check formatting (Prettier)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bun run format:check
+
+      - name: Lint (ESLint)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bun run lint:ci
+
+      - name: Type-check (svelte-check)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bun run check
+
+      - name: Unit tests (Vitest)
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bun run test:unit:run
+
+      - name: Build
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bun run build

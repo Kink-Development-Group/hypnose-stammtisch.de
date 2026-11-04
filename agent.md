@@ -107,6 +107,21 @@ bun run check                  # TypeScript/Svelte Prüfung
 bun run format:all             # Formatierung (Frontend + PHP)
 ```
 
+### Qualitätsgate (schreibt nichts — genau diese Kette läuft in CI)
+
+```bash
+bun run format:check           # Prettier, nur prüfen
+bun run lint:ci                # ESLint, nur prüfen
+bun run check                  # svelte-check
+bun run test:unit:run          # Vitest
+bun run build                  # Vite-Build
+```
+
+> `bun run lint` ist **nicht** dasselbe: es führt `prettier --write .` aus und
+> ändert Dateien. Für CI und Vorab-Prüfungen die lesenden Varianten nutzen.
+> Der Workflow `.github/workflows/frontend-checks.yml` fährt diese Kette bei
+> jedem PR auf `dev`/`main`.
+
 ### Testing
 
 ```bash
