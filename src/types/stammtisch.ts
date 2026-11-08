@@ -76,6 +76,8 @@ export interface MapFilter {
   countries: CountryCode[];
   regions: string[];
   tags: string[];
+  /** "any" (Standard): mindestens ein Tag passt, "all": alle Tags müssen passen. */
+  tagMatchMode?: "any" | "all";
   activeOnly: boolean;
 }
 

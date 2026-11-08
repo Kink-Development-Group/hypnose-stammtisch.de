@@ -629,7 +629,7 @@
             Kommunikation zwischen Partnern.
           </p>
           <a
-            href="https://kink.hypnose-stammtisch.de/"
+            href="https://kink.hypno-kink.org/"
             target="_blank"
             rel="noopener noreferrer"
             class="btn btn-primary"
