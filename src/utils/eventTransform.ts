@@ -1,4 +1,18 @@
-import type { Event } from "../types/calendar";
+import type { DifficultyLevel, Event, EventCategory } from "../types/calendar";
+
+const CATEGORIES: readonly string[] = [
+  "workshop",
+  "stammtisch",
+  "practice",
+  "lecture",
+  "special",
+];
+const DIFFICULTY_LEVELS: readonly string[] = [
+  "beginner",
+  "intermediate",
+  "advanced",
+  "all",
+];
 
 /**
  * Transform API event data to frontend Event interface
@@ -18,6 +32,7 @@ export function transformApiEvent(apiEvent: any): Event {
         : apiEvent.location_type === "hybrid"
           ? "hybrid"
           : "physical",
+    locationName: apiEvent.location_name || undefined,
     locationAddress: apiEvent.location_address || apiEvent.venue_address || "",
     onlineUrl: apiEvent.location_url || "",
     tags: (() => {
@@ -54,6 +69,13 @@ export function transformApiEvent(apiEvent: any): Event {
       apiEvent.beginner_friendly ||
       apiEvent.difficulty_level === "beginner" ||
       false,
+    category: CATEGORIES.includes(apiEvent.category)
+      ? (apiEvent.category as EventCategory)
+      : undefined,
+    difficultyLevel: DIFFICULTY_LEVELS.includes(apiEvent.difficulty_level)
+      ? (apiEvent.difficulty_level as DifficultyLevel)
+      : undefined,
+    organizerName: apiEvent.organizer_name || undefined,
     visibility: "public" as const,
     seriesId: apiEvent.series_id || undefined,
     rrule: apiEvent.rrule || undefined,

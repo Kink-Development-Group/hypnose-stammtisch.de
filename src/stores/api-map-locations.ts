@@ -11,6 +11,7 @@ import type {
   StammtischLocation,
   StammtischLocationMeta,
 } from "../types/stammtisch";
+import { normalizeTag } from "../utils/eventFilters";
 
 const isBrowser = typeof window !== "undefined";
 const DEFAULT_COUNTRY_CODES = CountryMetadata.getDefaultCountryCodes();
@@ -31,6 +32,7 @@ export const mapFilter = writable<MapFilter>({
   countries: [...DEFAULT_COUNTRY_CODES],
   regions: [],
   tags: [],
+  tagMatchMode: "any",
   activeOnly: true,
 });
 
@@ -46,6 +48,21 @@ export const availableRegions = derived(
   ($meta) => $meta.regions,
 );
 export const availableTags = derived(locationsMeta, ($meta) => $meta.tags);
+
+/** Anzahl der Stammtische je Tag (normalisierter Schlüssel). */
+export const tagCounts = derived(allStammtischLocations, ($locations) => {
+  const counts: Record<string, number> = {};
+  for (const location of $locations) {
+    for (const key of new Set(location.tags.map(normalizeTag))) {
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+  }
+  return counts;
+});
+
+export function setTagMatchMode(mode: "any" | "all"): void {
+  mapFilter.update((filter) => ({ ...filter, tagMatchMode: mode }));
+}
 
 // Selected location for details view
 export const selectedLocation = writable<StammtischLocation | null>(null);
@@ -77,10 +94,13 @@ export const filteredStammtischLocations = derived(
       }
 
       if ($filter.tags.length > 0) {
-        const hasMatchingTag = $filter.tags.some((tag) =>
-          location.tags.includes(tag),
-        );
-        if (!hasMatchingTag) {
+        const locationTags = new Set(location.tags.map(normalizeTag));
+        const wanted = $filter.tags.map(normalizeTag);
+        const matches =
+          $filter.tagMatchMode === "all"
+            ? wanted.every((tag) => locationTags.has(tag))
+            : wanted.some((tag) => locationTags.has(tag));
+        if (!matches) {
           return false;
         }
       }
@@ -263,6 +283,7 @@ export function resetMapFilters(): void {
     countries: [...DEFAULT_COUNTRY_CODES],
     regions: [],
     tags: [],
+    tagMatchMode: "any",
     activeOnly: true,
   });
 }
