@@ -120,7 +120,8 @@ bun run build                  # Vite-Build
 > `bun run lint` ist **nicht** dasselbe: es führt `prettier --write .` aus und
 > ändert Dateien. Für CI und Vorab-Prüfungen die lesenden Varianten nutzen.
 > Der Workflow `.github/workflows/frontend-checks.yml` fährt diese Kette bei
-> jedem PR auf `dev`/`main`.
+> jedem PR auf `dev`/`main`. Fürs Backend läuft `.github/workflows/backend-checks.yml`
+> (PHP 8.5): `composer validate`, `vendor/bin/phpunit`, `composer audit`.
 
 ### Testing
 
@@ -130,7 +131,8 @@ bun run test:unit              # Vitest Unit Tests (watch mode)
 bun run test:unit:run          # Vitest Unit Tests (single run)
 bun run test:unit:coverage     # Vitest with coverage
 bun run test:a11y              # Accessibility Tests (axe-core)
-bun run backend:test           # PHPUnit Tests
+cd backend && composer test    # PHPUnit Tests (läuft in CI)
+bun run backend:test           # Smoke-Test gegen eine laufende Datenbank
 ```
 
 ### Backend CLI
