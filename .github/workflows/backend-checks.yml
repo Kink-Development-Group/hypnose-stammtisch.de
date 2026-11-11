@@ -1,0 +1,62 @@
+name: Backend Checks
+
+# The backend quality gate. Until now PHPUnit only ran locally, so a Composer
+# update (e.g. carbon, phpmailer, webauthn-lib) could reach production without
+# a single backend test having run against it.
+#
+# Runs on PHP 8.5, matching `require.php` and `config.platform.php` in
+# backend/composer.json. The suites need no database service: tests that touch
+# the database use an in-memory SQLite connection.
+#
+# Deliberately no `paths:` filter, for the same reason as frontend-checks.yml:
+# a required check that is path-filtered never reports on PRs outside those
+# paths and then blocks them.
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpunit:
+    name: PHPUnit (PHP 8.5)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: pdo, pdo_sqlite, pdo_mysql, mbstring, json, openssl
+          coverage: none
+
+      - name: Validate composer.json and composer.lock
+        run: composer validate --no-check-publish
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit
+
+      - name: Composer audit
+        run: composer audit --locked

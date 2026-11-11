@@ -312,9 +312,22 @@ und für Vorab-Prüfungen gehören deshalb die lesenden Gegenstücke
 `lint:ci` und `format:check` genutzt.
 :::
 
-Nicht in CI abgedeckt (brauchen Backend und Datenbank): `bun run test` (E2E),
-`bun run test:a11y` und `bun run backend:test`. Die Migrationen prüft ein
-eigener Workflow, `migrations-smoke-test.yml`, gegen eine echte MariaDB.
+Für das Backend fährt [`backend-checks.yml`](https://github.com/Kink-Development-Group/hypnose-stammtisch.de/blob/dev/.github/workflows/backend-checks.yml)
+bei denselben Ereignissen auf **PHP 8.5**:
+
+| Schritt          | Kommando (in `backend/`)                 |
+| ---------------- | ---------------------------------------- |
+| Composer-Dateien | `composer validate --no-check-publish`   |
+| Unit-Tests       | `vendor/bin/phpunit` (= `composer test`) |
+| Sicherheit       | `composer audit --locked`                |
+
+PHPUnit braucht keine Datenbank: Tests mit Datenbankzugriff nutzen eine
+SQLite-Verbindung im Speicher.
+
+Nicht in CI abgedeckt: `bun run test` (E2E), `bun run test:a11y` und
+`bun run backend:test`. Letzteres ist **kein** PHPUnit-Lauf, sondern ein
+Smoke-Test gegen eine laufende Datenbank. Die Migrationen prüft ein eigener
+Workflow, `migrations-smoke-test.yml`, gegen eine echte MariaDB.
 
 ## Weitere Ressourcen
 
