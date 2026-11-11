@@ -280,9 +280,11 @@ class SecurityLockoutIntegrationTest extends TestCase
     // Account should be locked
     $this->assertTrue(FailedLoginTracker::isAccountLocked(self::$testUserId));
 
-    // Both IPs should be banned
-    $this->assertTrue(IpBanManager::isIPBanned($ip1));
+    // Only the IP that pushed the account over the threshold is banned
+    // (docs/security/lockout.md: "Account sperren und IP bannen"). $ip1 made
+    // exactly $maxAttempts attempts, and a ban needs the threshold *exceeded*.
     $this->assertTrue(IpBanManager::isIPBanned($ip2));
+    $this->assertFalse(IpBanManager::isIPBanned($ip1));
 
     // Cleanup
     IpBanManager::removeIPBan($ip1);
