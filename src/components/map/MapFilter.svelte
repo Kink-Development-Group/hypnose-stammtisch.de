@@ -8,13 +8,25 @@
     locationsMeta,
     mapFilter,
     resetMapFilters,
+    setTagMatchMode,
+    tagCounts,
     toggleCountryFilter,
     toggleRegionFilter,
     toggleTagFilter,
   } from "../../stores/api-map-locations";
+  import { normalizeTag, normalizeText } from "../../utils/eventFilters";
   import { t } from "../../utils/i18n";
 
   let isExpanded = false;
+  let tagQuery = "";
+
+  $: normalizedTagQuery = normalizeText(tagQuery);
+  $: visibleTags = $availableTags.filter(
+    (tag) =>
+      !normalizedTagQuery ||
+      normalizeTag(tag).includes(normalizedTagQuery) ||
+      $mapFilter.tags.includes(tag),
+  );
 
   const toggleFilter = () => {
     isExpanded = !isExpanded;
@@ -117,9 +129,45 @@
       <!-- Tag Filters -->
       {#if $availableTags.length > 0}
         <div class="filter-section">
-          <h3 class="filter-title">{t("map.filter.section.tags")}</h3>
+          <div class="filter-title-row">
+            <h3 class="filter-title">{t("map.filter.section.tags")}</h3>
+            {#if $mapFilter.tags.length > 1}
+              <div
+                class="match-mode"
+                role="group"
+                aria-label={t("map.filter.tagMode.label")}
+              >
+                <button
+                  type="button"
+                  class:active={$mapFilter.tagMatchMode !== "all"}
+                  aria-pressed={$mapFilter.tagMatchMode !== "all"}
+                  on:click={() => setTagMatchMode("any")}
+                >
+                  {t("map.filter.tagMode.any")}
+                </button>
+                <button
+                  type="button"
+                  class:active={$mapFilter.tagMatchMode === "all"}
+                  aria-pressed={$mapFilter.tagMatchMode === "all"}
+                  on:click={() => setTagMatchMode("all")}
+                >
+                  {t("map.filter.tagMode.all")}
+                </button>
+              </div>
+            {/if}
+          </div>
+          {#if $availableTags.length > 8}
+            <input
+              type="search"
+              class="tag-search"
+              placeholder={t("map.filter.tagSearch")}
+              aria-label={t("map.filter.tagSearch")}
+              bind:value={tagQuery}
+              autocomplete="off"
+            />
+          {/if}
           <div class="filter-tags">
-            {#each $availableTags as tag (tag)}
+            {#each visibleTags as tag (tag)}
               <button
                 class="tag-filter"
                 class:active={$mapFilter.tags.includes(tag)}
@@ -128,7 +176,12 @@
                 aria-label={t("map.filter.tagToggle", { values: { tag } })}
               >
                 {tag}
+                {#if $tagCounts[normalizeTag(tag)]}
+                  <span class="tag-count">{$tagCounts[normalizeTag(tag)]}</span>
+                {/if}
               </button>
+            {:else}
+              <p class="no-tags">{t("map.filter.noTagMatch")}</p>
             {/each}
           </div>
         </div>
@@ -250,6 +303,60 @@
     gap: 0.5rem;
   }
 
+  .filter-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+  }
+
+  .filter-title-row .filter-title {
+    margin-bottom: 0;
+  }
+
+  .match-mode {
+    display: inline-flex;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    font-size: 0.75rem;
+  }
+
+  .match-mode button {
+    padding: 0.2rem 0.5rem;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .match-mode button.active {
+    background-color: rgb(59 130 246);
+    color: white;
+  }
+
+  .tag-search {
+    width: 100%;
+    max-width: 18rem;
+    margin-bottom: 0.5rem;
+    padding: 0.375rem 0.625rem;
+    font-size: 0.8125rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+  }
+
+  .tag-count {
+    margin-left: 0.25rem;
+    font-size: 0.7rem;
+    opacity: 0.7;
+  }
+
+  .no-tags {
+    font-size: 0.8125rem;
+    opacity: 0.7;
+  }
+
   .tag-filter {
     padding: 0.375rem 0.75rem;
     border: 1px solid #d1d5db;
@@ -303,6 +410,13 @@
   :global(.dark) .tag-filter:hover {
     background-color: #4b5563;
     border-color: #6b7280;
+  }
+
+  :global(.dark) .tag-search,
+  :global(.dark) .match-mode {
+    background-color: #111827;
+    border-color: #4b5563;
+    color: #e5e7eb;
   }
 
   :global(.dark) .filter-actions {

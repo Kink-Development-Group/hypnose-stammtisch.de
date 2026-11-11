@@ -60,19 +60,20 @@ class SecurityLockoutIntegrationTest extends TestCase
 
   private static function createTestUsers(): void
   {
-    // Create normal test user with secure password
+    // Create a regular (non-head) admin. users.role has no plain 'user' value;
+    // 'admin' is the role the lockout rules apply to without the head exemption.
     Database::execute(
       'INSERT INTO users (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
-      ['test_user', 'test@example.com', password_hash(self::$testUserPassword, PASSWORD_DEFAULT), 'user', 1]
+      ['test_user', 'test@example.com', password_hash(self::$testUserPassword, PASSWORD_DEFAULT), 'admin', 1]
     );
-    self::$testUserId = Database::lastInsertId();
+    self::$testUserId = (int) Database::lastInsertId();
 
     // Create head admin test user with secure password
     Database::execute(
       'INSERT INTO users (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
       ['test_head_admin', 'admin@example.com', password_hash(self::$testAdminPassword, PASSWORD_DEFAULT), 'head', 1]
     );
-    self::$testHeadAdminId = Database::lastInsertId();
+    self::$testHeadAdminId = (int) Database::lastInsertId();
   }
 
   private static function cleanupTestData(): void
@@ -279,7 +280,8 @@ class SecurityLockoutIntegrationTest extends TestCase
     // Account should be locked
     $this->assertTrue(FailedLoginTracker::isAccountLocked(self::$testUserId));
 
-    // Both IPs should be banned
+    // Every IP that took part in the attack is banned, including $ip1, which
+    // on its own only reached the per-IP threshold.
     $this->assertTrue(IpBanManager::isIPBanned($ip1));
     $this->assertTrue(IpBanManager::isIPBanned($ip2));
 

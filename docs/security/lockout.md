@@ -20,7 +20,10 @@ Diese Implementierung bietet umfassenden Schutz gegen Brute-Force-Angriffe durch
 ### Account Lockout
 
 - Sperrt Standard-Accounts nach Überschreiten der Schwellwerte.
-- Head-Admin-Accounts bleiben aktiv; nur die IP wird gebannt.
+- Head-Admin-Accounts bleiben aktiv; es werden nur IPs gebannt.
+- Gebannt werden alle IPs, von denen im Zeitfenster Fehlversuche auf den
+  Account kamen, nicht nur die IP des auslösenden Versuchs. So greift der
+  Schutz auch bei Angriffen, die auf mehrere Adressen verteilt sind.
 - Unterstützt temporäre und permanente Sperren.
 - Manuelle Entsperrung über Admin-UI oder CLI möglich.
 
@@ -137,8 +140,9 @@ php cli/commands/security.php failed-logins
 1. Authentifizierungsversuch durchführen.
 1. Bei Fehler: Fehlversuch speichern und Zähler prüfen.
 1. Schwellwert überschritten?
-   - Head-Admin: Nur IP bannen.
-   - Standard-Account: Account sperren und IP bannen.
+   - Head-Admin: Nur IPs bannen.
+   - Standard-Account: Account sperren und IPs bannen.
+   - Gebannt werden alle IPs mit Fehlversuchen auf diesen Account im Zeitfenster.
 1. Bei Erfolg: Historie für den Account zurücksetzen.
 
 ## Sicherheitsaspekte

@@ -1,7 +1,8 @@
 name: Migrations Smoke Test
 
 # The production deploy runs migrations as a manual step against the live DB,
-# and neither the migration runner nor phpunit run in CI. This workflow
+# and the migration runner does not run anywhere else in CI (PHPUnit runs in
+# backend-checks.yml, against in-memory SQLite). This workflow
 # exercises every migration against a real database service from a clean
 # schema so a broken or non-idempotent migration is caught here instead of on
 # first execution against prod (see issue #102).

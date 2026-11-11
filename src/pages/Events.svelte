@@ -8,20 +8,25 @@
   import EventModal from "../components/calendar/EventModal.svelte";
   // Import stores
   import {
+    activeFilterCount,
     calendarView,
+    clearFilters,
     currentDate,
+    eventFilters,
     events,
     filteredEvents,
     isLoading,
+    loadFiltersFromUrl,
     showEventModal,
+    writeFiltersToUrl,
   } from "../stores/calendar";
   import { addNotification } from "../stores/ui";
   import { eventOverlapsMonth } from "../utils/eventDates";
   import { transformApiEvents } from "../utils/eventTransform";
 
-  let searchTerm = "";
   let loadedMonthKey = ""; // Track which month we've loaded events for
   let unsubscribe: (() => void) | null = null;
+  let unsubscribeFilters: (() => void) | null = null;
 
   // Derived store for current month's active (non-cancelled) events
   const currentMonthActiveEvents = derived(
@@ -92,6 +97,10 @@
 
   // Load events on mount and subscribe to date changes
   onMount(() => {
+    // Filter aus geteiltem Link übernehmen und Änderungen in die URL schreiben
+    loadFiltersFromUrl();
+    unsubscribeFilters = eventFilters.subscribe(writeFiltersToUrl);
+
     // Subscribe to currentDate changes
     unsubscribe = currentDate.subscribe((date) => {
       loadEventsForDate(date);
@@ -102,6 +111,7 @@
     if (unsubscribe) {
       unsubscribe();
     }
+    unsubscribeFilters?.();
   });
 
   // Handle view changes
@@ -155,7 +165,7 @@
 
   <!-- Filters and search -->
   <section class="mb-8" aria-label="Event-Filter">
-    <EventFilters bind:searchTerm />
+    <EventFilters />
   </section>
 
   <!-- View selector -->
@@ -236,25 +246,25 @@
   {/if}
 
   <!-- Empty state -->
-  {#if !$isLoading && $filteredEvents.length === 0}
+  {#if !$isLoading && $calendarView !== "list" && $currentMonthEvents.length === 0}
     <div class="text-center py-16">
       <div class="text-6xl mb-4" aria-hidden="true">🔍</div>
       <h3 class="text-2xl font-semibold text-smoke-50 mb-2">
         Keine Events gefunden
       </h3>
       <p class="text-smoke-300 mb-6">
-        {#if $events.length === 0}
-          Derzeit sind keine Veranstaltungen geplant.
+        {#if $activeFilterCount === 0}
+          In diesem Monat sind keine Veranstaltungen geplant.
         {:else}
-          Keine Events entsprechen deinen aktuellen Filterkriterien.
+          In diesem Monat entspricht kein Event deinen Filterkriterien.
+          {#if $filteredEvents.length > 0}
+            In den Nachbarmonaten gibt es aber {$filteredEvents.length} Treffer.
+          {/if}
         {/if}
       </p>
       <div class="space-y-4">
-        {#if $events.length > 0}
-          <button
-            class="btn btn-outline"
-            on:click={() => window.location.reload()}
-          >
+        {#if $activeFilterCount > 0}
+          <button class="btn btn-outline" on:click={clearFilters}>
             Filter zurücksetzen
           </button>
         {/if}

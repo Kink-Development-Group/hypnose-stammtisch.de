@@ -1,5 +1,13 @@
 import { derived, writable } from "svelte/store";
 import type { CalendarView, Event, EventFilter } from "../types/calendar";
+import {
+  collectTagStats,
+  countActiveFilters,
+  createDefaultFilter,
+  filterEvents,
+  filterFromSearchParams,
+  filterToSearchParams,
+} from "../utils/eventFilters";
 
 // Calendar state
 export const currentDate = writable(new Date());
@@ -12,64 +20,21 @@ export const selectedEvent = writable<Event | null>(null);
 export const showEventModal = writable(false);
 
 // Filters
-export const eventFilters = writable<EventFilter>({
-  tags: [],
-  locationType: null,
-  beginnerFriendly: null,
-  searchTerm: "",
-});
+export const eventFilters = writable<EventFilter>(createDefaultFilter());
 
 // Derived stores
 export const filteredEvents = derived(
   [events, eventFilters],
-  ([$events, $filters]) => {
-    const filtered = $events.filter((event) => {
-      // Tag filter
-      if ($filters.tags.length > 0) {
-        const hasMatchingTag = $filters.tags.some((tag) =>
-          event.tags.includes(tag),
-        );
-        if (!hasMatchingTag) return false;
-      }
+  ([$events, $filters]) => filterEvents($events, $filters),
+);
 
-      // Location type filter
-      if (
-        $filters.locationType &&
-        event.locationType !== $filters.locationType
-      ) {
-        return false;
-      }
+/** Tags aller geladenen Events inkl. Häufigkeit (für die Tag-Auswahl). */
+export const availableEventTags = derived(events, ($events) =>
+  collectTagStats($events),
+);
 
-      // Beginner friendly filter
-      if (
-        $filters.beginnerFriendly !== null &&
-        event.beginnerFriendly !== $filters.beginnerFriendly
-      ) {
-        return false;
-      }
-
-      // Search term filter
-      if ($filters.searchTerm) {
-        const searchTerm = $filters.searchTerm.toLowerCase();
-        const searchableText = [
-          event.title,
-          event.description,
-          event.locationAddress || "",
-          ...event.tags,
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        if (!searchableText.includes(searchTerm)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    return filtered;
-  },
+export const activeFilterCount = derived(eventFilters, ($filters) =>
+  countActiveFilters($filters),
 );
 
 // Calendar navigation helpers
@@ -118,12 +83,15 @@ export const closeEventModal = () => {
 
   // Restore URL (using hash-based routing)
   if (typeof window !== "undefined") {
-    window.history.pushState({}, "", "/#/events");
+    window.history.pushState({}, "", `/#/events${getFilterQueryString()}`);
   }
 };
 
 // Filter helpers
-export const updateFilter = (key: keyof EventFilter, value: any) => {
+export const updateFilter = <K extends keyof EventFilter>(
+  key: K,
+  value: EventFilter[K],
+) => {
   eventFilters.update((filters) => ({
     ...filters,
     [key]: value,
@@ -131,10 +99,40 @@ export const updateFilter = (key: keyof EventFilter, value: any) => {
 };
 
 export const clearFilters = () => {
-  eventFilters.set({
-    tags: [],
-    locationType: null,
-    beginnerFriendly: null,
-    searchTerm: "",
-  });
+  eventFilters.set(createDefaultFilter());
+};
+
+// URL-Synchronisierung (Hash-Routing: #/events?tags=...)
+const getFilterQueryString = (): string => {
+  let query = "";
+  eventFilters.subscribe((filters) => {
+    query = filterToSearchParams(filters).toString();
+  })();
+  return query ? `?${query}` : "";
+};
+
+/** Liest Filter aus der aktuellen URL (z. B. geteilter Link). */
+export const loadFiltersFromUrl = (): boolean => {
+  if (typeof window === "undefined") return false;
+  const hash = window.location.hash;
+  const queryIndex = hash.indexOf("?");
+  if (queryIndex === -1) return false;
+  const params = new URLSearchParams(hash.slice(queryIndex + 1));
+  const filter = filterFromSearchParams(params);
+  eventFilters.set(filter);
+  return true;
+};
+
+/** Schreibt die aktiven Filter in die URL, ohne einen History-Eintrag anzulegen. */
+export const writeFiltersToUrl = (filters: EventFilter): void => {
+  if (typeof window === "undefined") return;
+  const hash = window.location.hash;
+  const path = hash.split("?")[0];
+  // Nur auf der Event-Übersicht, nicht bei geöffnetem Event-Deep-Link.
+  if (path !== "#/events" && path !== "#/events/") return;
+  const query = filterToSearchParams(filters).toString();
+  const nextHash = `#/events${query ? `?${query}` : ""}`;
+  if (nextHash !== hash) {
+    window.history.replaceState(window.history.state, "", `/${nextHash}`);
+  }
 };

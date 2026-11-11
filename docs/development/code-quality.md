@@ -284,11 +284,51 @@ composer phpcs
 
 ```bash
 # Frontend
-npm run format
+bun run format
 
 # Backend
-composer format
+bun run format:php
 ```
+
+## Continuous Integration
+
+Der Workflow [`frontend-checks.yml`](https://github.com/Kink-Development-Group/hypnose-stammtisch.de/blob/dev/.github/workflows/frontend-checks.yml)
+fährt bei jedem Push und jedem Pull Request auf `dev` und `main` diese Kette:
+
+| Schritt      | Kommando                |
+| ------------ | ----------------------- |
+| Formatierung | `bun run format:check`  |
+| Linting      | `bun run lint:ci`       |
+| Typen        | `bun run check`         |
+| Unit-Tests   | `bun run test:unit:run` |
+| Build        | `bun run build`         |
+
+Die Schritte laufen auch dann weiter, wenn ein früherer fehlschlägt — ein
+CI-Lauf zeigt also alle Probleme auf einmal, nicht nur das erste.
+
+::: warning Lesende und schreibende Varianten
+`bun run lint` führt `prettier --write .` aus und **verändert Dateien**. In CI
+und für Vorab-Prüfungen gehören deshalb die lesenden Gegenstücke
+`lint:ci` und `format:check` genutzt.
+:::
+
+Für das Backend fährt [`backend-checks.yml`](https://github.com/Kink-Development-Group/hypnose-stammtisch.de/blob/dev/.github/workflows/backend-checks.yml)
+bei denselben Ereignissen auf **PHP 8.5**:
+
+| Schritt          | Kommando (in `backend/`)                 |
+| ---------------- | ---------------------------------------- |
+| Composer-Dateien | `composer validate --no-check-publish`   |
+| Unit-Tests       | `vendor/bin/phpunit` (= `composer test`) |
+| Sicherheit       | `composer audit --locked`                |
+
+Die meisten Tests nutzen eine SQLite-Verbindung im Speicher. Für die
+Integrationstests startet der Workflow eine MariaDB, lädt deren Zeitzonen und
+führt vorher alle Migrationen aus.
+
+Nicht in CI abgedeckt: `bun run test` (E2E), `bun run test:a11y` und
+`bun run backend:test`. Letzteres ist **kein** PHPUnit-Lauf, sondern ein
+Smoke-Test gegen eine laufende Datenbank. Die Migrationen prüft ein eigener
+Workflow, `migrations-smoke-test.yml`, gegen eine echte MariaDB.
 
 ## Weitere Ressourcen
 

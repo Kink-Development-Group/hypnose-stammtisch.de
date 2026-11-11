@@ -454,7 +454,7 @@
                 : ''} hover:bg-charcoal-700 transition-colors"
               role="gridcell"
               tabindex="0"
-              aria-label="{dayjs(day.date).format('DD. MMMM YYYY')}{day.segments
+              aria-label="{dayjs(day.date).format('D. MMMM YYYY')}{day.segments
                 .length > 0
                 ? `, ${day.segments.length} Event${day.segments.length !== 1 ? 's' : ''}`
                 : ''}"

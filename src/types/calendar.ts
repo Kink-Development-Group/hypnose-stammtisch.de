@@ -1,3 +1,10 @@
+export type LocationType = "physical" | "online" | "hybrid";
+export type EventCategory =
+  "workshop" | "stammtisch" | "practice" | "lecture" | "special";
+export type DifficultyLevel = "beginner" | "intermediate" | "advanced" | "all";
+export type TimeOfDay = "morning" | "afternoon" | "evening";
+export type TagMatchMode = "any" | "all";
+
 export interface Event {
   id: string | number;
   title: string;
@@ -7,10 +14,14 @@ export interface Event {
   isAllDay: boolean;
   timezone: string;
   locationType: "physical" | "online" | "hybrid";
+  locationName?: string;
   locationAddress?: string;
   onlineUrl?: string;
   tags: string[];
   beginnerFriendly: boolean;
+  category?: EventCategory;
+  difficultyLevel?: DifficultyLevel;
+  organizerName?: string;
   visibility: "public" | "private";
   seriesId?: string | number;
   rrule?: string;
@@ -38,9 +49,27 @@ export interface EventSeries {
 }
 
 export interface EventFilter {
+  /** Tags, die ein Event tragen muss (Vergleich ohne Groß-/Kleinschreibung). */
   tags: string[];
-  locationType: "physical" | "online" | "hybrid" | null;
+  /** "any": mindestens ein Tag passt, "all": alle gewählten Tags müssen passen. */
+  tagMatchMode: TagMatchMode;
+  /** Tags, die ein Event nicht tragen darf. */
+  excludedTags: string[];
+  /** Leer = alle Veranstaltungsorte. */
+  locationTypes: LocationType[];
+  /** Leer = alle Kategorien. */
+  categories: EventCategory[];
+  /** Leer = alle Erfahrungsstufen. */
+  difficultyLevels: DifficultyLevel[];
   beginnerFriendly: boolean | null;
+  /** Wochentage nach Date#getDay() (0 = Sonntag). Leer = alle. */
+  weekdays: number[];
+  /** Leer = ganztägig/alle Uhrzeiten. */
+  timesOfDay: TimeOfDay[];
+  /** Bereits beendete Events ausblenden. */
+  onlyUpcoming: boolean;
+  /** Abgesagte Events ausblenden. */
+  hideCancelled: boolean;
   searchTerm: string;
 }
 

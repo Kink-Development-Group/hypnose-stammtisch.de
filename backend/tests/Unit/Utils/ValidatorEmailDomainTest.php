@@ -318,8 +318,9 @@ class ValidatorEmailDomainTest extends TestCase
    */
   public function testLongDomainNames(): void
   {
-    // This should fail DNS check (doesn't exist)
-    $longDomain = 'test@' . str_repeat('a', 60) . '.com';
+    // Must fail the DNS check. `.invalid` is reserved (RFC 2606) and can never
+    // resolve; a long `.com` name can — 'aaa…a.com' is actually registered.
+    $longDomain = 'test@' . str_repeat('a', 60) . '.invalid';
     $result = Validator::isValidEmailDomain($longDomain);
     $this->assertFalse($result, 'Very long non-existent domain should be rejected');
   }
