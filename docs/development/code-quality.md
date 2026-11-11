@@ -321,8 +321,9 @@ bei denselben Ereignissen auf **PHP 8.5**:
 | Unit-Tests       | `vendor/bin/phpunit` (= `composer test`) |
 | Sicherheit       | `composer audit --locked`                |
 
-PHPUnit braucht keine Datenbank: Tests mit Datenbankzugriff nutzen eine
-SQLite-Verbindung im Speicher.
+Die meisten Tests nutzen eine SQLite-Verbindung im Speicher. Für die
+Integrationstests startet der Workflow eine MariaDB, lädt deren Zeitzonen und
+führt vorher alle Migrationen aus.
 
 Nicht in CI abgedeckt: `bun run test` (E2E), `bun run test:a11y` und
 `bun run backend:test`. Letzteres ist **kein** PHPUnit-Lauf, sondern ein

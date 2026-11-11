@@ -5,8 +5,14 @@ name: Backend Checks
 # a single backend test having run against it.
 #
 # Runs on PHP 8.5, matching `require.php` and `config.platform.php` in
-# backend/composer.json. The suites need no database service: tests that touch
-# the database use an in-memory SQLite connection.
+# backend/composer.json. Most tests use an in-memory SQLite connection; the
+# integration tests (e.g. SecurityLockoutIntegrationTest) need the real schema,
+# so a MariaDB service is migrated first — MariaDB because production runs on
+# it (see migrations-smoke-test.yml).
+#
+# DB settings come from the job environment. `variables_order=EGPCS` makes PHP
+# copy them into $_ENV, which is where Config reads them; the default php.ini
+# ("GPCS") would leave $_ENV empty.
 #
 # Deliberately no `paths:` filter, for the same reason as frontend-checks.yml:
 # a required check that is path-filtered never reports on PRs outside those
@@ -34,6 +40,28 @@ jobs:
     name: PHPUnit (PHP 8.5)
     runs-on: ubuntu-latest
 
+    services:
+      mariadb:
+        image: mariadb:12.3.2
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: hypnose_stammtisch
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "3306"
+      DB_NAME: hypnose_stammtisch
+      DB_USER: root
+      DB_PASS: root
+      APP_DEBUG: "true"
+
     defaults:
       run:
         working-directory: backend
@@ -55,8 +83,19 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      # The app sets `time_zone = 'Europe/Berlin'` on every connection; a fresh
+      # MariaDB container has no named time zones loaded.
+      - name: Load time zone tables into MariaDB
+        working-directory: .
+        run: >-
+          docker exec ${{ job.services.mariadb.id }} sh -c
+          'mariadb-tzinfo-to-sql /usr/share/zoneinfo | mariadb -uroot -proot mysql'
+
+      - name: Run migrations
+        run: php -d variables_order=EGPCS migrations/migrate.php migrate
+
       - name: Run PHPUnit
-        run: vendor/bin/phpunit
+        run: php -d variables_order=EGPCS vendor/bin/phpunit
 
       - name: Composer audit
         run: composer audit --locked
