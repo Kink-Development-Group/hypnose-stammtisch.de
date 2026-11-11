@@ -215,7 +215,7 @@ class FailedLoginTracker
         $affected = Database::execute(
             'UPDATE users SET locked_until = NULL, locked_reason = NULL WHERE id = ?',
             [$accountId]
-        );
+        )->rowCount();
 
         if ($affected > 0) {
             AuditLogger::log(

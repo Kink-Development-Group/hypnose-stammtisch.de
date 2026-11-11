@@ -153,7 +153,7 @@ class IpBanManager
         $affected = Database::execute(
             'UPDATE ip_bans SET is_active = 0 WHERE ip_address = ? AND is_active = 1',
             [$ipAddress]
-        );
+        )->rowCount();
 
         if ($affected > 0) {
             AuditLogger::log(

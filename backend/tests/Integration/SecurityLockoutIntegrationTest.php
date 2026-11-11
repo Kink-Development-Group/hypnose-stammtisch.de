@@ -66,14 +66,14 @@ class SecurityLockoutIntegrationTest extends TestCase
       'INSERT INTO users (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
       ['test_user', 'test@example.com', password_hash(self::$testUserPassword, PASSWORD_DEFAULT), 'admin', 1]
     );
-    self::$testUserId = Database::lastInsertId();
+    self::$testUserId = (int) Database::lastInsertId();
 
     // Create head admin test user with secure password
     Database::execute(
       'INSERT INTO users (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
       ['test_head_admin', 'admin@example.com', password_hash(self::$testAdminPassword, PASSWORD_DEFAULT), 'head', 1]
     );
-    self::$testHeadAdminId = Database::lastInsertId();
+    self::$testHeadAdminId = (int) Database::lastInsertId();
   }
 
   private static function cleanupTestData(): void
