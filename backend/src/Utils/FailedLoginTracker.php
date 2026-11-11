@@ -81,6 +81,27 @@ class FailedLoginTracker
     }
 
   /**
+   * Get the distinct IP addresses that failed against an account within the
+   * time window (security.time_window_seconds).
+   *
+   * @param int $accountId The user account ID to check
+   *
+   * @return string[] IP addresses, each listed once
+   */
+    public static function getIPsForAccountAttempts(int $accountId): array
+    {
+        $timeWindowSeconds = Config::get('security.time_window_seconds');
+        $threshold = date('Y-m-d H:i:s', time() - $timeWindowSeconds);
+
+        $rows = Database::fetchAll(
+            'SELECT DISTINCT ip_address FROM failed_logins WHERE account_id = ? AND created_at >= ?',
+            [$accountId, $threshold]
+        );
+
+        return array_values(array_map(static fn(array $row): string => (string)$row['ip_address'], $rows));
+    }
+
+  /**
    * Get failed attempt count for an IP address within the time window.
    *
    * Counts only attempts that occurred within the configured time window
@@ -298,6 +319,18 @@ class FailedLoginTracker
                       $shouldLockAccount = true;
                 }
                 $shouldBanIP = true;
+
+              // An attack spread over several addresses must not escape the
+              // ban: block every IP that failed against this account within
+              // the time window, not only the one that crossed the threshold.
+                foreach (self::getIPsForAccountAttempts($accountId) as $attackerIp) {
+                    if ($attackerIp !== $ipAddress) {
+                        IpBanManager::banIP(
+                            $attackerIp,
+                            'Part of failed login attempts against a locked account'
+                        );
+                    }
+                }
             }
         }
 
