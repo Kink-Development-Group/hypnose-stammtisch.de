@@ -24,6 +24,7 @@
   let L: LeafletNamespace;
   let stammtischIcon: DivIcon | null = null;
 
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- Cache doesn't need reactivity
   const geoJsonCache = new Map<string, GeoJsonObject>();
   const COUNTRY_BOUNDARY_FILES: Record<CountryCode, string> = {
     [CountryCode.GERMANY]: "germany",
